@@ -80,6 +80,7 @@ services:
       # Desde el contenedor, localhost sería el propio contenedor.
       # Para obtener las claves públicas usamos el host.
       SIO_AUTH_JWKS_URL: http://host.docker.internal:8081/realms/sio/protocol/openid-connect/certs
+      GEOGRAPHY_SERVICE_BASE_URL: http://host.docker.internal:8000
 
     ports:
       - "${PARTY_IDENTITY_SERVICE_PORT:-8002}:8000"

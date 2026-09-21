@@ -2,7 +2,6 @@
 
 import os
 from dataclasses import dataclass
-from uuid import UUID
 
 
 @dataclass(frozen=True, slots=True)
@@ -12,13 +11,12 @@ class Settings:
     Attributes:
         docs_enabled: Indica si Swagger y OpenAPI están habilitados.
         database_url: URL de conexión hacia PostgreSQL.
-        colombia_country_id: UUID externo del país Colombia cuando se
-            desea activar validaciones colombianas.
+        geography_service_base_url: URL base de Geography Service.
     """
 
     docs_enabled: bool
     database_url: str
-    colombia_country_id: UUID | None
+    geography_service_base_url: str
 
 
 def load_settings() -> Settings:
@@ -36,8 +34,9 @@ def load_settings() -> Settings:
             default=False,
         ),
         database_url=_required_text("DATABASE_URL"),
-        colombia_country_id=_optional_uuid(
-            "PARTY_IDENTITY_COLOMBIA_COUNTRY_ID",
+        geography_service_base_url=_read_text(
+            name="GEOGRAPHY_SERVICE_BASE_URL",
+            default="http://localhost:8000",
         ),
     )
 
@@ -62,6 +61,19 @@ def _required_text(name: str) -> str:
         )
 
     return value.strip()
+
+
+def _read_text(
+    name: str,
+    default: str,
+) -> str:
+    """Obtiene una variable opcional de texto."""
+    value = os.getenv(name)
+
+    if value is None or not value.strip():
+        return default
+
+    return value.strip().rstrip("/")
 
 
 def _read_bool(name: str, default: bool) -> bool:
@@ -93,29 +105,3 @@ def _read_bool(name: str, default: bool) -> bool:
     raise RuntimeError(
         f"La variable de entorno {name} debe contener un valor booleano válido."
     )
-
-
-def _optional_uuid(name: str) -> UUID | None:
-    """Obtiene una variable de entorno UUID opcional.
-
-    Args:
-        name: Nombre de la variable de entorno.
-
-    Returns:
-        UUID configurado o None cuando no está definido.
-
-    Raises:
-        RuntimeError: Si el valor no es un UUID válido.
-    """
-    value = os.getenv(name)
-
-    if value is None or not value.strip():
-        return None
-
-    try:
-        return UUID(value.strip())
-
-    except ValueError:
-        raise RuntimeError(
-            f"La variable de entorno {name} debe contener un UUID válido."
-        ) from None

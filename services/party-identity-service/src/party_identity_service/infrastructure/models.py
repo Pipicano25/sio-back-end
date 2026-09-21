@@ -4,15 +4,18 @@ from datetime import date, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
     Index,
     Integer,
     String,
+    Text,
     UniqueConstraint,
     func,
     text,
+    true,
 )
 from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -31,11 +34,6 @@ class PersonIdentityModel(Base):
             "identification_type",
             "identification_number",
             name="uq_person_identities_identification",
-        ),
-        CheckConstraint(
-            "identification_type IN "
-            "('NATIONAL_ID', 'FOREIGN_ID', 'PASSPORT', 'TAX_ID', 'OTHER')",
-            name="ck_person_identities_identification_type",
         ),
         CheckConstraint(
             "verification_status IN "
@@ -69,7 +67,7 @@ class PersonIdentityModel(Base):
     )
 
     identification_type: Mapped[str] = mapped_column(
-        String(20),
+        String(40),
         nullable=False,
     )
 
@@ -106,6 +104,156 @@ class PersonIdentityModel(Base):
     verification_status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
+    )
+
+    version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default=text("1"),
+    )
+
+    created_by: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        nullable=False,
+    )
+
+    updated_by: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    __mapper_args__ = {
+        "version_id_col": version,
+    }
+
+
+class IdentificationTypeRuleModel(Base):
+    """Modelo SQLAlchemy de la tabla identification_type_rules."""
+
+    __tablename__ = "identification_type_rules"
+
+    __table_args__ = (
+        CheckConstraint(
+            "party_kind IN ('PERSON', 'ORGANIZATION')",
+            name="ck_identification_type_rules_party_kind",
+        ),
+        CheckConstraint(
+            "length(trim(number_pattern)) > 0",
+            name="ck_identification_type_rules_number_pattern_not_empty",
+        ),
+        CheckConstraint(
+            "valid_to IS NULL OR valid_to > valid_from",
+            name="ck_identification_type_rules_valid_range",
+        ),
+        CheckConstraint(
+            "min_age_years IS NULL OR min_age_years >= 0",
+            name="ck_identification_type_rules_min_age_non_negative",
+        ),
+        CheckConstraint(
+            "max_age_years IS NULL OR max_age_years >= 0",
+            name="ck_identification_type_rules_max_age_non_negative",
+        ),
+        CheckConstraint(
+            "min_age_years IS NULL OR max_age_years IS NULL "
+            "OR max_age_years >= min_age_years",
+            name="ck_identification_type_rules_age_range",
+        ),
+        Index(
+            "uq_identification_type_rules_active",
+            "party_kind",
+            "country_id",
+            "identification_type",
+            unique=True,
+            postgresql_where=text("is_active = true"),
+        ),
+        Index(
+            "ix_identification_type_rules_country_id",
+            "country_id",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        primary_key=True,
+        nullable=False,
+        default=uuid4,
+    )
+
+    party_kind: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+    )
+
+    country_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        nullable=False,
+    )
+
+    identification_type: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+    )
+
+    sigla: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+    )
+
+    number_pattern: Mapped[str] = mapped_column(
+        String(300),
+        nullable=False,
+    )
+
+    number_pattern_description: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    example_value: Mapped[str | None] = mapped_column(
+        String(40),
+        nullable=True,
+    )
+
+    min_age_years: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    max_age_years: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=true(),
+    )
+
+    valid_from: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    valid_to: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     version: Mapped[int] = mapped_column(

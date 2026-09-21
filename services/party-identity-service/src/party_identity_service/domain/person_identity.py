@@ -6,13 +6,7 @@ from typing import Literal
 from uuid import UUID
 
 
-PersonIdentificationType = Literal[
-    "NATIONAL_ID",
-    "FOREIGN_ID",
-    "PASSPORT",
-    "TAX_ID",
-    "OTHER",
-]
+PersonIdentificationType = str
 
 PersonVerificationStatus = Literal[
     "UNVERIFIED",

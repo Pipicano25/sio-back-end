@@ -607,35 +607,42 @@ Permite que SIO valide documentos como cédula, pasaporte, documento de extranje
 
 La entidad no almacena identificaciones reales de personas u organizaciones; solo define el patrón, descripción y ejemplos necesarios para validar `identification_number`.
 
-Cuando no exista una regla activa para una combinación de tipo de parte, país y tipo de identificación, el servicio aplica únicamente validaciones base como obligatoriedad, longitud máxima y unicidad funcional.
+Cuando no exista una regla activa para una combinación de tipo, país y tipo de identificación, el servicio aplica únicamente validaciones base como obligatoriedad, longitud máxima y unicidad funcional.
 
 ### Atributos
 
-| Atributo                      | Tipo           | Regla              | Descripción                                                                 |
-| ----------------------------- | -------------- | ------------------ | --------------------------------------------------------------------------- |
-| `id`                          | `UUID`         | PK, NN             | Identificador de la regla.                                                   |
-| `party_kind`                  | `VARCHAR(20)`  | NN, CK             | Tipo de parte: `PERSON` u `ORGANIZATION`.                                    |
-| `country_id`                  | `UUID`         | REF, NN            | País al que aplica la regla, referencia a Geography Service.                 |
-| `identification_type`         | `VARCHAR(20)`  | NN                 | Tipo de identificación al que aplica la regla.                               |
-| `number_pattern`              | `VARCHAR(300)` | NN                 | Expresión regular que debe cumplir el número normalizado.                    |
-| `number_pattern_description`  | `TEXT`         | NN                 | Mensaje funcional que explica la regla y se puede devolver en errores `422`. |
-| `example_value`               | `VARCHAR(40)`  | nullable           | Ejemplo válido del número de identificación.                                 |
-| `is_active`                   | `BOOLEAN`      | NN, DEFAULT `TRUE` | Indica si la regla está vigente.                                             |
-| `valid_from`                  | `TIMESTAMPTZ`  | NN                 | Inicio de vigencia.                                                          |
-| `valid_to`                    | `TIMESTAMPTZ`  | nullable           | Fin de vigencia.                                                             |
-| `version`                     | `INTEGER`      | NN, DEFAULT `1`    | Control de concurrencia.                                                     |
-| `created_by`                  | `UUID`         | NN                 | Usuario que creó la regla.                                                   |
-| `updated_by`                  | `UUID`         | NN                 | Usuario que realizó la última modificación.                                  |
-| `created_at`                  | `TIMESTAMPTZ`  | NN                 | Creación.                                                                    |
-| `updated_at`                  | `TIMESTAMPTZ`  | NN                 | Modificación.                                                                |
+| Atributo                     | Tipo           | Regla              | Descripción                                                                  |
+| ---------------------------- | -------------- | ------------------ | ---------------------------------------------------------------------------- |
+| `id`                         | `UUID`         | PK, NN             | Identificador de la regla.                                                   |
+| `party_kind`                 | `VARCHAR(20)`  | NN, CK             | Tipo de parte: `PERSON` u `ORGANIZATION`.                                    |
+| `country_id`                 | `UUID`         | REF, NN            | País al que aplica la regla, referencia a Geography Service.                 |
+| `identification_type`        | `VARCHAR(40)`  | NN                 | Tipo/formato de identificación al que aplica la regla.                       |
+| `sigla`                      | `VARCHAR(10)`  | NN                 | Sigla oficial del documento, por ejemplo `RC`, `TI`, `CC`, `CE` o `NIT`.     |
+| `number_pattern`             | `VARCHAR(300)` | NN                 | Expresión regular que debe cumplir el número normalizado.                    |
+| `number_pattern_description` | `TEXT`         | NN                 | Mensaje funcional que explica la regla y se puede devolver en errores `422`. |
+| `example_value`              | `VARCHAR(40)`  | nullable           | Ejemplo válido del número de identificación.                                 |
+| `min_age_years`              | `INTEGER`      | nullable           | Edad mínima permitida para documentos de persona.                            |
+| `max_age_years`              | `INTEGER`      | nullable           | Edad máxima permitida para documentos de persona.                            |
+| `is_active`                  | `BOOLEAN`      | NN, DEFAULT `TRUE` | Indica si la regla está vigente.                                             |
+| `valid_from`                 | `TIMESTAMPTZ`  | NN                 | Inicio de vigencia.                                                          |
+| `valid_to`                   | `TIMESTAMPTZ`  | nullable           | Fin de vigencia.                                                             |
+| `version`                    | `INTEGER`      | NN, DEFAULT `1`    | Control de concurrencia.                                                     |
+| `created_by`                 | `UUID`         | NN                 | Usuario que creó la regla.                                                   |
+| `updated_by`                 | `UUID`         | NN                 | Usuario que realizó la última modificación.                                  |
+| `created_at`                 | `TIMESTAMPTZ`  | NN                 | Creación.                                                                    |
+| `updated_at`                 | `TIMESTAMPTZ`  | NN                 | Modificación.                                                                |
 
 ### Reglas y restricciones
 
 - `party_kind` solo permite `PERSON` u `ORGANIZATION`.
 - `country_id` es una referencia externa a Geography Service y no utiliza llave foránea física entre bases de datos.
-- `identification_type` debe corresponder a un tipo admitido por el dominio de personas u organizaciones según `party_kind`.
+- `country_id` debe existir en Geography Service antes de crear o actualizar reglas.
+- `identification_type` identifica el formato específico de documento; no está limitado por un `CHECK` fijo.
+- `sigla` es el valor usado por `PersonIdentity.identification_type` para validar personas; no está limitado por un `CHECK` fijo.
 - `number_pattern` debe ser una expresión regular válida y no vacía.
 - `number_pattern_description` debe explicar la regla de forma entendible para el usuario.
+- `min_age_years` y `max_age_years` son opcionales; cuando existan obligan a validar `birth_date` en `PersonIdentity`.
+- `max_age_years` debe ser mayor o igual a `min_age_years` cuando ambos existan.
 - Debe existir como máximo una regla activa por `party_kind`, `country_id` e `identification_type`.
 - Una regla histórica no se elimina físicamente; se desactiva con `is_active = FALSE` y `valid_to` informado.
 - `valid_to` debe ser mayor que `valid_from` cuando exista.
@@ -651,13 +658,15 @@ Cuando no exista una regla activa para una combinación de tipo de parte, país 
 
 Reglas sugeridas para Colombia cuando se configure el `country_id` correspondiente:
 
-| `party_kind` | `identification_type` | `number_pattern`             | Ejemplo       |
-| ------------ | --------------------- | ---------------------------- | ------------- |
-| `PERSON`     | `NATIONAL_ID`         | `^[0-9]{6,10}$`              | `1234567890`  |
-| `PERSON`     | `FOREIGN_ID`          | `^[A-Z0-9]{3,20}$`           | `E123456`     |
-| `PERSON`     | `PASSPORT`            | `^[A-Z0-9]{6,20}$`           | `AB123456`    |
-| `PERSON`     | `TAX_ID`              | `^[0-9]{5,15}(-[0-9])?$`    | `900123456-7` |
-| `ORGANIZATION` | `TAX_ID`            | `^[0-9]{5,15}(-[0-9])?$`    | `900123456-7` |
+| `party_kind` | `identification_type` | `sigla` | `number_pattern`         | Edad | Ejemplo       |
+| ------------ | --------------------- | ------- | ------------------------ | ---- | ------------- |
+| `PERSON`     | `CIVIL_REGISTRY`      | `RC`    | `^[0-9]{10}$`            | 0 a 6 | `1000000000` |
+| `PERSON`     | `IDENTITY_CARD_MODERN` | `TI`   | `^[0-9]{10}$`            | 7 a 17 | `1000000000` |
+| `PERSON`     | `CITIZEN_ID_MODERN`   | `CC`    | `^[0-9]{10}$`            | 18+ | `1000000000` |
+| `PERSON`     | `CITIZEN_ID_OLD`      | `CC`    | `^[0-9]{3,8}$`           | 18+ | `12345678` |
+| `PERSON`     | `FOREIGN_CARD`        | `CE`    | `^[0-9]{3,7}$`           | 7+ | `1234567` |
+| `PERSON`     | `TAX_ID`              | `NIT`   | `^[A-Z0-9]{4,11}-[0-9]$` | cualquiera | `900123456-7` |
+| `PERSON`     | `IDENTITY_CARD_OLD`   | `TI`    | `^[0-9]{11}$`            | 7 a 17 | `19991234567` |
 
 ## 4.10 PersonIdentity
 
@@ -679,7 +688,7 @@ La entidad solo responde quién es la persona y no almacena relaciones comercial
 | --------------------------- | -------------- | --------------- | --------------------------------------------- |
 | `id`                        | `UUID`         | PK, NN          | Identificador global.                         |
 | `identification_country_id` | `UUID`         | FK, NN          | País emisor o asociado con la identificación. |
-| `identification_type`       | `VARCHAR(20)`  | NN              | Tipo de identificación.                       |
+| `identification_type`       | `VARCHAR(40)`  | NN              | Código o sigla de identificación validada contra reglas activas. |
 | `identification_number`     | `VARCHAR(40)`  | NN              | Número normalizado.                           |
 | `first_name`                | `VARCHAR(100)` | NN              | Primer nombre.                                |
 | `middle_name`               | `VARCHAR(100)` | nullable        | Segundo nombre.                               |

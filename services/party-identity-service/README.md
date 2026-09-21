@@ -36,50 +36,69 @@ Fase 4 iniciada con `PersonIdentity`:
 - endpoint de listado paginado con búsqueda y filtros;
 - endpoints de consulta, creación y actualización completa;
 - permisos con slug `party-identity`.
-- validación opcional de número de identificación por país y tipo.
+
+Fase de parametrización de reglas iniciada:
+
+- tabla `identification_type_rules`;
+- validación opcional de número de identificación por tipo de parte,
+  país y tipo de identificación.
+- endpoints de consulta, creación y actualización completa de reglas.
 
 ## Variables de entorno
 
 Ver `.env.example`.
 
-Para activar reglas específicas de Colombia en `PersonIdentity`, se debe
-configurar el UUID externo de Colombia proveniente de Geography Service:
+Las reglas de formato para identificaciones no dependen de variables de
+entorno. Se parametrizan en la tabla `identification_type_rules`.
 
-```powershell
-PARTY_IDENTITY_COLOMBIA_COUNTRY_ID=<uuid-de-colombia>
-```
+`country_id` se valida consultando `geography-service`. En Docker se usa
+`http://host.docker.internal:8000` para alcanzar el servicio publicado en
+el host.
 
-Si esta variable está vacía, solo se aplican validaciones base:
+Si no existe ninguna regla activa para `party_kind` y `country_id`, solo se
+aplican validaciones base:
 
 - `identification_number` obligatorio;
 - mínimo 1 carácter;
 - máximo 40 caracteres;
 - unicidad por país, tipo y número.
 
-Reglas iniciales de Colombia:
+Si el país ya tiene reglas activas para `party_kind`, el tipo recibido debe
+tener al menos una regla activa por `sigla`.
 
-| Tipo | Regla |
-|---|---|
-| `NATIONAL_ID` | Solo dígitos, entre 6 y 10 caracteres. |
-| `FOREIGN_ID` | Letras mayúsculas y dígitos, entre 3 y 20 caracteres. |
-| `PASSPORT` | Letras mayúsculas y dígitos, entre 6 y 20 caracteres. |
-| `TAX_ID` | Dígitos entre 5 y 15 caracteres, con dígito de verificación opcional separado por guion. |
+Reglas iniciales activas para Colombia:
+
+| `party_kind` | `identification_type` | `sigla` | `number_pattern` | Edad |
+|---|---|---|---|---|
+| `PERSON` | `CIVIL_REGISTRY` | `RC` | `^[0-9]{10}$` | 0 a 6 |
+| `PERSON` | `IDENTITY_CARD_MODERN` | `TI` | `^[0-9]{10}$` | 7 a 17 |
+| `PERSON` | `CITIZEN_ID_MODERN` | `CC` | `^[0-9]{10}$` | 18+ |
+| `PERSON` | `CITIZEN_ID_OLD` | `CC` | `^[0-9]{3,8}$` | 18+ |
+| `PERSON` | `FOREIGN_CARD` | `CE` | `^[0-9]{3,7}$` | 7+ |
+| `PERSON` | `TAX_ID` | `NIT` | `^[A-Z0-9]{4,11}-[0-9]$` | Cualquiera |
+| `PERSON` | `IDENTITY_CARD_OLD` | `TI` | `^[0-9]{11}$` | 7 a 17 |
+
+Los códigos no están cerrados por restricciones SQL; se pueden agregar
+nuevos valores desde `identification-type-rules`, siempre que el país exista.
 
 Ejemplos válidos para Colombia:
 
 ```text
-NATIONAL_ID: 1234567890
-FOREIGN_ID: E123456
-PASSPORT: AB123456
-TAX_ID: 900123456-7
+RC: 1000000000
+TI: 1000000000
+TI: 19991234567
+CC: 1000000000
+CC: 12345678
+CE: 1234567
+NIT: 900123456-7
 ```
 
 Ejemplos inválidos para Colombia:
 
 ```text
-NATIONAL_ID: 1.234.567
-PASSPORT: AB 123456
-TAX_ID: 900123456.7
+CC: 1.234.567
+CE: E123456
+NIT: 900123456.7
 ```
 
 ## Entorno de desarrollo independiente
@@ -130,6 +149,32 @@ Endpoints de personas:
 - `POST http://127.0.0.1:8002/person-identities`
 - `PUT http://127.0.0.1:8002/person-identities/{person_identity_id}`
 
+Endpoints de reglas de identificación:
+
+- `GET http://127.0.0.1:8002/identification-type-rules`
+- `GET http://127.0.0.1:8002/identification-type-rules/{rule_id}`
+- `POST http://127.0.0.1:8002/identification-type-rules`
+- `PUT http://127.0.0.1:8002/identification-type-rules/{rule_id}`
+
+Ejemplo para crear una regla de cédula colombiana:
+
+```json
+{
+  "party_kind": "PERSON",
+  "country_id": "00000000-0000-0000-0000-000000000000",
+  "identification_type": "CITIZEN_ID_MODERN",
+  "sigla": "CC",
+  "number_pattern": "^[0-9]{10}$",
+  "number_pattern_description": "Cedula de Ciudadania moderna o digital: NUIP numerico de 10 digitos, permitido desde los 18 anos.",
+  "example_value": "1000000000",
+  "min_age_years": 18,
+  "max_age_years": null,
+  "is_active": true,
+  "valid_from": null,
+  "valid_to": null
+}
+```
+
 ## Docker y PostgreSQL
 
 El servicio cuenta con un entorno Docker independiente:
@@ -176,17 +221,17 @@ Alembic queda configurado para leer `DATABASE_URL` desde `.env`.
 Consultar revisión actual:
 
 ```powershell
-python -m alembic current
+alembic current
 ```
 
 Crear migraciones futuras:
 
 ```powershell
-python -m alembic revision --autogenerate -m "descripcion"
+alembic revision --autogenerate -m "descripcion"
 ```
 
 Aplicar migraciones:
 
 ```powershell
-python -m alembic upgrade head
+alembic upgrade head
 ```

@@ -17,18 +17,24 @@ from party_identity_service.api.schemas.person_identity import (
     PersonIdentityUpdate,
 )
 from party_identity_service.application.exceptions import (
+    CountryNotFoundError,
+    CountryValidationUnavailableError,
+    InvalidIdentificationAgeError,
     InvalidIdentificationNumberError,
     PersonIdentityConflictError,
     PersonIdentityNotFoundError,
     PersonIdentityVersionConflictError,
 )
-from party_identity_service.application.identification_rules import (
-    build_identification_rule_set,
-)
 from party_identity_service.application.person_identity_service import (
     PersonIdentityService,
 )
 from party_identity_service.infrastructure.database import get_db_session
+from party_identity_service.infrastructure.identification_type_rule_repository import (
+    SQLAlchemyIdentificationTypeRuleRepository,
+)
+from party_identity_service.infrastructure.geography_country_validator import (
+    HTTPGeographyCountryValidator,
+)
 from party_identity_service.infrastructure.person_identity_repository import (
     SQLAlchemyPersonIdentityRepository,
 )
@@ -49,14 +55,20 @@ def get_person_identity_service(
     repository = SQLAlchemyPersonIdentityRepository(
         session,
     )
-    settings = request.app.state.settings
-    identification_rules = build_identification_rule_set(
-        colombia_country_id=settings.colombia_country_id,
+    identification_rule_repository = SQLAlchemyIdentificationTypeRuleRepository(
+        session,
+    )
+    country_validator = HTTPGeographyCountryValidator(
+        base_url=request.app.state.settings.geography_service_base_url,
+        authorization=request.headers.get(
+            "authorization",
+        ),
     )
 
     return PersonIdentityService(
         repository,
-        identification_rules,
+        identification_rule_repository,
+        country_validator,
     )
 
 
@@ -169,6 +181,24 @@ def build_router(
                 detail=str(exc),
             ) from None
 
+        except CountryNotFoundError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from None
+
+        except CountryValidationUnavailableError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(exc),
+            ) from None
+
+        except InvalidIdentificationAgeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from None
+
         except PersonIdentityConflictError as exc:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -210,6 +240,24 @@ def build_router(
             )
 
         except InvalidIdentificationNumberError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from None
+
+        except CountryNotFoundError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from None
+
+        except CountryValidationUnavailableError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(exc),
+            ) from None
+
+        except InvalidIdentificationAgeError as exc:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=str(exc),

@@ -7,7 +7,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from party_identity_service.domain.person_identity import (
-    PersonIdentificationType,
     PersonVerificationStatus,
 )
 
@@ -18,6 +17,15 @@ IdentificationNumber = Annotated[
         min_length=1,
         max_length=40,
         description="Número de identificación normalizado.",
+    ),
+]
+
+IdentificationTypeCode = Annotated[
+    str,
+    Field(
+        min_length=1,
+        max_length=40,
+        description="Sigla o tipo de identificación usado para validar.",
     ),
 ]
 
@@ -41,7 +49,7 @@ class PersonIdentityCreate(BaseModel):
     """Payload para crear una identidad global de persona."""
 
     identification_country_id: UUID
-    identification_type: PersonIdentificationType
+    identification_type: IdentificationTypeCode
     identification_number: IdentificationNumber
     first_name: PersonName
     middle_name: OptionalPersonName = None
@@ -55,7 +63,7 @@ class PersonIdentityUpdate(BaseModel):
     """Payload para actualización completa de persona."""
 
     identification_country_id: UUID
-    identification_type: PersonIdentificationType
+    identification_type: IdentificationTypeCode
     identification_number: IdentificationNumber
     first_name: PersonName
     middle_name: OptionalPersonName = None
@@ -78,7 +86,7 @@ class PersonIdentityResponse(BaseModel):
 
     id: UUID
     identification_country_id: UUID
-    identification_type: PersonIdentificationType
+    identification_type: str
     identification_number: str
     first_name: str
     middle_name: str | None

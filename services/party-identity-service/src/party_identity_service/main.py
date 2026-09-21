@@ -5,6 +5,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from party_identity_service.api.health import build_router as build_health_router
+from party_identity_service.api.identification_type_rules import (
+    build_router as build_identification_type_rules_router,
+)
 from party_identity_service.api.openapi import configure_bearer_openapi
 from party_identity_service.api.person_identities import (
     build_router as build_person_identities_router,
@@ -94,6 +97,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(
         build_person_identities_router(
+            auth,
+        )
+    )
+
+    app.include_router(
+        build_identification_type_rules_router(
             auth,
         )
     )

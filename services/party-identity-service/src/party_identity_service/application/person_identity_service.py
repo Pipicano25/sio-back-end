@@ -4,15 +4,20 @@ from datetime import date
 from uuid import UUID
 
 from party_identity_service.application.exceptions import (
+    CountryNotFoundError,
+    InvalidIdentificationAgeError,
     InvalidIdentificationNumberError,
     PersonIdentityNotFoundError,
 )
 from party_identity_service.application.identification_rules import (
-    IdentificationRuleSet,
     normalize_identification_number,
 )
 from party_identity_service.application.pagination import PageResult
-from party_identity_service.application.ports import PersonIdentityRepository
+from party_identity_service.application.ports import (
+    CountryValidator,
+    IdentificationTypeRuleRepository,
+    PersonIdentityRepository,
+)
 from party_identity_service.domain.person_identity import (
     PersonIdentificationType,
     PersonIdentity,
@@ -26,16 +31,19 @@ class PersonIdentityService:
     def __init__(
         self,
         repository: PersonIdentityRepository,
-        identification_rules: IdentificationRuleSet,
+        identification_rule_repository: IdentificationTypeRuleRepository,
+        country_validator: CountryValidator,
     ) -> None:
         """Inicializa el servicio de aplicación.
 
         Args:
             repository: Puerto de persistencia de identidades de persona.
-            identification_rules: Reglas de identificación configuradas.
+            identification_rule_repository: Puerto de reglas de
+                identificación.
         """
         self.repository = repository
-        self.identification_rules = identification_rules
+        self.identification_rule_repository = identification_rule_repository
+        self.country_validator = country_validator
 
     def list_all(
         self,
@@ -96,10 +104,15 @@ class PersonIdentityService:
         actor_id: str,
     ) -> PersonIdentity:
         """Crea una identidad global de persona."""
+        self._validate_country(
+            identification_country_id,
+        )
+        identification_type = identification_type.strip().upper()
         identification_number = self._validate_identification_number(
             identification_country_id=identification_country_id,
             identification_type=identification_type,
             identification_number=identification_number,
+            birth_date=birth_date,
         )
 
         return self.repository.create(
@@ -132,10 +145,15 @@ class PersonIdentityService:
         actor_id: str,
     ) -> PersonIdentity:
         """Actualiza completamente una identidad global de persona."""
+        self._validate_country(
+            identification_country_id,
+        )
+        identification_type = identification_type.strip().upper()
         identification_number = self._validate_identification_number(
             identification_country_id=identification_country_id,
             identification_type=identification_type,
             identification_number=identification_number,
+            birth_date=birth_date,
         )
 
         person_identity = self.repository.update(
@@ -158,12 +176,25 @@ class PersonIdentityService:
 
         return person_identity
 
+    def _validate_country(
+        self,
+        country_id: UUID,
+    ) -> None:
+        """Valida que el país exista en Geography Service."""
+        if not self.country_validator.exists(
+            country_id,
+        ):
+            raise CountryNotFoundError(
+                "El país indicado no existe en Geography Service."
+            )
+
     def _validate_identification_number(
         self,
         *,
         identification_country_id: UUID,
         identification_type: PersonIdentificationType,
         identification_number: str,
+        birth_date: date | None,
     ) -> str:
         """Valida el número según país y tipo cuando existe una regla.
 
@@ -178,19 +209,72 @@ class PersonIdentityService:
         Raises:
             InvalidIdentificationNumberError: Si existe regla aplicable
                 y el número no la cumple.
+            InvalidIdentificationAgeError: Si existe regla aplicable
+                con rango de edad y la persona no lo cumple.
         """
         normalized_number = normalize_identification_number(
             identification_number,
         )
+        normalized_identification_type = identification_type.strip().upper()
 
-        rule = self.identification_rules.get_rule(
+        rules = self.identification_rule_repository.list_active_rules_by_sigla(
+            party_kind="PERSON",
             country_id=identification_country_id,
-            identification_type=identification_type,
+            sigla=normalized_identification_type,
         )
 
-        if rule is not None and not rule.validate(normalized_number):
-            raise InvalidIdentificationNumberError(
-                rule.description,
+        if not rules:
+            has_country_rules = (
+                self.identification_rule_repository.has_active_rules(
+                    party_kind="PERSON",
+                    country_id=identification_country_id,
+                )
             )
+
+            if has_country_rules:
+                raise InvalidIdentificationNumberError(
+                    "No existe una regla activa para el país y tipo "
+                    "de identificación indicados."
+                )
+
+            return normalized_number
+
+        matching_rules = [
+            rule
+            for rule in rules
+            if rule.validate(
+                normalized_number,
+            )
+        ]
+
+        if not matching_rules:
+            raise InvalidIdentificationNumberError(
+                "El número de identificación no cumple ninguna regla "
+                "activa para la sigla indicada."
+            )
+
+        age_rules = [
+            rule
+            for rule in matching_rules
+            if rule.requires_birth_date()
+        ]
+
+        if age_rules:
+            if birth_date is None:
+                raise InvalidIdentificationAgeError(
+                    "La fecha de nacimiento es obligatoria para validar "
+                    "el rango de edad del tipo de identificación."
+                )
+
+            if not any(
+                rule.validate_age(
+                    birth_date,
+                )
+                for rule in age_rules
+            ):
+                raise InvalidIdentificationAgeError(
+                    "La edad de la persona no cumple el rango permitido "
+                    "para el tipo de identificación."
+                )
 
         return normalized_number
