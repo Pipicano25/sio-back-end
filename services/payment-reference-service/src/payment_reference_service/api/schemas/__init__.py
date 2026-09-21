@@ -1,0 +1,1 @@
+"""Schemas HTTP de Payment Reference Service."""

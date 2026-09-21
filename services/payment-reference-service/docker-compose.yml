@@ -1,0 +1,66 @@
+services:
+
+  payment-reference-db:
+    image: postgres:17-alpine
+    container_name: sio-payment-reference-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${PAYMENT_REFERENCE_DB_NAME}
+      POSTGRES_USER: ${PAYMENT_REFERENCE_DB_USER}
+      POSTGRES_PASSWORD: ${PAYMENT_REFERENCE_DB_PASSWORD}
+
+    ports:
+      - "127.0.0.1:${PAYMENT_REFERENCE_DB_PORT:-55434}:5432"
+
+    volumes:
+      - payment_reference_db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${PAYMENT_REFERENCE_DB_USER} -d ${PAYMENT_REFERENCE_DB_NAME}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+
+  payment-reference-service:
+    container_name: sio-payment-reference-service
+    restart: unless-stopped
+
+    build:
+      context: ../..
+      dockerfile: services/payment-reference-service/Dockerfile
+
+    env_file:
+      - .env
+
+    environment:
+      DATABASE_URL: >-
+        postgresql+psycopg://${PAYMENT_REFERENCE_DB_USER}:${PAYMENT_REFERENCE_DB_PASSWORD}@payment-reference-db:5432/${PAYMENT_REFERENCE_DB_NAME}
+
+      # El JWT fue emitido con localhost:8081 como issuer.
+      # Este valor NO debe cambiar.
+      SIO_AUTH_ISSUER: http://localhost:8081/realms/sio
+
+      # Desde el contenedor, localhost sería el propio contenedor.
+      # Para obtener las claves públicas usamos el host.
+      SIO_AUTH_JWKS_URL: http://host.docker.internal:8081/realms/sio/protocol/openid-connect/certs
+
+    ports:
+      - "${PAYMENT_REFERENCE_SERVICE_PORT:-8001}:8000"
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    depends_on:
+      payment-reference-db:
+        condition: service_healthy
+
+
+volumes:
+  payment_reference_db_data:

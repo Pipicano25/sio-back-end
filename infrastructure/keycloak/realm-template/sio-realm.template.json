@@ -1,0 +1,1278 @@
+{
+  "realm": "${KEYCLOAK_REALM}",
+  "displayName": "Sistema de Información Operativa",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1)",
+  "clients": [
+    {
+      "clientId": "sio-api",
+      "name": "SIO API",
+      "description": "Recurso protegido correspondiente al backend FastAPI",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": false,
+      "fullScopeAllowed": false
+    },
+    {
+      "clientId": "sio-web",
+      "name": "SIO Web",
+      "description": "Cliente público del frontend React",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "${SIO_WEB_ORIGIN}",
+      "baseUrl": "/",
+      "redirectUris": [
+        "${SIO_WEB_REDIRECT_URI}"
+      ],
+      "webOrigins": [
+        "${SIO_WEB_ORIGIN}"
+      ],
+      "frontchannelLogout": true,
+      "fullScopeAllowed": true,
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${SIO_WEB_REDIRECT_URI}"
+      },
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "roles": {
+    "client": {
+      "sio-api": [
+        {
+          "name": "administrador",
+          "description": "Administración general de SIO"
+        },
+        {
+          "name": "supervisor",
+          "description": "Supervisión de operaciones"
+        },
+        {
+          "name": "compras",
+          "description": "Gestión de compras"
+        },
+        {
+          "name": "ventas",
+          "description": "Gestión de ventas"
+        },
+        {
+          "name": "inventario",
+          "description": "Gestión y consulta de inventario"
+        },
+        {
+          "name": "reportes",
+          "description": "Consulta de reportes"
+        },
+        {
+          "name": "consulta",
+          "description": "Acceso de solo lectura"
+        },
+        {
+          "name": "perm:all:all:all",
+          "description": "Permite cualquier acción sobre cualquier recurso protegido de SIO"
+        },
+        {
+          "name": "perm:all:all:create",
+          "description": "Permite crear cualquier recurso protegido de SIO"
+        },
+        {
+          "name": "perm:all:all:read",
+          "description": "Permite consultar cualquier recurso protegido de SIO"
+        },
+        {
+          "name": "perm:all:all:update",
+          "description": "Permite actualizar cualquier recurso protegido de SIO"
+        },
+        {
+          "name": "perm:all:all:delete",
+          "description": "Permite eliminar o desactivar cualquier recurso protegido de SIO"
+        },
+        {
+          "name": "perm:geography:all:all",
+          "description": "Permite todas las acciones sobre todos los recursos de geography"
+        },
+        {
+          "name": "perm:geography:all:create",
+          "description": "Permite crear todos los recursos de geography"
+        },
+        {
+          "name": "perm:geography:all:read",
+          "description": "Permite consultar todos los recursos de geography"
+        },
+        {
+          "name": "perm:geography:all:update",
+          "description": "Permite actualizar todos los recursos de geography"
+        },
+        {
+          "name": "perm:geography:all:delete",
+          "description": "Permite eliminar o desactivar todos los recursos de geography"
+        },
+        {
+          "name": "perm:payment-reference:all:all",
+          "description": "Permite todas las acciones sobre todos los recursos de payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:all:create",
+          "description": "Permite crear todos los recursos de payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:all:read",
+          "description": "Permite consultar todos los recursos de payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:all:update",
+          "description": "Permite actualizar todos los recursos de payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:all:delete",
+          "description": "Permite eliminar o desactivar todos los recursos de payment-reference"
+        },
+        {
+          "name": "perm:product-catalog:all:all",
+          "description": "Permite todas las acciones sobre todos los recursos de product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:all:create",
+          "description": "Permite crear todos los recursos de product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:all:read",
+          "description": "Permite consultar todos los recursos de product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:all:update",
+          "description": "Permite actualizar todos los recursos de product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:all:delete",
+          "description": "Permite eliminar o desactivar todos los recursos de product-catalog"
+        },
+        {
+          "name": "perm:party-identity:all:all",
+          "description": "Permite todas las acciones sobre todos los recursos de party-identity"
+        },
+        {
+          "name": "perm:party-identity:all:create",
+          "description": "Permite crear todos los recursos de party-identity"
+        },
+        {
+          "name": "perm:party-identity:all:read",
+          "description": "Permite consultar todos los recursos de party-identity"
+        },
+        {
+          "name": "perm:party-identity:all:update",
+          "description": "Permite actualizar todos los recursos de party-identity"
+        },
+        {
+          "name": "perm:party-identity:all:delete",
+          "description": "Permite eliminar o desactivar todos los recursos de party-identity"
+        },
+        {
+          "name": "perm:commercial-relationship:all:all",
+          "description": "Permite todas las acciones sobre todos los recursos de commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:all:create",
+          "description": "Permite crear todos los recursos de commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:all:read",
+          "description": "Permite consultar todos los recursos de commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:all:update",
+          "description": "Permite actualizar todos los recursos de commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:all:delete",
+          "description": "Permite eliminar o desactivar todos los recursos de commercial-relationship"
+        },
+        {
+          "name": "perm:operational-context:all:all",
+          "description": "Permite todas las acciones sobre todos los recursos de operational-context"
+        },
+        {
+          "name": "perm:operational-context:all:create",
+          "description": "Permite crear todos los recursos de operational-context"
+        },
+        {
+          "name": "perm:operational-context:all:read",
+          "description": "Permite consultar todos los recursos de operational-context"
+        },
+        {
+          "name": "perm:operational-context:all:update",
+          "description": "Permite actualizar todos los recursos de operational-context"
+        },
+        {
+          "name": "perm:operational-context:all:delete",
+          "description": "Permite eliminar o desactivar todos los recursos de operational-context"
+        },
+        {
+          "name": "perm:purchase:all:all",
+          "description": "Permite todas las acciones sobre todos los recursos de purchase"
+        },
+        {
+          "name": "perm:purchase:all:create",
+          "description": "Permite crear todos los recursos de purchase"
+        },
+        {
+          "name": "perm:purchase:all:read",
+          "description": "Permite consultar todos los recursos de purchase"
+        },
+        {
+          "name": "perm:purchase:all:update",
+          "description": "Permite actualizar todos los recursos de purchase"
+        },
+        {
+          "name": "perm:purchase:all:delete",
+          "description": "Permite eliminar o desactivar todos los recursos de purchase"
+        },
+        {
+          "name": "perm:sales:all:all",
+          "description": "Permite todas las acciones sobre todos los recursos de sales"
+        },
+        {
+          "name": "perm:sales:all:create",
+          "description": "Permite crear todos los recursos de sales"
+        },
+        {
+          "name": "perm:sales:all:read",
+          "description": "Permite consultar todos los recursos de sales"
+        },
+        {
+          "name": "perm:sales:all:update",
+          "description": "Permite actualizar todos los recursos de sales"
+        },
+        {
+          "name": "perm:sales:all:delete",
+          "description": "Permite eliminar o desactivar todos los recursos de sales"
+        },
+        {
+          "name": "perm:geography:global_countries:create",
+          "description": "Crear global_countries en geography"
+        },
+        {
+          "name": "perm:geography:global_countries:read",
+          "description": "Consultar global_countries en geography"
+        },
+        {
+          "name": "perm:geography:global_countries:update",
+          "description": "Actualizar global_countries en geography"
+        },
+        {
+          "name": "perm:geography:global_countries:delete",
+          "description": "Eliminar o desactivar global_countries en geography"
+        },
+        {
+          "name": "perm:geography:global_administrative_divisions:create",
+          "description": "Crear global_administrative_divisions en geography"
+        },
+        {
+          "name": "perm:geography:global_administrative_divisions:read",
+          "description": "Consultar global_administrative_divisions en geography"
+        },
+        {
+          "name": "perm:geography:global_administrative_divisions:update",
+          "description": "Actualizar global_administrative_divisions en geography"
+        },
+        {
+          "name": "perm:geography:global_administrative_divisions:delete",
+          "description": "Eliminar o desactivar global_administrative_divisions en geography"
+        },
+        {
+          "name": "perm:geography:global_cities:create",
+          "description": "Crear global_cities en geography"
+        },
+        {
+          "name": "perm:geography:global_cities:read",
+          "description": "Consultar global_cities en geography"
+        },
+        {
+          "name": "perm:geography:global_cities:update",
+          "description": "Actualizar global_cities en geography"
+        },
+        {
+          "name": "perm:geography:global_cities:delete",
+          "description": "Eliminar o desactivar global_cities en geography"
+        },
+        {
+          "name": "perm:payment-reference:global_payment_condition_types:create",
+          "description": "Crear global_payment_condition_types en payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:global_payment_condition_types:read",
+          "description": "Consultar global_payment_condition_types en payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:global_payment_condition_types:update",
+          "description": "Actualizar global_payment_condition_types en payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:global_payment_condition_types:delete",
+          "description": "Eliminar o desactivar global_payment_condition_types en payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:global_payment_methods:create",
+          "description": "Crear global_payment_methods en payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:global_payment_methods:read",
+          "description": "Consultar global_payment_methods en payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:global_payment_methods:update",
+          "description": "Actualizar global_payment_methods en payment-reference"
+        },
+        {
+          "name": "perm:payment-reference:global_payment_methods:delete",
+          "description": "Eliminar o desactivar global_payment_methods en payment-reference"
+        },
+        {
+          "name": "perm:product-catalog:global_categories:create",
+          "description": "Crear global_categories en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_categories:read",
+          "description": "Consultar global_categories en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_categories:update",
+          "description": "Actualizar global_categories en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_categories:delete",
+          "description": "Eliminar o desactivar global_categories en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_units_of_measure:create",
+          "description": "Crear global_units_of_measure en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_units_of_measure:read",
+          "description": "Consultar global_units_of_measure en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_units_of_measure:update",
+          "description": "Actualizar global_units_of_measure en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_units_of_measure:delete",
+          "description": "Eliminar o desactivar global_units_of_measure en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_products:create",
+          "description": "Crear global_products en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_products:read",
+          "description": "Consultar global_products en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_products:update",
+          "description": "Actualizar global_products en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_products:delete",
+          "description": "Eliminar o desactivar global_products en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:product_assets:create",
+          "description": "Crear product_assets en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:product_assets:read",
+          "description": "Consultar product_assets en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:product_assets:update",
+          "description": "Actualizar product_assets en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:product_assets:delete",
+          "description": "Eliminar o desactivar product_assets en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:product_attribute_definitions:create",
+          "description": "Crear product_attribute_definitions en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:product_attribute_definitions:read",
+          "description": "Consultar product_attribute_definitions en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:product_attribute_definitions:update",
+          "description": "Actualizar product_attribute_definitions en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:product_attribute_definitions:delete",
+          "description": "Eliminar o desactivar product_attribute_definitions en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_product_attribute_values:create",
+          "description": "Crear global_product_attribute_values en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_product_attribute_values:read",
+          "description": "Consultar global_product_attribute_values en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_product_attribute_values:update",
+          "description": "Actualizar global_product_attribute_values en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_product_attribute_values:delete",
+          "description": "Eliminar o desactivar global_product_attribute_values en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_category_attributes:create",
+          "description": "Crear global_category_attributes en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_category_attributes:read",
+          "description": "Consultar global_category_attributes en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_category_attributes:update",
+          "description": "Actualizar global_category_attributes en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:global_category_attributes:delete",
+          "description": "Eliminar o desactivar global_category_attributes en product-catalog"
+        },
+        {
+          "name": "perm:party-identity:person_identities:create",
+          "description": "Crear person_identities en party-identity"
+        },
+        {
+          "name": "perm:party-identity:person_identities:read",
+          "description": "Consultar person_identities en party-identity"
+        },
+        {
+          "name": "perm:party-identity:person_identities:update",
+          "description": "Actualizar person_identities en party-identity"
+        },
+        {
+          "name": "perm:party-identity:person_identities:delete",
+          "description": "Eliminar o desactivar person_identities en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_identities:create",
+          "description": "Crear organization_identities en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_identities:read",
+          "description": "Consultar organization_identities en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_identities:update",
+          "description": "Actualizar organization_identities en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_identities:delete",
+          "description": "Eliminar o desactivar organization_identities en party-identity"
+        },
+        {
+          "name": "perm:party-identity:person_contact_profiles:create",
+          "description": "Crear person_contact_profiles en party-identity"
+        },
+        {
+          "name": "perm:party-identity:person_contact_profiles:read",
+          "description": "Consultar person_contact_profiles en party-identity"
+        },
+        {
+          "name": "perm:party-identity:person_contact_profiles:update",
+          "description": "Actualizar person_contact_profiles en party-identity"
+        },
+        {
+          "name": "perm:party-identity:person_contact_profiles:delete",
+          "description": "Eliminar o desactivar person_contact_profiles en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_contact_profiles:create",
+          "description": "Crear organization_contact_profiles en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_contact_profiles:read",
+          "description": "Consultar organization_contact_profiles en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_contact_profiles:update",
+          "description": "Actualizar organization_contact_profiles en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_contact_profiles:delete",
+          "description": "Eliminar o desactivar organization_contact_profiles en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_contact_persons:create",
+          "description": "Crear organization_contact_persons en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_contact_persons:read",
+          "description": "Consultar organization_contact_persons en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_contact_persons:update",
+          "description": "Actualizar organization_contact_persons en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_contact_persons:delete",
+          "description": "Eliminar o desactivar organization_contact_persons en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_business_sectors:create",
+          "description": "Crear organization_business_sectors en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_business_sectors:read",
+          "description": "Consultar organization_business_sectors en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_business_sectors:update",
+          "description": "Actualizar organization_business_sectors en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_business_sectors:delete",
+          "description": "Eliminar o desactivar organization_business_sectors en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_legal_representatives:create",
+          "description": "Crear organization_legal_representatives en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_legal_representatives:read",
+          "description": "Consultar organization_legal_representatives en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_legal_representatives:update",
+          "description": "Actualizar organization_legal_representatives en party-identity"
+        },
+        {
+          "name": "perm:party-identity:organization_legal_representatives:delete",
+          "description": "Eliminar o desactivar organization_legal_representatives en party-identity"
+        },
+        {
+          "name": "perm:party-identity:global_business_sectors:create",
+          "description": "Crear global_business_sectors en party-identity"
+        },
+        {
+          "name": "perm:party-identity:global_business_sectors:read",
+          "description": "Consultar global_business_sectors en party-identity"
+        },
+        {
+          "name": "perm:party-identity:global_business_sectors:update",
+          "description": "Actualizar global_business_sectors en party-identity"
+        },
+        {
+          "name": "perm:party-identity:global_business_sectors:delete",
+          "description": "Eliminar o desactivar global_business_sectors en party-identity"
+        },
+        {
+          "name": "perm:commercial-relationship:company_products:create",
+          "description": "Crear company_products en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_products:read",
+          "description": "Consultar company_products en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_products:update",
+          "description": "Actualizar company_products en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_products:delete",
+          "description": "Eliminar o desactivar company_products en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:product_pricing_policies:create",
+          "description": "Crear product_pricing_policies en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:product_pricing_policies:read",
+          "description": "Consultar product_pricing_policies en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:product_pricing_policies:update",
+          "description": "Actualizar product_pricing_policies en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:product_pricing_policies:delete",
+          "description": "Eliminar o desactivar product_pricing_policies en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_segments:create",
+          "description": "Crear customer_segments en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_segments:read",
+          "description": "Consultar customer_segments en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_segments:update",
+          "description": "Actualizar customer_segments en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_segments:delete",
+          "description": "Eliminar o desactivar customer_segments en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_customers:create",
+          "description": "Crear company_customers en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_customers:read",
+          "description": "Consultar company_customers en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_customers:update",
+          "description": "Actualizar company_customers en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_customers:delete",
+          "description": "Eliminar o desactivar company_customers en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_credit_profiles:create",
+          "description": "Crear customer_credit_profiles en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_credit_profiles:read",
+          "description": "Consultar customer_credit_profiles en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_credit_profiles:update",
+          "description": "Actualizar customer_credit_profiles en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_credit_profiles:delete",
+          "description": "Eliminar o desactivar customer_credit_profiles en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_payment_conditions:create",
+          "description": "Crear customer_payment_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_payment_conditions:read",
+          "description": "Consultar customer_payment_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_payment_conditions:update",
+          "description": "Actualizar customer_payment_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:customer_payment_conditions:delete",
+          "description": "Eliminar o desactivar customer_payment_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_suppliers:create",
+          "description": "Crear company_suppliers en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_suppliers:read",
+          "description": "Consultar company_suppliers en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_suppliers:update",
+          "description": "Actualizar company_suppliers en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_suppliers:delete",
+          "description": "Eliminar o desactivar company_suppliers en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_commercial_conditions:create",
+          "description": "Crear supplier_commercial_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_commercial_conditions:read",
+          "description": "Consultar supplier_commercial_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_commercial_conditions:update",
+          "description": "Actualizar supplier_commercial_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_commercial_conditions:delete",
+          "description": "Eliminar o desactivar supplier_commercial_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_payment_conditions:create",
+          "description": "Crear supplier_payment_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_payment_conditions:read",
+          "description": "Consultar supplier_payment_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_payment_conditions:update",
+          "description": "Actualizar supplier_payment_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_payment_conditions:delete",
+          "description": "Eliminar o desactivar supplier_payment_conditions en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_products:create",
+          "description": "Crear supplier_products en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_products:read",
+          "description": "Consultar supplier_products en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_products:update",
+          "description": "Actualizar supplier_products en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_products:delete",
+          "description": "Eliminar o desactivar supplier_products en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_evaluations:create",
+          "description": "Crear supplier_evaluations en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_evaluations:read",
+          "description": "Consultar supplier_evaluations en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_evaluations:update",
+          "description": "Actualizar supplier_evaluations en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:supplier_evaluations:delete",
+          "description": "Eliminar o desactivar supplier_evaluations en commercial-relationship"
+        },
+        {
+          "name": "perm:operational-context:companies:create",
+          "description": "Crear companies en operational-context"
+        },
+        {
+          "name": "perm:operational-context:companies:read",
+          "description": "Consultar companies en operational-context"
+        },
+        {
+          "name": "perm:operational-context:companies:update",
+          "description": "Actualizar companies en operational-context"
+        },
+        {
+          "name": "perm:operational-context:companies:delete",
+          "description": "Eliminar o desactivar companies en operational-context"
+        },
+        {
+          "name": "perm:operational-context:branches:create",
+          "description": "Crear branches en operational-context"
+        },
+        {
+          "name": "perm:operational-context:branches:read",
+          "description": "Consultar branches en operational-context"
+        },
+        {
+          "name": "perm:operational-context:branches:update",
+          "description": "Actualizar branches en operational-context"
+        },
+        {
+          "name": "perm:operational-context:branches:delete",
+          "description": "Eliminar o desactivar branches en operational-context"
+        },
+        {
+          "name": "perm:operational-context:company_advisor_assignments:create",
+          "description": "Crear company_advisor_assignments en operational-context"
+        },
+        {
+          "name": "perm:operational-context:company_advisor_assignments:read",
+          "description": "Consultar company_advisor_assignments en operational-context"
+        },
+        {
+          "name": "perm:operational-context:company_advisor_assignments:update",
+          "description": "Actualizar company_advisor_assignments en operational-context"
+        },
+        {
+          "name": "perm:operational-context:company_advisor_assignments:delete",
+          "description": "Eliminar o desactivar company_advisor_assignments en operational-context"
+        },
+        {
+          "name": "perm:operational-context:application_users:create",
+          "description": "Crear application_users en operational-context"
+        },
+        {
+          "name": "perm:operational-context:application_users:read",
+          "description": "Consultar application_users en operational-context"
+        },
+        {
+          "name": "perm:operational-context:application_users:update",
+          "description": "Actualizar application_users en operational-context"
+        },
+        {
+          "name": "perm:operational-context:application_users:delete",
+          "description": "Eliminar o desactivar application_users en operational-context"
+        },
+        {
+          "name": "perm:operational-context:user_branches:create",
+          "description": "Crear user_branches en operational-context"
+        },
+        {
+          "name": "perm:operational-context:user_branches:read",
+          "description": "Consultar user_branches en operational-context"
+        },
+        {
+          "name": "perm:operational-context:user_branches:update",
+          "description": "Actualizar user_branches en operational-context"
+        },
+        {
+          "name": "perm:operational-context:user_branches:delete",
+          "description": "Eliminar o desactivar user_branches en operational-context"
+        },
+        {
+          "name": "perm:purchase:purchases:create",
+          "description": "Crear purchases en purchase"
+        },
+        {
+          "name": "perm:purchase:purchases:read",
+          "description": "Consultar purchases en purchase"
+        },
+        {
+          "name": "perm:purchase:purchases:update",
+          "description": "Actualizar purchases en purchase"
+        },
+        {
+          "name": "perm:purchase:purchases:delete",
+          "description": "Eliminar o desactivar purchases en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_details:create",
+          "description": "Crear purchase_details en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_details:read",
+          "description": "Consultar purchase_details en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_details:update",
+          "description": "Actualizar purchase_details en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_details:delete",
+          "description": "Eliminar o desactivar purchase_details en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_lifecycle_events:create",
+          "description": "Crear purchase_lifecycle_events en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_lifecycle_events:read",
+          "description": "Consultar purchase_lifecycle_events en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_lifecycle_events:update",
+          "description": "Actualizar purchase_lifecycle_events en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_lifecycle_events:delete",
+          "description": "Eliminar o desactivar purchase_lifecycle_events en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_sequences:create",
+          "description": "Crear purchase_sequences en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_sequences:read",
+          "description": "Consultar purchase_sequences en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_sequences:update",
+          "description": "Actualizar purchase_sequences en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_sequences:delete",
+          "description": "Eliminar o desactivar purchase_sequences en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_operations:create",
+          "description": "Crear purchase_operations en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_operations:read",
+          "description": "Consultar purchase_operations en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_operations:update",
+          "description": "Actualizar purchase_operations en purchase"
+        },
+        {
+          "name": "perm:purchase:purchase_operations:delete",
+          "description": "Eliminar o desactivar purchase_operations en purchase"
+        },
+        {
+          "name": "perm:sales:sales:create",
+          "description": "Crear sales en sales"
+        },
+        {
+          "name": "perm:sales:sales:read",
+          "description": "Consultar sales en sales"
+        },
+        {
+          "name": "perm:sales:sales:update",
+          "description": "Actualizar sales en sales"
+        },
+        {
+          "name": "perm:sales:sales:delete",
+          "description": "Eliminar o desactivar sales en sales"
+        },
+        {
+          "name": "perm:sales:sale_details:create",
+          "description": "Crear sale_details en sales"
+        },
+        {
+          "name": "perm:sales:sale_details:read",
+          "description": "Consultar sale_details en sales"
+        },
+        {
+          "name": "perm:sales:sale_details:update",
+          "description": "Actualizar sale_details en sales"
+        },
+        {
+          "name": "perm:sales:sale_details:delete",
+          "description": "Eliminar o desactivar sale_details en sales"
+        },
+        {
+          "name": "perm:sales:sale_operations:create",
+          "description": "Crear sale_operations en sales"
+        },
+        {
+          "name": "perm:sales:sale_operations:read",
+          "description": "Consultar sale_operations en sales"
+        },
+        {
+          "name": "perm:sales:sale_operations:update",
+          "description": "Actualizar sale_operations en sales"
+        },
+        {
+          "name": "perm:sales:sale_operations:delete",
+          "description": "Eliminar o desactivar sale_operations en sales"
+        },
+        {
+          "name": "perm:sales:sale_sequences:create",
+          "description": "Crear sale_sequences en sales"
+        },
+        {
+          "name": "perm:sales:sale_sequences:read",
+          "description": "Consultar sale_sequences en sales"
+        },
+        {
+          "name": "perm:sales:sale_sequences:update",
+          "description": "Actualizar sale_sequences en sales"
+        },
+        {
+          "name": "perm:sales:sale_sequences:delete",
+          "description": "Eliminar o desactivar sale_sequences en sales"
+        }
+      ]
+    }
+  },
+  "groups": [
+    {
+      "name": "administradores",
+      "clientRoles": {
+        "sio-api": [
+          "administrador",
+          "perm:all:all:all"
+        ]
+      }
+    },
+    {
+      "name": "supervisores",
+      "clientRoles": {
+        "sio-api": [
+          "supervisor",
+          "perm:all:all:read",
+          "perm:all:all:create",
+          "perm:all:all:update"
+        ]
+      }
+    },
+    {
+      "name": "compras",
+      "clientRoles": {
+        "sio-api": [
+          "compras",
+          "perm:purchase:all:all",
+          "perm:geography:all:read",
+          "perm:payment-reference:all:read",
+          "perm:product-catalog:all:read",
+          "perm:party-identity:all:read",
+          "perm:commercial-relationship:all:read",
+          "perm:operational-context:all:read"
+        ]
+      }
+    },
+    {
+      "name": "ventas",
+      "clientRoles": {
+        "sio-api": [
+          "ventas",
+          "perm:sales:all:all",
+          "perm:geography:all:read",
+          "perm:payment-reference:all:read",
+          "perm:product-catalog:all:read",
+          "perm:party-identity:all:read",
+          "perm:commercial-relationship:all:read",
+          "perm:operational-context:all:read"
+        ]
+      }
+    },
+    {
+      "name": "inventario",
+      "clientRoles": {
+        "sio-api": [
+          "inventario",
+          "perm:geography:all:read",
+          "perm:product-catalog:all:read",
+          "perm:operational-context:all:read"
+        ]
+      }
+    },
+    {
+      "name": "reportes",
+      "clientRoles": {
+        "sio-api": [
+          "reportes",
+          "perm:all:all:read"
+        ]
+      }
+    },
+    {
+      "name": "consulta",
+      "clientRoles": {
+        "sio-api": [
+          "consulta",
+          "perm:all:all:read"
+        ]
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "admin.test",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Administrador",
+      "lastName": "Pruebas",
+      "email": "admin.test@sio.local",
+      "groups": [
+        "/administradores"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "supervisor.test",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Supervisor",
+      "lastName": "Pruebas",
+      "email": "supervisor.test@sio.local",
+      "groups": [
+        "/supervisores"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "compras.test",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Compras",
+      "lastName": "Pruebas",
+      "email": "compras.test@sio.local",
+      "groups": [
+        "/compras"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "ventas.test",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Ventas",
+      "lastName": "Pruebas",
+      "email": "ventas.test@sio.local",
+      "groups": [
+        "/ventas"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "inventario.test",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Inventario",
+      "lastName": "Pruebas",
+      "email": "inventario.test@sio.local",
+      "groups": [
+        "/inventario"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "reportes.test",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Reportes",
+      "lastName": "Pruebas",
+      "email": "reportes.test@sio.local",
+      "groups": [
+        "/reportes"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "consulta.test",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Consulta",
+      "lastName": "Pruebas",
+      "email": "consulta.test@sio.local",
+      "groups": [
+        "/consulta"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "defaultGroups": []
+}

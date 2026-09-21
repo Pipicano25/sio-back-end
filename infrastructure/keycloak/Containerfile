@@ -1,0 +1,41 @@
+
+# Documentación:
+#   Este Containerfile define una imagen de Keycloak personalizada lista para despliegues
+#   de infraestructura moderna. 
+#
+# Objetivo:
+#   - Construir Keycloak con las dependencias y configuraciones necesarias.
+#   - Habilitar la integración con PostgreSQL como base de datos.
+#   - Activar endpoints de salud y métricas para observabilidad.
+#
+# Args:
+#   KEYCLOAK_VERSION: Versión de Keycloak a utilizar. Valor por defecto: 26.7.0.
+#
+# Uso:
+#   docker build -t keycloak-custom -f infrastructure/keycloak/Containerfile .
+#   docker run --rm -p 8080:8080 keycloak-custom start-dev
+#
+# Notas:
+#   - La imagen está diseñada para formar parte de una arquitectura de servicios
+#     orientada a Python, donde la gestión de identidad se integra con aplicaciones
+#     backend y APIs construidas en Python.
+#   - El contenedor se construye en dos fases para mantener el artefacto final limpio.
+#
+
+ARG KEYCLOAK_VERSION=26.7.0
+
+FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION} AS builder
+
+ENV KC_DB=postgres \
+    KC_HEALTH_ENABLED=true \
+    KC_METRICS_ENABLED=true
+
+WORKDIR /opt/keycloak
+
+RUN /opt/keycloak/bin/kc.sh build
+
+FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
+
+COPY --from=builder /opt/keycloak/ /opt/keycloak/
+
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]

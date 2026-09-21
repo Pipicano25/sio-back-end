@@ -1,0 +1,95 @@
+services:
+
+  geography-db:
+    image: postgres:17-alpine
+    container_name: sio-geography-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${GEOGRAPHY_DB_NAME}
+      POSTGRES_USER: ${GEOGRAPHY_DB_USER}
+      POSTGRES_PASSWORD: ${GEOGRAPHY_DB_PASSWORD}
+
+    ports:
+      - "127.0.0.1:${GEOGRAPHY_DB_PORT:-55432}:5432"
+
+    volumes:
+      - geography_db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${GEOGRAPHY_DB_USER} -d ${GEOGRAPHY_DB_NAME}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+
+  geography-test-db:
+    image: postgres:17-alpine
+    container_name: sio-geography-test-db
+    profiles:
+      - test
+    restart: "no"
+
+    environment:
+      POSTGRES_DB: ${GEOGRAPHY_TEST_DB_NAME:-sio_geography_test}
+      POSTGRES_USER: ${GEOGRAPHY_TEST_DB_USER:-sio_geography_test}
+      POSTGRES_PASSWORD: ${GEOGRAPHY_TEST_DB_PASSWORD:-sio_geography_test_dev_change_me}
+
+    ports:
+      - "127.0.0.1:${GEOGRAPHY_TEST_DB_PORT:-55433}:5432"
+
+    tmpfs:
+      - /var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  geography-service:
+    container_name: sio-geography-service
+    restart: unless-stopped
+
+    build:
+      context: ../..
+      dockerfile: services/geography-service/Dockerfile
+
+    env_file:
+      - .env
+
+    environment:
+      DATABASE_URL: >-
+        postgresql+psycopg://${GEOGRAPHY_DB_USER}:${GEOGRAPHY_DB_PASSWORD}@geography-db:5432/${GEOGRAPHY_DB_NAME}
+
+      # El JWT fue emitido con localhost:8081 como issuer.
+      # Este valor NO debe cambiar.
+      SIO_AUTH_ISSUER: http://localhost:8081/realms/sio
+
+      # Desde un contenedor, localhost sería el propio contenedor.
+      # Para obtener las claves públicas usamos el host.
+      SIO_AUTH_JWKS_URL: http://host.docker.internal:8081/realms/sio/protocol/openid-connect/certs
+
+    ports:
+      - "${GEOGRAPHY_SERVICE_PORT:-8000}:8000"
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    depends_on:
+      geography-db:
+        condition: service_healthy
+
+
+volumes:
+  geography_db_data:
