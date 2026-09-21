@@ -9,6 +9,9 @@ from party_identity_service.api.identification_type_rules import (
     build_router as build_identification_type_rules_router,
 )
 from party_identity_service.api.openapi import configure_bearer_openapi
+from party_identity_service.api.organization_identities import (
+    build_router as build_organization_identities_router,
+)
 from party_identity_service.api.person_identities import (
     build_router as build_person_identities_router,
 )
@@ -97,6 +100,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(
         build_person_identities_router(
+            auth,
+        )
+    )
+
+    app.include_router(
+        build_organization_identities_router(
             auth,
         )
     )

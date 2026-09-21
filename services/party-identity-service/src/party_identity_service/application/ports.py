@@ -14,6 +14,10 @@ from party_identity_service.domain.identification_type_rule import (
     IdentificationSigla,
     PartyKind,
 )
+from party_identity_service.domain.organization_identity import (
+    OrganizationIdentificationType,
+    OrganizationIdentity,
+)
 from party_identity_service.domain.person_identity import (
     PersonIdentificationType,
     PersonIdentity,
@@ -101,6 +105,64 @@ class PersonIdentityRepository(Protocol):
         actor_id: str,
     ) -> PersonIdentity | None:
         """Actualiza completamente una identidad global de persona."""
+        ...
+
+
+class OrganizationIdentityRepository(Protocol):
+    """Define operaciones de persistencia para identidades de organizaciones."""
+
+    def list_all(
+        self,
+        *,
+        page: int,
+        page_size: int,
+        search: str | None,
+        country_id: UUID | None,
+        identification_type: OrganizationIdentificationType | None,
+        registration_status: str | None,
+    ) -> PageResult[OrganizationIdentity]:
+        """Obtiene una página filtrada de identidades de organización."""
+        ...
+
+    def get_by_id(
+        self,
+        organization_identity_id: UUID,
+    ) -> OrganizationIdentity | None:
+        """Obtiene una identidad de organización por identificador."""
+        ...
+
+    def create(
+        self,
+        *,
+        country_id: UUID,
+        identification_type: OrganizationIdentificationType,
+        identification_number: str,
+        legal_name: str,
+        trade_name: str | None,
+        organization_type: str | None,
+        registration_status: str | None,
+        website: str | None,
+        actor_id: str,
+    ) -> OrganizationIdentity:
+        """Crea una identidad global de organización."""
+        ...
+
+    def update(
+        self,
+        organization_identity_id: UUID,
+        *,
+        expected_version: int,
+        country_id: UUID,
+        identification_type: OrganizationIdentificationType,
+        identification_number: str,
+        legal_name: str,
+        trade_name: str | None,
+        organization_type: str | None,
+        registration_status: str | None,
+        website: str | None,
+        actor_id: str,
+    ) -> OrganizationIdentity | None:
+        """Actualiza completamente una identidad global de organización."""
         ...
 
 

@@ -37,6 +37,19 @@ Fase 4 iniciada con `PersonIdentity`:
 - endpoints de consulta, creación y actualización completa;
 - permisos con slug `party-identity`.
 
+Fase de organizaciones iniciada con `OrganizationIdentity`:
+
+- tabla `organization_identities`;
+- unicidad por país, tipo y número de identificación;
+- validación de `country_id` contra `geography-service`;
+- validación de identificación usando reglas activas con
+  `party_kind = ORGANIZATION`;
+- auditoría con `created_by`, `updated_by`, `created_at` y `updated_at`;
+- concurrencia optimista con `version`;
+- endpoint de listado paginado con búsqueda y filtros;
+- endpoints de consulta, creación y actualización completa;
+- sin endpoint de eliminación física.
+
 Fase de parametrización de reglas iniciada:
 
 - tabla `identification_type_rules`;
@@ -149,6 +162,13 @@ Endpoints de personas:
 - `POST http://127.0.0.1:8002/person-identities`
 - `PUT http://127.0.0.1:8002/person-identities/{person_identity_id}`
 
+Endpoints de organizaciones:
+
+- `GET http://127.0.0.1:8002/organization-identities`
+- `GET http://127.0.0.1:8002/organization-identities/{organization_identity_id}`
+- `POST http://127.0.0.1:8002/organization-identities`
+- `PUT http://127.0.0.1:8002/organization-identities/{organization_identity_id}`
+
 Endpoints de reglas de identificación:
 
 - `GET http://127.0.0.1:8002/identification-type-rules`
@@ -172,6 +192,37 @@ Ejemplo para crear una regla de cédula colombiana:
   "is_active": true,
   "valid_from": null,
   "valid_to": null
+}
+```
+
+Ejemplo para crear una organización:
+
+```json
+{
+  "country_id": "00000000-0000-0000-0000-000000000000",
+  "identification_type": "NIT",
+  "identification_number": "900123456-7",
+  "legal_name": "SIO Demo S.A.S.",
+  "trade_name": "SIO Demo",
+  "organization_type": "SAS",
+  "registration_status": "ACTIVE",
+  "website": "https://example.com"
+}
+```
+
+Ejemplo para actualizar una organización:
+
+```json
+{
+  "country_id": "00000000-0000-0000-0000-000000000000",
+  "identification_type": "NIT",
+  "identification_number": "900123456-7",
+  "legal_name": "SIO Demo S.A.S.",
+  "trade_name": "SIO Demo Colombia",
+  "organization_type": "SAS",
+  "registration_status": "ACTIVE",
+  "website": "https://example.com",
+  "version": 1
 }
 ```
 
@@ -201,6 +252,16 @@ Levantar PostgreSQL de test:
 ```powershell
 docker compose --profile test up -d party-identity-test-db
 ```
+
+Ejecutar pruebas:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest
+```
+
+Las pruebas de contrato usan `PARTY_IDENTITY_TEST_DATABASE_URL` y exigen
+que apunte a una base cuyo nombre contenga `test`, siguiendo el mismo
+patrón de seguridad usado en `geography-service`.
 
 Conexión local para DBeaver, DataGrip o pgAdmin:
 

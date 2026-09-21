@@ -658,21 +658,21 @@ Cuando no exista una regla activa para una combinación de tipo, país y tipo de
 
 Reglas sugeridas para Colombia cuando se configure el `country_id` correspondiente:
 
-| `party_kind` | `identification_type` | `sigla` | `number_pattern`         | Edad | Ejemplo       |
-| ------------ | --------------------- | ------- | ------------------------ | ---- | ------------- |
-| `PERSON`     | `CIVIL_REGISTRY`      | `RC`    | `^[0-9]{10}$`            | 0 a 6 | `1000000000` |
-| `PERSON`     | `IDENTITY_CARD_MODERN` | `TI`   | `^[0-9]{10}$`            | 7 a 17 | `1000000000` |
-| `PERSON`     | `CITIZEN_ID_MODERN`   | `CC`    | `^[0-9]{10}$`            | 18+ | `1000000000` |
-| `PERSON`     | `CITIZEN_ID_OLD`      | `CC`    | `^[0-9]{3,8}$`           | 18+ | `12345678` |
-| `PERSON`     | `FOREIGN_CARD`        | `CE`    | `^[0-9]{3,7}$`           | 7+ | `1234567` |
-| `PERSON`     | `TAX_ID`              | `NIT`   | `^[A-Z0-9]{4,11}-[0-9]$` | cualquiera | `900123456-7` |
-| `PERSON`     | `IDENTITY_CARD_OLD`   | `TI`    | `^[0-9]{11}$`            | 7 a 17 | `19991234567` |
+| `party_kind` | `identification_type`  | `sigla` | `number_pattern`         | Edad       | Ejemplo       |
+| ------------ | ---------------------- | ------- | ------------------------ | ---------- | ------------- |
+| `PERSON`     | `CIVIL_REGISTRY`       | `RC`    | `^[0-9]{10}$`            | 0 a 6      | `1000000000`  |
+| `PERSON`     | `IDENTITY_CARD_MODERN` | `TI`    | `^[0-9]{10}$`            | 7 a 17     | `1000000000`  |
+| `PERSON`     | `CITIZEN_ID_MODERN`    | `CC`    | `^[0-9]{10}$`            | 18+        | `1000000000`  |
+| `PERSON`     | `CITIZEN_ID_OLD`       | `CC`    | `^[0-9]{3,8}$`           | 18+        | `12345678`    |
+| `PERSON`     | `FOREIGN_CARD`         | `CE`    | `^[0-9]{3,7}$`           | 7+         | `1234567`     |
+| `PERSON`     | `TAX_ID`               | `NIT`   | `^[A-Z0-9]{4,11}-[0-9]$` | cualquiera | `900123456-7` |
+| `PERSON`     | `IDENTITY_CARD_OLD`    | `TI`    | `^[0-9]{11}$`            | 7 a 17     | `19991234567` |
 
 ## 4.10 PersonIdentity
 
 **Tabla:** `person_identities`  
 **Naturaleza:** global y compartida con acceso controlado.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Party Identity Service.
 
 ### Descripción
 
@@ -684,21 +684,21 @@ La entidad solo responde quién es la persona y no almacena relaciones comercial
 
 ### Atributos
 
-| Atributo                    | Tipo           | Regla           | Descripción                                   |
-| --------------------------- | -------------- | --------------- | --------------------------------------------- |
-| `id`                        | `UUID`         | PK, NN          | Identificador global.                         |
-| `identification_country_id` | `UUID`         | FK, NN          | País emisor o asociado con la identificación. |
+| Atributo                    | Tipo           | Regla           | Descripción                                                      |
+| --------------------------- | -------------- | --------------- | ---------------------------------------------------------------- |
+| `id`                        | `UUID`         | PK, NN          | Identificador global.                                            |
+| `identification_country_id` | `UUID`         | FK, NN          | País emisor o asociado con la identificación.                    |
 | `identification_type`       | `VARCHAR(40)`  | NN              | Código o sigla de identificación validada contra reglas activas. |
-| `identification_number`     | `VARCHAR(40)`  | NN              | Número normalizado.                           |
-| `first_name`                | `VARCHAR(100)` | NN              | Primer nombre.                                |
-| `middle_name`               | `VARCHAR(100)` | nullable        | Segundo nombre.                               |
-| `last_name`                 | `VARCHAR(100)` | NN              | Primer apellido.                              |
-| `second_last_name`          | `VARCHAR(100)` | nullable        | Segundo apellido.                             |
-| `birth_date`                | `DATE`         | nullable        | Fecha de nacimiento, dato sensible.           |
-| `verification_status`       | `VARCHAR(20)`  | NN, CK          | `UNVERIFIED`, `VERIFIED` o `SUSPENDED`.       |
-| `version`                   | `INTEGER`      | NN, DEFAULT `1` | Control de versión.                           |
-| `created_at`                | `TIMESTAMPTZ`  | NN              | Creación.                                     |
-| `updated_at`                | `TIMESTAMPTZ`  | NN              | Modificación.                                 |
+| `identification_number`     | `VARCHAR(40)`  | NN              | Número normalizado.                                              |
+| `first_name`                | `VARCHAR(100)` | NN              | Primer nombre.                                                   |
+| `middle_name`               | `VARCHAR(100)` | nullable        | Segundo nombre.                                                  |
+| `last_name`                 | `VARCHAR(100)` | NN              | Primer apellido.                                                 |
+| `second_last_name`          | `VARCHAR(100)` | nullable        | Segundo apellido.                                                |
+| `birth_date`                | `DATE`         | nullable        | Fecha de nacimiento, dato sensible.                              |
+| `verification_status`       | `VARCHAR(20)`  | NN, CK          | `UNVERIFIED`, `VERIFIED` o `SUSPENDED`.                          |
+| `version`                   | `INTEGER`      | NN, DEFAULT `1` | Control de versión.                                              |
+| `created_at`                | `TIMESTAMPTZ`  | NN              | Creación.                                                        |
+| `updated_at`                | `TIMESTAMPTZ`  | NN              | Modificación.                                                    |
 
 ### Reglas y restricciones
 
@@ -764,7 +764,7 @@ Este comportamiento permite reutilizar los contactos entre empresas, evita regis
 
 **Tabla:** `organization_identities`  
 **Naturaleza:** global y compartida.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Party Identity Service.
 
 ### Descripción
 
@@ -778,26 +778,29 @@ No almacena compras, costos, descuentos, crédito, cartera ni evaluaciones priva
 
 ### Atributos
 
-| Atributo                | Tipo           | Regla           | Descripción                   |
-| ----------------------- | -------------- | --------------- | ----------------------------- |
-| `id`                    | `UUID`         | PK, NN          | Identificador global.         |
-| `country_id`            | `UUID`         | FK, NN          | País de registro.             |
-| `identification_type`   | `VARCHAR(20)`  | NN              | Tipo de identificación legal. |
-| `identification_number` | `VARCHAR(40)`  | NN              | Número normalizado.           |
-| `verification_digit`    | `VARCHAR(5)`   | nullable        | Dígito de verificación.       |
-| `legal_name`            | `VARCHAR(200)` | NN              | Razón social.                 |
-| `trade_name`            | `VARCHAR(200)` | nullable        | Nombre comercial.             |
-| `organization_type`     | `VARCHAR(40)`  | nullable        | Tipo jurídico.                |
-| `registration_status`   | `VARCHAR(30)`  | nullable        | Estado legal conocido.        |
-| `website`               | `VARCHAR(300)` | nullable        | Sitio web corporativo.        |
-| `version`               | `INTEGER`      | NN, DEFAULT `1` | Control de versión.           |
-| `created_at`            | `TIMESTAMPTZ`  | NN              | Creación.                     |
-| `updated_at`            | `TIMESTAMPTZ`  | NN              | Modificación.                 |
+| Atributo                | Tipo           | Regla           | Descripción                                 |
+| ----------------------- | -------------- | --------------- | ------------------------------------------- |
+| `id`                    | `UUID`         | PK, NN          | Identificador global.                       |
+| `country_id`            | `UUID`         | FK, NN          | País de registro.                           |
+| `identification_type`   | `VARCHAR(20)`  | NN              | Tipo de identificación legal.               |
+| `identification_number` | `VARCHAR(40)`  | NN              | Número normalizado.                         |
+| `legal_name`            | `VARCHAR(200)` | NN              | Razón social.                               |
+| `trade_name`            | `VARCHAR(200)` | nullable        | Nombre comercial.                           |
+| `organization_type`     | `VARCHAR(40)`  | nullable        | Tipo jurídico.                              |
+| `registration_status`   | `VARCHAR(30)`  | nullable        | Estado legal conocido.                      |
+| `website`               | `VARCHAR(300)` | nullable        | Sitio web corporativo.                      |
+| `version`               | `INTEGER`      | NN, DEFAULT `1` | Control de versión.                         |
+| `created_by`            | `UUID`         | NN              | Usuario que creó el registro.               |
+| `updated_by`            | `UUID`         | NN              | Usuario que realizó la última modificación. |
+| `created_at`            | `TIMESTAMPTZ`  | NN              | Creación.                                   |
+| `updated_at`            | `TIMESTAMPTZ`  | NN              | Modificación.                               |
 
 ### Reglas y restricciones
 
 - La combinación país, tipo y número de identificación es única.
-- Cuando exista una regla activa en `IdentificationTypeRule` para `ORGANIZATION`, país y tipo de identificación, `identification_number` debe cumplir el patrón configurado.
+- `country_id` es una referencia externa a Geography Service y no utiliza llave foránea física entre bases de datos.
+- `country_id` debe existir en Geography Service antes de crear o actualizar organizaciones.
+- Cuando exista una regla activa en `IdentificationTypeRule` para `ORGANIZATION`, país y sigla de identificación, `identification_number` debe cumplir el patrón configurado.
 - Si no existe una regla activa, `identification_number` conserva validaciones base: obligatorio, longitud máxima y unicidad funcional.
 - No contiene información comercial privada ni saldos de cartera.
 - Una organización con historia no se elimina físicamente.
@@ -1944,7 +1947,6 @@ Las coordenadas son propias de la sede y no deben sustituirse por el centroide d
 | `organization_identity_id`   | `UUID`         | REF, nullable                | Identidad legal global.                          |
 | `identification_type`        | `VARCHAR(20)`  | NN                           | Tipo de identificación.                          |
 | `identification_number`      | `VARCHAR(40)`  | NN                           | Número legal.                                    |
-| `verification_digit`         | `VARCHAR(5)`   | nullable                     | Dígito de verificación.                          |
 | `legal_name`                 | `VARCHAR(200)` | NN                           | Razón social operativa.                          |
 | `trade_name`                 | `VARCHAR(200)` | nullable                     | Nombre comercial.                                |
 | `email`                      | `VARCHAR(254)` | nullable                     | Correo principal.                                |

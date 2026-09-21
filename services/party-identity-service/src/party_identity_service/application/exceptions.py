@@ -13,6 +13,18 @@ class PersonIdentityVersionConflictError(Exception):
     """Existe un conflicto de concurrencia sobre la identidad de persona."""
 
 
+class OrganizationIdentityNotFoundError(Exception):
+    """La identidad de organización solicitada no existe."""
+
+
+class OrganizationIdentityConflictError(Exception):
+    """Existe un conflicto con los datos de la organización."""
+
+
+class OrganizationIdentityVersionConflictError(Exception):
+    """Existe un conflicto de concurrencia sobre la organización."""
+
+
 class InvalidIdentificationNumberError(Exception):
     """El número de identificación no cumple la regla configurada."""
 

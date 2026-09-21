@@ -141,6 +141,114 @@ class PersonIdentityModel(Base):
     }
 
 
+class OrganizationIdentityModel(Base):
+    """Modelo SQLAlchemy de la tabla organization_identities."""
+
+    __tablename__ = "organization_identities"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "country_id",
+            "identification_type",
+            "identification_number",
+            name="uq_organization_identities_identification",
+        ),
+        Index(
+            "ix_organization_identities_country_id",
+            "country_id",
+        ),
+        Index(
+            "ix_organization_identities_identification_type",
+            "identification_type",
+        ),
+        Index(
+            "ix_organization_identities_registration_status",
+            "registration_status",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        primary_key=True,
+        nullable=False,
+        default=uuid4,
+    )
+
+    country_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        nullable=False,
+    )
+
+    identification_type: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+    )
+
+    identification_number: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+    )
+
+    legal_name: Mapped[str] = mapped_column(
+        String(200),
+        nullable=False,
+    )
+
+    trade_name: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+    )
+
+    organization_type: Mapped[str | None] = mapped_column(
+        String(40),
+        nullable=True,
+    )
+
+    registration_status: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+    )
+
+    website: Mapped[str | None] = mapped_column(
+        String(300),
+        nullable=True,
+    )
+
+    version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default=text("1"),
+    )
+
+    created_by: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        nullable=False,
+    )
+
+    updated_by: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    __mapper_args__ = {
+        "version_id_col": version,
+    }
+
+
 class IdentificationTypeRuleModel(Base):
     """Modelo SQLAlchemy de la tabla identification_type_rules."""
 
@@ -183,6 +291,10 @@ class IdentificationTypeRuleModel(Base):
         Index(
             "ix_identification_type_rules_country_id",
             "country_id",
+        ),
+        Index(
+            "ix_identification_type_rules_sigla",
+            "sigla",
         ),
     )
 
