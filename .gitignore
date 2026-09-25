@@ -26,6 +26,9 @@ htmlcov/
 **/.env
 **/.env.*
 !**/.env.example
+.claude/
+.specify/
+specs/
 
 # Logs y temporales
 *.log

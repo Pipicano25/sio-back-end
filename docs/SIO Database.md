@@ -9,6 +9,8 @@
 - georreferenciación de empresas y sucursales
 - creación del dominio financiero para cuentas por cobrar, cuentas por pagar y pagos.
 
+---
+
 ## 2. Propósito
 
 Presenta las entidades organizadas por microservicio y base de datos con su finalidad, alcance, atributos, tipos PostgreSQL, reglas, restricciones y relaciones principales.
@@ -29,6 +31,8 @@ El diseño aplica las siguientes decisiones:
 - Las fechas y horas se almacenan con `TIMESTAMPTZ`.
 - La zona horaria operativa predeterminada es `America/Bogota`.
 - `Parameter` continúa aplazado hasta que exista una necesidad funcional concreta que justifique un catálogo genérico de parámetros.
+
+---
 
 ## 3. Convenciones generales
 
@@ -62,13 +66,17 @@ El diseño aplica las siguientes decisiones:
 | `CK`      | Restricción `CHECK`.                                       |
 | `DEFAULT` | Valor predeterminado.                                      |
 
-# 4. Catalog DB — Entidades globales
+---
+
+# 4. Entidades globales compartidas por microservicio
+
+---
 
 ## 4.1 GlobalCategory
 
 **Tabla:** `global_categories`  
 **Naturaleza:** global y compartida.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Product Catalog Service.
 
 ### Descripción
 
@@ -76,7 +84,7 @@ Representa una clasificación estándar para organizar productos en toda SIO y e
 
 Puede organizarse jerárquicamente para construir una taxonomía común, por ejemplo `Alimentos` puede contener `Granos` y `Granos` puede contener `Arroz`.
 
-La categoría solo define una clasificación conceptual y no debe contiene precios, costos, inventario ni información comercial.
+La categoría solo define una clasificación conceptual y no debe contener precios, costos, inventario ni información comercial.
 
 Una categoría usada históricamente no se elimina físicamente, se desactiva cuando ya no debe utilizarse en productos nuevos.
 
@@ -103,14 +111,17 @@ Una categoría usada históricamente no se elimina físicamente, se desactiva cu
 
 ### Relaciones
 
-- Una categoría puede tener muchas categorías hijas.
-- Una categoría puede clasificar muchos productos globales.
+- Una categoría puede tener muchas categorías hijas mediante `parent_category_id`.
+- Una categoría puede relacionarse con múltiples productos globales mediante `GlobalProductCategory`.
+- Un mismo `GlobalProduct` puede pertenecer a múltiples categorías globales.
+
+---
 
 ## 4.2 GlobalUnitOfMeasure
 
 **Tabla:** `global_units_of_measure`  
 **Naturaleza:** global y compartida.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Product Catalog Service.
 
 ### Descripción
 
@@ -136,78 +147,87 @@ Indica si una unidad admite cantidades decimales, por ejemplo una unidad física
 ### Reglas y restricciones
 
 - `code` es único globalmente.
-- `conversion_factor` debe ser mayor que cero cuando exista.
 - Una unidad utilizada históricamente no se elimina.
 - Una unidad inactiva no puede asignarse a productos nuevos.
+
+---
 
 ## 4.3 GlobalProduct
 
 **Tabla:** `global_products`  
 **Naturaleza:** global y compartida.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Product Catalog Service.
 
 ### Descripción
 
-Representa la identidad común de un artículo y define **qué es el producto** independientemente de cómo lo compre, venda o almacene cada empresa.
+Representa la identidad común de un producto y define qué es el producto independientemente de cómo lo compre, venda, identifique o almacene cada empresa.
 
-Por ejemplo, `Arroz Premium 500 g` puede existir una sola vez como producto global y ser adoptado por muchas empresas.
+Por ejemplo, un producto puede existir una sola vez dentro del catálogo global y ser adoptado posteriormente por múltiples empresas mediante CompanyProduct.
 
-Cada empresa le asignará su propio código, SKU, precio y costo de referencia mediante `CompanyProduct`; los niveles de inventario se configuran por sucursal en Inventory Service.
+GlobalProduct contiene únicamente información propia e intrínseca del producto que puede reutilizarse entre empresas.
 
-No almacena existencias, movimientos, precios empresariales, costos privados ni proveedores seleccionados ya que estos datos permanecen en las entidades privadas.
+Las categorías se relacionan mediante GlobalProductCategory, la marca mediante GlobalBrand, los identificadores externos mediante GlobalProductIdentifier, las presentaciones mediante GlobalProductPresentation y las características adicionales mediante GlobalProductAttributeValue.
+
+No almacena códigos internos empresariales, SKU privados, precios empresariales, costos privados, proveedores seleccionados, saldos de inventario ni políticas propias de una empresa.
 
 ### Atributos
 
-| Atributo                       | Tipo            | Regla                | Descripción                        |
-| ------------------------------ | --------------- | -------------------- | ---------------------------------- |
-| `id`                           | `UUID`          | PK, NN               | Identificador global.              |
-| `product_type`                 | `VARCHAR(20)`   | NN, CK               | Tipo general; inicialmente `GOOD`. |
-| `gtin`                         | `VARCHAR(14)`   | UQ parcial, nullable | Código GTIN oficial.               |
-| `barcode`                      | `VARCHAR(50)`   | nullable             | Código alternativo.                |
-| `canonical_name`               | `VARCHAR(200)`  | NN                   | Nombre global normalizado.         |
-| `description`                  | `TEXT`          | nullable             | Descripción general.               |
-| `brand`                        | `VARCHAR(120)`  | nullable             | Marca.                             |
-| `manufacturer_organization_id` | `UUID`          | FK, nullable         | Organización fabricante.           |
-| `global_category_id`           | `UUID`          | FK, NN               | Categoría global.                  |
-| `base_unit_id`                 | `UUID`          | FK, NN               | Unidad de control.                 |
-| `content_quantity`             | `NUMERIC(18,4)` | nullable             | Cantidad contenida.                |
-| `content_unit_id`              | `UUID`          | FK, nullable         | Unidad del contenido.              |
-| `status`                       | `VARCHAR(20)`   | NN, CK               | Estado `ACTIVE` o `INACTIVE`.      |
-| `version`                      | `INTEGER`       | NN, DEFAULT `1`      | Control de versión.                |
-| `created_at`                   | `TIMESTAMPTZ`   | NN                   | Creación.                          |
-| `updated_at`                   | `TIMESTAMPTZ`   | NN                   | Modificación.                      |
+| Atributo                       | Tipo           | Regla           | Descripción                                                      |
+| ------------------------------ | -------------- | --------------- | ---------------------------------------------------------------- |
+| `id`                           | `UUID`         | PK, NN          | Identificador global.                                            |
+| `product_type`                 | `VARCHAR(20)`  | NN, CK          | Tipo general; inicialmente `GOOD`.                               |
+| `canonical_name`               | `VARCHAR(200)` | NN              | Nombre global normalizado.                                       |
+| `description`                  | `TEXT`         | nullable        | Descripción general.                                             |
+| `global_brand_id`              | `UUID`         | FK, nullable    | Marca global asociada al producto.                               |
+| `manufacturer_organization_id` | `UUID`         | REF, nullable   | Organización fabricante administrada por Party Identity Service. |
+| `base_unit_id`                 | `UUID`         | FK, NN          | Unidad de control.                                               |
+| `status`                       | `VARCHAR(20)`  | NN, CK          | Estado `ACTIVE` o `INACTIVE`.                                    |
+| `version`                      | `INTEGER`      | NN, DEFAULT `1` | Control de versión.                                              |
+| `created_at`                   | `TIMESTAMPTZ`  | NN              | Creación.                                                        |
+| `updated_at`                   | `TIMESTAMPTZ`  | NN              | Modificación.                                                    |
 
 ### Consideración de escalabilidad y particionamiento
 
-`GlobalProduct` debe mantenerse como una única entidad lógica y no debe crearse una tabla independiente por cada categoría ya que las categorías representan datos administrables que pueden crearse, modificarse o reorganizarse con el tiempo.
+`GlobalProduct` debe mantenerse como una única entidad lógica y no debe crearse una tabla independiente por cada categoría, grupo, tipo de producto o vertical de negocio.
 
-Si en el futuro el volumen de `global_products` crece lo suficiente como para justificar particionamiento físico en `PostgreSQL` se recomienda evaluar inicialmente una estrategia de particionamiento `HASH` utilizando `id` como clave de partición.
+Las categorías y demás clasificaciones son datos administrables que pueden cambiar con el tiempo y se relacionan con el producto mediante entidades específicas.
 
-Al ser un `UUID` estable e inmutable `id` permite distribuir los productos de manera más uniforme entre las particiones y evita depender de atributos funcionales variables como `global_category_id`.
+Si en el futuro el volumen de `global_products` justifica particionamiento físico en PostgreSQL, puede evaluarse inicialmente una estrategia `HASH` utilizando `id` como clave de partición.
 
-La categoría debe continuar utilizándose para clasificación y consulta mediante índices sobre `global_category_id` pero no como criterio principal de particionamiento ya que un producto puede ser reclasificado y las categorías pueden presentar volúmenes muy desiguales.
+Al ser un UUID estable e inmutable, `id` permite una distribución independiente de atributos funcionales que pueden cambiar con el tiempo.
 
 El particionamiento solo debe implementarse cuando el volumen, rendimiento o mantenimiento real de la tabla lo justifiquen.
 
 ### Reglas y restricciones
 
-- `gtin` es único cuando existe.
-- `content_quantity` debe ser mayor que cero.
-- La categoría y las unidades deben estar activas.
-- No almacena precio, costo empresarial, SKU, políticas de inventario ni saldo actual.
+- `canonical_name` es obligatorio.
+- `product_type` debe pertenecer al conjunto de tipos admitidos por Product Catalog Service.
+- `global_brand_id`, cuando exista, debe referenciar una `GlobalBrand` activa al crear o modificar el producto.
+- `manufacturer_organization_id`, cuando exista, referencia una organización administrada por Party Identity Service y no utiliza una llave foránea física.
+- `base_unit_id` debe referenciar una `GlobalUnitOfMeasure` activa.
+- Un producto utilizado históricamente no debe eliminarse físicamente; debe cambiarse a estado `INACTIVE`.
+- Un producto `INACTIVE` no puede utilizarse para nuevas adopciones empresariales.
+- No almacena precio empresarial, costo empresarial, SKU privado, saldo de inventario ni políticas privadas de una empresa.
 
 ### Relaciones
 
-- Pertenece a una categoría global.
-- Usa una unidad global.
-- Puede tener un fabricante global.
-- Puede ser adoptado por muchas empresas mediante `CompanyProduct`.
+- Puede pertenecer a múltiples `GlobalCategory` mediante `GlobalProductCategory`.
+- Puede pertenecer a una `GlobalBrand`.
+- Utiliza una `GlobalUnitOfMeasure` como unidad base.
+- Puede referenciar una organización fabricante administrada por Party Identity Service.
+- Puede tener múltiples `GlobalProductPresentation`.
+- Puede tener múltiples `GlobalProductIdentifier`.
+- Puede tener múltiples clasificaciones mediante `GlobalProductGroupAssignment`.
+- Puede tener múltiples valores de atributos mediante `GlobalProductAttributeValue`.
+- Puede ser adoptado por múltiples empresas mediante `CompanyProduct`.
+
+---
 
 ## 4.3.1 ProductAttributeDefinition
 
 **Tabla:** `product_attribute_definitions`
 **Naturaleza:** global y compartida.
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Product Catalog Service.
 
 ### Descripción
 
@@ -239,7 +259,7 @@ Una misma definición puede reutilizarse en diferentes categorías cuando repres
 ### Reglas y restricciones
 
 - `code` es único globalmente y no debe cambiar una vez utilizado por productos.
-- Los tipos inicialmente permitidos para `data_type` son `TEXT`, `INTEGER`, `DECIMAL`, `BOOLEAN` y `DATE`.
+- Los tipos inicialmente permitidos para `data_type` son `TEXT`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE` y `OPTION`.
 - `unit_of_measure_id` solo debe utilizarse cuando el atributo represente una magnitud que requiera unidad.
 - Una definición utilizada históricamente no se elimina físicamente; se cambia su estado a `INACTIVE`.
 - Una definición `INACTIVE` no puede asignarse a nuevos productos.
@@ -254,11 +274,457 @@ Una misma definición puede reutilizarse en diferentes categorías cuando repres
 
 ---
 
-## 4.9 GlobalCategoryAttribute
+## 4.3.2 GlobalBrand
+
+**Tabla:** `global_brands`
+
+**Naturaleza:** global y compartida.
+
+**Servicio propietario:** Product Catalog Service.
+
+### Descripción
+
+Representa una marca global normalizada que puede estar asociada a múltiples productos dentro de SIO.
+
+Permite evitar que la marca se almacene como texto libre directamente en `GlobalProduct`, reduciendo duplicados semánticos como `TECNOQUIMICAS`, `Tecnoquímicas` o `TECNO QUIMICAS`.
+
+La marca representa una identidad comercial global del producto y no contiene configuraciones privadas de una empresa, precios, costos, inventario ni condiciones comerciales.
+
+Una marca utilizada históricamente no debe eliminarse físicamente. Cuando deje de estar disponible para nuevos productos debe cambiarse a estado `INACTIVE`.
+
+### Atributos
+
+| Atributo      | Tipo           | Regla           | Descripción                                      |
+| ------------- | -------------- | --------------- | ------------------------------------------------ |
+| `id`          | `UUID`         | PK, NN          | Identificador global de la marca.                |
+| `code`        | `VARCHAR(50)`  | NN, UQ          | Código estable y normalizado de la marca.        |
+| `name`        | `VARCHAR(120)` | NN              | Nombre oficial de la marca.                      |
+| `description` | `TEXT`         | nullable        | Descripción o información adicional de la marca. |
+| `status`      | `VARCHAR(20)`  | NN, CK          | Estado `ACTIVE` o `INACTIVE`.                    |
+| `version`     | `INTEGER`      | NN, DEFAULT `1` | Control de concurrencia y cambios.               |
+| `created_at`  | `TIMESTAMPTZ`  | NN              | Fecha de creación.                               |
+| `updated_at`  | `TIMESTAMPTZ`  | NN              | Última modificación.                             |
+
+### Reglas y restricciones
+
+- `code` debe ser único globalmente sin diferenciar mayúsculas y minúsculas.
+- `name` debe contener un valor significativo después de normalización.
+- Una marca `INACTIVE` no puede asignarse a productos nuevos.
+- Una marca utilizada históricamente no debe eliminarse físicamente.
+- La desactivación de una marca no modifica automáticamente los productos históricos que ya la utilizan.
+- La marca no reemplaza el fabricante del producto; marca y fabricante representan conceptos diferentes.
+
+### Relaciones
+
+- Puede estar asociada a múltiples `GlobalProduct`.
+- Un `GlobalProduct` puede tener una marca principal mediante `global_brand_id`.
+- No tiene relación directa con `CompanyProduct`, ya que la marca pertenece a la definición global del producto.
+
+---
+
+## 4.3.3 GlobalProductCategory
+
+**Tabla:** `global_product_categories`
+
+**Naturaleza:** global y compartida.
+
+**Servicio propietario:** Product Catalog Service.
+
+### Descripción
+
+Representa la relación entre un producto global y una categoría global.
+
+Permite que un mismo `GlobalProduct` pertenezca simultáneamente a múltiples categorías, eliminando la limitación anterior donde `GlobalProduct.global_category_id` permitía únicamente una categoría.
+
+Una de las categorías puede marcarse como principal para búsquedas, presentación o compatibilidad con procesos que requieran una clasificación predeterminada, pero las demás categorías continúan siendo clasificaciones válidas del producto.
+
+La entidad permite conservar el historial lógico de las asociaciones mediante `is_active` sin eliminar físicamente relaciones que hayan sido utilizadas.
+
+### Atributos
+
+| Atributo             | Tipo          | Regla               | Descripción                                       |
+| -------------------- | ------------- | ------------------- | ------------------------------------------------- |
+| `id`                 | `UUID`        | PK, NN              | Identificador de la relación.                     |
+| `global_product_id`  | `UUID`        | FK, NN              | Producto global clasificado.                      |
+| `global_category_id` | `UUID`        | FK, NN              | Categoría global asignada.                        |
+| `is_primary`         | `BOOLEAN`     | NN, DEFAULT `FALSE` | Indica si es la categoría principal del producto. |
+| `is_active`          | `BOOLEAN`     | NN, DEFAULT `TRUE`  | Indica si la clasificación está vigente.          |
+| `created_at`         | `TIMESTAMPTZ` | NN                  | Fecha de creación.                                |
+| `updated_at`         | `TIMESTAMPTZ` | NN                  | Última modificación.                              |
+
+### Reglas y restricciones
+
+- La combinación `global_product_id` y `global_category_id` es única.
+- Un producto debe tener al menos una categoría activa antes de considerarse completamente clasificado.
+- Un producto puede tener múltiples categorías activas.
+- Un producto puede tener como máximo una categoría principal activa.
+- Debe existir un índice único parcial sobre `global_product_id` cuando `is_primary = TRUE` e `is_active = TRUE`.
+- Una categoría `INACTIVE` no puede asignarse a productos nuevos.
+- Una asociación utilizada históricamente no debe eliminarse físicamente; debe cambiarse a `is_active = FALSE`.
+- Cambiar la categoría principal no elimina las otras clasificaciones del producto.
+- Los atributos obligatorios definidos por las categorías activas deben considerarse durante la validación del producto.
+
+### Relaciones
+
+- Pertenece a un `GlobalProduct` mediante `global_product_id`.
+- Pertenece a una `GlobalCategory` mediante `global_category_id`.
+- Permite una relación N:M entre `GlobalProduct` y `GlobalCategory`.
+- Las categorías asociadas participan en la validación de `GlobalCategoryAttribute`.
+
+---
+
+## 4.3.4 GlobalPackagingType
+
+**Tabla:** `global_packaging_types`
+
+**Naturaleza:** global y compartida.
+
+**Servicio propietario:** Product Catalog Service.
+
+### Descripción
+
+Representa tipos globales de empaque o presentación física utilizados para describir cómo se encuentra contenido o presentado un producto.
+
+Permite diferenciar conceptos de empaque como `CAJA`, `FRASCO`, `TUBO`, `BOLSA`, `PAQUETE`, `LATA` o `BLISTER` de unidades de medida como `KG`, `G`, `ML` o `L`.
+
+No representa una cantidad ni realiza conversiones por sí misma. La composición física de una presentación se define mediante `GlobalProductPresentation`.
+
+### Atributos
+
+| Atributo      | Tipo           | Regla           | Descripción                                       |
+| ------------- | -------------- | --------------- | ------------------------------------------------- |
+| `id`          | `UUID`         | PK, NN          | Identificador global.                             |
+| `code`        | `VARCHAR(50)`  | NN, UQ          | Código estable y normalizado del tipo de empaque. |
+| `name`        | `VARCHAR(120)` | NN              | Nombre visible del tipo de empaque.               |
+| `description` | `TEXT`         | nullable        | Descripción o criterios de utilización.           |
+| `status`      | `VARCHAR(20)`  | NN, CK          | Estado `ACTIVE` o `INACTIVE`.                     |
+| `version`     | `INTEGER`      | NN, DEFAULT `1` | Control de concurrencia.                          |
+| `created_at`  | `TIMESTAMPTZ`  | NN              | Fecha de creación.                                |
+| `updated_at`  | `TIMESTAMPTZ`  | NN              | Última modificación.                              |
+
+### Reglas y restricciones
+
+- `code` debe ser único globalmente sin diferenciar mayúsculas y minúsculas.
+- Un tipo de empaque `INACTIVE` no puede asignarse a presentaciones nuevas.
+- Un tipo de empaque utilizado históricamente no debe eliminarse físicamente.
+- Los tipos de empaque no deben duplicar unidades de medida.
+- Conceptos como `BOX`, `BOTTLE`, `TUBE`, `BAG`, `PACK`, `CAN`, `JAR`, `ENVELOPE`, `ROLL` o `BLISTER` pertenecen a esta entidad.
+- Magnitudes como `KG`, `G`, `ML`, `L`, `M` o `CM` continúan perteneciendo a `GlobalUnitOfMeasure`.
+
+### Relaciones
+
+- Puede ser utilizado por múltiples `GlobalProductPresentation`.
+- No se relaciona directamente con `GlobalProduct`; la relación se establece mediante la presentación.
+
+---
+
+## 4.3.5 GlobalProductPresentation
+
+**Tabla:** `global_product_presentations`
+
+**Naturaleza:** global y compartida.
+
+**Servicio propietario:** Product Catalog Service.
+
+### Descripción
+
+Representa una presentación física global de un producto.
+
+Permite describir casos como `UNIDAD`, `BLISTER X 10 TABLETAS`, `CAJA X 20 TABLETAS`, `FRASCO X 120 ML` o `TUBO X 15 G` sin crear productos globales duplicados cuando la identidad comercial corresponde al mismo producto.
+
+La entidad define las características físicas de la presentación y su equivalencia con la unidad base del producto.
+
+No almacena precio, costo, SKU privado, disponibilidad de compra o disponibilidad de venta, ya que esas configuraciones pertenecen a `CompanyProductPresentation`.
+
+### Atributos
+
+| Atributo            | Tipo            | Regla               | Descripción                                                |
+| ------------------- | --------------- | ------------------- | ---------------------------------------------------------- |
+| `id`                | `UUID`          | PK, NN              | Identificador global de la presentación.                   |
+| `global_product_id` | `UUID`          | FK, NN              | Producto global al que pertenece.                          |
+| `code`              | `VARCHAR(60)`   | NN                  | Código estable de la presentación dentro del producto.     |
+| `name`              | `VARCHAR(160)`  | NN                  | Nombre visible de la presentación.                         |
+| `packaging_type_id` | `UUID`          | FK, nullable        | Tipo de empaque utilizado.                                 |
+| `base_quantity`     | `NUMERIC(18,8)` | NN, DEFAULT `1`     | Cantidad de unidades base equivalentes a una presentación. |
+| `content_quantity`  | `NUMERIC(18,4)` | nullable            | Cantidad física declarada del contenido.                   |
+| `content_unit_id`   | `UUID`          | FK, nullable        | Unidad global utilizada para expresar el contenido.        |
+| `display_order`     | `SMALLINT`      | NN, DEFAULT `0`     | Orden sugerido de visualización.                           |
+| `is_base`           | `BOOLEAN`       | NN, DEFAULT `FALSE` | Indica si es la presentación base del producto.            |
+| `status`            | `VARCHAR(20)`   | NN, CK              | Estado `ACTIVE` o `INACTIVE`.                              |
+| `version`           | `INTEGER`       | NN, DEFAULT `1`     | Control concurrente.                                       |
+| `created_at`        | `TIMESTAMPTZ`   | NN                  | Fecha de creación.                                         |
+| `updated_at`        | `TIMESTAMPTZ`   | NN                  | Última modificación.                                       |
+
+### Reglas y restricciones
+
+- La combinación `global_product_id` y `code` debe ser única.
+- `base_quantity` debe ser mayor que cero.
+- `content_quantity` debe ser mayor que cero cuando exista.
+- Cuando exista `content_quantity`, debe existir `content_unit_id`.
+- `display_order` no puede ser negativo.
+- Un producto puede tener múltiples presentaciones.
+- Un producto puede tener como máximo una presentación base activa.
+- Para la presentación marcada como `is_base = TRUE`, normalmente `base_quantity` debe ser `1`.
+- `base_quantity` se interpreta respecto de `GlobalProduct.base_unit_id`.
+- Una presentación `INACTIVE` no puede utilizarse para nuevas adopciones empresariales.
+- Una presentación utilizada históricamente no debe eliminarse físicamente.
+
+### Relaciones
+
+- Pertenece a un `GlobalProduct` mediante `global_product_id`.
+- Puede utilizar un `GlobalPackagingType` mediante `packaging_type_id`.
+- Puede utilizar una `GlobalUnitOfMeasure` mediante `content_unit_id`.
+- Puede tener múltiples identificadores mediante `GlobalProductIdentifier`.
+- Puede ser adoptada por empresas mediante `CompanyProductPresentation`.
+
+---
+
+## 4.3.6 GlobalProductIdentifier
+
+**Tabla:** `global_product_identifiers`
+
+**Naturaleza:** global y compartida.
+
+**Servicio propietario:** Product Catalog Service.
+
+### Descripción
+
+Representa los identificadores externos asociados a un producto global o a una presentación específica.
+
+Permite que un producto tenga múltiples códigos de barras u otros identificadores sin limitar el modelo a los campos fijos `gtin` y `barcode`.
+
+Esta entidad permite representar los campos `Código Barras 1`, `Código Barras 2` y `Código Barras 3` encontrados en fuentes externas como registros independientes.
+
+### Atributos
+
+| Atributo                         | Tipo           | Regla               | Descripción                                                    |
+| -------------------------------- | -------------- | ------------------- | -------------------------------------------------------------- |
+| `id`                             | `UUID`         | PK, NN              | Identificador global.                                          |
+| `global_product_id`              | `UUID`         | FK, NN              | Producto global identificado.                                  |
+| `global_product_presentation_id` | `UUID`         | FK, nullable        | Presentación específica cuando el código pertenece a ella.     |
+| `identifier_type`                | `VARCHAR(30)`  | NN, CK              | Tipo del identificador.                                        |
+| `value`                          | `VARCHAR(100)` | NN                  | Valor normalizado del identificador.                           |
+| `is_primary`                     | `BOOLEAN`      | NN, DEFAULT `FALSE` | Indica si es el identificador principal dentro de su contexto. |
+| `status`                         | `VARCHAR(20)`  | NN, CK              | Estado `ACTIVE` o `INACTIVE`.                                  |
+| `created_at`                     | `TIMESTAMPTZ`  | NN                  | Fecha de creación.                                             |
+| `updated_at`                     | `TIMESTAMPTZ`  | NN                  | Última modificación.                                           |
+
+### Reglas y restricciones
+
+- `identifier_type` admite inicialmente `GTIN`, `EAN`, `UPC`, `BARCODE` u `OTHER`.
+- Cuando exista `global_product_presentation_id`, la presentación debe pertenecer al mismo `global_product_id`.
+- Los identificadores destinados a identificación inequívoca o lectura automática deben ser únicos después de normalización.
+- Una colisión entre códigos durante una importación debe tratarse como inconsistencia y no resolverse automáticamente.
+- Puede existir como máximo un identificador principal activo por tipo y contexto.
+- Los identificadores utilizados históricamente no deben eliminarse físicamente.
+- Un identificador `INACTIVE` no debe aceptarse como código vigente para nuevas operaciones.
+- Los códigos deben almacenarse como texto y no como números para conservar ceros iniciales.
+
+### Relaciones
+
+- Pertenece a un `GlobalProduct`.
+- Puede pertenecer a una `GlobalProductPresentation`.
+- Un producto puede tener múltiples identificadores.
+- Una presentación puede tener múltiples identificadores.
+
+---
+
+## 4.3.7 GlobalProductGroupType
+
+**Tabla:** `global_product_group_types`
+
+**Naturaleza:** global y compartida.
+
+**Servicio propietario:** Product Catalog Service.
+
+### Descripción
+
+Representa una dimensión global utilizada para clasificar productos mediante grupos adicionales a las categorías.
+
+Permite soportar de forma normalizada los grupos encontrados en fuentes externas, como `Grupo 1` hasta `Grupo 15`, sin crear quince columnas permanentes en `GlobalProduct`.
+
+También permite incorporar en el futuro otras dimensiones globales como tipo comercial, colección o clasificación sin modificar la estructura de la tabla de productos.
+
+### Atributos
+
+| Atributo          | Tipo           | Regla               | Descripción                                                      |
+| ----------------- | -------------- | ------------------- | ---------------------------------------------------------------- |
+| `id`              | `UUID`         | PK, NN              | Identificador global.                                            |
+| `code`            | `VARCHAR(50)`  | NN, UQ              | Código estable del tipo de grupo.                                |
+| `name`            | `VARCHAR(120)` | NN                  | Nombre visible.                                                  |
+| `description`     | `TEXT`         | nullable            | Explica el propósito de la dimensión.                            |
+| `allows_multiple` | `BOOLEAN`      | NN, DEFAULT `FALSE` | Indica si un producto puede tener varios valores del mismo tipo. |
+| `display_order`   | `SMALLINT`     | NN, DEFAULT `0`     | Orden sugerido de presentación.                                  |
+| `status`          | `VARCHAR(20)`  | NN, CK              | Estado `ACTIVE` o `INACTIVE`.                                    |
+| `version`         | `INTEGER`      | NN, DEFAULT `1`     | Control concurrente.                                             |
+| `created_at`      | `TIMESTAMPTZ`  | NN                  | Fecha de creación.                                               |
+| `updated_at`      | `TIMESTAMPTZ`  | NN                  | Última modificación.                                             |
+
+### Reglas y restricciones
+
+- `code` debe ser único globalmente.
+- `display_order` no puede ser negativo.
+- Un tipo de grupo `INACTIVE` no puede recibir nuevas clasificaciones.
+- `allows_multiple = FALSE` significa que un producto solo puede tener un grupo activo perteneciente a ese tipo.
+- Los tipos utilizados históricamente no deben eliminarse físicamente.
+- Para el caso inicial deben poder definirse `GROUP_1` hasta `GROUP_15`.
+- El mecanismo debe permitir nuevos tipos sin modificar el esquema de `GlobalProduct`.
+
+### Relaciones
+
+- Puede tener múltiples `GlobalProductGroup`.
+- Sus valores se asignan a productos mediante `GlobalProductGroupAssignment`.
+
+---
+
+## 4.3.8 GlobalProductGroup
+
+**Tabla:** `global_product_groups`
+
+**Naturaleza:** global y compartida.
+
+**Servicio propietario:** Product Catalog Service.
+
+### Descripción
+
+Representa un valor concreto perteneciente a una dimensión definida mediante `GlobalProductGroupType`.
+
+Por ejemplo, si existe el tipo `GROUP_1`, esta entidad puede contener valores como `MEDICAMENTOS`, `ALIMENTOS` o cualquier clasificación global aprobada.
+
+Permite opcionalmente relaciones jerárquicas entre grupos pertenecientes al mismo tipo, aunque la existencia de una jerarquía no debe asumirse para los grupos importados.
+
+### Atributos
+
+| Atributo          | Tipo           | Regla           | Descripción                                 |
+| ----------------- | -------------- | --------------- | ------------------------------------------- |
+| `id`              | `UUID`         | PK, NN          | Identificador global del grupo.             |
+| `group_type_id`   | `UUID`         | FK, NN          | Tipo de clasificación a la que pertenece.   |
+| `parent_group_id` | `UUID`         | FK, nullable    | Grupo superior cuando exista jerarquía.     |
+| `code`            | `VARCHAR(50)`  | NN              | Código estable del grupo dentro de su tipo. |
+| `name`            | `VARCHAR(160)` | NN              | Nombre visible.                             |
+| `description`     | `TEXT`         | nullable        | Descripción del grupo.                      |
+| `status`          | `VARCHAR(20)`  | NN, CK          | Estado `ACTIVE` o `INACTIVE`.               |
+| `version`         | `INTEGER`      | NN, DEFAULT `1` | Control concurrente.                        |
+| `created_at`      | `TIMESTAMPTZ`  | NN              | Fecha de creación.                          |
+| `updated_at`      | `TIMESTAMPTZ`  | NN              | Última modificación.                        |
+
+### Reglas y restricciones
+
+- La combinación `group_type_id` y `code` debe ser única.
+- Cuando exista `parent_group_id`, el grupo padre debe pertenecer al mismo `group_type_id`.
+- `parent_group_id` no puede apuntar al mismo registro.
+- Deben impedirse ciclos jerárquicos.
+- No debe asumirse que todos los tipos poseen una estructura jerárquica.
+- Un grupo `INACTIVE` no puede asignarse a productos nuevos.
+- Un grupo utilizado históricamente no debe eliminarse físicamente.
+
+### Relaciones
+
+- Pertenece a un `GlobalProductGroupType`.
+- Puede tener un `GlobalProductGroup` padre.
+- Puede tener múltiples grupos hijos.
+- Puede asignarse a múltiples productos mediante `GlobalProductGroupAssignment`.
+
+---
+
+## 4.3.9 GlobalProductGroupAssignment
+
+**Tabla:** `global_product_group_assignments`
+
+**Naturaleza:** global y compartida.
+
+**Servicio propietario:** Product Catalog Service.
+
+### Descripción
+
+Representa la asignación de una clasificación global a un producto.
+
+Permite que `GlobalProduct` utilice los diferentes grupos definidos mediante `GlobalProductGroup` sin incorporar columnas específicas por cada dimensión de clasificación.
+
+La asociación puede desactivarse manteniendo la trazabilidad histórica de que el producto estuvo clasificado de esa manera.
+
+### Atributos
+
+| Atributo                  | Tipo          | Regla              | Descripción                              |
+| ------------------------- | ------------- | ------------------ | ---------------------------------------- |
+| `id`                      | `UUID`        | PK, NN             | Identificador de la relación.            |
+| `global_product_id`       | `UUID`        | FK, NN             | Producto global clasificado.             |
+| `global_product_group_id` | `UUID`        | FK, NN             | Grupo global asignado.                   |
+| `is_active`               | `BOOLEAN`     | NN, DEFAULT `TRUE` | Indica si la clasificación está vigente. |
+| `created_at`              | `TIMESTAMPTZ` | NN                 | Fecha de creación.                       |
+| `updated_at`              | `TIMESTAMPTZ` | NN                 | Última modificación.                     |
+
+### Reglas y restricciones
+
+- La combinación `global_product_id` y `global_product_group_id` debe ser única.
+- Solo grupos `ACTIVE` pueden asignarse a productos nuevos.
+- Cuando `GlobalProductGroupType.allows_multiple = FALSE`, un producto puede tener como máximo un grupo activo perteneciente a ese tipo.
+- Una clasificación utilizada históricamente no debe eliminarse físicamente; debe cambiarse a `is_active = FALSE`.
+- La clasificación mediante grupos no reemplaza las categorías globales.
+- Categorías y grupos pueden coexistir en un mismo producto porque representan mecanismos de clasificación diferentes.
+
+### Relaciones
+
+- Pertenece a un `GlobalProduct`.
+- Pertenece a un `GlobalProductGroup`.
+- El tipo de clasificación se obtiene mediante `GlobalProductGroup.group_type_id`.
+
+---
+
+## 4.3.10 ProductAttributeOption
+
+**Tabla:** `product_attribute_options`
+
+**Naturaleza:** global y compartida.
+
+**Servicio propietario:** Product Catalog Service.
+
+### Descripción
+
+Representa una opción controlada que puede utilizarse como valor para un atributo global de tipo `OPTION`.
+
+Permite definir catálogos de valores reutilizables como colores, tallas u otras características discretas evitando almacenar variaciones del mismo concepto como texto libre.
+
+Por ejemplo, una definición `COLOR` puede tener opciones `RED`, `BLUE`, `BLACK` y `WHITE`, mientras que `SIZE` puede tener `XS`, `S`, `M`, `L` y `XL`.
+
+### Atributos
+
+| Atributo                  | Tipo           | Regla           | Descripción                               |
+| ------------------------- | -------------- | --------------- | ----------------------------------------- |
+| `id`                      | `UUID`         | PK, NN          | Identificador global de la opción.        |
+| `attribute_definition_id` | `UUID`         | FK, NN          | Definición del atributo al que pertenece. |
+| `code`                    | `VARCHAR(80)`  | NN              | Código estable de la opción.              |
+| `name`                    | `VARCHAR(120)` | NN              | Nombre visible.                           |
+| `description`             | `TEXT`         | nullable        | Descripción opcional.                     |
+| `display_order`           | `SMALLINT`     | NN, DEFAULT `0` | Orden sugerido de presentación.           |
+| `status`                  | `VARCHAR(20)`  | NN, CK          | Estado `ACTIVE` o `INACTIVE`.             |
+| `version`                 | `INTEGER`      | NN, DEFAULT `1` | Control concurrente.                      |
+| `created_at`              | `TIMESTAMPTZ`  | NN              | Fecha de creación.                        |
+| `updated_at`              | `TIMESTAMPTZ`  | NN              | Última modificación.                      |
+
+### Reglas y restricciones
+
+- La combinación `attribute_definition_id` y `code` debe ser única.
+- La definición asociada debe utilizar `data_type = OPTION`.
+- `display_order` no puede ser negativo.
+- Una opción `INACTIVE` no puede asignarse a productos nuevos.
+- Una opción utilizada históricamente no debe eliminarse físicamente.
+- Las opciones pertenecen exclusivamente a su `ProductAttributeDefinition`.
+- Una opción de `COLOR`, por ejemplo, no puede utilizarse como valor de un atributo `SIZE`.
+
+### Relaciones
+
+- Pertenece a una `ProductAttributeDefinition`.
+- Puede ser utilizada por múltiples `GlobalProductAttributeValue`.
+- Su utilización requiere agregar `OPTION` a los tipos permitidos de `ProductAttributeDefinition`.
+
+---
+
+## 4.3.11 GlobalCategoryAttribute
 
 **Tabla:** `global_category_attributes`
 **Naturaleza:** global y compartida.
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Product Catalog Service.
 
 ### Descripción
 
@@ -290,11 +756,8 @@ No almacena el valor concreto del atributo para un producto; esos valores perten
 - Una categoría puede tener muchos atributos asociados.
 - Una misma definición de atributo puede utilizarse en muchas categorías.
 - La categoría y la definición del atributo deben estar activas para crear una nueva relación.
-- Un atributo marcado como `is_required = TRUE` debe tener un valor definido antes de considerar completo un producto de esa categoría.
 - `display_order` no puede ser negativo.
 - Una relación utilizada históricamente no debe eliminarse físicamente; debe cambiarse a `is_active = FALSE`.
-- Los productos solo pueden registrar valores para atributos permitidos por su categoría.
-- Si se implementa herencia de atributos por jerarquía, una categoría hija puede utilizar los atributos definidos en sus categorías superiores sin duplicar la definición del atributo.
 
 ### Relaciones
 
@@ -304,11 +767,11 @@ No almacena el valor concreto del atributo para un producto; esos valores perten
 
 ---
 
-## 4.3.2 GlobalProductAttributeValue
+## 4.3.12 GlobalProductAttributeValue
 
 **Tabla:** `global_product_attribute_values`
 **Naturaleza:** global y compartida.
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Product Catalog Service.
 
 ### Descripción
 
@@ -322,26 +785,29 @@ No debe almacenar precios, costos, inventario, códigos internos ni información
 
 ### Atributos
 
-| Atributo                  | Tipo            | Regla    | Descripción                                         |
-| ------------------------- | --------------- | -------- | --------------------------------------------------- |
-| `id`                      | `UUID`          | PK, NN   | Identificador global del valor.                     |
-| `global_product_id`       | `UUID`          | FK, NN   | Producto global al que pertenece la característica. |
-| `attribute_definition_id` | `UUID`          | FK, NN   | Definición del atributo cuyo valor se almacena.     |
-| `text_value`              | `TEXT`          | nullable | Valor cuando el atributo es de tipo `TEXT`.         |
-| `integer_value`           | `BIGINT`        | nullable | Valor cuando el atributo es de tipo `INTEGER`.      |
-| `decimal_value`           | `NUMERIC(18,8)` | nullable | Valor cuando el atributo es de tipo `DECIMAL`.      |
-| `boolean_value`           | `BOOLEAN`       | nullable | Valor cuando el atributo es de tipo `BOOLEAN`.      |
-| `date_value`              | `DATE`          | nullable | Valor cuando el atributo es de tipo `DATE`.         |
-| `created_at`              | `TIMESTAMPTZ`   | NN       | Fecha de creación.                                  |
-| `updated_at`              | `TIMESTAMPTZ`   | NN       | Última modificación.                                |
+| Atributo                  | Tipo            | Regla        | Descripción                                                          |
+| ------------------------- | --------------- | ------------ | -------------------------------------------------------------------- |
+| `id`                      | `UUID`          | PK, NN       | Identificador global del valor.                                      |
+| `global_product_id`       | `UUID`          | FK, NN       | Producto global al que pertenece la característica.                  |
+| `attribute_definition_id` | `UUID`          | FK, NN       | Definición del atributo cuyo valor se almacena.                      |
+| `option_id`               | `UUID`          | FK, nullable | Opción seleccionada cuando el atributo utiliza `data_type = OPTION`. |
+| `text_value`              | `TEXT`          | nullable     | Valor cuando el atributo es de tipo `TEXT`.                          |
+| `integer_value`           | `BIGINT`        | nullable     | Valor cuando el atributo es de tipo `INTEGER`.                       |
+| `decimal_value`           | `NUMERIC(18,8)` | nullable     | Valor cuando el atributo es de tipo `DECIMAL`.                       |
+| `boolean_value`           | `BOOLEAN`       | nullable     | Valor cuando el atributo es de tipo `BOOLEAN`.                       |
+| `date_value`              | `DATE`          | nullable     | Valor cuando el atributo es de tipo `DATE`.                          |
+| `created_at`              | `TIMESTAMPTZ`   | NN           | Fecha de creación.                                                   |
+| `updated_at`              | `TIMESTAMPTZ`   | NN           | Última modificación.                                                 |
 
 ### Reglas y restricciones
 
 - La combinación `global_product_id` y `attribute_definition_id` es única.
 - Cada producto puede tener como máximo un valor vigente para una misma definición de atributo.
-- Exactamente uno de los campos `text_value`, `integer_value`, `decimal_value`, `boolean_value` o `date_value` debe contener un valor.
+- Exactamente uno de los campos `option_id`, `text_value`, `integer_value`, `decimal_value`, `boolean_value` o `date_value` debe contener un valor.
 - El campo utilizado debe corresponder al `data_type` establecido en `ProductAttributeDefinition`.
-- Un atributo solo puede asignarse al producto cuando esté activo y sea válido para la categoría correspondiente.
+- Cuando `ProductAttributeDefinition.data_type = OPTION`, debe utilizarse exclusivamente `option_id`.
+- La opción seleccionada mediante `option_id` debe pertenecer a la misma `ProductAttributeDefinition` indicada por `attribute_definition_id`.
+- Un atributo solo puede asignarse al producto cuando esté activo y sea permitido por al menos una categoría activa asociada al producto mediante `GlobalProductCategory`.
 - Los valores deben cumplir las validaciones propias de su definición.
 - No se deben almacenar valores como texto cuando exista un tipo estructurado apropiado.
 - Los valores pertenecen al producto global y no deben contener información comercial privada de una empresa.
@@ -350,13 +816,14 @@ No debe almacenar precios, costos, inventario, códigos internos ni información
 
 - Pertenece a un `GlobalProduct`.
 - Utiliza una definición de `ProductAttributeDefinition`.
-- La validez del atributo para la categoría del producto se determina mediante `GlobalCategoryAttribute`.
+- Puede utilizar una `ProductAttributeOption` cuando la definición sea de tipo `OPTION`.
+- La validez del atributo se determina mediante las categorías activas del producto en `GlobalProductCategory` y las reglas de `GlobalCategoryAttribute`.
 
-## 4.3.1 ProductAsset
+## 4.3.13 ProductAsset
 
 **Tabla:** `product_assets`  
 **Naturaleza:** global y compartida.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Product Catalog Service.
 
 ### Descripción
 
@@ -398,7 +865,7 @@ Permite que un producto tenga múltiples activos sin limitar el diseño a una ú
 
 **Tabla:** `global_countries`  
 **Naturaleza:** catálogo maestro global.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Geography Service.
 
 ### Descripción
 
@@ -408,17 +875,17 @@ Evita registrar variantes libres como `Colombia`, `COLOMBIA`, `COL` o `Col.` y p
 
 ### Atributos
 
-| Atributo       | Tipo           | Regla           | Descripción                                                    |
-| -------------- | -------------- | --------------- | -------------------------------------------------------------- |
-| `id`           | `UUID`         | PK, NN          | Identificador global.                                          |
-| `iso2_code`    | `CHAR(2)`      | NN, UQ          | Código ISO 3166-1 alpha-2, por ejemplo `CO`.                   |
-| `iso3_code`    | `CHAR(3)`      | NN, UQ          | Código ISO 3166-1 alpha-3, por ejemplo `COL` (pensando en IA). |
-| `name`         | `VARCHAR(120)` | NN              | Nombre oficial utilizado por SIO.                              |
-| `phone_prefix` | `VARCHAR(10)`  | nullable        | Prefijo telefónico internacional.                              |
-| `status`       | `VARCHAR(20)`  | NN, CK          | `ACTIVE` o `INACTIVE`.                                         |
-| `version`      | `INTEGER`      | NN, DEFAULT `1` | Control concurrente.                                           |
-| `created_at`   | `TIMESTAMPTZ`  | NN              | Creación.                                                      |
-| `updated_at`   | `TIMESTAMPTZ`  | NN              | Modificación.                                                  |
+| Atributo       | Tipo           | Regla           | Descripción                                   |
+| -------------- | -------------- | --------------- | --------------------------------------------- |
+| `id`           | `UUID`         | PK, NN          | Identificador global.                         |
+| `iso2_code`    | `CHAR(2)`      | NN, UQ          | Código ISO 3166-1 alpha-2, por ejemplo `CO`.  |
+| `iso3_code`    | `CHAR(3)`      | NN, UQ          | Código ISO 3166-1 alpha-3, por ejemplo `COL`. |
+| `name`         | `VARCHAR(120)` | NN              | Nombre oficial utilizado por SIO.             |
+| `phone_prefix` | `VARCHAR(10)`  | nullable        | Prefijo telefónico internacional.             |
+| `status`       | `VARCHAR(20)`  | NN, CK          | `ACTIVE` o `INACTIVE`.                        |
+| `version`      | `INTEGER`      | NN, DEFAULT `1` | Control concurrente.                          |
+| `created_at`   | `TIMESTAMPTZ`  | NN              | Creación.                                     |
+| `updated_at`   | `TIMESTAMPTZ`  | NN              | Modificación.                                 |
 
 ### Reglas y restricciones
 
@@ -430,7 +897,7 @@ Evita registrar variantes libres como `Colombia`, `COLOMBIA`, `COL` o `Col.` y p
 
 **Tabla:** `global_administrative_divisions`  
 **Naturaleza:** catálogo maestro global y jerárquico.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Geography Service.
 
 ### Descripción
 
@@ -464,7 +931,7 @@ El modelo evita asumir que todos los países utilizan la misma estructura territ
 
 **Tabla:** `global_cities`  
 **Naturaleza:** catálogo maestro global.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Geography Service.
 
 ### Descripción
 
@@ -501,7 +968,7 @@ Las coordenadas de esta entidad son opcionales y representan un centroide o punt
 
 **Tabla:** `global_business_sectors`  
 **Naturaleza:** catálogo maestro global y jerárquico.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Party Identity Service.
 
 ### Descripción
 
@@ -536,7 +1003,7 @@ La jerarquía permite representar macrosectores y actividades más específicas.
 
 **Tabla:** `global_payment_condition_types`  
 **Naturaleza:** catálogo maestro global.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Payment Reference Service.
 
 ### Descripción
 
@@ -567,7 +1034,7 @@ No representa el medio por el cual se mueve el dinero por ejemplo una venta pued
 
 **Tabla:** `global_payment_methods`  
 **Naturaleza:** catálogo maestro global.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Payment Reference Service.
 
 ### Descripción
 
@@ -684,21 +1151,21 @@ La entidad solo responde quién es la persona y no almacena relaciones comercial
 
 ### Atributos
 
-| Atributo                    | Tipo           | Regla           | Descripción                                                      |
-| --------------------------- | -------------- | --------------- | ---------------------------------------------------------------- |
-| `id`                        | `UUID`         | PK, NN          | Identificador global.                                            |
-| `identification_country_id` | `UUID`         | FK, NN          | País emisor o asociado con la identificación.                    |
-| `identification_type`       | `VARCHAR(40)`  | NN              | Código o sigla de identificación validada contra reglas activas. |
-| `identification_number`     | `VARCHAR(40)`  | NN              | Número normalizado.                                              |
-| `first_name`                | `VARCHAR(100)` | NN              | Primer nombre.                                                   |
-| `middle_name`               | `VARCHAR(100)` | nullable        | Segundo nombre.                                                  |
-| `last_name`                 | `VARCHAR(100)` | NN              | Primer apellido.                                                 |
-| `second_last_name`          | `VARCHAR(100)` | nullable        | Segundo apellido.                                                |
-| `birth_date`                | `DATE`         | nullable        | Fecha de nacimiento, dato sensible.                              |
-| `verification_status`       | `VARCHAR(20)`  | NN, CK          | `UNVERIFIED`, `VERIFIED` o `SUSPENDED`.                          |
-| `version`                   | `INTEGER`      | NN, DEFAULT `1` | Control de versión.                                              |
-| `created_at`                | `TIMESTAMPTZ`  | NN              | Creación.                                                        |
-| `updated_at`                | `TIMESTAMPTZ`  | NN              | Modificación.                                                    |
+| Atributo                    | Tipo           | Regla           | Descripción                                                                       |
+| --------------------------- | -------------- | --------------- | --------------------------------------------------------------------------------- |
+| `id`                        | `UUID`         | PK, NN          | Identificador global.                                                             |
+| `identification_country_id` | `UUID`         | REF, NN         | País emisor o asociado con la identificación, administrado por Geography Service. |
+| `identification_type`       | `VARCHAR(40)`  | NN              | Código o sigla de identificación validada contra reglas activas.                  |
+| `identification_number`     | `VARCHAR(40)`  | NN              | Número normalizado.                                                               |
+| `first_name`                | `VARCHAR(100)` | NN              | Primer nombre.                                                                    |
+| `middle_name`               | `VARCHAR(100)` | nullable        | Segundo nombre.                                                                   |
+| `last_name`                 | `VARCHAR(100)` | NN              | Primer apellido.                                                                  |
+| `second_last_name`          | `VARCHAR(100)` | nullable        | Segundo apellido.                                                                 |
+| `birth_date`                | `DATE`         | nullable        | Fecha de nacimiento, dato sensible.                                               |
+| `verification_status`       | `VARCHAR(20)`  | NN, CK          | `UNVERIFIED`, `VERIFIED` o `SUSPENDED`.                                           |
+| `version`                   | `INTEGER`      | NN, DEFAULT `1` | Control de versión.                                                               |
+| `created_at`                | `TIMESTAMPTZ`  | NN              | Creación.                                                                         |
+| `updated_at`                | `TIMESTAMPTZ`  | NN              | Modificación.                                                                     |
 
 ### Reglas y restricciones
 
@@ -708,6 +1175,8 @@ La entidad solo responde quién es la persona y no almacena relaciones comercial
 - La identificación debe enmascararse cuando no sea necesario mostrarla completa.
 - No se deben fusionar personas solo por nombre, teléfono o correo.
 - Una persona con historia no se elimina físicamente.
+- `identification_country_id` es una referencia externa a Geography Service y no utiliza una llave foránea física.
+- El país debe existir y encontrarse disponible en Geography Service al crear o modificar una identidad.
 
 ### Relaciones
 
@@ -719,7 +1188,7 @@ La entidad solo responde quién es la persona y no almacena relaciones comercial
 
 **Tabla:** `person_contact_profiles`  
 **Naturaleza:** global, compartida, versionada y con acceso controlado.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Party Identity Service.
 
 ### Descripción
 
@@ -733,24 +1202,24 @@ Este comportamiento permite reutilizar los contactos entre empresas, evita regis
 
 ### Atributos
 
-| Atributo                     | Tipo           | Regla              | Descripción                                      |
-| ---------------------------- | -------------- | ------------------ | ------------------------------------------------ |
-| `id`                         | `UUID`         | PK, NN             | Identificador de la versión.                     |
-| `person_identity_id`         | `UUID`         | FK, NN             | Persona propietaria del perfil.                  |
-| `email`                      | `VARCHAR(254)` | nullable           | Correo.                                          |
-| `phone`                      | `VARCHAR(40)`  | nullable           | Teléfono.                                        |
-| `address_line`               | `TEXT`         | nullable           | Dirección.                                       |
-| `country_id`                 | `UUID`         | FK, nullable       | País.                                            |
-| `administrative_division_id` | `UUID`         | FK, nullable       | Departamento, estado, provincia u otra división. |
-| `city_id`                    | `UUID`         | FK, nullable       | Ciudad o municipio.                              |
-| `postal_code`                | `VARCHAR(20)`  | nullable           | Código postal.                                   |
-| `is_active`                  | `BOOLEAN`      | NN, DEFAULT `TRUE` | Versión vigente.                                 |
-| `valid_from`                 | `TIMESTAMPTZ`  | NN                 | Inicio de vigencia.                              |
-| `valid_to`                   | `TIMESTAMPTZ`  | nullable           | Fin de vigencia.                                 |
-| `confirmed_by_user_id`       | `UUID`         | REF, NN            | Usuario que confirmó.                            |
-| `confirmed_by_company_id`    | `UUID`         | REF, NN            | Empresa desde la cual se confirmó.               |
-| `created_at`                 | `TIMESTAMPTZ`  | NN                 | Creación.                                        |
-| `updated_at`                 | `TIMESTAMPTZ`  | NN                 | Modificación.                                    |
+| Atributo                     | Tipo           | Regla              | Descripción                                                 |
+| ---------------------------- | -------------- | ------------------ | ----------------------------------------------------------- |
+| `id`                         | `UUID`         | PK, NN             | Identificador de la versión.                                |
+| `person_identity_id`         | `UUID`         | FK, NN             | Persona propietaria del perfil.                             |
+| `email`                      | `VARCHAR(254)` | nullable           | Correo.                                                     |
+| `phone`                      | `VARCHAR(40)`  | nullable           | Teléfono.                                                   |
+| `address_line`               | `TEXT`         | nullable           | Dirección.                                                  |
+| `country_id`                 | `UUID`         | REF, nullable      | País administrado por Geography Service.                    |
+| `administrative_division_id` | `UUID`         | REF, nullable      | División administrativa administrada por Geography Service. |
+| `city_id`                    | `UUID`         | REF, nullable      | Ciudad o municipio administrado por Geography Service.      |
+| `postal_code`                | `VARCHAR(20)`  | nullable           | Código postal.                                              |
+| `is_active`                  | `BOOLEAN`      | NN, DEFAULT `TRUE` | Versión vigente.                                            |
+| `valid_from`                 | `TIMESTAMPTZ`  | NN                 | Inicio de vigencia.                                         |
+| `valid_to`                   | `TIMESTAMPTZ`  | nullable           | Fin de vigencia.                                            |
+| `confirmed_by_user_id`       | `UUID`         | REF, NN            | Usuario que confirmó.                                       |
+| `confirmed_by_company_id`    | `UUID`         | REF, NN            | Empresa desde la cual se confirmó.                          |
+| `created_at`                 | `TIMESTAMPTZ`  | NN                 | Creación.                                                   |
+| `updated_at`                 | `TIMESTAMPTZ`  | NN                 | Modificación.                                               |
 
 ### Reglas y restricciones
 
@@ -759,6 +1228,7 @@ Este comportamiento permite reutilizar los contactos entre empresas, evita regis
 - Cuando se informa `city_id` la ciudad debe ser coherente con `administrative_division_id` y `country_id` cuando estos estén presentes.
 - Una actualización debe cerrar la versión vigente y crear la nueva versión dentro de una misma transacción.
 - Las versiones históricas no se eliminan físicamente.
+- `country_id`, `administrative_division_id` y `city_id` son referencias externas a Geography Service y no utilizan llaves foráneas físicas.
 
 ## 4.12 OrganizationIdentity
 
@@ -778,22 +1248,22 @@ No almacena compras, costos, descuentos, crédito, cartera ni evaluaciones priva
 
 ### Atributos
 
-| Atributo                | Tipo           | Regla           | Descripción                                 |
-| ----------------------- | -------------- | --------------- | ------------------------------------------- |
-| `id`                    | `UUID`         | PK, NN          | Identificador global.                       |
-| `country_id`            | `UUID`         | FK, NN          | País de registro.                           |
-| `identification_type`   | `VARCHAR(20)`  | NN              | Tipo de identificación legal.               |
-| `identification_number` | `VARCHAR(40)`  | NN              | Número normalizado.                         |
-| `legal_name`            | `VARCHAR(200)` | NN              | Razón social.                               |
-| `trade_name`            | `VARCHAR(200)` | nullable        | Nombre comercial.                           |
-| `organization_type`     | `VARCHAR(40)`  | nullable        | Tipo jurídico.                              |
-| `registration_status`   | `VARCHAR(30)`  | nullable        | Estado legal conocido.                      |
-| `website`               | `VARCHAR(300)` | nullable        | Sitio web corporativo.                      |
-| `version`               | `INTEGER`      | NN, DEFAULT `1` | Control de versión.                         |
-| `created_by`            | `UUID`         | NN              | Usuario que creó el registro.               |
-| `updated_by`            | `UUID`         | NN              | Usuario que realizó la última modificación. |
-| `created_at`            | `TIMESTAMPTZ`  | NN              | Creación.                                   |
-| `updated_at`            | `TIMESTAMPTZ`  | NN              | Modificación.                               |
+| Atributo                | Tipo           | Regla           | Descripción                                          |
+| ----------------------- | -------------- | --------------- | ---------------------------------------------------- |
+| `id`                    | `UUID`         | PK, NN          | Identificador global.                                |
+| `country_id`            | `UUID`         | REF, NN         | País de registro administrado por Geography Service. |
+| `identification_type`   | `VARCHAR(20)`  | NN              | Tipo de identificación legal.                        |
+| `identification_number` | `VARCHAR(40)`  | NN              | Número normalizado.                                  |
+| `legal_name`            | `VARCHAR(200)` | NN              | Razón social.                                        |
+| `trade_name`            | `VARCHAR(200)` | nullable        | Nombre comercial.                                    |
+| `organization_type`     | `VARCHAR(40)`  | nullable        | Tipo jurídico.                                       |
+| `registration_status`   | `VARCHAR(30)`  | nullable        | Estado legal conocido.                               |
+| `website`               | `VARCHAR(300)` | nullable        | Sitio web corporativo.                               |
+| `version`               | `INTEGER`      | NN, DEFAULT `1` | Control de versión.                                  |
+| `created_by`            | `UUID`         | NN              | Usuario que creó el registro.                        |
+| `updated_by`            | `UUID`         | NN              | Usuario que realizó la última modificación.          |
+| `created_at`            | `TIMESTAMPTZ`  | NN              | Creación.                                            |
+| `updated_at`            | `TIMESTAMPTZ`  | NN              | Modificación.                                        |
 
 ### Reglas y restricciones
 
@@ -818,7 +1288,7 @@ No almacena compras, costos, descuentos, crédito, cartera ni evaluaciones priva
 
 **Tabla:** `organization_contact_profiles`  
 **Naturaleza:** global, compartida y versionada.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Party Identity Service.
 
 ### Descripción
 
@@ -828,24 +1298,24 @@ La dirección utiliza los catálogos geográficos de SIO y las versiones histór
 
 ### Atributos
 
-| Atributo                     | Tipo           | Regla              | Descripción                       |
-| ---------------------------- | -------------- | ------------------ | --------------------------------- |
-| `id`                         | `UUID`         | PK, NN             | Identificador de la versión.      |
-| `organization_identity_id`   | `UUID`         | FK, NN             | Organización.                     |
-| `email`                      | `VARCHAR(254)` | nullable           | Correo general.                   |
-| `phone`                      | `VARCHAR(40)`  | nullable           | Teléfono general.                 |
-| `address_line`               | `TEXT`         | nullable           | Dirección.                        |
-| `country_id`                 | `UUID`         | FK, nullable       | País.                             |
-| `administrative_division_id` | `UUID`         | FK, nullable       | División administrativa.          |
-| `city_id`                    | `UUID`         | FK, nullable       | Ciudad o municipio.               |
-| `postal_code`                | `VARCHAR(20)`  | nullable           | Código postal.                    |
-| `is_active`                  | `BOOLEAN`      | NN, DEFAULT `TRUE` | Versión vigente.                  |
-| `valid_from`                 | `TIMESTAMPTZ`  | NN                 | Inicio de vigencia.               |
-| `valid_to`                   | `TIMESTAMPTZ`  | nullable           | Fin de vigencia.                  |
-| `confirmed_by_user_id`       | `UUID`         | REF, NN            | Usuario que confirmó.             |
-| `confirmed_by_company_id`    | `UUID`         | REF, NN            | Empresa desde la que se confirmó. |
-| `created_at`                 | `TIMESTAMPTZ`  | NN                 | Creación.                         |
-| `updated_at`                 | `TIMESTAMPTZ`  | NN                 | Modificación.                     |
+| Atributo                     | Tipo           | Regla              | Descripción                                                 |
+| ---------------------------- | -------------- | ------------------ | ----------------------------------------------------------- |
+| `id`                         | `UUID`         | PK, NN             | Identificador de la versión.                                |
+| `organization_identity_id`   | `UUID`         | FK, NN             | Organización.                                               |
+| `email`                      | `VARCHAR(254)` | nullable           | Correo general.                                             |
+| `phone`                      | `VARCHAR(40)`  | nullable           | Teléfono general.                                           |
+| `address_line`               | `TEXT`         | nullable           | Dirección.                                                  |
+| `country_id`                 | `UUID`         | REF, nullable      | País administrado por Geography Service.                    |
+| `administrative_division_id` | `UUID`         | REF, nullable      | División administrativa administrada por Geography Service. |
+| `city_id`                    | `UUID`         | REF, nullable      | Ciudad o municipio administrado por Geography Service.      |
+| `postal_code`                | `VARCHAR(20)`  | nullable           | Código postal.                                              |
+| `is_active`                  | `BOOLEAN`      | NN, DEFAULT `TRUE` | Versión vigente.                                            |
+| `valid_from`                 | `TIMESTAMPTZ`  | NN                 | Inicio de vigencia.                                         |
+| `valid_to`                   | `TIMESTAMPTZ`  | nullable           | Fin de vigencia.                                            |
+| `confirmed_by_user_id`       | `UUID`         | REF, NN            | Usuario que confirmó.                                       |
+| `confirmed_by_company_id`    | `UUID`         | REF, NN            | Empresa desde la que se confirmó.                           |
+| `created_at`                 | `TIMESTAMPTZ`  | NN                 | Creación.                                                   |
+| `updated_at`                 | `TIMESTAMPTZ`  | NN                 | Modificación.                                               |
 
 ### Reglas y restricciones
 
@@ -854,12 +1324,13 @@ La dirección utiliza los catálogos geográficos de SIO y las versiones histór
 - Una versión activa debe tener `valid_to = NULL`; una histórica debe tener `valid_to` informado.
 - La geografía debe ser consistente entre país, división administrativa y ciudad.
 - Las versiones históricas no se eliminan físicamente.
+- `country_id`, `administrative_division_id` y `city_id` son referencias externas a Geography Service y no utilizan llaves foráneas físicas.
 
 ## 4.14 OrganizationContactPerson
 
 **Tabla:** `organization_contact_persons`  
 **Naturaleza:** global, compartida y con acceso controlado.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Party Identity Service.
 
 ### Descripción
 
@@ -892,7 +1363,7 @@ Puede vincular opcionalmente una `PersonIdentity` cuando la persona está formal
 
 **Tabla:** `organization_business_sectors`  
 **Naturaleza:** global, relacional y versionada.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Party Identity Service.
 
 ### Descripción
 
@@ -902,17 +1373,17 @@ Permite distinguir el sector principal de actividades secundarias y conservar ca
 
 ### Atributos
 
-| Atributo                    | Tipo          | Regla               | Descripción         |
-| --------------------------- | ------------- | ------------------- | ------------------- |
-| `id`                        | `UUID`        | PK, NN              | Identificador.      |
-| `organization_identity_id`  | `UUID`        | FK, NN              | Organización.       |
-| `global_business_sector_id` | `UUID`        | FK, NN              | Sector económico.   |
-| `is_primary`                | `BOOLEAN`     | NN, DEFAULT `FALSE` | Sector principal.   |
-| `is_active`                 | `BOOLEAN`     | NN, DEFAULT `TRUE`  | Vigencia.           |
-| `valid_from`                | `TIMESTAMPTZ` | NN                  | Inicio de vigencia. |
-| `valid_to`                  | `TIMESTAMPTZ` | nullable            | Fin de vigencia.    |
-| `created_at`                | `TIMESTAMPTZ` | NN                  | Creación.           |
-| `updated_at`                | `TIMESTAMPTZ` | NN                  | Modificación.       |
+| Atributo                    | Tipo          | Regla               | Descripción                                                 |
+| --------------------------- | ------------- | ------------------- | ----------------------------------------------------------- |
+| `id`                        | `UUID`        | PK, NN              | Identificador.                                              |
+| `organization_identity_id`  | `UUID`        | FK, NN              | Organización administrada dentro de Party Identity Service. |
+| `global_business_sector_id` | `UUID`        | FK, NN              | Sector económico global asociado a la organización.         |
+| `is_primary`                | `BOOLEAN`     | NN, DEFAULT `FALSE` | Sector principal.                                           |
+| `is_active`                 | `BOOLEAN`     | NN, DEFAULT `TRUE`  | Vigencia.                                                   |
+| `valid_from`                | `TIMESTAMPTZ` | NN                  | Inicio de vigencia.                                         |
+| `valid_to`                  | `TIMESTAMPTZ` | nullable            | Fin de vigencia.                                            |
+| `created_at`                | `TIMESTAMPTZ` | NN                  | Creación.                                                   |
+| `updated_at`                | `TIMESTAMPTZ` | NN                  | Modificación.                                               |
 
 ### Reglas y restricciones
 
@@ -924,7 +1395,7 @@ Permite distinguir el sector principal de actividades secundarias y conservar ca
 
 **Tabla:** `organization_legal_representatives`  
 **Naturaleza:** global, sensible y versionada.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Party Identity Service.
 
 ### Descripción
 
@@ -956,65 +1427,85 @@ El nombre del representante no se almacena directamente en `Company` se obtiene 
 - Una relación histórica debe cerrar `valid_to` y no eliminarse físicamente.
 - La persona y la organización deben estar activas para nuevas asignaciones.
 
-# 5. Catalog DB — Entidades privadas por empresa
+# 5. Commercial Relationship DB — Entidades privadas por empresa
 
 ## 5.1 CompanyProduct
 
-**Tabla:** `company_products`  
-**Naturaleza:** privada por empresa.  
-**Servicio propietario:** Catalog Service.
+**Tabla:** `company_products`
+
+**Naturaleza:** privada por empresa.
+
+**Servicio propietario:** Commercial Relationship Service.
 
 ### Descripción
 
 Representa la adopción y configuración privada de un producto global dentro de una empresa.
 
-`GlobalProduct` define qué es el artículo y `CompanyProduct` define cómo lo maneja la empresa mediante su código interno, nombre visible, precio, costo de referencia, SKU, moneda y disponibilidad para compras o ventas.
+`GlobalProduct` define qué es el producto de manera global, mientras `CompanyProduct` indica que una empresa decidió incorporarlo a su catálogo y define la configuración general con la que lo administra.
 
-Dos empresas pueden adoptar el mismo producto global y mantener configuraciones totalmente diferentes.
+Dos empresas pueden adoptar el mismo `GlobalProduct` y mantener códigos internos, referencias, nombres visibles, precios de referencia, costos de referencia y configuraciones de inventario diferentes.
 
-Ninguna empresa puede consultar los valores privados de otra.
+La entidad no representa una presentación física específica. Las presentaciones que una empresa decide comprar o vender pertenecen a `CompanyProductPresentation`.
 
-No almacena el stock actual ni los niveles de reposición porque esos valores dependen de la sucursal y pertenecen a `Inventory Service`.
+Para el MVP, `sale_price` representa el precio simple o predeterminado del producto. Cuando se utilicen listas de precios, los valores específicos pertenecen a `PriceList` y `PriceListItem`.
+
+No almacena stock actual, movimientos, lotes reales ni niveles de reposición por sucursal, ya que estos datos pertenecen a Inventory Service.
 
 ### Atributos
 
-| Atributo             | Tipo            | Regla              | Descripción                                                                 |
-| -------------------- | --------------- | ------------------ | --------------------------------------------------------------------------- |
-| `id`                 | `UUID`          | PK, NN             | Identificador empresarial.                                                  |
-| `company_id`         | `UUID`          | REF, NN            | Empresa propietaria.                                                        |
-| `global_product_id`  | `UUID`          | FK, NN             | Producto global adoptado.                                                   |
-| `internal_code`      | `VARCHAR(60)`   | NN                 | Código interno.                                                             |
-| `sku`                | `VARCHAR(80)`   | NN                 | SKU privado utilizado por la empresa.                                       |
-| `display_name`       | `VARCHAR(200)`  | NN                 | Nombre visible.                                                             |
-| `sale_price`         | `NUMERIC(18,2)` | NN, DEFAULT `0`    | Precio de venta de referencia.                                              |
-| `currency_code`      | `CHAR(3)`       | NN                 | Moneda ISO 4217 del precio de referencia.                                   |
-| `reference_cost`     | `NUMERIC(18,4)` | NN, DEFAULT `0`    | Costo privado de referencia, no reemplaza el costo histórico de inventario. |
-| `is_purchasable`     | `BOOLEAN`       | NN, DEFAULT `TRUE` | Disponible para compras.                                                    |
-| `is_sellable`        | `BOOLEAN`       | NN, DEFAULT `TRUE` | Disponible para ventas.                                                     |
-| `is_active`          | `BOOLEAN`       | NN, DEFAULT `TRUE` | Estado en la empresa.                                                       |
-| `created_by_user_id` | `UUID`          | REF, NN            | Usuario creador.                                                            |
-| `version`            | `INTEGER`       | NN, DEFAULT `1`    | Control concurrente.                                                        |
-| `created_at`         | `TIMESTAMPTZ`   | NN                 | Creación.                                                                   |
-| `updated_at`         | `TIMESTAMPTZ`   | NN                 | Modificación.                                                               |
+| Atributo                      | Tipo            | Regla               | Descripción                                                                                   |
+| ----------------------------- | --------------- | ------------------- | --------------------------------------------------------------------------------------------- |
+| `id`                          | `UUID`          | PK, NN              | Identificador empresarial.                                                                    |
+| `company_id`                  | `UUID`          | REF, NN             | Empresa propietaria.                                                                          |
+| `global_product_id`           | `UUID`          | REF, NN             | Producto global adoptado desde Product Catalog Service.                                       |
+| `internal_code`               | `VARCHAR(60)`   | NN                  | Código interno principal utilizado por la empresa.                                            |
+| `reference_code`              | `VARCHAR(100)`  | nullable            | Referencia adicional del producto; no necesariamente única.                                   |
+| `display_name`                | `VARCHAR(200)`  | NN                  | Nombre visible dentro de la empresa.                                                          |
+| `short_name`                  | `VARCHAR(160)`  | nullable            | Nombre corto utilizado en interfaces o procesos internos.                                     |
+| `sale_price`                  | `NUMERIC(18,2)` | NN, DEFAULT `0`     | Precio simple o predeterminado utilizado cuando no aplica una lista de precios específica.    |
+| `currency_code`               | `CHAR(3)`       | NN                  | Moneda ISO 4217 del precio de referencia.                                                     |
+| `reference_cost`              | `NUMERIC(18,4)` | NN, DEFAULT `0`     | Costo privado de referencia; no reemplaza el costo histórico calculado por Inventory Service. |
+| `inventory_control_enabled`   | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Indica si la empresa controla existencias del producto mediante Inventory Service.            |
+| `lot_tracking_enabled`        | `BOOLEAN`       | NN, DEFAULT `FALSE` | Indica si la empresa requiere controlar el producto por lotes.                                |
+| `expiration_tracking_enabled` | `BOOLEAN`       | NN, DEFAULT `FALSE` | Indica si los lotes del producto requieren fecha de vencimiento.                              |
+| `is_purchasable`              | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Disponible para nuevas operaciones de compra.                                                 |
+| `is_sellable`                 | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Disponible para nuevas operaciones de venta.                                                  |
+| `is_active`                   | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Estado del producto dentro de la empresa.                                                     |
+| `created_by_user_id`          | `UUID`          | REF, NN             | Usuario creador.                                                                              |
+| `version`                     | `INTEGER`       | NN, DEFAULT `1`     | Control de concurrencia.                                                                      |
+| `created_at`                  | `TIMESTAMPTZ`   | NN                  | Fecha de creación.                                                                            |
+| `updated_at`                  | `TIMESTAMPTZ`   | NN                  | Última modificación.                                                                          |
 
 ### Reglas y restricciones
 
-- `internal_code` es único por empresa.
-- `sku` es único por empresa sin diferenciar mayúsculas y minúsculas.
-- Una empresa solo puede adoptar una vez el mismo producto global.
-- Precios y costos no pueden ser negativos.
-- El stock mínimo no pertenece a esta entidad; se configura por sucursal y producto en `InventoryPolicy`.
-- Solo productos activos pueden utilizarse en operaciones nuevas.
+- La combinación `company_id` y `global_product_id` debe ser única.
+- `internal_code` debe ser único por empresa sin diferenciar mayúsculas y minúsculas.
+- `reference_code` no tiene obligación de ser único.
+- `global_product_id` es una referencia externa a Product Catalog Service y no utiliza una llave foránea física.
+- Solo un `GlobalProduct` activo puede utilizarse para crear una nueva adopción empresarial.
+- `sale_price` y `reference_cost` no pueden ser negativos.
+- `lot_tracking_enabled = TRUE` requiere `inventory_control_enabled = TRUE`.
+- `expiration_tracking_enabled = TRUE` requiere `lot_tracking_enabled = TRUE`.
+- Cuando `inventory_control_enabled = FALSE`, el producto no debe generar nuevos saldos, movimientos, políticas o lotes ordinarios en Inventory Service.
+- El stock mínimo y demás niveles de reposición no pertenecen a esta entidad; se configuran por sucursal mediante `InventoryPolicy`.
+- Un producto empresarial inactivo no puede utilizarse en nuevas operaciones ordinarias.
+- La desactivación no elimina compras, ventas, precios, inventario o relaciones históricas.
 
 ### Relaciones
 
-- Se referencia desde compras, ventas e inventario mediante su UUID.
+- Pertenece a una empresa mediante `company_id`.
+- Referencia un `GlobalProduct` de Product Catalog Service mediante `global_product_id`.
+- Puede tener múltiples `CompanyProductPresentation`.
+- Puede tener precios específicos mediante `PriceListItem`.
+- Puede relacionarse con múltiples proveedores mediante `SupplierProduct`.
+- Es referenciado desde Purchase Service, Sales Service e Inventory Service mediante su UUID.
+- Puede tener lotes en Inventory Service cuando `lot_tracking_enabled = TRUE`.
 
 ## 5.2 CustomerSegment
 
 **Tabla:** `customer_segments`  
 **Naturaleza:** catálogo maestro privado por empresa.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Commercial Relationship Service.
 
 ### Descripción
 
@@ -1048,7 +1539,7 @@ La segmentación es privada porque dos empresas pueden clasificar al mismo clien
 
 **Tabla:** `company_customers`  
 **Naturaleza:** privada por empresa.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Commercial Relationship Service.
 
 ### Descripción
 
@@ -1066,22 +1557,22 @@ Esta entidad es administrada exclusivamente por los usuarios autorizados de la e
 
 ### Atributos
 
-| Atributo                      | Tipo           | Regla              | Descripción                                                          |
-| ----------------------------- | -------------- | ------------------ | -------------------------------------------------------------------- |
-| `id`                          | `UUID`         | PK, NN             | Identificador privado.                                               |
-| `company_id`                  | `UUID`         | REF, NN            | Empresa propietaria.                                                 |
-| `customer_kind`               | `VARCHAR(20)`  | NN, CK             | `PERSON` u `ORGANIZATION`.                                           |
-| `person_identity_id`          | `UUID`         | FK, nullable       | Identidad global de persona natural.                                 |
-| `organization_identity_id`    | `UUID`         | FK, nullable       | Identidad global de organización.                                    |
-| `internal_code`               | `VARCHAR(60)`  | NN                 | Código interno del cliente.                                          |
-| `display_name`                | `VARCHAR(200)` | NN                 | Nombre visible dentro de la empresa.                                 |
-| `customer_segment_id`         | `UUID`         | FK, nullable       | Segmento comercial privado asignado por la empresa.                  |
-| `preferred_contact_person_id` | `UUID`         | FK, nullable       | Persona responsable preferida cuando el cliente es una organización. |
-| `is_active`                   | `BOOLEAN`      | NN, DEFAULT `TRUE` | Disponible para ventas nuevas.                                       |
-| `created_by_user_id`          | `UUID`         | REF, NN            | Usuario creador.                                                     |
-| `version`                     | `INTEGER`      | NN, DEFAULT `1`    | Control concurrente.                                                 |
-| `created_at`                  | `TIMESTAMPTZ`  | NN                 | Creación.                                                            |
-| `updated_at`                  | `TIMESTAMPTZ`  | NN                 | Modificación.                                                        |
+| Atributo                      | Tipo           | Regla              | Descripción                                                                  |
+| ----------------------------- | -------------- | ------------------ | ---------------------------------------------------------------------------- |
+| `id`                          | `UUID`         | PK, NN             | Identificador privado.                                                       |
+| `company_id`                  | `UUID`         | REF, NN            | Empresa propietaria.                                                         |
+| `customer_kind`               | `VARCHAR(20)`  | NN, CK             | `PERSON` u `ORGANIZATION`.                                                   |
+| `person_identity_id`          | `UUID`         | REF, nullable      | Identidad global de persona natural administrada por Party Identity Service. |
+| `organization_identity_id`    | `UUID`         | REF, nullable      | Identidad global de organización administrada por Party Identity Service.    |
+| `internal_code`               | `VARCHAR(60)`  | NN                 | Código interno del cliente.                                                  |
+| `display_name`                | `VARCHAR(200)` | NN                 | Nombre visible dentro de la empresa.                                         |
+| `customer_segment_id`         | `UUID`         | FK, nullable       | Segmento comercial privado asignado por la empresa.                          |
+| `preferred_contact_person_id` | `UUID`         | REF, nullable      | Persona de contacto preferida administrada por Party Identity Service.       |
+| `is_active`                   | `BOOLEAN`      | NN, DEFAULT `TRUE` | Disponible para ventas nuevas.                                               |
+| `created_by_user_id`          | `UUID`         | REF, NN            | Usuario creador.                                                             |
+| `version`                     | `INTEGER`      | NN, DEFAULT `1`    | Control concurrente.                                                         |
+| `created_at`                  | `TIMESTAMPTZ`  | NN                 | Creación.                                                                    |
+| `updated_at`                  | `TIMESTAMPTZ`  | NN                 | Modificación.                                                                |
 
 ### Reglas y restricciones
 
@@ -1104,7 +1595,7 @@ Esta entidad es administrada exclusivamente por los usuarios autorizados de la e
 
 **Tabla:** `company_suppliers`  
 **Naturaleza:** privada por empresa.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Commercial Relationship Service.
 
 ### Descripción
 
@@ -1120,19 +1611,19 @@ Una compra utiliza `company_supplier_id`, no `organization_identity_id` porque e
 
 ### Atributos
 
-| Atributo                      | Tipo           | Regla           | Descripción                                       |
-| ----------------------------- | -------------- | --------------- | ------------------------------------------------- |
-| `id`                          | `UUID`         | PK, NN          | Identificador privado.                            |
-| `company_id`                  | `UUID`         | REF, NN         | Empresa propietaria.                              |
-| `organization_identity_id`    | `UUID`         | FK, NN          | Organización global.                              |
-| `internal_code`               | `VARCHAR(60)`  | NN              | Código interno.                                   |
-| `display_name`                | `VARCHAR(200)` | NN              | Nombre visible en la empresa.                     |
-| `preferred_contact_person_id` | `UUID`         | FK, nullable    | Persona de contacto preferida de la organización. |
-| `relationship_status`         | `VARCHAR(20)`  | NN, CK          | `ACTIVE`, `INACTIVE` o `BLOCKED`.                 |
-| `created_by_user_id`          | `UUID`         | REF, NN         | Usuario creador.                                  |
-| `version`                     | `INTEGER`      | NN, DEFAULT `1` | Control concurrente.                              |
-| `created_at`                  | `TIMESTAMPTZ`  | NN              | Creación.                                         |
-| `updated_at`                  | `TIMESTAMPTZ`  | NN              | Modificación.                                     |
+| Atributo                      | Tipo           | Regla           | Descripción                                                            |
+| ----------------------------- | -------------- | --------------- | ---------------------------------------------------------------------- |
+| `id`                          | `UUID`         | PK, NN          | Identificador privado.                                                 |
+| `company_id`                  | `UUID`         | REF, NN         | Empresa propietaria.                                                   |
+| `organization_identity_id`    | `UUID`         | REF, NN         | Organización global administrada por Party Identity Service.           |
+| `internal_code`               | `VARCHAR(60)`  | NN              | Código interno.                                                        |
+| `display_name`                | `VARCHAR(200)` | NN              | Nombre visible en la empresa.                                          |
+| `preferred_contact_person_id` | `UUID`         | REF, nullable   | Persona de contacto preferida administrada por Party Identity Service. |
+| `relationship_status`         | `VARCHAR(20)`  | NN, CK          | `ACTIVE`, `INACTIVE` o `BLOCKED`.                                      |
+| `created_by_user_id`          | `UUID`         | REF, NN         | Usuario creador.                                                       |
+| `version`                     | `INTEGER`      | NN, DEFAULT `1` | Control concurrente.                                                   |
+| `created_at`                  | `TIMESTAMPTZ`  | NN              | Creación.                                                              |
+| `updated_at`                  | `TIMESTAMPTZ`  | NN              | Modificación.                                                          |
 
 ### Reglas y restricciones
 
@@ -1153,7 +1644,7 @@ Una compra utiliza `company_supplier_id`, no `organization_identity_id` porque e
 
 **Tabla:** `supplier_commercial_conditions`  
 **Naturaleza:** privada, comercial y versionada por empresa.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Commercial Relationship Service.
 
 ### Descripción
 
@@ -1189,7 +1680,7 @@ Las condiciones de pago se administran en `SupplierPaymentCondition` y las condi
 
 **Tabla:** `supplier_payment_conditions`  
 **Naturaleza:** privada, comercial y versionada por empresa.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Commercial Relationship Service.
 
 ### Descripción
 
@@ -1201,24 +1692,24 @@ La existencia de una condición `CREDIT` no significa que exista deuda, la deuda
 
 ### Atributos
 
-| Atributo                    | Tipo            | Regla               | Descripción                                   |
-| --------------------------- | --------------- | ------------------- | --------------------------------------------- |
-| `id`                        | `UUID`          | PK, NN              | Identificador.                                |
-| `company_id`                | `UUID`          | REF, NN             | Empresa propietaria.                          |
-| `company_supplier_id`       | `UUID`          | FK, NN              | Proveedor privado.                            |
-| `payment_condition_type_id` | `UUID`          | FK, NN              | Tipo global `CASH`, `CREDIT` o `FINANCING`.   |
-| `currency_code`             | `CHAR(3)`       | NN                  | Moneda.                                       |
-| `payment_terms_days`        | `INTEGER`       | NN, DEFAULT `0`     | Días concedidos para el pago.                 |
-| `credit_limit`              | `NUMERIC(18,2)` | nullable            | Cupo de crédito concedido por el proveedor.   |
-| `interest_rate_percentage`  | `NUMERIC(7,4)`  | nullable            | Tasa asociada a financiación cuando aplique.  |
-| `cash_discount_percentage`  | `NUMERIC(7,4)`  | nullable            | Descuento por pago de contado cuando aplique. |
-| `is_default`                | `BOOLEAN`       | NN, DEFAULT `FALSE` | Condición sugerida por defecto.               |
-| `is_active`                 | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Vigencia.                                     |
-| `valid_from`                | `TIMESTAMPTZ`   | NN                  | Inicio de vigencia.                           |
-| `valid_to`                  | `TIMESTAMPTZ`   | nullable            | Fin de vigencia.                              |
-| `created_by_user_id`        | `UUID`          | REF, NN             | Usuario creador.                              |
-| `created_at`                | `TIMESTAMPTZ`   | NN                  | Creación.                                     |
-| `updated_at`                | `TIMESTAMPTZ`   | NN                  | Modificación.                                 |
+| Atributo                    | Tipo            | Regla               | Descripción                                                                  |
+| --------------------------- | --------------- | ------------------- | ---------------------------------------------------------------------------- |
+| `id`                        | `UUID`          | PK, NN              | Identificador.                                                               |
+| `company_id`                | `UUID`          | REF, NN             | Empresa propietaria.                                                         |
+| `company_supplier_id`       | `UUID`          | FK, NN              | Proveedor privado.                                                           |
+| `payment_condition_type_id` | `UUID`          | REF, NN             | Tipo global de condición de pago administrado por Payment Reference Service. |
+| `currency_code`             | `CHAR(3)`       | NN                  | Moneda.                                                                      |
+| `payment_terms_days`        | `INTEGER`       | NN, DEFAULT `0`     | Días concedidos para el pago.                                                |
+| `credit_limit`              | `NUMERIC(18,2)` | nullable            | Cupo de crédito concedido por el proveedor.                                  |
+| `interest_rate_percentage`  | `NUMERIC(7,4)`  | nullable            | Tasa asociada a financiación cuando aplique.                                 |
+| `cash_discount_percentage`  | `NUMERIC(7,4)`  | nullable            | Descuento por pago de contado cuando aplique.                                |
+| `is_default`                | `BOOLEAN`       | NN, DEFAULT `FALSE` | Condición sugerida por defecto.                                              |
+| `is_active`                 | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Vigencia.                                                                    |
+| `valid_from`                | `TIMESTAMPTZ`   | NN                  | Inicio de vigencia.                                                          |
+| `valid_to`                  | `TIMESTAMPTZ`   | nullable            | Fin de vigencia.                                                             |
+| `created_by_user_id`        | `UUID`          | REF, NN             | Usuario creador.                                                             |
+| `created_at`                | `TIMESTAMPTZ`   | NN                  | Creación.                                                                    |
+| `updated_at`                | `TIMESTAMPTZ`   | NN                  | Modificación.                                                                |
 
 ### Reglas y restricciones
 
@@ -1227,12 +1718,13 @@ La existencia de una condición `CREDIT` no significa que exista deuda, la deuda
 - `CREDIT` y `FINANCING` deben utilizar un plazo mayor que cero.
 - Cupos, tasas y descuentos no pueden ser negativos.
 - Las versiones utilizadas en compras históricas no se eliminan físicamente.
+- `payment_condition_type_id` es una referencia externa a Payment Reference Service y no utiliza una llave foránea física.
 
 ## 5.7 SupplierProduct
 
 **Tabla:** `supplier_products`  
 **Naturaleza:** privada y comercial por empresa.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Commercial Relationship Service.
 
 ### Descripción
 
@@ -1244,26 +1736,27 @@ El lead time esperado es una condición de planificación y no reemplaza el lead
 
 ### Atributos
 
-| Atributo                            | Tipo            | Regla               | Descripción                                      |
-| ----------------------------------- | --------------- | ------------------- | ------------------------------------------------ |
-| `id`                                | `UUID`          | PK, NN              | Identificador.                                   |
-| `company_id`                        | `UUID`          | REF, NN             | Empresa propietaria.                             |
-| `company_supplier_id`               | `UUID`          | FK, NN              | Proveedor privado.                               |
-| `company_product_id`                | `UUID`          | FK, NN              | Producto empresarial.                            |
-| `supplier_product_code`             | `VARCHAR(100)`  | nullable            | Código utilizado por el proveedor.               |
-| `purchase_unit_id`                  | `UUID`          | FK, NN              | Unidad acordada para compra.                     |
-| `minimum_order_quantity`            | `NUMERIC(18,4)` | NN, DEFAULT `0`     | Cantidad mínima de pedido.                       |
-| `pack_quantity`                     | `NUMERIC(18,4)` | NN, DEFAULT `1`     | Múltiplo o empaque habitual.                     |
-| `negotiated_unit_cost`              | `NUMERIC(18,4)` | nullable            | Costo unitario negociado de referencia.          |
-| `currency_code`                     | `CHAR(3)`       | NN                  | Moneda del costo negociado.                      |
-| `expected_supplier_lead_time_hours` | `NUMERIC(12,2)` | nullable            | Lead time comprometido o esperado del proveedor. |
-| `priority`                          | `SMALLINT`      | nullable            | Prioridad manual para abastecimiento.            |
-| `is_preferred`                      | `BOOLEAN`       | NN, DEFAULT `FALSE` | Proveedor preferido para el producto.            |
-| `is_active`                         | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Relación vigente.                                |
-| `created_by_user_id`                | `UUID`          | REF, NN             | Usuario creador.                                 |
-| `version`                           | `INTEGER`       | NN, DEFAULT `1`     | Control concurrente.                             |
-| `created_at`                        | `TIMESTAMPTZ`   | NN                  | Creación.                                        |
-| `updated_at`                        | `TIMESTAMPTZ`   | NN                  | Modificación.                                    |
+| Atributo                            | Tipo            | Regla               | Descripción                                                                       |
+| ----------------------------------- | --------------- | ------------------- | --------------------------------------------------------------------------------- |
+| `id`                                | `UUID`          | PK, NN              | Identificador.                                                                    |
+| `company_id`                        | `UUID`          | REF, NN             | Empresa propietaria.                                                              |
+| `company_supplier_id`               | `UUID`          | FK, NN              | Proveedor privado.                                                                |
+| `company_product_id`                | `UUID`          | FK, NN              | Producto empresarial.                                                             |
+| `company_product_presentation_id`   | `UUID`          | FK, nullable        | Presentación empresarial específica suministrada por el proveedor cuando aplique. |
+| `supplier_product_code`             | `VARCHAR(100)`  | nullable            | Código utilizado por el proveedor.                                                |
+| `purchase_unit_id`                  | `UUID`          | REF, NN             | Unidad global acordada para compra, administrada por Product Catalog Service.     |
+| `minimum_order_quantity`            | `NUMERIC(18,4)` | NN, DEFAULT `0`     | Cantidad mínima de pedido.                                                        |
+| `pack_quantity`                     | `NUMERIC(18,4)` | NN, DEFAULT `1`     | Múltiplo o empaque habitual.                                                      |
+| `negotiated_unit_cost`              | `NUMERIC(18,4)` | nullable            | Costo unitario negociado de referencia.                                           |
+| `currency_code`                     | `CHAR(3)`       | NN                  | Moneda del costo negociado.                                                       |
+| `expected_supplier_lead_time_hours` | `NUMERIC(12,2)` | nullable            | Lead time comprometido o esperado del proveedor.                                  |
+| `priority`                          | `SMALLINT`      | nullable            | Prioridad manual para abastecimiento.                                             |
+| `is_preferred`                      | `BOOLEAN`       | NN, DEFAULT `FALSE` | Proveedor preferido para el producto.                                             |
+| `is_active`                         | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Relación vigente.                                                                 |
+| `created_by_user_id`                | `UUID`          | REF, NN             | Usuario creador.                                                                  |
+| `version`                           | `INTEGER`       | NN, DEFAULT `1`     | Control concurrente.                                                              |
+| `created_at`                        | `TIMESTAMPTZ`   | NN                  | Creación.                                                                         |
+| `updated_at`                        | `TIMESTAMPTZ`   | NN                  | Modificación.                                                                     |
 
 ### Reglas y restricciones
 
@@ -1272,19 +1765,29 @@ El lead time esperado es una condición de planificación y no reemplaza el lead
 - `pack_quantity` debe ser mayor que cero.
 - Solo proveedores y productos activos pueden utilizarse para nuevas compras.
 - Puede existir un único proveedor marcado como preferido por producto y empresa cuando la política de negocio así lo exija.
+- Cuando exista `company_product_presentation_id`, la presentación debe pertenecer al mismo `company_product_id`.
+- Si `company_product_presentation_id` es nulo, la relación con el proveedor aplica al producto empresarial de forma general.
 
 ### Relaciones
 
 - Pertenece a `CompanySupplier` y `CompanyProduct`.
+- Puede relacionarse con una `CompanyProductPresentation` específica.
 - Puede ser referenciado desde `PurchaseDetail` para conservar el origen comercial de la línea.
 
 ## 5.8 ProductPricingPolicy
 
 **Tabla:** `product_pricing_policies`  
 **Naturaleza:** privada, configurable, histórica y versionada por empresa.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Commercial Relationship Service.
+**Alcance:** POST-MVP. No requerida para la operación de listas de precios del MVP.
 
 ### Descripción
+
+Esta entidad no representa una lista de precios y no participa en el mecanismo básico de precios del MVP.
+
+Durante el MVP, los precios se administran mediante `CompanyProduct.sale_price` como precio simple de referencia y mediante `PriceList` y `PriceListItem` cuando se requiera una lista de precios.
+
+`ProductPricingPolicy` queda reservada para una etapa posterior en la que SIO implemente reglas de margen, control de rentabilidad, alertas comerciales o autorizaciones asociadas al precio.
 
 Representa la política comercial de márgenes que una empresa define para un producto empresarial.
 
@@ -1563,7 +2066,7 @@ La alerta debe identificar como mínimo:
 - usuario que realizó la operación;
 - momento de la operación.
 
-La administración de la alerta pertenece al servicio responsable de alertas y no a Catalog Service.
+La administración de la alerta pertenece al servicio responsable de alertas y no a Commercial Relationship Service.
 
 ### Relación con descuentos
 
@@ -1811,7 +2314,7 @@ El historial debe conservarse para auditoría, reporting y análisis.
 
 **Tabla:** `customer_credit_profiles`  
 **Naturaleza:** privada, sensible y versionada por empresa.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Commercial Relationship Service.
 
 ### Descripción
 
@@ -1848,7 +2351,7 @@ Se separa de `CompanyCustomer` porque el riesgo puede cambiar con el tiempo y re
 
 **Tabla:** `customer_payment_conditions`  
 **Naturaleza:** privada, comercial y versionada por empresa.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Commercial Relationship Service.
 
 ### Descripción
 
@@ -1887,7 +2390,7 @@ La condición comercial es diferente del medio con el que posteriormente se reci
 
 **Tabla:** `supplier_evaluations`  
 **Naturaleza:** privada, histórica y evaluativa por empresa.  
-**Servicio propietario:** Catalog Service.
+**Servicio propietario:** Commercial Relationship Service.
 
 ### Descripción
 
@@ -1919,6 +2422,187 @@ La calificación histórica agregada se publica desde Reporting Service y no se 
 - Las evaluaciones históricas no se editan para recalcular el pasado; una corrección se registra mediante una nueva evaluación controlada.
 - `SupplierPerformanceMetric.average_rating` se deriva de estas evaluaciones según el periodo definido.
 
+## 5.12 CompanyProductPresentation
+
+**Tabla:** `company_product_presentations`
+
+**Naturaleza:** privada por empresa.
+
+**Servicio propietario:** Commercial Relationship Service.
+
+### Descripción
+
+Representa la adopción empresarial de una presentación global de un producto.
+
+`GlobalProductPresentation` define cómo existe físicamente una presentación, mientras `CompanyProductPresentation` define cómo una empresa utiliza esa presentación para comprarla, venderla o identificarla internamente.
+
+Permite que dos empresas adopten el mismo producto y la misma presentación utilizando códigos internos o SKU diferentes.
+
+### Atributos
+
+| Atributo                         | Tipo           | Regla               | Descripción                                   |
+| -------------------------------- | -------------- | ------------------- | --------------------------------------------- |
+| `id`                             | `UUID`         | PK, NN              | Identificador empresarial.                    |
+| `company_id`                     | `UUID`         | REF, NN             | Empresa propietaria.                          |
+| `company_product_id`             | `UUID`         | FK, NN              | Producto empresarial.                         |
+| `global_product_presentation_id` | `UUID`         | REF, NN             | Presentación global adoptada.                 |
+| `internal_code`                  | `VARCHAR(80)`  | nullable            | Código interno específico de la presentación. |
+| `sku`                            | `VARCHAR(80)`  | nullable            | SKU privado de la presentación.               |
+| `reference_code`                 | `VARCHAR(100)` | nullable            | Referencia empresarial adicional.             |
+| `is_purchasable`                 | `BOOLEAN`      | NN, DEFAULT `TRUE`  | Indica si puede utilizarse en compras.        |
+| `is_sellable`                    | `BOOLEAN`      | NN, DEFAULT `TRUE`  | Indica si puede utilizarse en ventas.         |
+| `is_default_purchase`            | `BOOLEAN`      | NN, DEFAULT `FALSE` | Presentación predeterminada para compras.     |
+| `is_default_sale`                | `BOOLEAN`      | NN, DEFAULT `FALSE` | Presentación predeterminada para ventas.      |
+| `is_active`                      | `BOOLEAN`      | NN, DEFAULT `TRUE`  | Estado dentro de la empresa.                  |
+| `created_by_user_id`             | `UUID`         | REF, NN             | Usuario que creó la configuración.            |
+| `version`                        | `INTEGER`      | NN, DEFAULT `1`     | Control concurrente.                          |
+| `created_at`                     | `TIMESTAMPTZ`  | NN                  | Fecha de creación.                            |
+| `updated_at`                     | `TIMESTAMPTZ`  | NN                  | Última modificación.                          |
+
+### Reglas y restricciones
+
+- La combinación `company_product_id` y `global_product_presentation_id` debe ser única.
+- La presentación global debe pertenecer al mismo `GlobalProduct` adoptado por `CompanyProduct`.
+- Debe existir como máximo una presentación de compra predeterminada activa por `CompanyProduct`.
+- Debe existir como máximo una presentación de venta predeterminada activa por `CompanyProduct`.
+- `internal_code`, cuando exista, debe respetar la política de unicidad empresarial definida para códigos operativos.
+- `sku`, cuando exista, debe ser único por empresa sin diferenciar mayúsculas y minúsculas.
+- Una presentación inactiva no puede utilizarse en nuevas compras o ventas.
+- Desactivar una presentación no modifica documentos históricos.
+
+### Relaciones
+
+- Pertenece a un `CompanyProduct`.
+- Referencia una `GlobalProductPresentation` de Product Catalog Service.
+- Puede ser utilizada por `SupplierProduct`.
+- Puede ser utilizada por `PriceListItem`.
+- Puede ser referenciada desde `PurchaseDetail` y `SaleDetail`.
+
+## 5.13 PriceList
+
+**Tabla:** `price_lists`
+
+**Naturaleza:** privada por empresa.
+
+**Servicio propietario:** Commercial Relationship Service.
+
+### Descripción
+
+Representa una lista de precios definida por una empresa.
+
+Permite manejar múltiples esquemas de precio como minorista, mayorista, distribuidor, comercio electrónico o cualquier otra estructura comercial sin agregar columnas de precio directamente a `CompanyProduct`.
+
+Las listas encontradas en fuentes externas como `Precio Lista 1` hasta `Precio Lista 18` pueden representarse como registros diferentes de esta entidad.
+
+`PriceList` define la lista y su moneda; los precios concretos de los productos pertenecen a `PriceListItem`.
+
+Durante el MVP, `PriceList` se utiliza únicamente como un mecanismo simple para organizar precios empresariales.
+
+La selección de una lista puede ser explícita o utilizar la lista marcada como predeterminada.
+
+El MVP no implementa motores avanzados para seleccionar automáticamente listas por segmento, volumen, canal, promoción, horario, sucursal u otras reglas comerciales.
+
+Las capacidades avanzadas de resolución de precios pueden incorporarse posteriormente sin modificar la estructura básica de `PriceList` y `PriceListItem`.
+
+### Atributos
+
+| Atributo             | Tipo           | Regla               | Descripción                             |
+| -------------------- | -------------- | ------------------- | --------------------------------------- |
+| `id`                 | `UUID`         | PK, NN              | Identificador de la lista.              |
+| `company_id`         | `UUID`         | REF, NN             | Empresa propietaria.                    |
+| `code`               | `VARCHAR(50)`  | NN                  | Código estable de la lista.             |
+| `name`               | `VARCHAR(120)` | NN                  | Nombre visible.                         |
+| `description`        | `TEXT`         | nullable            | Descripción de su propósito comercial.  |
+| `currency_code`      | `CHAR(3)`      | NN                  | Moneda ISO 4217 utilizada por la lista. |
+| `is_default`         | `BOOLEAN`      | NN, DEFAULT `FALSE` | Indica si es la lista predeterminada.   |
+| `valid_from`         | `TIMESTAMPTZ`  | nullable            | Momento desde el cual puede utilizarse. |
+| `valid_to`           | `TIMESTAMPTZ`  | nullable            | Momento hasta el cual puede utilizarse. |
+| `is_active`          | `BOOLEAN`      | NN, DEFAULT `TRUE`  | Estado operativo.                       |
+| `created_by_user_id` | `UUID`         | REF, NN             | Usuario creador.                        |
+| `version`            | `INTEGER`      | NN, DEFAULT `1`     | Control concurrente.                    |
+| `created_at`         | `TIMESTAMPTZ`  | NN                  | Fecha de creación.                      |
+| `updated_at`         | `TIMESTAMPTZ`  | NN                  | Última modificación.                    |
+
+### Reglas y restricciones
+
+- La combinación `company_id` y `code` debe ser única sin diferenciar mayúsculas y minúsculas.
+- Cuando existan `valid_from` y `valid_to`, `valid_to` debe ser posterior a `valid_from`.
+- Debe existir como máximo una lista predeterminada activa por empresa y moneda.
+- Una lista inactiva no puede seleccionarse para nuevas ventas.
+- Una lista utilizada históricamente no debe eliminarse físicamente.
+- La lista no almacena directamente los precios de productos.
+- `PriceList` no reemplaza `ProductPricingPolicy`.
+- `ProductPricingPolicy` controla reglas de margen y `PriceList` controla precios comerciales.
+
+### Relaciones
+
+- Pertenece a una empresa mediante `company_id`.
+- Puede contener múltiples `PriceListItem`.
+- Puede ser referenciada desde `SaleDetail` para conservar el origen del precio aplicado.
+
+---
+
+## 5.14 PriceListItem
+
+**Tabla:** `price_list_items`
+
+**Naturaleza:** privada, configurable e histórica por empresa.
+
+**Servicio propietario:** Commercial Relationship Service.
+
+### Descripción
+
+Representa el precio de un producto empresarial dentro de una lista de precios.
+
+Permite establecer precios diferentes para un mismo `CompanyProduct` según la lista comercial seleccionada.
+
+Cuando el producto utiliza varias presentaciones, el precio puede asignarse específicamente a una `CompanyProductPresentation`.
+
+La vigencia permite conservar diferentes versiones históricas de un precio sin sobrescribir la información utilizada en operaciones anteriores.
+
+### Atributos
+
+| Atributo                          | Tipo            | Regla              | Descripción                             |
+| --------------------------------- | --------------- | ------------------ | --------------------------------------- |
+| `id`                              | `UUID`          | PK, NN             | Identificador del precio.               |
+| `company_id`                      | `UUID`          | REF, NN            | Empresa propietaria.                    |
+| `price_list_id`                   | `UUID`          | FK, NN             | Lista de precios.                       |
+| `company_product_id`              | `UUID`          | FK, NN             | Producto empresarial.                   |
+| `company_product_presentation_id` | `UUID`          | FK, nullable       | Presentación empresarial específica.    |
+| `unit_price`                      | `NUMERIC(18,4)` | NN                 | Precio unitario configurado.            |
+| `valid_from`                      | `TIMESTAMPTZ`   | NN                 | Inicio de vigencia.                     |
+| `valid_to`                        | `TIMESTAMPTZ`   | nullable           | Finalización de vigencia.               |
+| `is_active`                       | `BOOLEAN`       | NN, DEFAULT `TRUE` | Indica si puede utilizarse actualmente. |
+| `created_by_user_id`              | `UUID`          | REF, NN            | Usuario creador.                        |
+| `version`                         | `INTEGER`       | NN, DEFAULT `1`    | Control concurrente.                    |
+| `created_at`                      | `TIMESTAMPTZ`   | NN                 | Fecha de creación.                      |
+| `updated_at`                      | `TIMESTAMPTZ`   | NN                 | Última modificación.                    |
+
+### Reglas y restricciones
+
+- `unit_price` no puede ser negativo.
+- `valid_to` debe ser posterior a `valid_from` cuando exista.
+- `price_list_id` debe pertenecer a la misma empresa indicada por `company_id`.
+- `company_product_id` debe pertenecer a la misma empresa.
+- Cuando exista `company_product_presentation_id`, debe pertenecer al mismo `CompanyProduct`.
+- No pueden existir periodos de vigencia solapados para la misma combinación de lista, producto y presentación.
+- Si `company_product_presentation_id` es nulo, el precio aplica directamente al `CompanyProduct` de forma general.
+- Si `company_product_presentation_id` contiene un valor, el precio aplica exclusivamente a esa presentación empresarial.
+- Cuando no exista un `PriceListItem` aplicable, el MVP puede utilizar `CompanyProduct.sale_price` como precio simple o predeterminado según las reglas del proceso de venta.
+- La moneda se obtiene desde `PriceList.currency_code`.
+- Los precios históricos utilizados en ventas no deben eliminarse físicamente.
+- El valor `0` representa un precio real igual a cero; la ausencia de configuración debe representarse mediante la inexistencia de un `PriceListItem`, no mediante un valor cero artificial.
+
+### Relaciones
+
+- Pertenece a una `PriceList`.
+- Pertenece a un `CompanyProduct`.
+- Puede pertenecer a una `CompanyProductPresentation`.
+- Puede ser referenciado desde `SaleDetail`.
+- Puede coexistir con `CompanyProduct.sale_price`, que funciona como precio simple o de referencia cuando no se utiliza una lista.
+
+---
+
 # 6. Operational Context DB
 
 ## 6.1 Company
@@ -1933,7 +2617,7 @@ Representa una organización que utiliza SIO como cliente de la plataforma.
 
 Puede relacionarse con su identidad legal global mediante `organization_identity_id`.
 
-El sector económico y representante legal se consultan desde Catalog Service, mientras Operational Context Service sigue siendo propietario del contexto operativo.
+La identidad legal, el sector económico asociado y el representante legal se consultan desde Party Identity Service, mientras Operational Context Service sigue siendo propietario del contexto operativo.
 
 La ubicación de `Company` representa su sede principal o administrativa.
 
@@ -1952,7 +2636,7 @@ Las coordenadas son propias de la sede y no deben sustituirse por el centroide d
 | `email`                      | `VARCHAR(254)` | nullable                     | Correo principal.                                |
 | `phone`                      | `VARCHAR(40)`  | nullable                     | Teléfono.                                        |
 | `address_line`               | `TEXT`         | nullable                     | Dirección principal.                             |
-| `country_id`                 | `UUID`         | REF, nullable                | País gobernado por Catalog Service.              |
+| `country_id`                 | `UUID`         | REF, nullable                | País administrado por Geography Service.         |
 | `administrative_division_id` | `UUID`         | REF, nullable                | Departamento, estado, provincia u otra división. |
 | `city_id`                    | `UUID`         | REF, nullable                | Ciudad o municipio.                              |
 | `postal_code`                | `VARCHAR(20)`  | nullable                     | Código postal.                                   |
@@ -2000,25 +2684,25 @@ Las coordenadas permiten soportar posteriormente logística, distancias, planifi
 
 ### Atributos
 
-| Atributo                     | Tipo           | Regla              | Descripción                         |
-| ---------------------------- | -------------- | ------------------ | ----------------------------------- |
-| `id`                         | `UUID`         | PK, NN             | Identificador.                      |
-| `company_id`                 | `UUID`         | FK, NN             | Empresa.                            |
-| `code`                       | `VARCHAR(40)`  | NN                 | Código interno.                     |
-| `name`                       | `VARCHAR(160)` | NN                 | Nombre.                             |
-| `email`                      | `VARCHAR(254)` | nullable           | Correo.                             |
-| `phone`                      | `VARCHAR(40)`  | nullable           | Teléfono.                           |
-| `address_line`               | `TEXT`         | nullable           | Dirección.                          |
-| `country_id`                 | `UUID`         | REF, nullable      | País gobernado por Catalog Service. |
-| `administrative_division_id` | `UUID`         | REF, nullable      | División administrativa.            |
-| `city_id`                    | `UUID`         | REF, nullable      | Ciudad o municipio.                 |
-| `postal_code`                | `VARCHAR(20)`  | nullable           | Código postal.                      |
-| `latitude`                   | `NUMERIC(9,6)` | nullable           | Latitud exacta de la sucursal.      |
-| `longitude`                  | `NUMERIC(9,6)` | nullable           | Longitud exacta de la sucursal.     |
-| `timezone`                   | `VARCHAR(60)`  | nullable           | Zona horaria específica.            |
-| `is_active`                  | `BOOLEAN`      | NN, DEFAULT `TRUE` | Estado.                             |
-| `created_at`                 | `TIMESTAMPTZ`  | NN                 | Creación.                           |
-| `updated_at`                 | `TIMESTAMPTZ`  | NN                 | Modificación.                       |
+| Atributo                     | Tipo           | Regla              | Descripción                              |
+| ---------------------------- | -------------- | ------------------ | ---------------------------------------- |
+| `id`                         | `UUID`         | PK, NN             | Identificador.                           |
+| `company_id`                 | `UUID`         | FK, NN             | Empresa.                                 |
+| `code`                       | `VARCHAR(40)`  | NN                 | Código interno.                          |
+| `name`                       | `VARCHAR(160)` | NN                 | Nombre.                                  |
+| `email`                      | `VARCHAR(254)` | nullable           | Correo.                                  |
+| `phone`                      | `VARCHAR(40)`  | nullable           | Teléfono.                                |
+| `address_line`               | `TEXT`         | nullable           | Dirección.                               |
+| `country_id`                 | `UUID`         | REF, nullable      | País administrado por Geography Service. |
+| `administrative_division_id` | `UUID`         | REF, nullable      | División administrativa.                 |
+| `city_id`                    | `UUID`         | REF, nullable      | Ciudad o municipio.                      |
+| `postal_code`                | `VARCHAR(20)`  | nullable           | Código postal.                           |
+| `latitude`                   | `NUMERIC(9,6)` | nullable           | Latitud exacta de la sucursal.           |
+| `longitude`                  | `NUMERIC(9,6)` | nullable           | Longitud exacta de la sucursal.          |
+| `timezone`                   | `VARCHAR(60)`  | nullable           | Zona horaria específica.                 |
+| `is_active`                  | `BOOLEAN`      | NN, DEFAULT `TRUE` | Estado.                                  |
+| `created_at`                 | `TIMESTAMPTZ`  | NN                 | Creación.                                |
+| `updated_at`                 | `TIMESTAMPTZ`  | NN                 | Modificación.                            |
 
 ### Reglas y restricciones
 
@@ -2126,7 +2810,7 @@ Si además utiliza la aplicación su acceso se administra independientemente med
 
 ### Reglas y restricciones
 
-- `person_identity_id` referencia una `PersonIdentity` administrada por `Catalog Service` y no utiliza una llave foránea física entre bases de datos.
+- `person_identity_id` referencia una `PersonIdentity` administrada por Party Identity Service y no utiliza una llave foránea física entre bases de datos.
 - La persona debe existir y encontrarse disponible para nuevas relaciones al momento de crear la asignación.
 - Debe existir como máximo un asesor principal activo por empresa.
 - Una asignación activa debe cumplir:
@@ -2193,7 +2877,7 @@ De esta manera se conserva el historial de asesores relacionados con la empresa.
 - Referencia una única `PersonIdentity`.
 - Una `Company` puede tener múltiples asignaciones históricas de asesores.
 - Una `PersonIdentity` puede actuar como asesor de una o varias empresas cuando las reglas del negocio lo permitan.
-- La identidad, nombre y datos personales del asesor se consultan desde Catalog Service.
+- La identidad, nombre y datos personales del asesor se consultan desde Party Identity Service.
 - Si el asesor además posee acceso a SIO para dicha autenticación y operación se administran independientemente mediante `ApplicationUser` y Keycloak.
 
 # 7. Purchase DB
@@ -2273,31 +2957,39 @@ Los snapshots del producto garantizan que el documento histórico no cambie si e
 
 ### Atributos
 
-| Atributo                            | Tipo            | Regla           | Descripción                                                         |
-| ----------------------------------- | --------------- | --------------- | ------------------------------------------------------------------- |
-| `id`                                | `UUID`          | PK, NN          | Identificador.                                                      |
-| `purchase_id`                       | `UUID`          | FK, NN          | Compra.                                                             |
-| `line_number`                       | `SMALLINT`      | NN              | Posición.                                                           |
-| `company_product_id`                | `UUID`          | REF, NN         | Producto empresarial.                                               |
-| `supplier_product_id`               | `UUID`          | REF, nullable   | Relación comercial proveedor-producto utilizada.                    |
-| `supplier_lead_time_snapshot_hours` | `NUMERIC(12,2)` | nullable        | Lead time esperado del proveedor conservado al formalizar la línea. |
-| `product_code_snapshot`             | `VARCHAR(80)`   | NN              | Código histórico.                                                   |
-| `product_name_snapshot`             | `VARCHAR(200)`  | NN              | Nombre histórico.                                                   |
-| `unit_code_snapshot`                | `VARCHAR(20)`   | NN              | Unidad histórica.                                                   |
-| `quantity`                          | `NUMERIC(18,4)` | NN              | Cantidad.                                                           |
-| `unit_cost`                         | `NUMERIC(18,4)` | NN              | Costo unitario.                                                     |
-| `discount_amount`                   | `NUMERIC(18,2)` | NN, DEFAULT `0` | Descuento.                                                          |
-| `tax_amount`                        | `NUMERIC(18,2)` | NN, DEFAULT `0` | Impuesto.                                                           |
-| `subtotal`                          | `NUMERIC(18,2)` | NN              | Subtotal.                                                           |
-| `total`                             | `NUMERIC(18,2)` | NN              | Total.                                                              |
-| `created_at`                        | `TIMESTAMPTZ`   | NN              | Creación.                                                           |
-| `updated_at`                        | `TIMESTAMPTZ`   | NN              | Modificación.                                                       |
+| Atributo                            | Tipo            | Regla           | Descripción                                                                                   |
+| ----------------------------------- | --------------- | --------------- | --------------------------------------------------------------------------------------------- |
+| `id`                                | `UUID`          | PK, NN          | Identificador.                                                                                |
+| `purchase_id`                       | `UUID`          | FK, NN          | Compra.                                                                                       |
+| `line_number`                       | `SMALLINT`      | NN              | Posición.                                                                                     |
+| `company_product_id`                | `UUID`          | REF, NN         | Producto empresarial.                                                                         |
+| `company_product_presentation_id`   | `UUID`          | REF, nullable   | Presentación empresarial utilizada en la compra.                                              |
+| `supplier_product_id`               | `UUID`          | REF, nullable   | Relación comercial proveedor-producto utilizada.                                              |
+| `supplier_lead_time_snapshot_hours` | `NUMERIC(12,2)` | nullable        | Lead time esperado del proveedor conservado al formalizar la línea.                           |
+| `product_code_snapshot`             | `VARCHAR(80)`   | NN              | Código histórico.                                                                             |
+| `product_name_snapshot`             | `VARCHAR(200)`  | NN              | Nombre histórico.                                                                             |
+| `presentation_code_snapshot`        | `VARCHAR(80)`   | nullable        | Código histórico de la presentación utilizada.                                                |
+| `presentation_name_snapshot`        | `VARCHAR(160)`  | nullable        | Nombre histórico de la presentación utilizada.                                                |
+| `base_quantity_factor_snapshot`     | `NUMERIC(18,8)` | NN, DEFAULT `1` | Factor histórico utilizado para convertir la cantidad comprada a la unidad base del producto. |
+| `unit_code_snapshot`                | `VARCHAR(20)`   | NN              | Unidad histórica.                                                                             |
+| `quantity`                          | `NUMERIC(18,4)` | NN              | Cantidad.                                                                                     |
+| `unit_cost`                         | `NUMERIC(18,4)` | NN              | Costo unitario.                                                                               |
+| `discount_amount`                   | `NUMERIC(18,2)` | NN, DEFAULT `0` | Descuento.                                                                                    |
+| `tax_amount`                        | `NUMERIC(18,2)` | NN, DEFAULT `0` | Impuesto.                                                                                     |
+| `subtotal`                          | `NUMERIC(18,2)` | NN              | Subtotal.                                                                                     |
+| `total`                             | `NUMERIC(18,2)` | NN              | Total.                                                                                        |
+| `created_at`                        | `TIMESTAMPTZ`   | NN              | Creación.                                                                                     |
+| `updated_at`                        | `TIMESTAMPTZ`   | NN              | Modificación.                                                                                 |
 
 ### Reglas y restricciones
 
 - El número de línea es único dentro de la compra.
 - Cantidad mayor que cero.
 - Valores monetarios no negativos.
+- Cuando exista `company_product_presentation_id`, debe pertenecer al mismo `CompanyProduct` indicado por `company_product_id`.
+- `base_quantity_factor_snapshot` debe ser mayor que cero.
+- La confirmación de la compra debe convertir la cantidad adquirida a la unidad base utilizando `base_quantity_factor_snapshot` antes de generar el movimiento de inventario.
+- Los snapshots de presentación no deben modificarse aunque posteriormente cambie la definición de la presentación empresarial o global.
 
 ## 7.3 PurchaseSequence
 
@@ -2487,27 +3179,33 @@ El precio histórico no cambia cuando se modifica el precio actual del producto 
 
 ### Atributos
 
-| Atributo                  | Tipo            | Regla           | Descripción                                     |
-| ------------------------- | --------------- | --------------- | ----------------------------------------------- |
-| `id`                      | `UUID`          | PK, NN          | Identificador.                                  |
-| `sale_id`                 | `UUID`          | FK, NN          | Venta.                                          |
-| `line_number`             | `SMALLINT`      | NN              | Número de línea.                                |
-| `company_product_id`      | `UUID`          | REF, NN         | Producto empresarial.                           |
-| `product_code_snapshot`   | `VARCHAR(80)`   | NN              | Código histórico.                               |
-| `product_name_snapshot`   | `VARCHAR(200)`  | NN              | Nombre histórico.                               |
-| `unit_code_snapshot`      | `VARCHAR(20)`   | NN              | Unidad histórica.                               |
-| `quantity`                | `NUMERIC(18,4)` | NN              | Cantidad.                                       |
-| `unit_price`              | `NUMERIC(18,4)` | NN              | Precio unitario.                                |
-| `unit_cost_snapshot`      | `NUMERIC(18,4)` | nullable        | Costo unitario histórico aplicado al confirmar. |
-| `cost_total`              | `NUMERIC(18,2)` | nullable        | Costo total histórico de la línea.              |
-| `gross_margin_amount`     | `NUMERIC(18,2)` | nullable        | Margen bruto monetario de la línea.             |
-| `gross_margin_percentage` | `NUMERIC(7,4)`  | nullable        | Margen bruto porcentual sobre venta neta.       |
-| `discount_amount`         | `NUMERIC(18,2)` | NN, DEFAULT `0` | Descuento.                                      |
-| `tax_amount`              | `NUMERIC(18,2)` | NN, DEFAULT `0` | Impuesto.                                       |
-| `subtotal`                | `NUMERIC(18,2)` | NN              | Subtotal.                                       |
-| `total`                   | `NUMERIC(18,2)` | NN              | Total.                                          |
-| `created_at`              | `TIMESTAMPTZ`   | NN              | Creación.                                       |
-| `updated_at`              | `TIMESTAMPTZ`   | NN              | Modificación.                                   |
+| Atributo                          | Tipo            | Regla           | Descripción                                                                                  |
+| --------------------------------- | --------------- | --------------- | -------------------------------------------------------------------------------------------- |
+| `id`                              | `UUID`          | PK, NN          | Identificador.                                                                               |
+| `sale_id`                         | `UUID`          | FK, NN          | Venta.                                                                                       |
+| `line_number`                     | `SMALLINT`      | NN              | Número de línea.                                                                             |
+| `company_product_id`              | `UUID`          | REF, NN         | Producto empresarial.                                                                        |
+| `company_product_presentation_id` | `UUID`          | REF, nullable   | Presentación empresarial utilizada en la venta.                                              |
+| `price_list_id`                   | `UUID`          | REF, nullable   | Lista de precios utilizada para determinar el precio cuando aplique.                         |
+| `price_list_item_id`              | `UUID`          | REF, nullable   | Precio configurado de la lista utilizado como referencia cuando aplique.                     |
+| `product_code_snapshot`           | `VARCHAR(80)`   | NN              | Código histórico.                                                                            |
+| `product_name_snapshot`           | `VARCHAR(200)`  | NN              | Nombre histórico.                                                                            |
+| `presentation_code_snapshot`      | `VARCHAR(80)`   | nullable        | Código histórico de la presentación vendida.                                                 |
+| `presentation_name_snapshot`      | `VARCHAR(160)`  | nullable        | Nombre histórico de la presentación vendida.                                                 |
+| `base_quantity_factor_snapshot`   | `NUMERIC(18,8)` | NN, DEFAULT `1` | Factor histórico utilizado para convertir la cantidad vendida a la unidad base del producto. |
+| `unit_code_snapshot`              | `VARCHAR(20)`   | NN              | Unidad histórica.                                                                            |
+| `quantity`                        | `NUMERIC(18,4)` | NN              | Cantidad.                                                                                    |
+| `unit_price`                      | `NUMERIC(18,4)` | NN              | Precio unitario.                                                                             |
+| `unit_cost_snapshot`              | `NUMERIC(18,4)` | nullable        | Costo unitario histórico aplicado al confirmar.                                              |
+| `cost_total`                      | `NUMERIC(18,2)` | nullable        | Costo total histórico de la línea.                                                           |
+| `gross_margin_amount`             | `NUMERIC(18,2)` | nullable        | Margen bruto monetario de la línea.                                                          |
+| `gross_margin_percentage`         | `NUMERIC(7,4)`  | nullable        | Margen bruto porcentual sobre venta neta.                                                    |
+| `discount_amount`                 | `NUMERIC(18,2)` | NN, DEFAULT `0` | Descuento.                                                                                   |
+| `tax_amount`                      | `NUMERIC(18,2)` | NN, DEFAULT `0` | Impuesto.                                                                                    |
+| `subtotal`                        | `NUMERIC(18,2)` | NN              | Subtotal.                                                                                    |
+| `total`                           | `NUMERIC(18,2)` | NN              | Total.                                                                                       |
+| `created_at`                      | `TIMESTAMPTZ`   | NN              | Creación.                                                                                    |
+| `updated_at`                      | `TIMESTAMPTZ`   | NN              | Modificación.                                                                                |
 
 ### Reglas y restricciones
 
@@ -2516,6 +3214,12 @@ El precio histórico no cambia cuando se modifica el precio actual del producto 
 - Valores monetarios no negativos.
 - `unit_cost_snapshot`, `cost_total` y los márgenes se completan al confirmar la venta con el costo informado por `Inventory Service`.
 - Una venta histórica no recalcula sus márgenes cuando cambia `CompanyProduct.reference_cost`.
+- Cuando exista `company_product_presentation_id`, debe pertenecer al mismo `CompanyProduct` indicado por `company_product_id`.
+- `base_quantity_factor_snapshot` debe ser mayor que cero.
+- La validación y salida de inventario debe realizarse en la unidad base utilizando `base_quantity_factor_snapshot`.
+- `price_list_id` y `price_list_item_id` son referencias externas a Commercial Relationship Service y no utilizan llaves foráneas físicas.
+- Cuando exista `price_list_item_id`, debe corresponder a la misma `price_list_id`, producto y presentación utilizados por la línea.
+- `unit_price` representa el precio histórico definitivo de la venta y no debe recalcularse posteriormente aunque cambie la lista de precios.
 
 ## 8.3 SaleSequence
 
@@ -2912,7 +3616,7 @@ Conserva el resultado del conteo físico por producto y la diferencia contra el 
 
 Es la fuente oficial de cuentas por pagar, cuentas por cobrar, pagos, recaudos, saldos pendientes y vencimientos.
 
-La condición comercial se origina en `Catalog Service` y queda como snapshot en Purchase o Sale.
+La condición comercial se origina en `Commercial Relationship Service` y queda como snapshot en Purchase o Sale.
 
 El saldo de cartera nunca se almacena en `CompanySupplier` ni `CompanyCustomer`.
 
