@@ -1,0 +1,110 @@
+services:
+
+  product-catalog-dev-db:
+    image: postgres:17-alpine
+    container_name: sio-product-catalog-dev-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${PRODUCT_CATALOG_DB_NAME}
+      POSTGRES_USER: ${PRODUCT_CATALOG_DB_USER}
+      POSTGRES_PASSWORD: ${PRODUCT_CATALOG_DB_PASSWORD}
+
+    ports:
+      - "127.0.0.1:${PRODUCT_CATALOG_DB_PORT:-55437}:5432"
+
+    volumes:
+      - product_catalog_dev_db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${PRODUCT_CATALOG_DB_USER} -d ${PRODUCT_CATALOG_DB_NAME}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+
+  product-catalog-test-db:
+    image: postgres:17-alpine
+    container_name: sio-product-catalog-test-db
+    profiles:
+      - test
+    restart: "no"
+
+    environment:
+      POSTGRES_DB: ${PRODUCT_CATALOG_TEST_DB_NAME:-sio_product_catalog_test}
+      POSTGRES_USER: ${PRODUCT_CATALOG_TEST_DB_USER:-sio_product_catalog_test}
+      POSTGRES_PASSWORD: ${PRODUCT_CATALOG_TEST_DB_PASSWORD:-sio_product_catalog_test_dev_change_me}
+
+    ports:
+      - "127.0.0.1:${PRODUCT_CATALOG_TEST_DB_PORT:-55438}:5432"
+
+    tmpfs:
+      - /var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+
+  product-catalog-service:
+    container_name: sio-product-catalog-service-dev
+    restart: unless-stopped
+
+    build:
+      context: ../..
+      dockerfile: services/product-catalog-service/Dockerfile
+
+    env_file:
+      - .env
+
+    environment:
+      DATABASE_URL: >-
+        postgresql+psycopg://${PRODUCT_CATALOG_DB_USER}:${PRODUCT_CATALOG_DB_PASSWORD}@product-catalog-dev-db:5432/${PRODUCT_CATALOG_DB_NAME}
+
+      # El JWT fue emitido con localhost:8081 como issuer.
+      # Este valor NO debe cambiar.
+      SIO_AUTH_ISSUER: http://localhost:8081/realms/sio
+
+      # Desde el contenedor, localhost sería el propio contenedor.
+      # Para obtener las claves públicas usamos el host.
+      SIO_AUTH_JWKS_URL: http://host.docker.internal:8081/realms/sio/protocol/openid-connect/certs
+      PARTY_IDENTITY_SERVICE_BASE_URL: http://host.docker.internal:8002
+
+    ports:
+      - "${PRODUCT_CATALOG_SERVICE_PORT:-8003}:8000"
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    depends_on:
+      product-catalog-dev-db:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+
+volumes:
+  product_catalog_dev_db_data:

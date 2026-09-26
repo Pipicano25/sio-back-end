@@ -26,9 +26,11 @@ htmlcov/
 **/.env
 **/.env.*
 !**/.env.example
+
 .claude/
 .specify/
 specs/
+docs/development-roadmap.md
 
 # Logs y temporales
 *.log

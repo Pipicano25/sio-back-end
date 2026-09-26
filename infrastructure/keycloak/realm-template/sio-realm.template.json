@@ -486,6 +486,130 @@
           "description": "Eliminar o desactivar global_category_attributes en product-catalog"
         },
         {
+          "name": "perm:product-catalog:units-of-measure:read",
+          "description": "Consultar unidades de medida en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:units-of-measure:create",
+          "description": "Crear unidades de medida en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:units-of-measure:update",
+          "description": "Modificar unidades de medida en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:units-of-measure:deactivate",
+          "description": "Inactivar o reactivar unidades de medida en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:packaging-types:read",
+          "description": "Consultar tipos de empaque en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:packaging-types:create",
+          "description": "Crear tipos de empaque en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:packaging-types:update",
+          "description": "Modificar tipos de empaque en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:packaging-types:deactivate",
+          "description": "Inactivar o reactivar tipos de empaque en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:brands:read",
+          "description": "Consultar marcas en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:brands:create",
+          "description": "Crear marcas en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:brands:update",
+          "description": "Modificar marcas en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:brands:deactivate",
+          "description": "Inactivar o reactivar marcas en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:categories:read",
+          "description": "Consultar categorías en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:categories:create",
+          "description": "Crear categorías en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:categories:update",
+          "description": "Modificar categorías en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:categories:deactivate",
+          "description": "Inactivar o reactivar categorías en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:attribute-definitions:read",
+          "description": "Consultar definiciones de atributo en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:attribute-definitions:create",
+          "description": "Crear definiciones de atributo en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:attribute-definitions:update",
+          "description": "Modificar definiciones de atributo en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:attribute-definitions:deactivate",
+          "description": "Inactivar o reactivar definiciones de atributo en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:group-types:read",
+          "description": "Consultar tipos de grupo y grupos en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:group-types:create",
+          "description": "Crear tipos de grupo y grupos en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:group-types:update",
+          "description": "Modificar tipos de grupo y grupos en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:group-types:deactivate",
+          "description": "Inactivar o reactivar tipos de grupo y grupos en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:products:read",
+          "description": "Consultar productos y sus elementos en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:products:create",
+          "description": "Crear productos y sus elementos en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:products:update",
+          "description": "Modificar productos y sus elementos en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:products:deactivate",
+          "description": "Inactivar o reactivar productos y sus elementos en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:products:delete",
+          "description": "Retirar valores de atributo de productos y sus elementos en product-catalog (eliminación física, DS-08)"
+        },
+        {
+          "name": "perm:product-catalog:first-use:register",
+          "description": "Registrar el primer uso al adoptar (servicios consumidores) en product-catalog"
+        },
+        {
+          "name": "perm:product-catalog:first-use:register-manual",
+          "description": "Registrar manualmente el primer uso (administradores) en product-catalog"
+        },
+        {
           "name": "perm:party-identity:person_identities:create",
           "description": "Crear person_identities en party-identity"
         },
