@@ -1,11 +1,17 @@
-"""Router HTTP para identidades globales de organizaciones."""
+"""Router HTTP para identidades globales de organizaciones.
+
+Los errores de aplicación los traduce `api/errors.py`; este módulo no asigna
+estados HTTP de error.
+"""
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
-from sqlalchemy.orm import Session
 
+from party_identity_service.api.dependencies import (
+    get_organization_identity_service,
+)
 from party_identity_service.api.filters.organization_identity import (
     OrganizationIdentityFilters,
 )
@@ -16,52 +22,14 @@ from party_identity_service.api.schemas.organization_identity import (
     OrganizationIdentityUpdate,
 )
 from party_identity_service.api.schemas.pagination import PaginatedResponse
-from party_identity_service.application.exceptions import (
-    CountryNotFoundError,
-    CountryValidationUnavailableError,
-    InvalidIdentificationNumberError,
-    OrganizationIdentityConflictError,
-    OrganizationIdentityNotFoundError,
-    OrganizationIdentityVersionConflictError,
-)
+from party_identity_service.api.schemas.status_action import StatusActionRequest
 from party_identity_service.application.organization_identity_service import (
     OrganizationIdentityService,
 )
-from party_identity_service.infrastructure.database import get_db_session
-from party_identity_service.infrastructure.geography_country_validator import (
-    HTTPGeographyCountryValidator,
-)
-from party_identity_service.infrastructure.identification_type_rule_repository import (
-    SQLAlchemyIdentificationTypeRuleRepository,
-)
-from party_identity_service.infrastructure.organization_identity_repository import (
-    SQLAlchemyOrganizationIdentityRepository,
-)
 
-
-def get_organization_identity_service(
-    request: Request,
-    session: Session = Depends(get_db_session),
-) -> OrganizationIdentityService:
-    """Construye el servicio de aplicación para organizaciones."""
-    repository = SQLAlchemyOrganizationIdentityRepository(
-        session,
-    )
-    identification_rule_repository = SQLAlchemyIdentificationTypeRuleRepository(
-        session,
-    )
-    country_validator = HTTPGeographyCountryValidator(
-        base_url=request.app.state.settings.geography_service_base_url,
-        authorization=request.headers.get(
-            "authorization",
-        ),
-    )
-
-    return OrganizationIdentityService(
-        repository,
-        identification_rule_repository,
-        country_validator,
-    )
+SERVICE = "party-identity"
+RESOURCE = "organization_identities"
+BASE_PATH = "/organization-identities"
 
 
 def build_router(
@@ -69,20 +37,14 @@ def build_router(
 ) -> APIRouter:
     """Construye el router de identidades de organizaciones."""
     router = APIRouter(
-        prefix="/organization-identities",
+        prefix=BASE_PATH,
         tags=["Identidades de organizaciones"],
     )
 
     @router.get(
         "",
         response_model=PaginatedResponse[OrganizationIdentityResponse],
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "organization_identities",
-                "read",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "read")],
         summary="Consultar identidades de organizaciones",
     )
     def list_organization_identities(
@@ -92,7 +54,7 @@ def build_router(
             get_organization_identity_service,
         ),
     ) -> PaginatedResponse[OrganizationIdentityResponse]:
-        """Obtiene una página filtrada de identidades de organización."""
+        """Obtiene una página filtrada; por defecto solo identidades `ACTIVE`."""
         result = service.list_all(
             page=pagination.page,
             page_size=pagination.page_size,
@@ -100,6 +62,7 @@ def build_router(
             country_id=filters.country_id,
             identification_type=filters.identification_type,
             registration_status=filters.registration_status,
+            status=filters.status,
         )
 
         return PaginatedResponse(
@@ -113,13 +76,7 @@ def build_router(
     @router.get(
         "/{organization_identity_id}",
         response_model=OrganizationIdentityResponse,
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "organization_identities",
-                "read",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "read")],
         summary="Consultar una identidad de organización",
     )
     def get_organization_identity(
@@ -128,79 +85,39 @@ def build_router(
             get_organization_identity_service,
         ),
     ):
-        """Obtiene una identidad de organización por identificador."""
-        try:
-            return service.get_by_id(
-                organization_identity_id,
-            )
-
-        except OrganizationIdentityNotFoundError:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="La organización solicitada no existe.",
-            ) from None
+        """Obtiene una organización por UUID en cualquier estado (contrato Provider)."""
+        return service.get_by_id(organization_identity_id)
 
     @router.post(
         "",
         response_model=OrganizationIdentityResponse,
         status_code=status.HTTP_201_CREATED,
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "organization_identities",
-                "create",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "create")],
         summary="Crear una identidad de organización",
     )
     def create_organization_identity(
         payload: OrganizationIdentityCreate,
         actor_id: CurrentSubject,
+        response: Response,
         service: OrganizationIdentityService = Depends(
             get_organization_identity_service,
         ),
     ):
         """Crea una identidad global de organización."""
-        try:
-            return service.create(
-                **payload.model_dump(),
-                actor_id=actor_id,
-            )
+        organization_identity = service.create(
+            **payload.model_dump(),
+            actor_id=actor_id,
+        )
+        response.headers["Location"] = (
+            f"/api/v1{BASE_PATH}/{organization_identity.id}"
+        )
 
-        except InvalidIdentificationNumberError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except CountryNotFoundError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except CountryValidationUnavailableError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=str(exc),
-            ) from None
-
-        except OrganizationIdentityConflictError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=str(exc),
-            ) from None
+        return organization_identity
 
     @router.put(
         "/{organization_identity_id}",
         response_model=OrganizationIdentityResponse,
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "organization_identities",
-                "update",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "update")],
         summary="Actualizar una identidad de organización",
     )
     def update_organization_identity(
@@ -211,51 +128,57 @@ def build_router(
             get_organization_identity_service,
         ),
     ):
-        """Actualiza completamente una identidad global de organización."""
+        """Modifica una organización; un `PUT` sin cambios no escribe (FR-029)."""
         data = payload.model_dump()
-        expected_version = data.pop(
-            "version",
+        expected_version = data.pop("version")
+
+        return service.update(
+            organization_identity_id,
+            expected_version=expected_version,
+            actor_id=actor_id,
+            **data,
         )
 
-        try:
-            return service.update(
-                organization_identity_id,
-                expected_version=expected_version,
-                actor_id=actor_id,
-                **data,
-            )
+    @router.post(
+        "/{organization_identity_id}/deactivate",
+        response_model=OrganizationIdentityResponse,
+        dependencies=[auth.permission(SERVICE, RESOURCE, "delete")],
+        summary="Inactivar una identidad de organización (no elimina)",
+    )
+    def deactivate_organization_identity(
+        organization_identity_id: UUID,
+        payload: StatusActionRequest,
+        actor_id: CurrentSubject,
+        service: OrganizationIdentityService = Depends(
+            get_organization_identity_service,
+        ),
+    ):
+        """Inactiva la organización conservándola (D7, DS-11)."""
+        return service.deactivate(
+            organization_identity_id,
+            expected_version=payload.version,
+            actor_id=actor_id,
+        )
 
-        except InvalidIdentificationNumberError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except CountryNotFoundError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except CountryValidationUnavailableError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=str(exc),
-            ) from None
-
-        except OrganizationIdentityNotFoundError:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="La organización solicitada no existe.",
-            ) from None
-
-        except (
-            OrganizationIdentityConflictError,
-            OrganizationIdentityVersionConflictError,
-        ) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=str(exc),
-            ) from None
+    @router.post(
+        "/{organization_identity_id}/reactivate",
+        response_model=OrganizationIdentityResponse,
+        dependencies=[auth.permission(SERVICE, RESOURCE, "update")],
+        summary="Reactivar una identidad de organización",
+    )
+    def reactivate_organization_identity(
+        organization_identity_id: UUID,
+        payload: StatusActionRequest,
+        actor_id: CurrentSubject,
+        service: OrganizationIdentityService = Depends(
+            get_organization_identity_service,
+        ),
+    ):
+        """Reactiva una organización inactiva (DS-11)."""
+        return service.reactivate(
+            organization_identity_id,
+            expected_version=payload.version,
+            actor_id=actor_id,
+        )
 
     return router

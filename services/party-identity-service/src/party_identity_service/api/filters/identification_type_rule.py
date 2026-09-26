@@ -6,10 +6,12 @@ from uuid import UUID
 
 from fastapi import Query
 
+from party_identity_service.api.schemas.identification_type_rule import (
+    PartyKindCode,
+)
 from party_identity_service.domain.identification_type_rule import (
-    IdentificationType,
     IdentificationSigla,
-    PartyKind,
+    IdentificationType,
 )
 
 
@@ -18,7 +20,7 @@ class IdentificationTypeRuleFilters:
 
     def __init__(
         self,
-        party_kind: PartyKind | None = Query(
+        party_kind: PartyKindCode | None = Query(
             default=None,
             description="Filtra por tipo de parte.",
         ),

@@ -3,9 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 import re
 from uuid import UUID
+
+from party_identity_service.application.exceptions import (
+    AgeOutOfRangeError,
+    BirthDateInFutureError,
+    BirthDateRequiredError,
+    InvalidIdentificationNumberError,
+)
 
 from party_identity_service.domain.identification_type_rule import (
     IdentificationType,
@@ -109,3 +116,101 @@ def normalize_identification_number(
         Número sin espacios externos y con letras en mayúscula.
     """
     return identification_number.strip().upper()
+
+
+def normalize_code(value: str) -> str:
+    """Normaliza un código (tipo de identificación, sigla) a mayúsculas."""
+    return value.strip().upper()
+
+
+# Colombia no aplica horario de verano: America/Bogota es siempre UTC-5.
+# Se usa un desfase fijo para no depender de la base tz del contenedor.
+OPERATIONAL_TIMEZONE = timezone(timedelta(hours=-5), name="America/Bogota")
+
+
+def operational_today() -> date:
+    """Fecha actual en la zona horaria operativa (`America/Bogota`)."""
+    return datetime.now(OPERATIONAL_TIMEZONE).date()
+
+
+def match_identification_number(
+    rules: list[IdentificationRule],
+    identification_number: str,
+) -> list[IdentificationRule]:
+    """Devuelve las reglas activas de la sigla que el número cumple.
+
+    Sin reglas para la sigla se aplican solo las validaciones base, aunque el
+    país tenga reglas para otras siglas (DS-03).
+
+    Args:
+        rules: Reglas activas del tipo de parte, país y sigla.
+        identification_number: Número ya normalizado.
+
+    Returns:
+        Reglas cumplidas (lista vacía si no hay reglas para la sigla).
+
+    Raises:
+        InvalidIdentificationNumberError: Si hay reglas y no cumple ninguna.
+    """
+    if not rules:
+        return []
+
+    matching = [
+        rule
+        for rule in rules
+        if rule.validate(identification_number)
+    ]
+
+    if not matching:
+        descriptions = "; ".join(
+            dict.fromkeys(rule.description for rule in rules)
+        )
+        raise InvalidIdentificationNumberError(
+            "El número de identificación no cumple ninguna regla activa para "
+            f"la sigla indicada. {descriptions}".strip()
+        )
+
+    return matching
+
+
+def validate_age(
+    matching_rules: list[IdentificationRule],
+    birth_date: date | None,
+    *,
+    today: date | None = None,
+) -> None:
+    """Valida la edad contra las reglas cumplidas que la exigen.
+
+    Raises:
+        BirthDateRequiredError: Si alguna regla exige edad y falta la fecha.
+        AgeOutOfRangeError: Si la edad no cumple ninguna de esas reglas.
+    """
+    age_rules = [
+        rule
+        for rule in matching_rules
+        if rule.requires_birth_date()
+    ]
+
+    if not age_rules:
+        return
+
+    if birth_date is None:
+        raise BirthDateRequiredError
+
+    reference = today or operational_today()
+
+    if not any(
+        rule.validate_age(birth_date, today=reference)
+        for rule in age_rules
+    ):
+        raise AgeOutOfRangeError
+
+
+def validate_birth_date(
+    birth_date: date | None,
+    *,
+    today: date | None = None,
+) -> None:
+    """Rechaza una fecha de nacimiento posterior a hoy (RN-10)."""
+    if birth_date is not None and birth_date > (today or operational_today()):
+        raise BirthDateInFutureError

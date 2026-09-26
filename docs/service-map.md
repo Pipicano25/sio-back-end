@@ -32,9 +32,24 @@ El modelo actual también documenta un `Finance Service`, pero no se incluyó po
 | Ruta | `services/product-catalog-service/` |
 | Puerto | `8003` (entorno del servicio), `8103` (entorno integrado `infrastructure/`); interno `8000` |
 | Base de datos | PostgreSQL propia `product_catalog` (servicio: `55437`, pruebas: `55438`, integrado: `5444`) |
-| Depende de | Keycloak (clase B); Party Identity Service (clase C, `GET organization-identities/{id}`) |
+| Depende de | Keycloak (clase B); Party Identity Service (clase C, `GET /api/v1/organization-identities/{id}`; su URL base incluye `/api/v1`) |
 | Es consumido por | Commercial Relationship Service (`batch-lookup`, `first-use`) |
 | Referencias externas | `manufacturer_organization_id` → Party Identity Service |
 | Eventos | Ninguno |
 | Autenticación | Token del usuario propagado a Party Identity; los consumidores usan `client_credentials` |
 | Spec | `specs/002-product-catalog-service/` |
+
+### party-identity-service
+
+| Campo | Valor |
+| --- | --- |
+| Responsabilidad | Identidad global de personas y organizaciones y reglas de identificación (Fase A: 3 entidades; ver su `domain-map.md`) |
+| Ruta | `services/party-identity-service/` |
+| Puerto | `8002` (entorno del servicio), `8101` (entorno integrado `infrastructure/`); interno `8000` |
+| Base de datos | PostgreSQL propia `sio_party_identity` (servicio: `55435`, pruebas: `55436`); integrado `party_identity` (`5441`) |
+| Depende de | Keycloak (clase B); Geography Service (clase C, `GET global-countries/{id}` y `GET global-countries?iso3_code=`) |
+| Es consumido por | Product Catalog Service (en uso); Operational Context y Commercial Relationship (futuros) — contrato `identity-lookup-provider.md` |
+| Referencias externas | `country_id`, `identification_country_id` → Geography Service |
+| Eventos | Ninguno |
+| Autenticación | Token del usuario propagado a Geography; `client_credentials` del cliente `party-identity-service` solo para el `seed` (modo Geography); los consumidores propagan el token de su usuario o usan su propio `client_credentials` |
+| Spec | `specs/003-party-identity-core/` |

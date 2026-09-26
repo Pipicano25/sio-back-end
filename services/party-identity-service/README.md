@@ -1,298 +1,172 @@
 # party-identity-service
 
-Microservicio FastAPI de SIO responsable de las identidades globales de
-personas y organizaciones.
-
-## Estado actual
-
-Fase 1 implementada:
-
-- paquete Python `party_identity_service`;
-- configuración básica mediante variables de entorno;
-- aplicación FastAPI con factory `create_app`;
-- protección global con `sio-auth`;
-- Swagger/OpenAPI opcional con HTTP Bearer;
-- health checks públicos:
-  - `GET /health/live`;
-  - `GET /health/ready`.
-
-Fase 3 implementada:
-
-- configuración `DATABASE_URL`;
-- `Database`, `Base` y sesiones SQLAlchemy;
-- Alembic configurado;
-- readiness con `SELECT 1` contra PostgreSQL.
-
-Las siguientes entidades de dominio, sus migraciones, permisos de
-recursos y CRUD se implementarán en fases posteriores.
-
-Fase 4 iniciada con `PersonIdentity`:
-
-- tabla `person_identities`;
-- unicidad por país, tipo y número de identificación;
-- checks para `identification_type` y `verification_status`;
-- auditoría con `created_by`, `updated_by`, `created_at` y `updated_at`;
-- concurrencia optimista con `version`;
-- endpoint de listado paginado con búsqueda y filtros;
-- endpoints de consulta, creación y actualización completa;
-- permisos con slug `party-identity`.
-
-Fase de organizaciones iniciada con `OrganizationIdentity`:
-
-- tabla `organization_identities`;
-- unicidad por país, tipo y número de identificación;
-- validación de `country_id` contra `geography-service`;
-- validación de identificación usando reglas activas con
-  `party_kind = ORGANIZATION`;
-- auditoría con `created_by`, `updated_by`, `created_at` y `updated_at`;
-- concurrencia optimista con `version`;
-- endpoint de listado paginado con búsqueda y filtros;
-- endpoints de consulta, creación y actualización completa;
-- sin endpoint de eliminación física.
-
-Fase de parametrización de reglas iniciada:
-
-- tabla `identification_type_rules`;
-- validación opcional de número de identificación por tipo de parte,
-  país y tipo de identificación.
-- endpoints de consulta, creación y actualización completa de reglas.
-
-## Variables de entorno
-
-Ver `.env.example`.
-
-Las reglas de formato para identificaciones no dependen de variables de
-entorno. Se parametrizan en la tabla `identification_type_rules`.
-
-`country_id` se valida consultando `geography-service`. En Docker se usa
-`http://host.docker.internal:8000` para alcanzar el servicio publicado en
-el host.
-
-Si no existe ninguna regla activa para `party_kind` y `country_id`, solo se
-aplican validaciones base:
-
-- `identification_number` obligatorio;
-- mínimo 1 carácter;
-- máximo 40 caracteres;
-- unicidad por país, tipo y número.
-
-Si el país ya tiene reglas activas para `party_kind`, el tipo recibido debe
-tener al menos una regla activa por `sigla`.
-
-Reglas iniciales activas para Colombia:
-
-| `party_kind` | `identification_type` | `sigla` | `number_pattern` | Edad |
-|---|---|---|---|---|
-| `PERSON` | `CIVIL_REGISTRY` | `RC` | `^[0-9]{10}$` | 0 a 6 |
-| `PERSON` | `IDENTITY_CARD_MODERN` | `TI` | `^[0-9]{10}$` | 7 a 17 |
-| `PERSON` | `CITIZEN_ID_MODERN` | `CC` | `^[0-9]{10}$` | 18+ |
-| `PERSON` | `CITIZEN_ID_OLD` | `CC` | `^[0-9]{3,8}$` | 18+ |
-| `PERSON` | `FOREIGN_CARD` | `CE` | `^[0-9]{3,7}$` | 7+ |
-| `PERSON` | `TAX_ID` | `NIT` | `^[A-Z0-9]{4,11}-[0-9]$` | Cualquiera |
-| `PERSON` | `IDENTITY_CARD_OLD` | `TI` | `^[0-9]{11}$` | 7 a 17 |
-
-Los códigos no están cerrados por restricciones SQL; se pueden agregar
-nuevos valores desde `identification-type-rules`, siempre que el país exista.
-
-Ejemplos válidos para Colombia:
-
-```text
-RC: 1000000000
-TI: 1000000000
-TI: 19991234567
-CC: 1000000000
-CC: 12345678
-CE: 1234567
-NIT: 900123456-7
-```
-
-Ejemplos inválidos para Colombia:
-
-```text
-CC: 1.234.567
-CE: E123456
-NIT: 900123456.7
-```
-
-## Entorno de desarrollo independiente
-
-Este microservicio tiene su propio entorno virtual en `.venv` para
-desarrollarlo, ejecutarlo y probarlo sin usar entornos de otros servicios.
-
-Crear el entorno:
-
-```powershell
-python -m venv .venv
-```
-
-Activar el entorno:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-Instalar el servicio con sus dependencias:
-
-```powershell
-python -m pip install -e .
-```
-
-Crear el archivo local de variables:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Ejecutar localmente:
-
-```powershell
-python -m uvicorn party_identity_service.main:app --reload --host 127.0.0.1 --port 8002 --env-file .env
-```
-
-Endpoints iniciales:
-
-- `GET http://127.0.0.1:8002/health/live`
-- `GET http://127.0.0.1:8002/health/ready`
-- `GET http://127.0.0.1:8002/docs`
-
-Endpoints de personas:
-
-- `GET http://127.0.0.1:8002/person-identities`
-- `GET http://127.0.0.1:8002/person-identities/{person_identity_id}`
-- `POST http://127.0.0.1:8002/person-identities`
-- `PUT http://127.0.0.1:8002/person-identities/{person_identity_id}`
-
-Endpoints de organizaciones:
-
-- `GET http://127.0.0.1:8002/organization-identities`
-- `GET http://127.0.0.1:8002/organization-identities/{organization_identity_id}`
-- `POST http://127.0.0.1:8002/organization-identities`
-- `PUT http://127.0.0.1:8002/organization-identities/{organization_identity_id}`
-
-Endpoints de reglas de identificación:
-
-- `GET http://127.0.0.1:8002/identification-type-rules`
-- `GET http://127.0.0.1:8002/identification-type-rules/{rule_id}`
-- `POST http://127.0.0.1:8002/identification-type-rules`
-- `PUT http://127.0.0.1:8002/identification-type-rules/{rule_id}`
-
-Ejemplo para crear una regla de cédula colombiana:
-
-```json
-{
-  "party_kind": "PERSON",
-  "country_id": "00000000-0000-0000-0000-000000000000",
-  "identification_type": "CITIZEN_ID_MODERN",
-  "sigla": "CC",
-  "number_pattern": "^[0-9]{10}$",
-  "number_pattern_description": "Cedula de Ciudadania moderna o digital: NUIP numerico de 10 digitos, permitido desde los 18 anos.",
-  "example_value": "1000000000",
-  "min_age_years": 18,
-  "max_age_years": null,
-  "is_active": true,
-  "valid_from": null,
-  "valid_to": null
-}
-```
-
-Ejemplo para crear una organización:
-
-```json
-{
-  "country_id": "00000000-0000-0000-0000-000000000000",
-  "identification_type": "NIT",
-  "identification_number": "900123456-7",
-  "legal_name": "SIO Demo S.A.S.",
-  "trade_name": "SIO Demo",
-  "organization_type": "SAS",
-  "registration_status": "ACTIVE",
-  "website": "https://example.com"
-}
-```
-
-Ejemplo para actualizar una organización:
-
-```json
-{
-  "country_id": "00000000-0000-0000-0000-000000000000",
-  "identification_type": "NIT",
-  "identification_number": "900123456-7",
-  "legal_name": "SIO Demo S.A.S.",
-  "trade_name": "SIO Demo Colombia",
-  "organization_type": "SAS",
-  "registration_status": "ACTIVE",
-  "website": "https://example.com",
-  "version": 1
-}
-```
-
-## Docker y PostgreSQL
-
-El servicio cuenta con un entorno Docker independiente:
-
-- `party-identity-db`: PostgreSQL persistente de desarrollo;
-- `party-identity-test-db`: PostgreSQL temporal para pruebas, bajo
-  profile `test`;
-- `party-identity-service`: API FastAPI del microservicio.
-
-Levantar entorno de desarrollo:
-
-```powershell
-docker compose up --build
-```
-
-Levantar únicamente PostgreSQL:
-
-```powershell
-docker compose up -d party-identity-db
-```
-
-Levantar PostgreSQL de test:
-
-```powershell
-docker compose --profile test up -d party-identity-test-db
-```
-
-Ejecutar pruebas:
-
-```powershell
-.\.venv\Scripts\python.exe -m pytest
-```
-
-Las pruebas de contrato usan `PARTY_IDENTITY_TEST_DATABASE_URL` y exigen
-que apunte a una base cuyo nombre contenga `test`, siguiendo el mismo
-patrón de seguridad usado en `geography-service`.
-
-Conexión local para DBeaver, DataGrip o pgAdmin:
-
-- host: `127.0.0.1`;
-- port: `55435`;
-- database: `sio_party_identity`;
-- user: `sio_party_identity`;
-- password: `sio_party_identity_dev_change_me`.
-
-La variable `DATABASE_URL` se inyecta dentro del contenedor de la API.
-En ejecución local, `.env` contiene una `DATABASE_URL` apuntando a
-`127.0.0.1:55435`.
-
-## Alembic
-
-Alembic queda configurado para leer `DATABASE_URL` desde `.env`.
-
-Consultar revisión actual:
-
-```powershell
-alembic current
-```
-
-Crear migraciones futuras:
-
-```powershell
-alembic revision --autogenerate -m "descripcion"
-```
-
-Aplicar migraciones:
-
-```powershell
+Microservicio FastAPI de SIO, fuente de verdad de la **identidad global** de personas naturales y
+organizaciones: responde **quién es** una persona u organización, independientemente del rol que
+tenga para cada empresa (cliente, proveedor, fabricante, asesor…).
+
+- Spec, plan y contratos: [`specs/003-party-identity-core/`](../../specs/003-party-identity-core/)
+  (Fase A, gate `PARTY-IDENTITY-CORE READY`).
+- API REST `v1` bajo `/api/v1`, protegida con `sio-auth` (Keycloak).
+- Ejercicios de uso validados y guía de permisos: [`docs/ejemplo/`](docs/ejemplo/README.md).
+
+## Entidades propias
+
+| Entidad | Tabla | Estados |
+| --- | --- | --- |
+| Regla de identificación | `identification_type_rules` | Activa / histórica (`is_active`, `valid_to`); nunca se elimina |
+| Persona | `person_identities` | `status` (uso): `ACTIVE`/`INACTIVE` · `verification_status`: `UNVERIFIED`/`VERIFIED`/`SUSPENDED` |
+| Organización | `organization_identities` | `status` (uso): `ACTIVE`/`INACTIVE` · `registration_status`: estado legal informativo |
+
+Terminología: **`status` es el estado de uso** (controla si la identidad aparece por defecto en las
+listas y si los consumidores aceptan nuevas referencias). `verification_status` y
+`registration_status` son independientes y no controlan el uso.
+
+Reglas principales:
+
+- País + tipo + número de identificación es único (también frente a identidades inactivas).
+- El número y el tipo se normalizan (sin espacios exteriores, en mayúsculas) y se validan contra las
+  reglas activas de la sigla: basta con cumplir una. Si no hay regla para la sigla se aplican solo
+  validaciones base (obligatorio, máximo 40, unicidad).
+- Una regla con edades exige `birth_date` y valida la edad (zona operativa `America/Bogota`).
+- Las modificaciones llevan la `version` leída (`409` si está desactualizada). Solo se consulta
+  Geography y se revalida el número si cambia el país, el tipo o el número; un `PUT` sin cambios
+  responde `200` sin incrementar la versión.
+- No hay eliminación física: personas y organizaciones se inactivan (`/deactivate`) y reactivan
+  (`/reactivate`); las reglas se retiran (`/deactivate`) o se versionan (`/versions`).
+- El número de identificación y la fecha de nacimiento se enmascaran en logs y mensajes de error
+  (`******0001`); solo las consultas autorizadas devuelven el valor completo.
+
+## Dependencias
+
+| Clase | Dependencia | Uso |
+| --- | --- | --- |
+| A | PostgreSQL 17 propio | Base `sio_party_identity` (desarrollo) y base de pruebas aislada |
+| B | Keycloak | Validación de tokens (`sio-auth`); token técnico del `seed` en modo Geography |
+| C | Geography Service | Validar el país (`GET {GEOGRAPHY_SERVICE_BASE_URL}/global-countries/{id}`) al crear o al cambiar país/tipo/número; resolver `COL` en el `seed` (modo Geography). Se propaga el token del usuario. |
+
+### Integración con Geography e independencia local
+
+Party Identity tiene **un único contrato de integración con Geography** y el mismo comportamiento
+en todos los entornos (FR-044): no existen modos ni variables que cambien la lógica por entorno.
+
+| Operación | Producción e integración | Pruebas | Desarrollo local sin Geography (opcional) |
+| --- | --- | --- | --- |
+| Arranque, `/health/*`, consultas | No usa Geography | No usa Geography | No usa Geography |
+| Altas y cambios de país/tipo/número | Geography real | Doble inyectado desde `tests/conftest.py` | Mock HTTP externo que implemente el mismo contrato, apuntando `GEOGRAPHY_SERVICE_BASE_URL` a él |
+| Modificaciones sin cambio de identificación, inactivar/reactivar | No usa Geography | No usa Geography | No usa Geography |
+
+- País existente → continúa; inexistente → `422 PARTY_IDENTITY.COUNTRY_NOT_FOUND`; Geography no
+  disponible, tiempo agotado o `401`/`403` → `503 PARTY_IDENTITY.DEPENDENCY_UNAVAILABLE` (la causa
+  real queda en el log: `COUNTRY_VALIDATION_DENIED` o `GEOGRAPHY_UNAVAILABLE`).
+- Con Geography detenido el servicio arranca y responde consultas; las altas responden `503`.
+- Nunca se copian tablas ni datos de Geography.
+
+## Configuración
+
+Copie `.env.example` a `.env`. Variables:
+
+| Variable | Uso | Ejemplo |
+| --- | --- | --- |
+| `SIO_DOCS_ENABLED` | Publica `/docs` y `/openapi.json` | `true` |
+| `PARTY_IDENTITY_SERVICE_PORT` | Puerto local del servicio | `8002` |
+| `DATABASE_URL` | Base de desarrollo | `postgresql+psycopg://…@127.0.0.1:55435/sio_party_identity` |
+| `PARTY_IDENTITY_DB_*` | Contenedor de la base de desarrollo | puerto `55435` |
+| `PARTY_IDENTITY_TEST_DB_*`, `PARTY_IDENTITY_TEST_DATABASE_URL` | Base de pruebas (perfil `test`) | puerto `55436` |
+| `SIO_AUTH_ISSUER`, `SIO_AUTH_JWKS_URL`, `SIO_AUTH_AUDIENCE` | `sio-auth` | `http://localhost:8081/realms/sio`, …, `sio-api` |
+| `GEOGRAPHY_SERVICE_BASE_URL` | URL de Geography **incluido su prefijo de ruta** (hoy sin `/api/v1`) | `http://localhost:8000` |
+| `GEOGRAPHY_TIMEOUT_SECONDS` | Tiempo de espera de Geography | `5` |
+| `PARTY_IDENTITY_SEED_COUNTRY_ID` | País explícito del `seed` (vacío = modo Geography) | UUID de Colombia en su Geography |
+| `KEYCLOAK_TOKEN_URL`, `KEYCLOAK_TIMEOUT_SECONDS` | Token técnico del `seed` en modo Geography | `…/protocol/openid-connect/token`, `5` |
+| `PARTY_IDENTITY_CLIENT_ID`, `PARTY_IDENTITY_CLIENT_SECRET` | Cliente técnico `party-identity-service` (`client_credentials`) | secreto real solo en `.env`, nunca en el repositorio |
+
+## Arranque local
+
+```bash
+cd services/party-identity-service
+docker compose up -d party-identity-db                       # sio-party-identity-dev-db
+python -m venv .venv && .venv/Scripts/pip install -e ".[test]"
 alembic upgrade head
+python -m party_identity_service.seed load --country-id <uuid>   # ver "Datos iniciales"
+uvicorn party_identity_service.main:app --port 8002
 ```
+
+O con Docker: `docker compose up -d --build` (contenedor `sio-party-identity-service-dev`). Los
+nombres de contenedor no chocan con el entorno integrado de `infrastructure/`, donde el servicio es
+`sio-party-identity-service` en el puerto `8101`.
+
+## Migraciones
+
+`alembic upgrade head`. Las migraciones `0001`–`0010` son históricas y no se editan. `0011` añade
+`status` a personas y organizaciones; `0012` convierte `created_by`/`updated_by` a texto
+(`VARCHAR(255)`, el `sub` de Keycloak). El `downgrade` de `0012` falla de forma explícita si hay
+identidades de auditoría que no son UUID (por ejemplo `system:party-identity-seed`).
+
+## Datos iniciales
+
+`python -m party_identity_service.seed load` carga, de forma idempotente, las 8 reglas de
+identificación de Colombia (`RC`, `TI` moderna y antigua, `CC` moderna y antigua, `CE`, `NIT` de
+persona y de organización). Actor de auditoría: `system:party-identity-seed`. Si ya existe una
+regla activa con la misma llave (tipo de parte + país + tipo de identificación) se omite.
+
+El `id` de Colombia **no está fijo en el código** (no es el mismo en todos los entornos). Dos modos:
+
+| Modo | Cómo | Necesita |
+| --- | --- | --- |
+| País explícito (independiente) | `load --country-id <uuid>` o `PARTY_IDENTITY_SEED_COUNTRY_ID=<uuid>` (el parámetro prevalece) | Solo la base. No consulta Geography ni Keycloak |
+| Geography (por defecto) | `load` sin país | Geography en ejecución y el cliente `party-identity-service` (`KEYCLOAK_TOKEN_URL`, `PARTY_IDENTITY_CLIENT_ID`, `PARTY_IDENTITY_CLIENT_SECRET`) con el permiso `perm:geography:global_countries:read` |
+
+Si falla (Geography caído, `COL` inexistente o ambiguo, credenciales ausentes) termina con código
+distinto de cero y **no escribe nada**. En el entorno integrado:
+`docker compose exec party-identity-service python -m party_identity_service.seed load`.
+
+Las migraciones históricas `0003`–`0010` también insertan reglas con un `id` de Colombia fijo; si en
+su entorno Colombia tiene otro `id`, el `seed` crea las reglas correctas y lista las anteriores como
+advertencia (no se eliminan).
+
+## Pruebas
+
+```bash
+docker compose --profile test up -d party-identity-test-db
+pytest                                   # toda la suite, sin Geography ni Keycloak reales
+pytest tests/examples                    # ejercicios de docs/ejemplo/
+PARTY_IDENTITY_EXAMPLES_WRITE=1 pytest tests/examples   # regenerar docs/ejemplo/
+pytest -m integration                    # opcionales contra servicios reales (si existen)
+```
+
+- `tests/unit`: reglas, edad, enmascaramiento, servicios con dobles, adaptadores HTTP con
+  `httpx.MockTransport`.
+- `tests/contract`: migraciones desde cero, restricciones, repositorios, concurrencia y `seed`.
+- `tests/api`: rutas, errores RFC 9457, `401`/`403` por operación, contrato Provider, OpenAPI.
+- `tests/health`, `tests/examples`.
+
+Geography se sustituye por `FakeCountryDirectory` (solo en `tests/`) y `sio-auth` usa un JWKS local
+con tokens RS256 firmados en la prueba.
+
+## Consumo de la API
+
+- Prefijo `/api/v1`; errores `application/problem+json` con `code` (`PARTY_IDENTITY.<CAUSA>`) y
+  `trace_id`; cabecera `X-Trace-Id` en toda respuesta (se respeta `traceparent`).
+- Contrato completo: [`contracts/rest-api.md`](../../specs/003-party-identity-core/contracts/rest-api.md);
+  errores: [`contracts/errors.md`](../../specs/003-party-identity-core/contracts/errors.md).
+- **Consumidores** (Product Catalog, Operational Context, Commercial Relationship): consultan
+  `GET /api/v1/organization-identities/{id}` o `GET /api/v1/person-identities/{id}` según
+  [`identity-lookup-provider.md`](../../specs/003-party-identity-core/contracts/identity-lookup-provider.md).
+  Su `PARTY_IDENTITY_SERVICE_BASE_URL` **debe incluir `/api/v1`** (las rutas sin prefijo ya no
+  existen). `200` devuelve `status`: `INACTIVE` significa que existe pero no debería aceptarse en
+  referencias nuevas.
+
+## Permisos
+
+`perm:party-identity:{recurso}:{accion}` con recursos `identification_type_rules`,
+`person_identities` y `organization_identities`:
+
+| Operación | Acción |
+| --- | --- |
+| Consultar | `read` |
+| Crear; crear una nueva versión de regla | `create` |
+| Modificar; reactivar | `update` |
+| Inactivar identidad; retirar regla | `delete` |
+
+Usuarios de prueba: `admin.test` todo; `supervisor.test` todo menos `delete` (reactiva pero no
+inactiva); `compras`, `ventas`, `reportes`, `consulta` solo lectura; `inventario.test` sin acceso.
+Detalle y ejemplos en [`docs/ejemplo/usuarios-y-permisos.md`](docs/ejemplo/usuarios-y-permisos.md).

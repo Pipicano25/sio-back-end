@@ -59,7 +59,7 @@ Copie `.env.example` a `.env` (el `.env` no se versiona).
 | `PRODUCT_CATALOG_DB_*`                                           | Credenciales y puerto de la base de desarrollo              | puerto `55437`                                               |
 | `PRODUCT_CATALOG_TEST_DB_*`, `PRODUCT_CATALOG_TEST_DATABASE_URL` | Base aislada de pruebas                                     | puerto `55438`                                               |
 | `SIO_AUTH_ISSUER`, `SIO_AUTH_JWKS_URL`, `SIO_AUTH_AUDIENCE`      | Configuración de `sio-auth`                                 | `http://localhost:8081/realms/sio`, `sio-api`                |
-| `PARTY_IDENTITY_SERVICE_BASE_URL`                                | URL base de Party Identity, **incluido su prefijo de ruta** | `http://localhost:8002`                                      |
+| `PARTY_IDENTITY_SERVICE_BASE_URL`                                | URL base de Party Identity, **incluido su prefijo de ruta** | `http://localhost:8002/api/v1`                                   |
 | `PARTY_IDENTITY_TIMEOUT_SECONDS`                                 | Tiempo de espera de la validación del fabricante            | `3`                                                          |
 
 ## Arranque local

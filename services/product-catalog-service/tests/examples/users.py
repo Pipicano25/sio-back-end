@@ -22,6 +22,9 @@ REALM_ROLES = frozenset(role["name"] for role in _data["roles"]["client"]["sio-a
 
 USERS = []
 for user in _data["users"]:
+    if "serviceAccountClientId" in user:
+        # Cuentas de servicio (client_credentials): no son usuarios de prueba de los ejercicios.
+        continue
     group = user["groups"][0]
     roles = _groups[group]["clientRoles"]["sio-api"]
     USERS.append(dict(

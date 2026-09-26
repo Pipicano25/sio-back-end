@@ -9,6 +9,7 @@ from fastapi import Query
 from party_identity_service.domain.organization_identity import (
     OrganizationIdentificationType,
 )
+from party_identity_service.domain.person_identity import IdentityStatus
 
 
 class OrganizationIdentityFilters:
@@ -36,6 +37,13 @@ class OrganizationIdentityFilters:
             max_length=30,
             description="Filtra por estado legal conocido.",
         ),
+        status: IdentityStatus = Query(
+            default="ACTIVE",
+            description=(
+                "Estado de uso. Por defecto solo `ACTIVE`; use `INACTIVE` "
+                "para consultar las inactivas (DS-02)."
+            ),
+        ),
     ) -> None:
         """Inicializa los filtros de organización."""
         self.search = (
@@ -46,3 +54,4 @@ class OrganizationIdentityFilters:
         self.country_id = country_id
         self.identification_type = identification_type
         self.registration_status = registration_status
+        self.status = status

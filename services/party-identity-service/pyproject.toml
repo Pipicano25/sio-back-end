@@ -31,7 +31,10 @@ test = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "-ra"
+addopts = "-ra -m 'not integration'"
+markers = [
+    "integration: pruebas opcionales contra Keycloak o Geography reales",
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true

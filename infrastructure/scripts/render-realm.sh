@@ -85,6 +85,7 @@ KEYCLOAK_REALM_VALUE="$(get_env_var "KEYCLOAK_REALM")"
 SIO_WEB_ORIGIN_VALUE="$(get_env_var "SIO_WEB_ORIGIN")"
 SIO_WEB_REDIRECT_URI_VALUE="$(get_env_var "SIO_WEB_REDIRECT_URI")"
 KEYCLOAK_TEST_USER_PASSWORD_VALUE="$(get_env_var "KEYCLOAK_TEST_USER_PASSWORD")"
+PARTY_IDENTITY_CLIENT_SECRET_VALUE="$(get_env_var "PARTY_IDENTITY_CLIENT_SECRET")"
 
 require_value() {
     local name="$1"
@@ -99,6 +100,7 @@ require_value "KEYCLOAK_REALM" "$KEYCLOAK_REALM_VALUE"
 require_value "SIO_WEB_ORIGIN" "$SIO_WEB_ORIGIN_VALUE"
 require_value "SIO_WEB_REDIRECT_URI" "$SIO_WEB_REDIRECT_URI_VALUE"
 require_value "KEYCLOAK_TEST_USER_PASSWORD" "$KEYCLOAK_TEST_USER_PASSWORD_VALUE"
+require_value "PARTY_IDENTITY_CLIENT_SECRET" "$PARTY_IDENTITY_CLIENT_SECRET_VALUE"
 
 # Debe coincidir con passwordPolicy de sio-realm.template.json:
 # length(12) and upperCase(1) and lowerCase(1) and digits(1)
@@ -132,6 +134,7 @@ REALM_ESCAPED="$(escape_for_sed "$KEYCLOAK_REALM_VALUE")"
 ORIGIN_ESCAPED="$(escape_for_sed "$SIO_WEB_ORIGIN_VALUE")"
 REDIRECT_ESCAPED="$(escape_for_sed "$SIO_WEB_REDIRECT_URI_VALUE")"
 PASSWORD_ESCAPED="$(escape_for_sed "$KEYCLOAK_TEST_USER_PASSWORD_VALUE")"
+PARTY_IDENTITY_SECRET_ESCAPED="$(escape_for_sed "$PARTY_IDENTITY_CLIENT_SECRET_VALUE")"
 
 TEMP_FILE="${OUTPUT_FILE}.tmp"
 trap 'rm -f "$TEMP_FILE"' EXIT
@@ -141,6 +144,7 @@ sed \
     -e "s|\${SIO_WEB_ORIGIN}|${ORIGIN_ESCAPED}|g" \
     -e "s|\${SIO_WEB_REDIRECT_URI}|${REDIRECT_ESCAPED}|g" \
     -e "s|\${KEYCLOAK_TEST_USER_PASSWORD}|${PASSWORD_ESCAPED}|g" \
+    -e "s|\${PARTY_IDENTITY_CLIENT_SECRET}|${PARTY_IDENTITY_SECRET_ESCAPED}|g" \
     "$TEMPLATE_FILE" > "$TEMP_FILE"
 
 # Ningún placeholder puede llegar sin resolver al import de Keycloak.

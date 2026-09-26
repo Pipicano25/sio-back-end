@@ -1,13 +1,18 @@
-"""Pruebas de persistencia para identidades de organizaciones."""
+"""Pruebas del repositorio de organizaciones sobre PostgreSQL (RC-02, FR-030, FR-032, DS-10).
 
-from uuid import UUID, uuid4
+Conserva las comprobaciones previas (alta sin dígito de verificación separado,
+duplicado, actualización con versión y versión desactualizada) sobre el nuevo
+contrato del repositorio.
+"""
+
+from uuid import uuid4
 
 import pytest
-from sqlalchemy.orm import Session
 
 from party_identity_service.application.exceptions import (
-    OrganizationIdentityConflictError,
-    OrganizationIdentityVersionConflictError,
+    DuplicateIdentificationError,
+    NotFoundError,
+    VersionConflictError,
 )
 from party_identity_service.infrastructure.models import (
     OrganizationIdentityModel,
@@ -15,187 +20,106 @@ from party_identity_service.infrastructure.models import (
 from party_identity_service.infrastructure.organization_identity_repository import (
     SQLAlchemyOrganizationIdentityRepository,
 )
+from tests.conftest import COLOMBIA_ID
 
-
-COUNTRY_ID = UUID("cf160c2d-b6de-4ef5-9257-a0a8539058d9")
 ACTOR_ID = "00000000-0000-0000-0000-000000000001"
 
 
-def test_create_persists_organization_without_verification_digit(
-    db_session: Session,
-) -> None:
-    """Comprueba persistencia y ausencia de DV separado."""
-    repository = SQLAlchemyOrganizationIdentityRepository(
-        db_session,
-    )
-
-    organization = repository.create(
-        country_id=COUNTRY_ID,
-        identification_type="NIT",
-        identification_number="900123456-7",
-        legal_name="SIO Demo S.A.S.",
-        trade_name="SIO Demo",
-        organization_type="SAS",
-        registration_status="ACTIVE",
-        website="https://example.com",
-        actor_id=ACTOR_ID,
-    )
-
-    stored = db_session.get(
-        OrganizationIdentityModel,
-        organization.id,
-    )
-
-    assert stored is not None
-    assert not hasattr(
-        stored,
-        "verification_digit",
-    )
-
-    assert stored.country_id == COUNTRY_ID
-    assert stored.identification_type == "NIT"
-    assert stored.identification_number == "900123456-7"
-    assert stored.legal_name == "SIO Demo S.A.S."
-    assert stored.version == 1
-    assert str(stored.created_by) == ACTOR_ID
-    assert str(stored.updated_by) == ACTOR_ID
+@pytest.fixture
+def repository(db_session) -> SQLAlchemyOrganizationIdentityRepository:
+    return SQLAlchemyOrganizationIdentityRepository(db_session)
 
 
-def test_create_rejects_duplicate_organization_identification(
-    db_session: Session,
-) -> None:
-    """Comprueba unicidad por país, tipo y número."""
-    repository = SQLAlchemyOrganizationIdentityRepository(
-        db_session,
-    )
-
-    repository.create(
-        country_id=COUNTRY_ID,
-        identification_type="NIT",
-        identification_number="900123456-7",
-        legal_name="SIO Demo S.A.S.",
-        trade_name=None,
-        organization_type=None,
-        registration_status=None,
-        website=None,
-        actor_id=ACTOR_ID,
-    )
-
-    with pytest.raises(
-        OrganizationIdentityConflictError,
-    ):
-        repository.create(
-            country_id=COUNTRY_ID,
-            identification_type="NIT",
-            identification_number="900123456-7",
-            legal_name="SIO Demo Duplicada S.A.S.",
-            trade_name=None,
-            organization_type=None,
-            registration_status=None,
-            website=None,
-            actor_id=ACTOR_ID,
-        )
+def _create(repository, number="900000001-1", **overrides):
+    values = {
+        "country_id": COLOMBIA_ID,
+        "identification_type": "NIT",
+        "identification_number": number,
+        "legal_name": "ORGANIZACION FICTICIA S.A.S.",
+        "trade_name": None,
+        "organization_type": None,
+        "registration_status": None,
+        "website": None,
+        "actor_id": ACTOR_ID,
+    }
+    values.update(overrides)
+    return repository.create(**values)
 
 
-def test_update_changes_organization_and_increments_version(
-    db_session: Session,
-) -> None:
-    """Comprueba actualización, auditoría y versión."""
-    repository = SQLAlchemyOrganizationIdentityRepository(
-        db_session,
-    )
+def _list(repository, **filters):
+    return repository.list_all(page=1, page_size=20, **filters)
 
-    created = repository.create(
-        country_id=COUNTRY_ID,
-        identification_type="NIT",
-        identification_number="900123456-7",
-        legal_name="SIO Demo S.A.S.",
-        trade_name="SIO Demo",
-        organization_type="SAS",
-        registration_status="ACTIVE",
-        website="https://example.com",
-        actor_id=ACTOR_ID,
-    )
+
+def test_create_persists_organization_without_verification_digit(repository, db_session) -> None:
+    organization = _create(repository)
+    stored = db_session.get(OrganizationIdentityModel, organization.id)
+
+    assert stored.identification_number == "900000001-1"
+    assert not hasattr(stored, "verification_digit")
+    assert stored.status == "ACTIVE"
+    assert stored.created_by == ACTOR_ID
+
+
+def test_create_rejects_duplicate_organization_identification(repository) -> None:
+    _create(repository)
+
+    with pytest.raises(DuplicateIdentificationError):
+        _create(repository, legal_name="OTRA")
+
+
+def test_uniqueness_includes_inactive_organizations(repository) -> None:
+    organization = _create(repository)
+    repository.set_status(organization.id, expected_version=1, status="INACTIVE", actor_id=ACTOR_ID)
+
+    with pytest.raises(DuplicateIdentificationError):
+        _create(repository)
+
+
+def test_update_changes_organization_and_increments_version(repository) -> None:
+    organization = _create(repository)
 
     updated = repository.update(
-        created.id,
+        organization.id,
         expected_version=1,
-        country_id=COUNTRY_ID,
-        identification_type="NIT",
-        identification_number="800123456-1",
-        legal_name="SIO Demo Colombia S.A.S.",
-        trade_name="SIO Demo Colombia",
-        organization_type="SAS",
-        registration_status="ACTIVE",
-        website="https://example.co",
-        actor_id=ACTOR_ID,
+        values={"legal_name": "NUEVA RAZON SOCIAL"},
+        actor_id="otro-usuario",
     )
 
-    assert updated is not None
-    assert updated.id == created.id
-    assert updated.identification_number == "800123456-1"
-    assert updated.legal_name == "SIO Demo Colombia S.A.S."
+    assert updated.legal_name == "NUEVA RAZON SOCIAL"
     assert updated.version == 2
+    assert updated.updated_by == "otro-usuario"
+    assert updated.created_by == ACTOR_ID
 
 
-def test_update_rejects_stale_version(
-    db_session: Session,
-) -> None:
-    """Comprueba conflicto de concurrencia en actualización."""
-    repository = SQLAlchemyOrganizationIdentityRepository(
-        db_session,
-    )
+def test_update_rejects_stale_version(repository) -> None:
+    organization = _create(repository)
+    repository.update(organization.id, expected_version=1, values={"legal_name": "A"}, actor_id=ACTOR_ID)
 
-    created = repository.create(
-        country_id=COUNTRY_ID,
-        identification_type="NIT",
-        identification_number="900123456-7",
-        legal_name="SIO Demo S.A.S.",
-        trade_name=None,
-        organization_type=None,
-        registration_status=None,
-        website=None,
-        actor_id=ACTOR_ID,
-    )
-
-    with pytest.raises(
-        OrganizationIdentityVersionConflictError,
-    ):
-        repository.update(
-            created.id,
-            expected_version=2,
-            country_id=COUNTRY_ID,
-            identification_type="NIT",
-            identification_number="900123456-7",
-            legal_name="SIO Demo S.A.S.",
-            trade_name=None,
-            organization_type=None,
-            registration_status=None,
-            website=None,
-            actor_id=ACTOR_ID,
-        )
+    with pytest.raises(VersionConflictError):
+        repository.update(organization.id, expected_version=1, values={"legal_name": "B"}, actor_id=ACTOR_ID)
 
 
-def test_update_returns_none_when_organization_does_not_exist(
-    db_session: Session,
-) -> None:
-    """Comprueba actualización de organización inexistente."""
-    repository = SQLAlchemyOrganizationIdentityRepository(
-        db_session,
-    )
+def test_update_of_missing_organization_is_not_found(repository) -> None:
+    with pytest.raises(NotFoundError):
+        repository.update(uuid4(), expected_version=1, values={"legal_name": "X"}, actor_id=ACTOR_ID)
 
-    result = repository.update(
-        uuid4(),
-        expected_version=1,
-        country_id=COUNTRY_ID,
-        identification_type="NIT",
-        identification_number="900123456-7",
-        legal_name="SIO Demo S.A.S.",
-        trade_name=None,
-        organization_type=None,
-        registration_status=None,
-        website=None,
-        actor_id=ACTOR_ID,
-    )
 
-    assert result is None
+def test_list_defaults_to_active_and_filters(repository) -> None:
+    active = _create(repository, "900000001-1", registration_status="ACTIVA")
+    inactive = _create(repository, "900000002-2")
+    other_country = _create(repository, "900000003-3", country_id=uuid4())
+    repository.set_status(inactive.id, expected_version=1, status="INACTIVE", actor_id=ACTOR_ID)
+
+    assert {o.id for o in _list(repository).items} == {active.id, other_country.id}
+    assert [o.id for o in _list(repository, status="INACTIVE").items] == [inactive.id]
+    assert [o.id for o in _list(repository, country_id=COLOMBIA_ID).items] == [active.id]
+    assert [o.id for o in _list(repository, registration_status="ACTIVA").items] == [active.id]
+    assert [o.id for o in _list(repository, identification_type="NIT", country_id=COLOMBIA_ID).items] == [active.id]
+
+
+@pytest.mark.parametrize("term", ["00001-1", "ficticia", "COMERCIAL"])
+def test_search_by_number_legal_and_trade_name(repository, term) -> None:
+    organization = _create(repository, "900000001-1", trade_name="NOMBRE COMERCIAL")
+    _create(repository, "800000002-2", legal_name="OTRA EMPRESA")
+
+    assert [o.id for o in _list(repository, search=term).items] == [organization.id]

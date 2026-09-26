@@ -1,11 +1,17 @@
-"""Router HTTP para reglas de tipos de identificación."""
+"""Router HTTP para reglas de tipos de identificación.
+
+Los errores de aplicación los traduce `api/errors.py`; este módulo no asigna
+estados HTTP de error.
+"""
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
-from sqlalchemy.orm import Session
 
+from party_identity_service.api.dependencies import (
+    get_identification_type_rule_service,
+)
 from party_identity_service.api.filters.identification_type_rule import (
     IdentificationTypeRuleFilters,
 )
@@ -14,46 +20,19 @@ from party_identity_service.api.schemas.identification_type_rule import (
     IdentificationTypeRuleCreate,
     IdentificationTypeRuleResponse,
     IdentificationTypeRuleUpdate,
+    IdentificationTypeRuleVersionCreate,
 )
 from party_identity_service.api.schemas.pagination import PaginatedResponse
-from party_identity_service.application.exceptions import (
-    CountryNotFoundError,
-    CountryValidationUnavailableError,
-    IdentificationTypeRuleConflictError,
-    IdentificationTypeRuleNotFoundError,
-    IdentificationTypeRuleVersionConflictError,
-)
+from party_identity_service.api.schemas.status_action import StatusActionRequest
 from party_identity_service.application.identification_type_rule_service import (
+    IDENTITY_FIELDS,
+    SEMANTIC_FIELDS,
     IdentificationTypeRuleService,
 )
-from party_identity_service.infrastructure.database import get_db_session
-from party_identity_service.infrastructure.geography_country_validator import (
-    HTTPGeographyCountryValidator,
-)
-from party_identity_service.infrastructure.identification_type_rule_repository import (
-    SQLAlchemyIdentificationTypeRuleRepository,
-)
 
-
-def get_identification_type_rule_service(
-    request: Request,
-    session: Session = Depends(get_db_session),
-) -> IdentificationTypeRuleService:
-    """Construye el servicio de aplicación para reglas."""
-    repository = SQLAlchemyIdentificationTypeRuleRepository(
-        session,
-    )
-    country_validator = HTTPGeographyCountryValidator(
-        base_url=request.app.state.settings.geography_service_base_url,
-        authorization=request.headers.get(
-            "authorization",
-        ),
-    )
-
-    return IdentificationTypeRuleService(
-        repository,
-        country_validator,
-    )
+SERVICE = "party-identity"
+RESOURCE = "identification_type_rules"
+BASE_PATH = "/identification-type-rules"
 
 
 def build_router(
@@ -61,20 +40,14 @@ def build_router(
 ) -> APIRouter:
     """Construye el router de reglas de identificación."""
     router = APIRouter(
-        prefix="/identification-type-rules",
-        tags=["Reglas de tipos de identificación"],
+        prefix=BASE_PATH,
+        tags=["Reglas de identificación"],
     )
 
     @router.get(
         "",
         response_model=PaginatedResponse[IdentificationTypeRuleResponse],
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "identification_type_rules",
-                "read",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "read")],
         summary="Consultar reglas de identificación",
     )
     def list_identification_type_rules(
@@ -84,7 +57,7 @@ def build_router(
             get_identification_type_rule_service,
         ),
     ) -> PaginatedResponse[IdentificationTypeRuleResponse]:
-        """Obtiene una página filtrada de reglas de identificación."""
+        """Obtiene una página filtrada de reglas."""
         result = service.list_all(
             page=pagination.page,
             page_size=pagination.page_size,
@@ -106,13 +79,7 @@ def build_router(
     @router.get(
         "/{rule_id}",
         response_model=IdentificationTypeRuleResponse,
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "identification_type_rules",
-                "read",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "read")],
         summary="Consultar una regla de identificación",
     )
     def get_identification_type_rule(
@@ -122,73 +89,37 @@ def build_router(
         ),
     ):
         """Obtiene una regla por identificador."""
-        try:
-            return service.get_by_id(
-                rule_id,
-            )
-
-        except IdentificationTypeRuleNotFoundError:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="La regla solicitada no existe.",
-            ) from None
+        return service.get_by_id(rule_id)
 
     @router.post(
         "",
         response_model=IdentificationTypeRuleResponse,
         status_code=status.HTTP_201_CREATED,
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "identification_type_rules",
-                "create",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "create")],
         summary="Crear una regla de identificación",
     )
     def create_identification_type_rule(
         payload: IdentificationTypeRuleCreate,
         actor_id: CurrentSubject,
+        response: Response,
         service: IdentificationTypeRuleService = Depends(
             get_identification_type_rule_service,
         ),
     ):
-        """Crea una regla de identificación."""
-        try:
-            return service.create(
-                **payload.model_dump(),
-                actor_id=actor_id,
-            )
+        """Crea una regla activa."""
+        rule = service.create(
+            **payload.model_dump(),
+            actor_id=actor_id,
+        )
+        response.headers["Location"] = f"/api/v1{BASE_PATH}/{rule.id}"
 
-        except IdentificationTypeRuleConflictError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=str(exc),
-            ) from None
-
-        except CountryNotFoundError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except CountryValidationUnavailableError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=str(exc),
-            ) from None
+        return rule
 
     @router.put(
         "/{rule_id}",
         response_model=IdentificationTypeRuleResponse,
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "identification_type_rules",
-                "update",
-            )
-        ],
-        summary="Actualizar una regla de identificación",
+        dependencies=[auth.permission(SERVICE, RESOURCE, "update")],
+        summary="Modificar la descripción o el ejemplo de una regla",
     )
     def update_identification_type_rule(
         rule_id: UUID,
@@ -198,45 +129,78 @@ def build_router(
             get_identification_type_rule_service,
         ),
     ):
-        """Actualiza completamente una regla de identificación."""
-        data = payload.model_dump()
-        expected_version = data.pop(
-            "version",
+        """Modifica solo la descripción y el ejemplo (FR-013).
+
+        Cambiar patrón o edades exige `POST /{rule_id}/versions`.
+        """
+        sent = payload.model_fields_set
+
+        return service.update(
+            rule_id,
+            expected_version=payload.version,
+            number_pattern_description=payload.number_pattern_description,
+            example_value=payload.example_value,
+            requested_identity={
+                field: getattr(payload, field)
+                for field in IDENTITY_FIELDS
+                if field in sent
+            },
+            requested_semantics={
+                field: getattr(payload, field)
+                for field in SEMANTIC_FIELDS
+                if field in sent
+            },
+            actor_id=actor_id,
         )
 
-        try:
-            return service.update(
-                rule_id,
-                expected_version=expected_version,
-                actor_id=actor_id,
-                **data,
-            )
+    @router.post(
+        "/{rule_id}/versions",
+        response_model=IdentificationTypeRuleResponse,
+        status_code=status.HTTP_201_CREATED,
+        dependencies=[auth.permission(SERVICE, RESOURCE, "create")],
+        summary="Crear una nueva versión de una regla (la anterior queda histórica)",
+    )
+    def create_identification_type_rule_version(
+        rule_id: UUID,
+        payload: IdentificationTypeRuleVersionCreate,
+        actor_id: CurrentSubject,
+        response: Response,
+        service: IdentificationTypeRuleService = Depends(
+            get_identification_type_rule_service,
+        ),
+    ):
+        """Cierra la regla vigente y crea su sucesora (DS-07)."""
+        data = payload.model_dump()
+        expected_version = data.pop("version")
+        rule = service.create_version(
+            rule_id,
+            expected_version=expected_version,
+            actor_id=actor_id,
+            **data,
+        )
+        response.headers["Location"] = f"/api/v1{BASE_PATH}/{rule.id}"
 
-        except IdentificationTypeRuleNotFoundError:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="La regla solicitada no existe.",
-            ) from None
+        return rule
 
-        except CountryNotFoundError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except CountryValidationUnavailableError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=str(exc),
-            ) from None
-
-        except (
-            IdentificationTypeRuleConflictError,
-            IdentificationTypeRuleVersionConflictError,
-        ) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=str(exc),
-            ) from None
+    @router.post(
+        "/{rule_id}/deactivate",
+        response_model=IdentificationTypeRuleResponse,
+        dependencies=[auth.permission(SERVICE, RESOURCE, "delete")],
+        summary="Retirar una regla de identificación (no elimina)",
+    )
+    def deactivate_identification_type_rule(
+        rule_id: UUID,
+        payload: StatusActionRequest,
+        actor_id: CurrentSubject,
+        service: IdentificationTypeRuleService = Depends(
+            get_identification_type_rule_service,
+        ),
+    ):
+        """Retira la regla conservándola como histórica (FR-014)."""
+        return service.deactivate(
+            rule_id,
+            expected_version=payload.version,
+            actor_id=actor_id,
+        )
 
     return router

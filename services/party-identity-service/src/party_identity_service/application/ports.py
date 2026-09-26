@@ -1,7 +1,7 @@
-"""Contratos usados por la capa de aplicación."""
+"""Contratos (puertos) usados por la capa de aplicación."""
 
 from datetime import date, datetime
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 from party_identity_service.application.identification_rules import (
@@ -9,9 +9,9 @@ from party_identity_service.application.identification_rules import (
 )
 from party_identity_service.application.pagination import PageResult
 from party_identity_service.domain.identification_type_rule import (
+    IdentificationSigla,
     IdentificationType,
     IdentificationTypeRule,
-    IdentificationSigla,
     PartyKind,
 )
 from party_identity_service.domain.organization_identity import (
@@ -19,20 +19,41 @@ from party_identity_service.domain.organization_identity import (
     OrganizationIdentity,
 )
 from party_identity_service.domain.person_identity import (
+    IdentityStatus,
     PersonIdentificationType,
     PersonIdentity,
     PersonVerificationStatus,
 )
 
 
-class CountryValidator(Protocol):
-    """Define validación de países externos."""
+class CountryDirectory(Protocol):
+    """Puerto único hacia Geography Service (FR-044).
+
+    En producción e integración lo implementa el adaptador HTTP; en las pruebas
+    se sustituye por un doble inyectado desde `tests/`.
+    """
 
     def exists(
         self,
         country_id: UUID,
     ) -> bool:
-        """Indica si el país existe en Geography Service."""
+        """Indica si el país existe en Geography Service.
+
+        Raises:
+            DependencyUnavailableError: Si no es posible validar.
+        """
+        ...
+
+    def find_id_by_iso3(
+        self,
+        iso3_code: str,
+    ) -> UUID:
+        """Resuelve el UUID de un país por su código ISO alfa-3.
+
+        Raises:
+            CountryNotFoundError: Si no existe exactamente un país.
+            DependencyUnavailableError: Si no es posible consultar.
+        """
         ...
 
 
@@ -48,20 +69,9 @@ class PersonIdentityRepository(Protocol):
         identification_country_id: UUID | None,
         identification_type: PersonIdentificationType | None,
         verification_status: PersonVerificationStatus | None,
+        status: IdentityStatus,
     ) -> PageResult[PersonIdentity]:
-        """Obtiene una página filtrada de identidades de persona.
-
-        Args:
-            page: Página solicitada.
-            page_size: Cantidad máxima de registros.
-            search: Texto libre de búsqueda.
-            identification_country_id: País externo exacto.
-            identification_type: Tipo de identificación exacto.
-            verification_status: Estado de verificación exacto.
-
-        Returns:
-            Página filtrada de identidades de persona.
-        """
+        """Obtiene una página filtrada de identidades de persona."""
         ...
 
     def get_by_id(
@@ -85,7 +95,11 @@ class PersonIdentityRepository(Protocol):
         verification_status: PersonVerificationStatus,
         actor_id: str,
     ) -> PersonIdentity:
-        """Crea una identidad global de persona."""
+        """Crea una identidad global de persona.
+
+        Raises:
+            DuplicateIdentificationError: Si la identificación ya existe.
+        """
         ...
 
     def update(
@@ -93,18 +107,29 @@ class PersonIdentityRepository(Protocol):
         person_identity_id: UUID,
         *,
         expected_version: int,
-        identification_country_id: UUID,
-        identification_type: PersonIdentificationType,
-        identification_number: str,
-        first_name: str,
-        middle_name: str | None,
-        last_name: str,
-        second_last_name: str | None,
-        birth_date: date | None,
-        verification_status: PersonVerificationStatus,
+        values: dict[str, Any],
         actor_id: str,
-    ) -> PersonIdentity | None:
-        """Actualiza completamente una identidad global de persona."""
+    ) -> PersonIdentity:
+        """Modifica los campos indicados con control de versión.
+
+        Raises:
+            NotFoundError, VersionConflictError, DuplicateIdentificationError.
+        """
+        ...
+
+    def set_status(
+        self,
+        person_identity_id: UUID,
+        *,
+        expected_version: int,
+        status: IdentityStatus,
+        actor_id: str,
+    ) -> PersonIdentity:
+        """Cambia el estado de uso con control de versión.
+
+        Raises:
+            NotFoundError, VersionConflictError.
+        """
         ...
 
 
@@ -120,6 +145,7 @@ class OrganizationIdentityRepository(Protocol):
         country_id: UUID | None,
         identification_type: OrganizationIdentificationType | None,
         registration_status: str | None,
+        status: IdentityStatus,
     ) -> PageResult[OrganizationIdentity]:
         """Obtiene una página filtrada de identidades de organización."""
         ...
@@ -144,7 +170,11 @@ class OrganizationIdentityRepository(Protocol):
         website: str | None,
         actor_id: str,
     ) -> OrganizationIdentity:
-        """Crea una identidad global de organización."""
+        """Crea una identidad global de organización.
+
+        Raises:
+            DuplicateIdentificationError: Si la identificación ya existe.
+        """
         ...
 
     def update(
@@ -152,17 +182,21 @@ class OrganizationIdentityRepository(Protocol):
         organization_identity_id: UUID,
         *,
         expected_version: int,
-        country_id: UUID,
-        identification_type: OrganizationIdentificationType,
-        identification_number: str,
-        legal_name: str,
-        trade_name: str | None,
-        organization_type: str | None,
-        registration_status: str | None,
-        website: str | None,
+        values: dict[str, Any],
         actor_id: str,
-    ) -> OrganizationIdentity | None:
-        """Actualiza completamente una identidad global de organización."""
+    ) -> OrganizationIdentity:
+        """Modifica los campos indicados con control de versión."""
+        ...
+
+    def set_status(
+        self,
+        organization_identity_id: UUID,
+        *,
+        expected_version: int,
+        status: IdentityStatus,
+        actor_id: str,
+    ) -> OrganizationIdentity:
+        """Cambia el estado de uso con control de versión."""
         ...
 
 
@@ -202,12 +236,15 @@ class IdentificationTypeRuleRepository(Protocol):
         example_value: str | None,
         min_age_years: int | None,
         max_age_years: int | None,
-        is_active: bool,
         valid_from: datetime | None,
         valid_to: datetime | None,
         actor_id: str,
     ) -> IdentificationTypeRule:
-        """Crea una regla de identificación."""
+        """Crea una regla activa.
+
+        Raises:
+            DuplicateActiveRuleError: Si ya existe una activa con la misma llave.
+        """
         ...
 
     def update(
@@ -215,40 +252,40 @@ class IdentificationTypeRuleRepository(Protocol):
         rule_id: UUID,
         *,
         expected_version: int,
-        party_kind: PartyKind,
-        country_id: UUID,
-        identification_type: IdentificationType,
-        sigla: IdentificationSigla,
+        values: dict[str, Any],
+        actor_id: str,
+    ) -> IdentificationTypeRule:
+        """Modifica en sitio los campos no semánticos de una regla."""
+        ...
+
+    def create_version(
+        self,
+        rule_id: UUID,
+        *,
+        expected_version: int,
         number_pattern: str,
         number_pattern_description: str,
         example_value: str | None,
         min_age_years: int | None,
         max_age_years: int | None,
-        is_active: bool,
-        valid_from: datetime | None,
-        valid_to: datetime | None,
         actor_id: str,
-    ) -> IdentificationTypeRule | None:
-        """Actualiza completamente una regla de identificación."""
+    ) -> IdentificationTypeRule:
+        """Cierra la regla vigente y crea su sucesora en una transacción.
+
+        Raises:
+            NotFoundError, VersionConflictError, InvalidStatusTransitionError,
+            DuplicateActiveRuleError.
+        """
         ...
 
-    def get_active_rule(
+    def deactivate(
         self,
+        rule_id: UUID,
         *,
-        party_kind: PartyKind,
-        country_id: UUID,
-        identification_type: PersonIdentificationType,
-    ) -> IdentificationRule | None:
-        """Obtiene la regla activa para parte, país y tipo.
-
-        Args:
-            party_kind: Tipo de parte que usa la regla.
-            country_id: UUID externo del país.
-            identification_type: Tipo de identificación.
-
-        Returns:
-            Regla activa o None cuando no existe una regla vigente.
-        """
+        expected_version: int,
+        actor_id: str,
+    ) -> IdentificationTypeRule:
+        """Retira una regla (`is_active = FALSE` y `valid_to`)."""
         ...
 
     def list_active_rules_by_sigla(
@@ -258,14 +295,5 @@ class IdentificationTypeRuleRepository(Protocol):
         country_id: UUID,
         sigla: IdentificationSigla,
     ) -> list[IdentificationRule]:
-        """Obtiene reglas activas por país y sigla."""
-        ...
-
-    def has_active_rules(
-        self,
-        *,
-        party_kind: PartyKind,
-        country_id: UUID,
-    ) -> bool:
-        """Indica si un país tiene reglas activas para un tipo de parte."""
+        """Obtiene las reglas activas y vigentes por país y sigla."""
         ...

@@ -1,11 +1,15 @@
-"""Router HTTP para identidades globales de personas."""
+"""Router HTTP para identidades globales de personas.
+
+Los errores de aplicación los traduce `api/errors.py`; este módulo no asigna
+estados HTTP de error.
+"""
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
-from sqlalchemy.orm import Session
 
+from party_identity_service.api.dependencies import get_person_identity_service
 from party_identity_service.api.filters.person_identity import (
     PersonIdentityFilters,
 )
@@ -16,60 +20,14 @@ from party_identity_service.api.schemas.person_identity import (
     PersonIdentityResponse,
     PersonIdentityUpdate,
 )
-from party_identity_service.application.exceptions import (
-    CountryNotFoundError,
-    CountryValidationUnavailableError,
-    InvalidIdentificationAgeError,
-    InvalidIdentificationNumberError,
-    PersonIdentityConflictError,
-    PersonIdentityNotFoundError,
-    PersonIdentityVersionConflictError,
-)
+from party_identity_service.api.schemas.status_action import StatusActionRequest
 from party_identity_service.application.person_identity_service import (
     PersonIdentityService,
 )
-from party_identity_service.infrastructure.database import get_db_session
-from party_identity_service.infrastructure.identification_type_rule_repository import (
-    SQLAlchemyIdentificationTypeRuleRepository,
-)
-from party_identity_service.infrastructure.geography_country_validator import (
-    HTTPGeographyCountryValidator,
-)
-from party_identity_service.infrastructure.person_identity_repository import (
-    SQLAlchemyPersonIdentityRepository,
-)
 
-
-def get_person_identity_service(
-    request: Request,
-    session: Session = Depends(get_db_session),
-) -> PersonIdentityService:
-    """Construye el servicio de aplicación para personas.
-
-    Args:
-        session: Sesión SQLAlchemy de la solicitud.
-
-    Returns:
-        Servicio de aplicación configurado.
-    """
-    repository = SQLAlchemyPersonIdentityRepository(
-        session,
-    )
-    identification_rule_repository = SQLAlchemyIdentificationTypeRuleRepository(
-        session,
-    )
-    country_validator = HTTPGeographyCountryValidator(
-        base_url=request.app.state.settings.geography_service_base_url,
-        authorization=request.headers.get(
-            "authorization",
-        ),
-    )
-
-    return PersonIdentityService(
-        repository,
-        identification_rule_repository,
-        country_validator,
-    )
+SERVICE = "party-identity"
+RESOURCE = "person_identities"
+BASE_PATH = "/person-identities"
 
 
 def build_router(
@@ -77,30 +35,22 @@ def build_router(
 ) -> APIRouter:
     """Construye el router de identidades de personas."""
     router = APIRouter(
-        prefix="/person-identities",
+        prefix=BASE_PATH,
         tags=["Identidades de personas"],
     )
 
     @router.get(
         "",
         response_model=PaginatedResponse[PersonIdentityResponse],
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "person_identities",
-                "read",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "read")],
         summary="Consultar identidades de personas",
     )
     def list_person_identities(
         pagination: PaginationParams = Depends(),
         filters: PersonIdentityFilters = Depends(),
-        service: PersonIdentityService = Depends(
-            get_person_identity_service,
-        ),
+        service: PersonIdentityService = Depends(get_person_identity_service),
     ) -> PaginatedResponse[PersonIdentityResponse]:
-        """Obtiene una página filtrada de identidades de persona."""
+        """Obtiene una página filtrada; por defecto solo identidades `ACTIVE`."""
         result = service.list_all(
             page=pagination.page,
             page_size=pagination.page_size,
@@ -108,6 +58,7 @@ def build_router(
             identification_country_id=filters.identification_country_id,
             identification_type=filters.identification_type,
             verification_status=filters.verification_status,
+            status=filters.status,
         )
 
         return PaginatedResponse(
@@ -121,161 +72,97 @@ def build_router(
     @router.get(
         "/{person_identity_id}",
         response_model=PersonIdentityResponse,
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "person_identities",
-                "read",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "read")],
         summary="Consultar una identidad de persona",
     )
     def get_person_identity(
         person_identity_id: UUID,
-        service: PersonIdentityService = Depends(
-            get_person_identity_service,
-        ),
+        service: PersonIdentityService = Depends(get_person_identity_service),
     ):
-        """Obtiene una identidad de persona por identificador."""
-        try:
-            return service.get_by_id(
-                person_identity_id,
-            )
-
-        except PersonIdentityNotFoundError:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="La persona solicitada no existe.",
-            ) from None
+        """Obtiene una persona por UUID en cualquier estado (contrato Provider)."""
+        return service.get_by_id(person_identity_id)
 
     @router.post(
         "",
         response_model=PersonIdentityResponse,
         status_code=status.HTTP_201_CREATED,
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "person_identities",
-                "create",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "create")],
         summary="Crear una identidad de persona",
     )
     def create_person_identity(
         payload: PersonIdentityCreate,
         actor_id: CurrentSubject,
-        service: PersonIdentityService = Depends(
-            get_person_identity_service,
-        ),
+        response: Response,
+        service: PersonIdentityService = Depends(get_person_identity_service),
     ):
         """Crea una identidad global de persona."""
-        try:
-            return service.create(
-                **payload.model_dump(),
-                actor_id=actor_id,
-            )
+        person_identity = service.create(
+            **payload.model_dump(),
+            actor_id=actor_id,
+        )
+        response.headers["Location"] = f"/api/v1{BASE_PATH}/{person_identity.id}"
 
-        except InvalidIdentificationNumberError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except CountryNotFoundError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except CountryValidationUnavailableError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=str(exc),
-            ) from None
-
-        except InvalidIdentificationAgeError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except PersonIdentityConflictError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=str(exc),
-            ) from None
+        return person_identity
 
     @router.put(
         "/{person_identity_id}",
         response_model=PersonIdentityResponse,
-        dependencies=[
-            auth.permission(
-                "party-identity",
-                "person_identities",
-                "update",
-            )
-        ],
+        dependencies=[auth.permission(SERVICE, RESOURCE, "update")],
         summary="Actualizar una identidad de persona",
     )
     def update_person_identity(
         person_identity_id: UUID,
         payload: PersonIdentityUpdate,
         actor_id: CurrentSubject,
-        service: PersonIdentityService = Depends(
-            get_person_identity_service,
-        ),
+        service: PersonIdentityService = Depends(get_person_identity_service),
     ):
-        """Actualiza completamente una identidad global de persona."""
+        """Modifica una persona; un `PUT` sin cambios no escribe (FR-029)."""
         data = payload.model_dump()
-        expected_version = data.pop(
-            "version",
+        expected_version = data.pop("version")
+
+        return service.update(
+            person_identity_id,
+            expected_version=expected_version,
+            actor_id=actor_id,
+            **data,
         )
 
-        try:
-            return service.update(
-                person_identity_id,
-                expected_version=expected_version,
-                actor_id=actor_id,
-                **data,
-            )
+    @router.post(
+        "/{person_identity_id}/deactivate",
+        response_model=PersonIdentityResponse,
+        dependencies=[auth.permission(SERVICE, RESOURCE, "delete")],
+        summary="Inactivar una identidad de persona (no elimina)",
+    )
+    def deactivate_person_identity(
+        person_identity_id: UUID,
+        payload: StatusActionRequest,
+        actor_id: CurrentSubject,
+        service: PersonIdentityService = Depends(get_person_identity_service),
+    ):
+        """Inactiva la persona conservándola (D7, DS-11)."""
+        return service.deactivate(
+            person_identity_id,
+            expected_version=payload.version,
+            actor_id=actor_id,
+        )
 
-        except InvalidIdentificationNumberError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except CountryNotFoundError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except CountryValidationUnavailableError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=str(exc),
-            ) from None
-
-        except InvalidIdentificationAgeError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=str(exc),
-            ) from None
-
-        except PersonIdentityNotFoundError:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="La persona solicitada no existe.",
-            ) from None
-
-        except (
-            PersonIdentityConflictError,
-            PersonIdentityVersionConflictError,
-        ) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=str(exc),
-            ) from None
+    @router.post(
+        "/{person_identity_id}/reactivate",
+        response_model=PersonIdentityResponse,
+        dependencies=[auth.permission(SERVICE, RESOURCE, "update")],
+        summary="Reactivar una identidad de persona",
+    )
+    def reactivate_person_identity(
+        person_identity_id: UUID,
+        payload: StatusActionRequest,
+        actor_id: CurrentSubject,
+        service: PersonIdentityService = Depends(get_person_identity_service),
+    ):
+        """Reactiva una persona inactiva (DS-11)."""
+        return service.reactivate(
+            person_identity_id,
+            expected_version=payload.version,
+            actor_id=actor_id,
+        )
 
     return router

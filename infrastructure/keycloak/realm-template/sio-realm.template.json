@@ -80,6 +80,36 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "party-identity-service",
+      "name": "Party Identity Service",
+      "description": "Identidad técnica de party-identity-service (client_credentials). Solo la usa el seed para consultar Geography.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${PARTY_IDENTITY_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "roles": {
@@ -608,6 +638,22 @@
         {
           "name": "perm:product-catalog:first-use:register-manual",
           "description": "Registrar manualmente el primer uso (administradores) en product-catalog"
+        },
+        {
+          "name": "perm:party-identity:identification_type_rules:create",
+          "description": "Crear identification_type_rules en party-identity"
+        },
+        {
+          "name": "perm:party-identity:identification_type_rules:read",
+          "description": "Consultar identification_type_rules en party-identity"
+        },
+        {
+          "name": "perm:party-identity:identification_type_rules:update",
+          "description": "Actualizar identification_type_rules en party-identity"
+        },
+        {
+          "name": "perm:party-identity:identification_type_rules:delete",
+          "description": "Retirar identification_type_rules en party-identity"
         },
         {
           "name": "perm:party-identity:person_identities:create",
@@ -1222,6 +1268,16 @@
     }
   ],
   "users": [
+    {
+      "username": "service-account-party-identity-service",
+      "enabled": true,
+      "serviceAccountClientId": "party-identity-service",
+      "clientRoles": {
+        "sio-api": [
+          "perm:geography:global_countries:read"
+        ]
+      }
+    },
     {
       "username": "admin.test",
       "enabled": true,

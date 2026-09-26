@@ -2,7 +2,7 @@ services:
 
   party-identity-db:
     image: postgres:17-alpine
-    container_name: sio-party-identity-db
+    container_name: sio-party-identity-dev-db
     restart: unless-stopped
 
     environment:
@@ -59,7 +59,7 @@ services:
 
 
   party-identity-service:
-    container_name: sio-party-identity-service
+    container_name: sio-party-identity-service-dev
     restart: unless-stopped
 
     build:

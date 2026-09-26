@@ -40,6 +40,14 @@ class PersonIdentityModel(Base):
             "('UNVERIFIED', 'VERIFIED', 'SUSPENDED')",
             name="ck_person_identities_verification_status",
         ),
+        CheckConstraint(
+            "status IN ('ACTIVE', 'INACTIVE')",
+            name="ck_person_identities_status",
+        ),
+        Index(
+            "ix_person_identities_status",
+            "status",
+        ),
         Index(
             "ix_person_identities_identification_country_id",
             "identification_country_id",
@@ -106,6 +114,13 @@ class PersonIdentityModel(Base):
         nullable=False,
     )
 
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="ACTIVE",
+        server_default=text("'ACTIVE'"),
+    )
+
     version: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -113,13 +128,13 @@ class PersonIdentityModel(Base):
         server_default=text("1"),
     )
 
-    created_by: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True),
+    created_by: Mapped[str] = mapped_column(
+        String(255),
         nullable=False,
     )
 
-    updated_by: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True),
+    updated_by: Mapped[str] = mapped_column(
+        String(255),
         nullable=False,
     )
 
@@ -152,6 +167,14 @@ class OrganizationIdentityModel(Base):
             "identification_type",
             "identification_number",
             name="uq_organization_identities_identification",
+        ),
+        CheckConstraint(
+            "status IN ('ACTIVE', 'INACTIVE')",
+            name="ck_organization_identities_status",
+        ),
+        Index(
+            "ix_organization_identities_status",
+            "status",
         ),
         Index(
             "ix_organization_identities_country_id",
@@ -214,6 +237,13 @@ class OrganizationIdentityModel(Base):
         nullable=True,
     )
 
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="ACTIVE",
+        server_default=text("'ACTIVE'"),
+    )
+
     version: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -221,13 +251,13 @@ class OrganizationIdentityModel(Base):
         server_default=text("1"),
     )
 
-    created_by: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True),
+    created_by: Mapped[str] = mapped_column(
+        String(255),
         nullable=False,
     )
 
-    updated_by: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True),
+    updated_by: Mapped[str] = mapped_column(
+        String(255),
         nullable=False,
     )
 
@@ -375,13 +405,13 @@ class IdentificationTypeRuleModel(Base):
         server_default=text("1"),
     )
 
-    created_by: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True),
+    created_by: Mapped[str] = mapped_column(
+        String(255),
         nullable=False,
     )
 
-    updated_by: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True),
+    updated_by: Mapped[str] = mapped_column(
+        String(255),
         nullable=False,
     )
 

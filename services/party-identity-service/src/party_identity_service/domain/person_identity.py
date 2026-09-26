@@ -14,6 +14,12 @@ PersonVerificationStatus = Literal[
     "SUSPENDED",
 ]
 
+IdentityStatus = Literal[
+    "ACTIVE",
+    "INACTIVE",
+]
+"""Estado de uso (DS-02), independiente de `verification_status`."""
+
 
 @dataclass(frozen=True, slots=True)
 class PersonIdentity:
@@ -31,6 +37,7 @@ class PersonIdentity:
         second_last_name: Segundo apellido.
         birth_date: Fecha de nacimiento, cuando se conozca.
         verification_status: Estado de verificación de la identidad.
+        status: Estado de uso (`ACTIVE`/`INACTIVE`).
         version: Versión para concurrencia optimista.
         created_by: Usuario que creó el registro.
         updated_by: Usuario que realizó la última modificación.
@@ -48,8 +55,9 @@ class PersonIdentity:
     second_last_name: str | None
     birth_date: date | None
     verification_status: PersonVerificationStatus
+    status: IdentityStatus
     version: int
-    created_by: UUID
-    updated_by: UUID
+    created_by: str
+    updated_by: str
     created_at: datetime
     updated_at: datetime

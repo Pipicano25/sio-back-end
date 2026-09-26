@@ -1,24 +1,29 @@
 """Repositorio SQLAlchemy para identidades globales de organizaciones."""
 
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import StaleDataError
 
 from party_identity_service.application.exceptions import (
-    OrganizationIdentityConflictError,
-    OrganizationIdentityVersionConflictError,
+    DuplicateIdentificationError,
 )
 from party_identity_service.application.pagination import PageResult
 from party_identity_service.domain.organization_identity import (
     OrganizationIdentificationType,
     OrganizationIdentity,
 )
+from party_identity_service.domain.person_identity import IdentityStatus
 from party_identity_service.infrastructure.models import (
     OrganizationIdentityModel,
 )
+from party_identity_service.infrastructure.persistence import (
+    commit_or_translate,
+    load_for_update,
+)
+
+DUPLICATE_CONSTRAINT = "uq_organization_identities_identification"
 
 
 class SQLAlchemyOrganizationIdentityRepository:
@@ -28,7 +33,11 @@ class SQLAlchemyOrganizationIdentityRepository:
         self,
         session: Session,
     ) -> None:
-        """Inicializa el repositorio."""
+        """Inicializa el repositorio.
+
+        Args:
+            session: Sesión SQLAlchemy activa.
+        """
         self.session = session
 
     def list_all(
@@ -40,13 +49,15 @@ class SQLAlchemyOrganizationIdentityRepository:
         country_id: UUID | None = None,
         identification_type: OrganizationIdentificationType | None = None,
         registration_status: str | None = None,
+        status: IdentityStatus = "ACTIVE",
     ) -> PageResult[OrganizationIdentity]:
-        """Obtiene organizaciones paginadas aplicando búsqueda y filtros."""
-        conditions = []
+        """Obtiene organizaciones paginadas; por defecto solo `ACTIVE`."""
+        conditions = [
+            OrganizationIdentityModel.status == status,
+        ]
 
         if search:
             pattern = f"%{search}%"
-
             conditions.append(
                 or_(
                     OrganizationIdentityModel.identification_number.ilike(
@@ -65,13 +76,13 @@ class SQLAlchemyOrganizationIdentityRepository:
         if identification_type is not None:
             conditions.append(
                 OrganizationIdentityModel.identification_type
-                == identification_type
+                == identification_type,
             )
 
         if registration_status is not None:
             conditions.append(
                 OrganizationIdentityModel.registration_status
-                == registration_status
+                == registration_status,
             )
 
         total_records = self.session.scalar(
@@ -134,7 +145,6 @@ class SQLAlchemyOrganizationIdentityRepository:
         actor_id: str,
     ) -> OrganizationIdentity:
         """Crea una identidad global de organización."""
-        actor_uuid = UUID(actor_id)
         model = OrganizationIdentityModel(
             country_id=country_id,
             identification_type=identification_type,
@@ -144,23 +154,16 @@ class SQLAlchemyOrganizationIdentityRepository:
             organization_type=organization_type,
             registration_status=registration_status,
             website=website,
-            created_by=actor_uuid,
-            updated_by=actor_uuid,
+            status="ACTIVE",
+            created_by=actor_id,
+            updated_by=actor_id,
         )
 
         self.session.add(model)
-
-        try:
-            self.session.commit()
-
-        except IntegrityError:
-            self.session.rollback()
-
-            raise OrganizationIdentityConflictError(
-                "Ya existe una organización con el país, tipo y número "
-                "de identificación indicados."
-            ) from None
-
+        commit_or_translate(
+            self.session,
+            duplicates={DUPLICATE_CONSTRAINT: DuplicateIdentificationError},
+        )
         self.session.refresh(model)
 
         return self._to_domain(model)
@@ -170,63 +173,45 @@ class SQLAlchemyOrganizationIdentityRepository:
         organization_identity_id: UUID,
         *,
         expected_version: int,
-        country_id: UUID,
-        identification_type: OrganizationIdentificationType,
-        identification_number: str,
-        legal_name: str,
-        trade_name: str | None,
-        organization_type: str | None,
-        registration_status: str | None,
-        website: str | None,
+        values: dict[str, Any],
         actor_id: str,
-    ) -> OrganizationIdentity | None:
-        """Actualiza completamente una identidad global de organización."""
-        model = self.session.get(
+    ) -> OrganizationIdentity:
+        """Modifica los campos indicados con control de versión."""
+        model = load_for_update(
+            self.session,
             OrganizationIdentityModel,
             organization_identity_id,
+            expected_version=expected_version,
+            not_found_message="La organización solicitada no existe.",
         )
 
-        if model is None:
-            return None
+        for field, value in values.items():
+            setattr(model, field, value)
 
-        if model.version != expected_version:
-            raise OrganizationIdentityVersionConflictError(
-                "El registro fue modificado por otra operación. "
-                "Consulte nuevamente antes de actualizar."
-            )
-
-        model.country_id = country_id
-        model.identification_type = identification_type
-        model.identification_number = identification_number
-        model.legal_name = legal_name
-        model.trade_name = trade_name
-        model.organization_type = organization_type
-        model.registration_status = registration_status
-        model.website = website
-        model.updated_by = UUID(actor_id)
-
-        try:
-            self.session.commit()
-
-        except IntegrityError:
-            self.session.rollback()
-
-            raise OrganizationIdentityConflictError(
-                "Ya existe una organización con el país, tipo y número "
-                "de identificación indicados."
-            ) from None
-
-        except StaleDataError:
-            self.session.rollback()
-
-            raise OrganizationIdentityVersionConflictError(
-                "El registro fue modificado por otra operación. "
-                "Consulte nuevamente antes de actualizar."
-            ) from None
-
+        model.updated_by = actor_id
+        commit_or_translate(
+            self.session,
+            duplicates={DUPLICATE_CONSTRAINT: DuplicateIdentificationError},
+        )
         self.session.refresh(model)
 
         return self._to_domain(model)
+
+    def set_status(
+        self,
+        organization_identity_id: UUID,
+        *,
+        expected_version: int,
+        status: IdentityStatus,
+        actor_id: str,
+    ) -> OrganizationIdentity:
+        """Cambia el estado de uso con control de versión."""
+        return self.update(
+            organization_identity_id,
+            expected_version=expected_version,
+            values={"status": status},
+            actor_id=actor_id,
+        )
 
     @staticmethod
     def _to_domain(
@@ -243,6 +228,7 @@ class SQLAlchemyOrganizationIdentityRepository:
             organization_type=model.organization_type,
             registration_status=model.registration_status,
             website=model.website,
+            status=model.status,
             version=model.version,
             created_by=model.created_by,
             updated_by=model.updated_by,

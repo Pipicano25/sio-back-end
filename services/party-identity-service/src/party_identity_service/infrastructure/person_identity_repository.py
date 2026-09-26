@@ -1,19 +1,18 @@
 """Repositorio SQLAlchemy para identidades globales de personas."""
 
 from datetime import date
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import StaleDataError
 
 from party_identity_service.application.exceptions import (
-    PersonIdentityConflictError,
-    PersonIdentityVersionConflictError,
+    DuplicateIdentificationError,
 )
 from party_identity_service.application.pagination import PageResult
 from party_identity_service.domain.person_identity import (
+    IdentityStatus,
     PersonIdentificationType,
     PersonIdentity,
     PersonVerificationStatus,
@@ -21,6 +20,12 @@ from party_identity_service.domain.person_identity import (
 from party_identity_service.infrastructure.models import (
     PersonIdentityModel,
 )
+from party_identity_service.infrastructure.persistence import (
+    commit_or_translate,
+    load_for_update,
+)
+
+DUPLICATE_CONSTRAINT = "uq_person_identities_identification"
 
 
 class SQLAlchemyPersonIdentityRepository:
@@ -46,13 +51,15 @@ class SQLAlchemyPersonIdentityRepository:
         identification_country_id: UUID | None = None,
         identification_type: PersonIdentificationType | None = None,
         verification_status: PersonVerificationStatus | None = None,
+        status: IdentityStatus = "ACTIVE",
     ) -> PageResult[PersonIdentity]:
-        """Obtiene personas paginadas aplicando búsqueda y filtros."""
-        conditions = []
+        """Obtiene personas paginadas; por defecto solo `ACTIVE` (DS-02)."""
+        conditions = [
+            PersonIdentityModel.status == status,
+        ]
 
         if search:
             pattern = f"%{search}%"
-
             conditions.append(
                 or_(
                     PersonIdentityModel.identification_number.ilike(pattern),
@@ -143,7 +150,6 @@ class SQLAlchemyPersonIdentityRepository:
         actor_id: str,
     ) -> PersonIdentity:
         """Crea una identidad global de persona."""
-        actor_uuid = UUID(actor_id)
         model = PersonIdentityModel(
             identification_country_id=identification_country_id,
             identification_type=identification_type,
@@ -154,23 +160,16 @@ class SQLAlchemyPersonIdentityRepository:
             second_last_name=second_last_name,
             birth_date=birth_date,
             verification_status=verification_status,
-            created_by=actor_uuid,
-            updated_by=actor_uuid,
+            status="ACTIVE",
+            created_by=actor_id,
+            updated_by=actor_id,
         )
 
         self.session.add(model)
-
-        try:
-            self.session.commit()
-
-        except IntegrityError:
-            self.session.rollback()
-
-            raise PersonIdentityConflictError(
-                "Ya existe una persona con el país, tipo y número "
-                "de identificación indicados."
-            ) from None
-
+        commit_or_translate(
+            self.session,
+            duplicates={DUPLICATE_CONSTRAINT: DuplicateIdentificationError},
+        )
         self.session.refresh(model)
 
         return self._to_domain(model)
@@ -180,65 +179,45 @@ class SQLAlchemyPersonIdentityRepository:
         person_identity_id: UUID,
         *,
         expected_version: int,
-        identification_country_id: UUID,
-        identification_type: PersonIdentificationType,
-        identification_number: str,
-        first_name: str,
-        middle_name: str | None,
-        last_name: str,
-        second_last_name: str | None,
-        birth_date: date | None,
-        verification_status: PersonVerificationStatus,
+        values: dict[str, Any],
         actor_id: str,
-    ) -> PersonIdentity | None:
-        """Actualiza completamente una identidad global de persona."""
-        model = self.session.get(
+    ) -> PersonIdentity:
+        """Modifica los campos indicados con control de versión."""
+        model = load_for_update(
+            self.session,
             PersonIdentityModel,
             person_identity_id,
+            expected_version=expected_version,
+            not_found_message="La persona solicitada no existe.",
         )
 
-        if model is None:
-            return None
+        for field, value in values.items():
+            setattr(model, field, value)
 
-        if model.version != expected_version:
-            raise PersonIdentityVersionConflictError(
-                "El registro fue modificado por otra operación. "
-                "Consulte nuevamente antes de actualizar."
-            )
-
-        model.identification_country_id = identification_country_id
-        model.identification_type = identification_type
-        model.identification_number = identification_number
-        model.first_name = first_name
-        model.middle_name = middle_name
-        model.last_name = last_name
-        model.second_last_name = second_last_name
-        model.birth_date = birth_date
-        model.verification_status = verification_status
-        model.updated_by = UUID(actor_id)
-
-        try:
-            self.session.commit()
-
-        except IntegrityError:
-            self.session.rollback()
-
-            raise PersonIdentityConflictError(
-                "Ya existe una persona con el país, tipo y número "
-                "de identificación indicados."
-            ) from None
-
-        except StaleDataError:
-            self.session.rollback()
-
-            raise PersonIdentityVersionConflictError(
-                "El registro fue modificado por otra operación. "
-                "Consulte nuevamente antes de actualizar."
-            ) from None
-
+        model.updated_by = actor_id
+        commit_or_translate(
+            self.session,
+            duplicates={DUPLICATE_CONSTRAINT: DuplicateIdentificationError},
+        )
         self.session.refresh(model)
 
         return self._to_domain(model)
+
+    def set_status(
+        self,
+        person_identity_id: UUID,
+        *,
+        expected_version: int,
+        status: IdentityStatus,
+        actor_id: str,
+    ) -> PersonIdentity:
+        """Cambia el estado de uso con control de versión."""
+        return self.update(
+            person_identity_id,
+            expected_version=expected_version,
+            values={"status": status},
+            actor_id=actor_id,
+        )
 
     @staticmethod
     def _to_domain(
@@ -256,6 +235,7 @@ class SQLAlchemyPersonIdentityRepository:
             second_last_name=model.second_last_name,
             birth_date=model.birth_date,
             verification_status=model.verification_status,
+            status=model.status,
             version=model.version,
             created_by=model.created_by,
             updated_by=model.updated_by,

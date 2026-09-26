@@ -1,33 +1,37 @@
 """Repositorio SQLAlchemy para reglas de identificación."""
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import StaleDataError
 
 from party_identity_service.application.exceptions import (
-    IdentificationTypeRuleConflictError,
-    IdentificationTypeRuleVersionConflictError,
+    DuplicateActiveRuleError,
+    InvalidStatusTransitionError,
 )
 from party_identity_service.application.identification_rules import (
     IdentificationRule,
 )
 from party_identity_service.application.pagination import PageResult
 from party_identity_service.domain.identification_type_rule import (
+    IdentificationSigla,
     IdentificationType,
     IdentificationTypeRule,
-    IdentificationSigla,
     PartyKind,
-)
-from party_identity_service.domain.person_identity import (
-    PersonIdentificationType,
 )
 from party_identity_service.infrastructure.models import (
     IdentificationTypeRuleModel,
 )
+from party_identity_service.infrastructure.persistence import (
+    commit_or_translate,
+    load_for_update,
+)
+
+ACTIVE_RULE_CONSTRAINT = "uq_identification_type_rules_active"
+DUPLICATES = {ACTIVE_RULE_CONSTRAINT: DuplicateActiveRuleError}
+NOT_FOUND_MESSAGE = "La regla solicitada no existe."
 
 
 class SQLAlchemyIdentificationTypeRuleRepository:
@@ -145,14 +149,12 @@ class SQLAlchemyIdentificationTypeRuleRepository:
         example_value: str | None,
         min_age_years: int | None,
         max_age_years: int | None,
-        is_active: bool,
         valid_from: datetime | None,
         valid_to: datetime | None,
         actor_id: str,
     ) -> IdentificationTypeRule:
-        """Crea una regla de identificación."""
-        actor_uuid = UUID(actor_id)
-        values = {
+        """Crea una regla activa."""
+        values: dict[str, Any] = {
             "party_kind": party_kind,
             "country_id": country_id,
             "identification_type": identification_type,
@@ -162,10 +164,10 @@ class SQLAlchemyIdentificationTypeRuleRepository:
             "example_value": example_value,
             "min_age_years": min_age_years,
             "max_age_years": max_age_years,
-            "is_active": is_active,
+            "is_active": True,
             "valid_to": valid_to,
-            "created_by": actor_uuid,
-            "updated_by": actor_uuid,
+            "created_by": actor_id,
+            "updated_by": actor_id,
         }
 
         if valid_from is not None:
@@ -176,18 +178,10 @@ class SQLAlchemyIdentificationTypeRuleRepository:
         )
 
         self.session.add(model)
-
-        try:
-            self.session.commit()
-
-        except IntegrityError:
-            self.session.rollback()
-
-            raise IdentificationTypeRuleConflictError(
-                "Ya existe una regla activa para el tipo de parte, "
-                "país y tipo de identificación indicados."
-            ) from None
-
+        commit_or_translate(
+            self.session,
+            duplicates=DUPLICATES,
+        )
         self.session.refresh(model)
 
         return self._to_domain(model)
@@ -197,131 +191,99 @@ class SQLAlchemyIdentificationTypeRuleRepository:
         rule_id: UUID,
         *,
         expected_version: int,
-        party_kind: PartyKind,
-        country_id: UUID,
-        identification_type: IdentificationType,
-        sigla: IdentificationSigla,
+        values: dict[str, Any],
+        actor_id: str,
+    ) -> IdentificationTypeRule:
+        """Modifica en sitio los campos indicados con control de versión."""
+        model = load_for_update(
+            self.session,
+            IdentificationTypeRuleModel,
+            rule_id,
+            expected_version=expected_version,
+            not_found_message=NOT_FOUND_MESSAGE,
+        )
+
+        for field, value in values.items():
+            setattr(model, field, value)
+
+        model.updated_by = actor_id
+        commit_or_translate(
+            self.session,
+            duplicates=DUPLICATES,
+        )
+        self.session.refresh(model)
+
+        return self._to_domain(model)
+
+    def create_version(
+        self,
+        rule_id: UUID,
+        *,
+        expected_version: int,
         number_pattern: str,
         number_pattern_description: str,
         example_value: str | None,
         min_age_years: int | None,
         max_age_years: int | None,
-        is_active: bool,
-        valid_from: datetime | None,
-        valid_to: datetime | None,
         actor_id: str,
-    ) -> IdentificationTypeRule | None:
-        """Actualiza completamente una regla de identificación."""
-        model = self.session.get(
-            IdentificationTypeRuleModel,
+    ) -> IdentificationTypeRule:
+        """Cierra la regla vigente y crea su sucesora en una transacción (R-09).
+
+        La regla actual se bloquea (`SELECT ... FOR UPDATE`); si la inserción
+        falla, la transacción se revierte y la regla actual queda intacta.
+        """
+        current = self._lock_active(
             rule_id,
+            expected_version=expected_version,
         )
+        self._close(current, actor_id=actor_id)
+        # Se escribe el cierre antes de insertar la sucesora para no violar el
+        # índice único parcial de reglas activas.
+        self.session.flush()
 
-        if model is None:
-            return None
+        successor = IdentificationTypeRuleModel(
+            party_kind=current.party_kind,
+            country_id=current.country_id,
+            identification_type=current.identification_type,
+            sigla=current.sigla,
+            number_pattern=number_pattern,
+            number_pattern_description=number_pattern_description,
+            example_value=example_value,
+            min_age_years=min_age_years,
+            max_age_years=max_age_years,
+            is_active=True,
+            created_by=actor_id,
+            updated_by=actor_id,
+        )
+        self.session.add(successor)
+        commit_or_translate(
+            self.session,
+            duplicates=DUPLICATES,
+        )
+        self.session.refresh(successor)
 
-        if model.version != expected_version:
-            raise IdentificationTypeRuleVersionConflictError(
-                "El registro fue modificado por otra operación. "
-                "Consulte nuevamente antes de actualizar."
-            )
+        return self._to_domain(successor)
 
-        model.party_kind = party_kind
-        model.country_id = country_id
-        model.identification_type = identification_type
-        model.sigla = sigla
-        model.number_pattern = number_pattern
-        model.number_pattern_description = number_pattern_description
-        model.example_value = example_value
-        model.min_age_years = min_age_years
-        model.max_age_years = max_age_years
-        model.is_active = is_active
-        if valid_from is not None:
-            model.valid_from = valid_from
-
-        model.valid_to = valid_to
-        model.updated_by = UUID(actor_id)
-
-        try:
-            self.session.commit()
-
-        except IntegrityError:
-            self.session.rollback()
-
-            raise IdentificationTypeRuleConflictError(
-                "Ya existe una regla activa para el tipo de parte, "
-                "país y tipo de identificación indicados."
-            ) from None
-
-        except StaleDataError:
-            self.session.rollback()
-
-            raise IdentificationTypeRuleVersionConflictError(
-                "El registro fue modificado por otra operación. "
-                "Consulte nuevamente antes de actualizar."
-            ) from None
-
+    def deactivate(
+        self,
+        rule_id: UUID,
+        *,
+        expected_version: int,
+        actor_id: str,
+    ) -> IdentificationTypeRule:
+        """Retira una regla: `is_active = FALSE` y `valid_to` si no había uno anterior."""
+        model = self._lock_active(
+            rule_id,
+            expected_version=expected_version,
+        )
+        self._close(model, actor_id=actor_id)
+        commit_or_translate(
+            self.session,
+            duplicates=DUPLICATES,
+        )
         self.session.refresh(model)
 
         return self._to_domain(model)
-
-    def get_active_rule(
-        self,
-        *,
-        party_kind: PartyKind,
-        country_id: UUID,
-        identification_type: PersonIdentificationType,
-    ) -> IdentificationRule | None:
-        """Obtiene una regla activa y vigente.
-
-        Args:
-            party_kind: Tipo de parte que usa la regla.
-            country_id: UUID externo del país.
-            identification_type: Tipo de identificación.
-
-        Returns:
-            Regla activa o None cuando no existe.
-        """
-        now = func.now()
-
-        statement = (
-            select(IdentificationTypeRuleModel)
-            .where(
-                IdentificationTypeRuleModel.party_kind == party_kind,
-                IdentificationTypeRuleModel.country_id == country_id,
-                IdentificationTypeRuleModel.identification_type
-                == identification_type,
-                IdentificationTypeRuleModel.is_active.is_(True),
-                IdentificationTypeRuleModel.valid_from <= now,
-                or_(
-                    IdentificationTypeRuleModel.valid_to.is_(None),
-                    IdentificationTypeRuleModel.valid_to > now,
-                ),
-            )
-            .order_by(
-                IdentificationTypeRuleModel.valid_from.desc(),
-                IdentificationTypeRuleModel.id,
-            )
-            .limit(1)
-        )
-
-        model = self.session.scalar(
-            statement,
-        )
-
-        if model is None:
-            return None
-
-        return IdentificationRule(
-            party_kind=model.party_kind,
-            country_id=model.country_id,
-            identification_type=model.identification_type,
-            sigla=model.sigla,
-            pattern=model.number_pattern,
-            description=model.number_pattern_description,
-            min_age_years=model.min_age_years,
-            max_age_years=model.max_age_years,
-        )
 
     def list_active_rules_by_sigla(
         self,
@@ -330,7 +292,7 @@ class SQLAlchemyIdentificationTypeRuleRepository:
         country_id: UUID,
         sigla: IdentificationSigla,
     ) -> list[IdentificationRule]:
-        """Obtiene reglas activas por sigla."""
+        """Obtiene reglas activas y vigentes por sigla (FR-015)."""
         now = func.now()
 
         statement = (
@@ -370,33 +332,46 @@ class SQLAlchemyIdentificationTypeRuleRepository:
             for model in models
         ]
 
-    def has_active_rules(
+    def _lock_active(
         self,
+        rule_id: UUID,
         *,
-        party_kind: PartyKind,
-        country_id: UUID,
-    ) -> bool:
-        """Indica si existen reglas activas para parte y país."""
-        now = func.now()
-
-        statement = (
-            select(IdentificationTypeRuleModel.id)
-            .where(
-                IdentificationTypeRuleModel.party_kind == party_kind,
-                IdentificationTypeRuleModel.country_id == country_id,
-                IdentificationTypeRuleModel.is_active.is_(True),
-                IdentificationTypeRuleModel.valid_from <= now,
-                or_(
-                    IdentificationTypeRuleModel.valid_to.is_(None),
-                    IdentificationTypeRuleModel.valid_to > now,
-                ),
-            )
-            .limit(1)
+        expected_version: int,
+    ) -> IdentificationTypeRuleModel:
+        model = load_for_update(
+            self.session,
+            IdentificationTypeRuleModel,
+            rule_id,
+            expected_version=expected_version,
+            not_found_message=NOT_FOUND_MESSAGE,
         )
 
-        return self.session.scalar(
-            statement,
-        ) is not None
+        if not model.is_active:
+            self.session.rollback()
+            raise InvalidStatusTransitionError(
+                "Una regla histórica no admite cambios."
+            )
+
+        return model
+
+    def _close(
+        self,
+        model: IdentificationTypeRuleModel,
+        *,
+        actor_id: str,
+    ) -> None:
+        """Deja la regla histórica fijando `valid_to` al momento actual.
+
+        Solo se adelanta `valid_to` si la regla ya entró en vigencia y no tenía
+        un fin anterior; una regla programada a futuro se inactiva sin fin de
+        vigencia para respetar `valid_to > valid_from`.
+        """
+        now = self.session.scalar(select(func.now()))
+        model.is_active = False
+        model.updated_by = actor_id
+
+        if model.valid_from <= now and (model.valid_to is None or model.valid_to > now):
+            model.valid_to = now
 
     @staticmethod
     def _to_domain(

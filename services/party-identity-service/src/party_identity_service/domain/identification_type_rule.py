@@ -49,7 +49,7 @@ class IdentificationTypeRule:
     valid_from: datetime
     valid_to: datetime | None
     version: int
-    created_by: UUID
-    updated_by: UUID
+    created_by: str
+    updated_by: str
     created_at: datetime
     updated_at: datetime

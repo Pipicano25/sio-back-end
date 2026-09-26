@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from party_identity_service.domain.person_identity import IdentityStatus
+
 
 IdentificationNumber = Annotated[
     str,
@@ -63,7 +65,14 @@ Website = Annotated[
 
 
 class OrganizationIdentityCreate(BaseModel):
-    """Payload para crear una identidad global de organización."""
+    """Payload para crear una identidad global de organización.
+
+    No acepta `status` ni campos de auditoría (RC-10).
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
 
     country_id: UUID
     identification_type: IdentificationTypeCode
@@ -77,6 +86,10 @@ class OrganizationIdentityCreate(BaseModel):
 
 class OrganizationIdentityUpdate(BaseModel):
     """Payload para actualización completa de organización."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
 
     country_id: UUID
     identification_type: IdentificationTypeCode
@@ -108,8 +121,9 @@ class OrganizationIdentityResponse(BaseModel):
     organization_type: str | None
     registration_status: str | None
     website: str | None
+    status: IdentityStatus
     version: int
-    created_by: UUID
-    updated_by: UUID
+    created_by: str
+    updated_by: str
     created_at: datetime
     updated_at: datetime

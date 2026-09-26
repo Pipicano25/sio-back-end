@@ -378,6 +378,52 @@ services:
       - sio-network
 
 
+  party-identity-service:
+    build:
+      context: ..
+      dockerfile: services/party-identity-service/Dockerfile
+    image: sio/party-identity-service:${SIO_SERVICES_VERSION}
+    container_name: sio-party-identity-service
+    restart: unless-stopped
+
+    environment:
+      DATABASE_URL: postgresql+psycopg://${PARTY_IDENTITY_DB_USER}:${PARTY_IDENTITY_DB_PASSWORD}@party-identity-db:5432/${PARTY_IDENTITY_DB_NAME}
+      # Igual que product-catalog-service: el issuer debe coincidir con
+      # KEYCLOAK_PUBLIC_URL y las llaves se obtienen dentro de sio-network.
+      SIO_AUTH_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+      SIO_AUTH_AUDIENCE: sio-api
+      SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
+      # Geography publica hoy sus rutas sin /api/v1; la URL incluye su prefijo.
+      GEOGRAPHY_SERVICE_BASE_URL: http://geography-service:8000
+      GEOGRAPHY_TIMEOUT_SECONDS: ${GEOGRAPHY_TIMEOUT_SECONDS:-5}
+      # Identidad técnica usada solo por el seed en modo Geography:
+      #   docker compose exec party-identity-service python -m party_identity_service.seed load
+      KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+      KEYCLOAK_TIMEOUT_SECONDS: ${KEYCLOAK_TIMEOUT_SECONDS:-5}
+      PARTY_IDENTITY_CLIENT_ID: party-identity-service
+      PARTY_IDENTITY_CLIENT_SECRET: ${PARTY_IDENTITY_CLIENT_SECRET}
+
+    ports:
+      - "127.0.0.1:${PARTY_IDENTITY_SERVICE_PORT:-8101}:8000"
+
+    depends_on:
+      party-identity-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+    networks:
+      - sio-network
+
+
   product-catalog-service:
     build:
       context: ..
@@ -395,9 +441,9 @@ services:
       SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
       SIO_AUTH_AUDIENCE: sio-api
       SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
-      # Party Identity aún no se ejecuta en este compose; la URL incluye su
-      # prefijo de ruta y es configurable (contracts/party-identity-dependency.md).
-      PARTY_IDENTITY_SERVICE_BASE_URL: ${PARTY_IDENTITY_SERVICE_BASE_URL:-http://party-identity-service:8000}
+      # La URL incluye el prefijo de ruta de Party Identity (/api/v1) y es
+      # configurable (contracts/party-identity-dependency.md).
+      PARTY_IDENTITY_SERVICE_BASE_URL: ${PARTY_IDENTITY_SERVICE_BASE_URL:-http://party-identity-service:8000/api/v1}
       PARTY_IDENTITY_TIMEOUT_SECONDS: ${PARTY_IDENTITY_TIMEOUT_SECONDS:-3}
 
     ports:

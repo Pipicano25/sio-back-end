@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import Query
 
 from party_identity_service.domain.person_identity import (
+    IdentityStatus,
     PersonIdentificationType,
     PersonVerificationStatus,
 )
@@ -36,6 +37,13 @@ class PersonIdentityFilters:
             default=None,
             description="Filtra por estado de verificación.",
         ),
+        status: IdentityStatus = Query(
+            default="ACTIVE",
+            description=(
+                "Estado de uso. Por defecto solo `ACTIVE`; use `INACTIVE` "
+                "para consultar las inactivas (DS-02)."
+            ),
+        ),
     ) -> None:
         """Inicializa los filtros de persona."""
         self.search = (
@@ -46,3 +54,4 @@ class PersonIdentityFilters:
         self.identification_country_id = identification_country_id
         self.identification_type = identification_type
         self.verification_status = verification_status
+        self.status = status
