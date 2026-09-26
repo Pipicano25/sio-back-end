@@ -48,8 +48,23 @@ El modelo actual también documenta un `Finance Service`, pero no se incluyó po
 | Puerto | `8002` (entorno del servicio), `8101` (entorno integrado `infrastructure/`); interno `8000` |
 | Base de datos | PostgreSQL propia `sio_party_identity` (servicio: `55435`, pruebas: `55436`); integrado `party_identity` (`5441`) |
 | Depende de | Keycloak (clase B); Geography Service (clase C, `GET global-countries/{id}` y `GET global-countries?iso3_code=`) |
-| Es consumido por | Product Catalog Service (en uso); Operational Context y Commercial Relationship (futuros) — contrato `identity-lookup-provider.md` |
+| Es consumido por | Product Catalog Service y Operational Context Service (en uso); Commercial Relationship (futuro) — contrato `identity-lookup-provider.md` |
 | Referencias externas | `country_id`, `identification_country_id` → Geography Service |
 | Eventos | Ninguno |
 | Autenticación | Token del usuario propagado a Geography; `client_credentials` del cliente `party-identity-service` solo para el `seed` (modo Geography); los consumidores propagan el token de su usuario o usan su propio `client_credentials` |
 | Spec | `specs/003-party-identity-core/` |
+
+### operational-context-service
+
+| Campo | Valor |
+| --- | --- |
+| Responsabilidad | Contexto operativo: empresas cliente de la plataforma y sus sucursales (Fase A: 2 entidades; ver su `domain-map.md`) |
+| Ruta | `services/operational-context-service/` |
+| Puerto | `8004` (entorno del servicio), `8104` (entorno integrado `infrastructure/`); interno `8000` |
+| Base de datos | PostgreSQL propia `sio_operational_context` (servicio: `55439`, pruebas: `55440`); integrado `operational_context` (`5440`) |
+| Depende de | Keycloak (clase B); Party Identity Service (clase C, `GET /api/v1/organization-identities/{id}`); Geography Service (clase C, `GET global-countries/{id}`, `GET global-administrative-divisions/{id}`, `GET global-cities/{id}`) |
+| Es consumido por | Commercial Relationship, Inventory, Purchase y Sales (futuros) — contrato `operational-context-provider.md` |
+| Referencias externas | `organization_identity_id` → Party Identity Service; `country_id`, `administrative_division_id`, `city_id` → Geography Service |
+| Eventos | Ninguno |
+| Autenticación | Token del usuario propagado a Party Identity y Geography; los consumidores propagan el token de su usuario o usan su propio `client_credentials` |
+| Spec | `specs/004-operational-context-core/` |

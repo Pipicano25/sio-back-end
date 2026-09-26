@@ -465,6 +465,49 @@ services:
     networks:
       - sio-network
 
+
+  operational-context-service:
+    build:
+      context: ..
+      dockerfile: services/operational-context-service/Dockerfile
+    image: sio/operational-context-service:${SIO_SERVICES_VERSION}
+    container_name: sio-operational-context-service
+    restart: unless-stopped
+
+    environment:
+      DATABASE_URL: postgresql+psycopg://${OPERATIONAL_CONTEXT_DB_USER}:${OPERATIONAL_CONTEXT_DB_PASSWORD}@operational-context-db:5432/${OPERATIONAL_CONTEXT_DB_NAME}
+      # El issuer debe coincidir con KEYCLOAK_PUBLIC_URL; las llaves se
+      # obtienen dentro de sio-network.
+      SIO_AUTH_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+      SIO_AUTH_AUDIENCE: sio-api
+      SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
+      # La URL de Party Identity incluye /api/v1; la de Geography, su prefijo
+      # vigente (hoy sin /api/v1). Ver specs/004-operational-context-core/contracts/.
+      PARTY_IDENTITY_SERVICE_BASE_URL: ${PARTY_IDENTITY_SERVICE_BASE_URL:-http://party-identity-service:8000/api/v1}
+      PARTY_IDENTITY_TIMEOUT_SECONDS: ${PARTY_IDENTITY_TIMEOUT_SECONDS:-5}
+      GEOGRAPHY_SERVICE_BASE_URL: http://geography-service:8000
+      GEOGRAPHY_TIMEOUT_SECONDS: ${GEOGRAPHY_TIMEOUT_SECONDS:-5}
+
+    ports:
+      - "127.0.0.1:${OPERATIONAL_CONTEXT_SERVICE_PORT:-8104}:8000"
+
+    depends_on:
+      operational-context-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+    networks:
+      - sio-network
+
 volumes:
   operational_context_db_data:
     name: sio-operational-context-db-data

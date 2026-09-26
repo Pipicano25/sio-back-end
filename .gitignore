@@ -31,6 +31,7 @@ htmlcov/
 .specify/
 specs/
 docs/development-roadmap.md
+docs/tools/update_roadmap_progress.py
 
 # Logs y temporales
 *.log
