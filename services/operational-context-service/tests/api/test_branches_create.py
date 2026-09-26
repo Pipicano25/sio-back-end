@@ -15,9 +15,10 @@ def _branch_count(test_engine):
         return connection.execute(text("SELECT count(*) FROM branches")).scalar_one()
 
 
-def test_create_under_active_company(api_as, create_company, fake_organizations):
+def test_create_under_active_company(api_as, create_company, fake_organizations, make_member):
     company = create_company()
     fake_organizations.reset()
+    make_member(company["id"], "sup-1")
     client = api_as("perm:operational-context:branches:create", sub="sup-1")
 
     response = client.post(_url(company["id"]), json=branch_payload(code=" med-01 "))

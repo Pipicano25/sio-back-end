@@ -7,18 +7,18 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 ## Resumen por usuario
 
 - **`admin.test`**: puede ejecutar **todo el ejercicio**.
-- **`supervisor.test`**: puede ejecutar **todo el ejercicio**.
-- **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
-- **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
-- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 01 (*Consultar la organización COMERCIALIZADORA EJEMPLO FICTICIA S.A.S. en Party Identity Service*): no tiene ningún permiso sobre `party-identity`. Sí puede hacer las consultas (`GET`) de los pasos 04.
-- **`reportes.test`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
-- **`consulta.test`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
+- **`supervisor.test`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `create`, `read`, `update`; le falta `administer`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 04 responden `404` (aislamiento por empresa).
+- **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `read`; le falta `create`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 04 responden `404` (aislamiento por empresa).
+- **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `read`; le falta `create`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 04 responden `404` (aislamiento por empresa).
+- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 01 (*Consultar la organización COMERCIALIZADORA EJEMPLO FICTICIA S.A.S. en Party Identity Service*): no tiene ningún permiso sobre `party-identity`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 04 responden `404` (aislamiento por empresa).
+- **`reportes.test`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `read`; le falta `create`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 04 responden `404` (aislamiento por empresa).
+- **`consulta.test`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `read`; le falta `create`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 04 responden `404` (aislamiento por empresa).
 
-**Para hacer el ejercicio completo use `admin.test`.** `supervisor.test` puede crear, modificar y reactivar, pero no inactivar.
+**Para hacer el ejercicio completo use `admin.test`** (tiene `platform:administer` por `perm:all:all:all`). Los demás usuarios solo operan en las empresas donde tienen membresía `ACTIVE`; `supervisor.test` puede crear y modificar allí, pero no inactivar ni registrar, inactivar o reactivar empresas.
 
 ## Permiso por URL
 
-✅ = el usuario puede ejecutar la llamada · ❌ = recibe `403 Forbidden`.
+✅ = el usuario tiene el permiso (o los permisos) de la llamada · ❌ = recibe `403 Forbidden`. Tener el permiso no basta en las URL con 🔒: fuera de sus empresas el usuario recibe `404`.
 
 | Paso | Llamada | Método y URL | Permiso requerido | admin | supervisor | compras | ventas | inventario | reportes | consulta |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -26,11 +26,11 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 | [02](02-consultar-ubicacion.md) | 1. Consultar el país Colombia en Geography Service | `GET http://localhost:8000/global-countries` | `perm:geography:global_countries:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [02](02-consultar-ubicacion.md) | 2. Consultar el departamento Antioquia en Geography Service | `GET http://localhost:8000/global-administrative-divisions` | `perm:geography:global_administrative_divisions:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [02](02-consultar-ubicacion.md) | 3. Consultar la ciudad Medellín en Geography Service | `GET http://localhost:8000/global-cities` | `perm:geography:global_cities:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [03](03-registrar-empresa.md) | 1. Registrar la empresa con su sede operativa principal | `POST /api/v1/companies` | `perm:operational-context:companies:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [03](03-registrar-empresa.md) | 2. Intentar registrar una empresa con una organización inexistente (rechazado) | `POST /api/v1/companies` | `perm:operational-context:companies:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [04](04-consultar-y-modificar.md) | 1. Consultar la empresa por su `id` | `GET /api/v1/companies/{id}` | `perm:operational-context:companies:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [04](04-consultar-y-modificar.md) | 2. Modificar el teléfono con la versión vigente | `PUT /api/v1/companies/{id}` | `perm:operational-context:companies:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [04](04-consultar-y-modificar.md) | 3. Buscar la empresa por su organización | `GET /api/v1/companies` | `perm:operational-context:companies:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [03](03-registrar-empresa.md) | 1. Registrar la empresa con su sede operativa principal | `POST /api/v1/companies` | `perm:operational-context:companies:create` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [03](03-registrar-empresa.md) | 2. Intentar registrar una empresa con una organización inexistente (rechazado) | `POST /api/v1/companies` | `perm:operational-context:companies:create` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [04](04-consultar-y-modificar.md) | 1. Consultar la empresa por su `id` | `GET /api/v1/companies/{id}` 🔒 | `perm:operational-context:companies:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [04](04-consultar-y-modificar.md) | 2. Modificar el teléfono con la versión vigente | `PUT /api/v1/companies/{id}` 🔒 | `perm:operational-context:companies:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [04](04-consultar-y-modificar.md) | 3. Buscar la empresa por su organización | `GET /api/v1/companies` 🔒 | `perm:operational-context:companies:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Ejemplos de uso con los usuarios
 
@@ -54,7 +54,7 @@ curl -s -X POST "http://localhost:8004/api/v1/companies" \
   -d '{"organization_identity_id": "<ORG_EMPRESA>", "email": "contacto@comercializadora-ficticia.co", "phone": "+57 604 000 0001", "address_line": "Carrera Ficticia 43A # 1-50", "country_id": "<PAIS_CO>", "administrative_division_id": "<DIV_ANT>", "city_id": "<CIU_MED>", "postal_code": "050021", "latitude": "6.208000", "longitude": "-75.567000"}'
 ```
 
-Responde `201 Created`: `admin.test` tiene `perm:all:all:all`, que cubre `perm:operational-context:companies:create`. Reemplace las variables `<…>` por los `id` guardados.
+Responde `201 Created`: `admin.test` tiene `perm:all:all:all`, que cubre `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`. Reemplace las variables `<…>` por los `id` guardados.
 
 ### 2. `consulta.test` intenta crear (rechazado)
 
@@ -88,18 +88,18 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-`consulta.test` solo tiene `perm:all:all:read`: puede **leer**, pero la URL exige `perm:operational-context:companies:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
+`consulta.test` solo tiene `perm:all:all:read`: puede **leer**, pero la URL exige `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
 
-### 3. `consulta.test` consulta (permitido)
+### 3. `consulta.test` consulta
 
 ```bash
 curl -s -X GET "http://localhost:8004/api/v1/companies/<EMPRESA>" \
   -H "Authorization: Bearer $TOKEN_CONSULTA"
 ```
 
-Responde `200 OK` con la misma información que ve `admin.test` en el paso 04: `perm:all:all:read` cubre `perm:operational-context:companies:read`. Lo mismo pasa con `reportes.test`, `compras.test`, `ventas.test` e `inventario.test`.
+Responde `404 Not Found`: `perm:all:all:read` cubre `perm:operational-context:companies:read`, pero `consulta.test` **no es miembro** de la empresa del paso 04. Fuera de su alcance, el recurso se trata como inexistente (aislamiento por empresa, DS-06).
 
-### 4. `inventario.test` consulta (permitido)
+### 4. `inventario.test` consulta
 
 ```bash
 TOKEN_INVENTARIO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
@@ -113,7 +113,7 @@ curl -s -X GET "http://localhost:8004/api/v1/companies/<EMPRESA>" \
   -H "Authorization: Bearer $TOKEN_INVENTARIO"
 ```
 
-Responde `200 OK`: `inventario.test` tiene `perm:operational-context:all:read`, porque Inventory trabaja por empresa y sucursal. No tiene lectura en Party Identity, así que no podría consultar allá la razón social de la empresa.
+Responde `404 Not Found`: `inventario.test` tiene `perm:operational-context:all:read`, pero no es miembro de la empresa. Tener el permiso no basta: también se necesita la membresía.
 
 ### 5. Sin token (rechazado)
 

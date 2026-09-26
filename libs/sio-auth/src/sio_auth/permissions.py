@@ -51,3 +51,22 @@ def has_permission(
     """Indica si algún grant de Keycloak cubre el permiso exigido por el endpoint."""
 
     return any(grant.allows(required) for grant in grants)
+
+
+def evaluate_permission(
+    roles: Iterable[str],
+    required: SioPermission,
+) -> bool:
+    """Evalúa si un conjunto de client roles de Keycloak concede un permiso.
+
+    Función pura de la API pública (versión 0.3.0). Aplica exactamente el mismo
+    algoritmo que ``auth.permission``: interpreta los roles ``perm:...`` (los
+    roles sin ese prefijo o mal formados se ignoran) y compara los grants,
+    incluidos los wildcards ``all``, con el permiso concreto exigido.
+
+    Está pensada para evaluar roles efectivos obtenidos por otra vía (por
+    ejemplo, leídos de Keycloak para un usuario distinto del que hace la
+    solicitud). No consulta Keycloak ni produce efectos.
+    """
+
+    return has_permission(extract_permission_grants(roles), required)

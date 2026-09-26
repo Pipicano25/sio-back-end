@@ -4,12 +4,18 @@ from uuid import uuid4
 
 import pytest
 
+from operational_context_service.application.access_scope import AccessScope
 from operational_context_service.application.company_service import CompanyService
 from operational_context_service.application.exceptions import (
     DependencyUnavailableError,
     OrganizationIdentityNotFoundError,
 )
 from operational_context_service.infrastructure.company_repository import SQLAlchemyCompanyRepository
+
+# Alcance de plataforma (Fase B): estas pruebas llaman a los servicios directamente.
+PLATFORM = AccessScope(
+    subject="test", is_platform_admin=True, can_lookup=True, member_company_ids=frozenset()
+)
 
 
 @pytest.fixture
@@ -53,6 +59,7 @@ def test_update_calls_providers_without_open_transaction(service, fake_organizat
     new_organization = fake_organizations.add()
 
     service.update(
+        PLATFORM,
         company.id,
         _data(new_organization, country_id=geo.colombia),
         expected_version=company.version,

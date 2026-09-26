@@ -74,6 +74,9 @@ class SQLAlchemyCompanyRepository:
         if filters.city_id is not None:
             conditions.append(CompanyModel.city_id == filters.city_id)
 
+        if filters.company_ids is not None:
+            conditions.append(CompanyModel.id.in_(filters.company_ids))
+
         total_records = self.session.scalar(
             select(func.count()).select_from(CompanyModel).where(*conditions)
         ) or 0

@@ -46,8 +46,18 @@ _RESULTS: dict[int, tuple[dict, list]] = {}
 # --------------------------------------------------------------------------- utilidades
 
 @pytest.fixture(autouse=True)
-def external_data(fake_organizations, fake_geography):
-    """Carga en los dobles los identificadores ficticios de los ejercicios."""
+def external_data(fake_organizations, fake_geography, fake_persons, fake_accounts):
+    """Carga en los dobles los identificadores ficticios de los ejercicios.
+
+    Fase B: personas de Party Identity y cuentas de Keycloak. Las cuentas de los usuarios de
+    prueba usan como `sub` su nombre de usuario (el mismo `sub` de los tokens de la prueba) y
+    como roles efectivos los de su grupo en la plantilla del realm.
+    """
+    for person_id, status in spec_common.PERSONS.items():
+        fake_persons.persons[UUID(person_id)] = status
+    for user in USERS:
+        fake_accounts.add(user["username"], sub=user["username"], roles=tuple(user["roles"]))
+    fake_accounts.add(spec_common.TECHNICAL_ACCOUNT, sub=spec_common.TECHNICAL_ACCOUNT, service_account=True)
     for organization_id, status in spec_common.ORGANIZATIONS.items():
         fake_organizations.organizations[UUID(organization_id)] = status
     for country_id, status in spec_common.COUNTRIES.items():
@@ -124,14 +134,14 @@ def test_exercise_runs_and_matches_documentation(api, test_client, make_token, i
 
 @pytest.mark.parametrize("order", ["forward", "reverse"])
 def test_exercises_share_one_database(api, order):
-    """Los tres ejercicios en la misma base no chocan entre sí."""
+    """Todos los ejercicios en la misma base no chocan entre sí."""
     exercises = EXERCISES if order == "forward" else list(reversed(EXERCISES))
     for exercise in exercises:
         run_exercise(api, exercise)
 
 
 def test_general_permissions_document(api, test_engine, test_client, make_token):
-    """`usuarios-y-permisos.md` corresponde con los permisos observados en los tres ejercicios."""
+    """`usuarios-y-permisos.md` corresponde con los permisos observados en todos los ejercicios."""
     for index, exercise in enumerate(EXERCISES):
         if index not in _RESULTS:
             truncate_all(test_engine)

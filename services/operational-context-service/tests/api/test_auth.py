@@ -24,6 +24,26 @@ OPERATIONS = [
     ("PUT", f"/api/v1/branches/{ANY}", "branches", "update"),
     ("POST", f"/api/v1/branches/{ANY}/deactivate", "branches", "delete"),
     ("POST", f"/api/v1/branches/{ANY}/reactivate", "branches", "update"),
+    # Fase B (specs/005-operational-context-users/contracts/rest-api.md).
+    ("GET", f"/api/v1/companies/{ANY}/application-users", "application_users", "read"),
+    ("POST", f"/api/v1/companies/{ANY}/application-users", "application_users", "create"),
+    ("GET", f"/api/v1/application-users/{ANY}", "application_users", "read"),
+    ("PUT", f"/api/v1/application-users/{ANY}", "application_users", "update"),
+    ("POST", f"/api/v1/application-users/{ANY}/deactivate", "application_users", "delete"),
+    ("POST", f"/api/v1/application-users/{ANY}/reactivate", "application_users", "update"),
+    ("GET", f"/api/v1/application-users/{ANY}/user-branches", "user_branches", "read"),
+    ("GET", f"/api/v1/branches/{ANY}/user-branches", "user_branches", "read"),
+    ("POST", f"/api/v1/application-users/{ANY}/user-branches", "user_branches", "create"),
+    ("GET", f"/api/v1/user-branches/{ANY}", "user_branches", "read"),
+    ("POST", f"/api/v1/user-branches/{ANY}/deactivate", "user_branches", "delete"),
+    ("POST", f"/api/v1/user-branches/{ANY}/reactivate", "user_branches", "update"),
+    ("GET", f"/api/v1/companies/{ANY}/advisor-assignments", "company_advisor_assignments", "read"),
+    ("POST", f"/api/v1/companies/{ANY}/advisor-assignments", "company_advisor_assignments", "create"),
+    ("GET", f"/api/v1/advisor-assignments/{ANY}", "company_advisor_assignments", "read"),
+    ("POST", f"/api/v1/advisor-assignments/{ANY}/close", "company_advisor_assignments", "delete"),
+    ("POST", f"/api/v1/companies/{ANY}/advisor-assignments/change-primary", "company_advisor_assignments", "create"),
+    ("GET", "/api/v1/me/operational-context", "application_users", "read"),
+    ("GET", f"/api/v1/operational-access?company_id={ANY}", "application_users", "read"),
 ]
 
 IDS = [f"{method} {path.replace(ANY, '{id}')}" for method, path, _, _ in OPERATIONS]

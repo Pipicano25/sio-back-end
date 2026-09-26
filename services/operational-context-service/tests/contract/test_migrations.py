@@ -91,18 +91,91 @@ def test_branches_columns(fresh_schema):
     assert columns["created_by"]["character_maximum_length"] == 255
 
 
-def test_no_person_columns_in_phase_a(fresh_schema):
-    """R-15: la Fase A no guarda personas ni usuarios."""
+def test_phase_a_tables_do_not_store_persons(fresh_schema):
+    """R-15 de la Fase A: empresas y sucursales no guardan personas ni usuarios."""
     for table in ("companies", "branches"):
         columns = _columns(fresh_schema, table)
-        assert not {"person_identity_id", "application_user_id", "keycloak_sub"} & set(columns)
+        assert not {"person_identity_id", "application_user_id", "keycloak_user_id"} & set(columns)
 
 
-def test_only_phase_a_tables_exist(fresh_schema):
+def test_phase_b_tables_exist(fresh_schema):
+    """0002 crea las tablas de la Fase B (FR-084)."""
     tables = set(inspect(fresh_schema).get_table_names())
 
+    assert {
+        "companies",
+        "branches",
+        "application_users",
+        "user_branches",
+        "company_advisor_assignments",
+    } <= tables
+
+
+def test_application_users_columns(fresh_schema):
+    columns = _columns(fresh_schema, "application_users")
+
+    assert columns["keycloak_user_id"]["data_type"] == "character varying"
+    assert columns["keycloak_user_id"]["character_maximum_length"] == 255
+    assert columns["keycloak_user_id"]["is_nullable"] == "NO"
+    assert columns["person_identity_id"]["data_type"] == "uuid"
+    assert columns["person_identity_id"]["is_nullable"] == "NO"
+    assert columns["display_name"]["character_maximum_length"] == 160
+    assert columns["display_name"]["is_nullable"] == "NO"
+    assert columns["reference_email"]["character_maximum_length"] == 254
+    assert columns["reference_email"]["is_nullable"] == "YES"
+    assert columns["version"]["is_nullable"] == "NO"
+
+    for audit in ("created_by", "updated_by"):
+        assert columns[audit]["character_maximum_length"] == 255
+
+
+def test_user_branches_and_advisors_columns(fresh_schema):
+    user_branches = _columns(fresh_schema, "user_branches")
+    advisors = _columns(fresh_schema, "company_advisor_assignments")
+
+    for columns in (user_branches, advisors):
+        assert columns["assigned_by"]["character_maximum_length"] == 255
+        assert columns["assigned_by"]["is_nullable"] == "NO"
+        assert columns["version"]["is_nullable"] == "NO"
+        assert columns["created_by"]["character_maximum_length"] == 255
+
+    assert user_branches["company_id"]["is_nullable"] == "NO"
+    assert user_branches["deactivated_at"]["is_nullable"] == "YES"
+    assert user_branches["assigned_at"]["data_type"] == "timestamp with time zone"
+    assert advisors["valid_to"]["is_nullable"] == "YES"
+    assert advisors["valid_from"]["data_type"] == "timestamp with time zone"
+    assert advisors["is_primary"]["data_type"] == "boolean"
+    assert "assigned_by_user_id" not in user_branches
+    assert "assigned_by_user_id" not in advisors
+
+
+def test_phase_b_does_not_store_data_owned_by_others(fresh_schema):
+    """RC-13, FR-065: sin datos de Party Identity ni de Keycloak salvo UUID y `sub`."""
+    forbidden = {
+        "first_name",
+        "last_name",
+        "full_name",
+        "legal_name",
+        "identification_number",
+        "identification_type",
+        "username",
+        "password",
+        "roles",
+        "email",
+    }
+
+    for table in ("application_users", "user_branches", "company_advisor_assignments"):
+        assert not forbidden & set(_columns(fresh_schema, table))
+
+
+def test_downgrade_to_0001_removes_phase_b_only(test_database_url, fresh_schema):
+    run_alembic(test_database_url, "downgrade", "0001")
+    tables = set(inspect(fresh_schema).get_table_names())
     assert {"companies", "branches"} <= tables
     assert not {"application_users", "user_branches", "company_advisor_assignments"} & tables
+
+    run_alembic(test_database_url, "upgrade", "head")
+    assert "application_users" in set(inspect(fresh_schema).get_table_names())
 
 
 def test_downgrade_removes_tables_and_upgrade_restores(test_database_url, fresh_schema):
@@ -110,4 +183,4 @@ def test_downgrade_removes_tables_and_upgrade_restores(test_database_url, fresh_
     assert not {"companies", "branches"} & set(inspect(fresh_schema).get_table_names())
 
     run_alembic(test_database_url, "upgrade", "head")
-    assert {"companies", "branches"} <= set(inspect(fresh_schema).get_table_names())
+    assert {"companies", "branches", "application_users"} <= set(inspect(fresh_schema).get_table_names())

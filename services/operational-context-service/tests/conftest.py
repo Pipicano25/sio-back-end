@@ -15,12 +15,22 @@ import time
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(PROJECT_ROOT / ".env", override=False)
+
+# Valores de prueba para la configuración de Keycloak (sin secretos reales): la
+# suite nunca llama a Keycloak; usa FakeIdentityAccountDirectory (Principio IV).
+for _name, _value in {
+    "KEYCLOAK_BASE_URL": "http://keycloak.test",
+    "KEYCLOAK_REALM": "sio",
+    "OPERATIONAL_CONTEXT_CLIENT_ID": "operational-context-service",
+    "OPERATIONAL_CONTEXT_CLIENT_SECRET": "test-only-secret",
+}.items():
+    os.environ.setdefault(_name, _value)
 
 import jwt  # noqa: E402
 import pytest  # noqa: E402
@@ -39,7 +49,9 @@ from operational_context_service.config import Settings  # noqa: E402
 from operational_context_service.main import create_app  # noqa: E402
 from tests.fakes import (  # noqa: E402
     FakeGeographyDirectory,
+    FakeIdentityAccountDirectory,
     FakeOrganizationDirectory,
+    FakePersonDirectory,
     GeographyFixture,
 )
 
@@ -47,9 +59,28 @@ TEST_ISSUER = "https://keycloak.test/realms/sio"
 TEST_AUDIENCE = "sio-api"
 TEST_KID = "test-key"
 
-FUNCTIONAL_TABLES = ("branches", "companies")
+FUNCTIONAL_TABLES = (
+    "user_branches",
+    "company_advisor_assignments",
+    "application_users",
+    "branches",
+    "companies",
+)
 
+# Con acción `all`, este permiso también concede `platform:administer` y
+# `platform:lookup` (comodín de acción): el cliente `api` actúa como
+# administrador de plataforma.
 ADMIN_PERMISSION = "perm:operational-context:all:all"
+
+# Permisos de los grupos del realm vigente (infrastructure/keycloak/realm-template).
+SUPERVISOR_PERMISSIONS = ("perm:all:all:read", "perm:all:all:create", "perm:all:all:update")
+READER_PERMISSIONS = ("perm:operational-context:all:read",)
+LOOKUP_PERMISSIONS = (
+    "perm:operational-context:platform:lookup",
+    "perm:operational-context:application_users:read",
+    "perm:operational-context:companies:read",
+    "perm:operational-context:branches:read",
+)
 
 
 # --------------------------------------------------------------------------
@@ -228,6 +259,16 @@ def geo(fake_geography: FakeGeographyDirectory) -> GeographyFixture:
     return GeographyFixture(fake_geography)
 
 
+@pytest.fixture
+def fake_persons() -> FakePersonDirectory:
+    return FakePersonDirectory()
+
+
+@pytest.fixture
+def fake_accounts() -> FakeIdentityAccountDirectory:
+    return FakeIdentityAccountDirectory()
+
+
 # --------------------------------------------------------------------------
 # Aplicación y cliente
 # --------------------------------------------------------------------------
@@ -242,6 +283,10 @@ def test_settings(test_database_url: str) -> Settings:
         geography_base_url="http://geography.test",
         party_identity_timeout_seconds=1.0,
         geography_timeout_seconds=1.0,
+        keycloak_base_url="http://keycloak.test",
+        keycloak_client_id="operational-context-service",
+        keycloak_client_secret="test-only-secret",
+        keycloak_timeout_seconds=1.0,
     )
 
 
@@ -252,12 +297,16 @@ def app(
     test_auth: SIOAuth,
     fake_organizations: FakeOrganizationDirectory,
     fake_geography: FakeGeographyDirectory,
+    fake_persons: FakePersonDirectory,
+    fake_accounts: FakeIdentityAccountDirectory,
 ):
     return create_app(
         test_settings,
         auth=test_auth,
         organization_directory_factory=lambda request: fake_organizations,
         geography_directory_factory=lambda request: fake_geography,
+        person_directory_factory=lambda request: fake_persons,
+        account_directory_factory=lambda request: fake_accounts,
     )
 
 
@@ -387,3 +436,42 @@ def create_branch(api: ApiClient):
         return response.json()
 
     return _create
+
+
+# --------------------------------------------------------------------------
+# Fase B: membresías de apoyo
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def make_member(session_factory):
+    """Crea una membresía directamente en la base de pruebas (prepara escenarios).
+
+    No pasa por la API: sirve para dar alcance de empresa a usuarios de prueba
+    cuando lo que se verifica es otra operación.
+    """
+    from operational_context_service.infrastructure.models import ApplicationUserModel
+
+    def _make(
+        company_id,
+        sub: str,
+        *,
+        person_identity_id=None,
+        status: str = "ACTIVE",
+        display_name: str = "Usuario Ficticio",
+    ) -> str:
+        with session_factory() as session:
+            model = ApplicationUserModel(
+                company_id=UUID(str(company_id)),
+                keycloak_user_id=sub,
+                person_identity_id=person_identity_id or uuid4(),
+                display_name=display_name,
+                status=status,
+                created_by="test-setup",
+                updated_by="test-setup",
+            )
+            session.add(model)
+            session.commit()
+            return str(model.id)
+
+    return _make

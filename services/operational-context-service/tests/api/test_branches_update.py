@@ -7,8 +7,10 @@ def _url(branch):
     return f"/api/v1/branches/{branch['id']}"
 
 
-def test_update_version_and_audit(api_as, create_company, create_branch):
-    branch = create_branch(create_company()["id"])
+def test_update_version_and_audit(api_as, create_company, create_branch, make_member):
+    company = create_company()
+    branch = create_branch(company["id"])
+    make_member(company["id"], "editor")
     client = api_as("perm:operational-context:branches:update", sub="editor")
 
     response = client.put(_url(branch), json=update_body(branch, name="Nuevo nombre"))

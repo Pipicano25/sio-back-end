@@ -181,3 +181,92 @@ class GeographyFixture:
             "administrative_division_id": str(self.cundinamarca),
             "city_id": str(self.bogota),
         }
+
+
+# ---------------------------------------------------------------------------
+# Fase B: Keycloak (Admin API de solo lectura) y personas de Party Identity.
+# ---------------------------------------------------------------------------
+
+from operational_context_service.application.exceptions import (  # noqa: E402
+    KEYCLOAK_UNREACHABLE,
+)
+from operational_context_service.application.ports import AccountRef  # noqa: E402
+
+
+class FakeIdentityAccountDirectory(_Recorder):
+    """Doble de `IdentityAccountDirectory` (cuentas por `sub` y `username`, roles efectivos)."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.accounts: dict[str, AccountRef] = {}
+        self.roles: dict[str, frozenset[str]] = {}
+
+    def add(
+        self,
+        username: str,
+        *,
+        sub: str | None = None,
+        enabled: bool = True,
+        service_account: bool = False,
+        roles: tuple[str, ...] = (),
+    ) -> str:
+        sub = sub or str(uuid4())
+        self.accounts[sub] = AccountRef(
+            sub=sub,
+            username=username.lower(),
+            enabled=enabled,
+            is_service_account=service_account,
+        )
+        self.roles[sub] = frozenset(roles)
+        return sub
+
+    def _check(self, operation: str) -> None:
+        if self.mode == "unavailable":
+            raise DependencyUnavailableError(
+                provider="keycloak",
+                cause=KEYCLOAK_UNREACHABLE,
+                operation=operation,
+            )
+
+    def get_account(self, sub: str) -> AccountRef | None:
+        self._record("get_account", sub)
+        self._check("get_account")
+        return self.accounts.get(sub)
+
+    def find_account_by_username(self, username: str) -> AccountRef | None:
+        self._record("find_account_by_username", username)
+        self._check("find_account_by_username")
+        normalized = username.strip().lower()
+        return next((a for a in self.accounts.values() if a.username == normalized), None)
+
+    def get_permission_roles(self, sub: str) -> frozenset[str]:
+        self._record("get_permission_roles", sub)
+        self._check("get_permission_roles")
+        return self.roles.get(sub, frozenset())
+
+
+class FakePersonDirectory(_Recorder):
+    """Doble de `PersonDirectory`."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.persons: dict[UUID, str] = {}
+
+    def add(self, status: str = "ACTIVE") -> UUID:
+        person_id = uuid4()
+        self.persons[person_id] = status
+        return person_id
+
+    def get_person(self, person_identity_id: UUID) -> ExternalRef | None:
+        self._record("get_person", person_identity_id)
+
+        if self.mode == "unavailable":
+            raise DependencyUnavailableError(
+                provider="party-identity",
+                cause=PARTY_IDENTITY_UNAVAILABLE,
+                operation="get_person",
+            )
+
+        status = self.persons.get(person_identity_id)
+
+        return None if status is None else ExternalRef(id=person_identity_id, status=status)

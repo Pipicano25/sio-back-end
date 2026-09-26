@@ -26,6 +26,8 @@ EXPECTED_CONSTRAINTS = {
     "ck_branches_geography_parent",
     "ck_branches_code_normalized",
     "ck_branches_timezone_not_blank",
+    # Fase B: destino de la FK compuesta de user_branches (R-05).
+    "uq_branches_id_company_id",
 }
 
 EXPECTED_INDEXES = {
@@ -121,11 +123,23 @@ def test_only_foreign_key_is_internal(connection):
         )
     ).mappings().all()
 
-    assert [(row["conname"], row["source"], row["target"]) for row in rows] == [
+    # Todas las FK son internas de la misma base (Fase A y Fase B, Principio II).
+    assert sorted((row["conname"], row["source"], row["target"]) for row in rows) == [
+        ("fk_application_users_company_id_companies", "application_users", "companies"),
         ("fk_branches_company_id_companies", "branches", "companies"),
+        ("fk_company_advisor_assignments_company_id_companies", "company_advisor_assignments", "companies"),
+        ("fk_user_branches_application_user_company", "user_branches", "application_users"),
+        ("fk_user_branches_branch_company", "user_branches", "branches"),
     ]
     referenced_columns = {column for row in rows for column in row["columns"]}
-    for external in ("organization_identity_id", "country_id", "administrative_division_id", "city_id"):
+    for external in (
+        "organization_identity_id",
+        "country_id",
+        "administrative_division_id",
+        "city_id",
+        "person_identity_id",
+        "keycloak_user_id",
+    ):
         assert external not in referenced_columns
 
 

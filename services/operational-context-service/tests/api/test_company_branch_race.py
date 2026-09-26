@@ -17,12 +17,18 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import text
 
+from operational_context_service.application.access_scope import AccessScope
 from operational_context_service.application.branch_service import BranchService
 from operational_context_service.application.company_service import CompanyService
 from operational_context_service.application.exceptions import CompanyInactiveError
 from operational_context_service.infrastructure.branch_repository import SQLAlchemyBranchRepository
 from operational_context_service.infrastructure.company_repository import SQLAlchemyCompanyRepository
 from tests.fakes import FakeGeographyDirectory, FakeOrganizationDirectory
+
+# Alcance de plataforma (Fase B): estas pruebas llaman a los servicios directamente.
+PLATFORM = AccessScope(
+    subject="test", is_platform_admin=True, can_lookup=True, member_company_ids=frozenset()
+)
 
 TIMEOUT = 15
 
@@ -136,8 +142,8 @@ def _state(session_factory, company_id, branch_id=None):
 def _create_inactive_branch(session_factory, company_id):
     with session_factory() as session:
         service = _branch_service(session)
-        branch = service.create(company_id, _branch_data("RE-1"), actor_id="setup")
-        return service.deactivate(branch.id, expected_version=1, actor_id="setup")
+        branch = service.create(PLATFORM, company_id, _branch_data("RE-1"), actor_id="setup")
+        return service.deactivate(PLATFORM, branch.id, expected_version=1, actor_id="setup")
 
 
 def _run(first_gate: Gate, first: Worker, second: Worker, engine) -> None:
@@ -159,8 +165,9 @@ def test_case_a_deactivate_first_then_create_branch_waits_and_fails(session_fact
     session_a, session_b = session_factory(), session_factory()
     try:
         deactivate = Worker(lambda: _company_service(session_a, gate).deactivate(
+        PLATFORM,
             company_id, expected_version=1, actor_id="a"))
-        create = Worker(lambda: _branch_service(session_b).create(company_id, _branch_data(), actor_id="b"))
+        create = Worker(lambda: _branch_service(session_b).create(PLATFORM, company_id, _branch_data(), actor_id="b"))
 
         _run(gate, deactivate, create, test_engine)
     finally:
@@ -178,8 +185,9 @@ def test_case_b_create_branch_first_then_deactivate_waits(session_factory, test_
     gate = Gate()
     session_a, session_b = session_factory(), session_factory()
     try:
-        create = Worker(lambda: _branch_service(session_b, gate).create(company_id, _branch_data(), actor_id="b"))
+        create = Worker(lambda: _branch_service(session_b, gate).create(PLATFORM, company_id, _branch_data(), actor_id="b"))
         deactivate = Worker(lambda: _company_service(session_a).deactivate(
+        PLATFORM,
             company_id, expected_version=1, actor_id="a"))
 
         _run(gate, create, deactivate, test_engine)
@@ -202,8 +210,10 @@ def test_case_c_deactivate_first_then_reactivate_branch_waits_and_fails(session_
     session_a, session_b = session_factory(), session_factory()
     try:
         deactivate = Worker(lambda: _company_service(session_a, gate).deactivate(
+        PLATFORM,
             company_id, expected_version=1, actor_id="a"))
         reactivate = Worker(lambda: _branch_service(session_b).reactivate(
+        PLATFORM,
             branch.id, expected_version=branch.version, actor_id="b"))
 
         _run(gate, deactivate, reactivate, test_engine)
@@ -224,8 +234,10 @@ def test_case_d_reactivate_branch_first_then_deactivate_waits(session_factory, t
     session_a, session_b = session_factory(), session_factory()
     try:
         reactivate = Worker(lambda: _branch_service(session_b, gate).reactivate(
+        PLATFORM,
             branch.id, expected_version=branch.version, actor_id="b"))
         deactivate = Worker(lambda: _company_service(session_a).deactivate(
+        PLATFORM,
             company_id, expected_version=1, actor_id="a"))
 
         _run(gate, reactivate, deactivate, test_engine)

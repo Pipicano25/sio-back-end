@@ -2,6 +2,7 @@
 
 from tests.examples.spec_common import (
     API,
+    PLATFORM,
     CIU_BOGOTA,
     CIU_MEDELLIN,
     DIV_ANTIOQUIA,
@@ -71,7 +72,7 @@ EX2 = dict(
               get_division("DIV_CUN", DIV_CUNDINAMARCA, "Cundinamarca"),
               get_city("CIU_BOG", CIU_BOGOTA, "Bogotá", "DIV_CUN")]),
         step("03-registrar-empresa.md", "Registrar la empresa", "Crear la empresa que tendrá las sucursales.", [
-            call("Registrar la empresa", "POST", f"{API}/companies",
+            call("Registrar la empresa", "POST", f"{API}/companies", also=PLATFORM,
                  body={"organization_identity_id": "<ORG_EMPRESA>", "country_id": "<PAIS_CO>"},
                  why=["Solo la organización es obligatoria; la ubicación de la sede puede completarse después."],
                  save={"EMPRESA": "id"}, show=["id", "timezone", "status", "version"]),

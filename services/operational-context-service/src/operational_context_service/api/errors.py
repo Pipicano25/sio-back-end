@@ -7,8 +7,9 @@ excepciones de aplicación solo llevan `code`, mensaje y campo, y la tabla
 Regla D11 provisional (`contracts/errors.md`): `400` solo si el cuerpo JSON no
 se puede interpretar; `422` para validación de entrada y de dominio, incluidas
 las referencias externas inexistentes, inactivas o incoherentes; `409`
-unicidad, versión y transición; `404` recurso de la ruta inexistente; `503`
-dependencia no disponible.
+unicidad, versión y transición; `404` recurso de la ruta inexistente o fuera
+del alcance del usuario (DS-06); `503` dependencia no disponible, con la
+extensión `dependency` (C-13).
 """
 
 from __future__ import annotations
@@ -51,6 +52,24 @@ _STATUS_BY_CODE: dict[str, int] = {
     "VERSION_CONFLICT": 409,
     "INVALID_STATUS_TRANSITION": 409,
     "DEPENDENCY_UNAVAILABLE": 503,
+    # Fase B (specs/005-operational-context-users/contracts/errors.md).
+    "KEYCLOAK_USER_NOT_FOUND": 422,
+    "KEYCLOAK_USER_DISABLED": 422,
+    "TECHNICAL_ACCOUNT_NOT_ALLOWED": 422,
+    "PERSON_IDENTITY_NOT_FOUND": 422,
+    "PERSON_IDENTITY_INACTIVE": 422,
+    "MEMBERSHIP_INACTIVE": 422,
+    "BRANCH_INACTIVE": 422,
+    "BRANCH_COMPANY_MISMATCH": 422,
+    "INVALID_VALIDITY_PERIOD": 422,
+    "DUPLICATE_MEMBERSHIP": 409,
+    "DUPLICATE_USER_BRANCH": 409,
+    "PRIMARY_ADVISOR_EXISTS": 409,
+    "DUPLICATE_ADVISOR_ASSIGNMENT": 409,
+    "NO_ACTIVE_PRIMARY_ADVISOR": 409,
+    "PRIMARY_ADVISOR_MISMATCH": 409,
+    # Capacidad `platform:lookup` exigida de forma condicional (FR-045).
+    "FORBIDDEN": 403,
 }
 
 _HTTP_CODES = {
@@ -130,6 +149,11 @@ async def _handle_application_error(
         )
 
     extra: dict[str, Any] = dict(exc.context)
+
+    if isinstance(exc, DependencyUnavailableError):
+        # Extensión estable que identifica la dependencia sin cambiar el `code`
+        # publicado (C-13): party-identity, geography o keycloak.
+        extra["dependency"] = exc.provider
 
     if exc.field:
         extra["errors"] = [

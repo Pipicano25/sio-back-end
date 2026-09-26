@@ -58,13 +58,13 @@ El modelo actual también documenta un `Finance Service`, pero no se incluyó po
 
 | Campo | Valor |
 | --- | --- |
-| Responsabilidad | Contexto operativo: empresas cliente de la plataforma y sus sucursales (Fase A: 2 entidades; ver su `domain-map.md`) |
+| Responsabilidad | Contexto operativo: empresas, sucursales, usuarios operativos (membresías), asignaciones a sucursales y asesores, con aislamiento por empresa (5 entidades; ver su `domain-map.md`) |
 | Ruta | `services/operational-context-service/` |
 | Puerto | `8004` (entorno del servicio), `8104` (entorno integrado `infrastructure/`); interno `8000` |
 | Base de datos | PostgreSQL propia `sio_operational_context` (servicio: `55439`, pruebas: `55440`); integrado `operational_context` (`5440`) |
-| Depende de | Keycloak (clase B); Party Identity Service (clase C, `GET /api/v1/organization-identities/{id}`); Geography Service (clase C, `GET global-countries/{id}`, `GET global-administrative-divisions/{id}`, `GET global-cities/{id}`) |
-| Es consumido por | Commercial Relationship, Inventory, Purchase y Sales (futuros) — contrato `operational-context-provider.md` |
-| Referencias externas | `organization_identity_id` → Party Identity Service; `country_id`, `administrative_division_id`, `city_id` → Geography Service |
+| Depende de | Keycloak (clase B: validación de tokens; Admin API de solo lectura con cliente técnico propio para verificar cuentas y leer permisos efectivos); Party Identity Service (clase C, `GET /api/v1/organization-identities/{id}` y `GET /api/v1/person-identities/{id}`); Geography Service (clase C, `GET global-countries/{id}`, `GET global-administrative-divisions/{id}`, `GET global-cities/{id}`) |
+| Es consumido por | Commercial Relationship, Inventory, Purchase, Sales y Audit (futuros) — contratos `operational-context-provider.md` (004) y `operational-access-provider.md` (005) |
+| Referencias externas | `organization_identity_id` → Party Identity; `person_identity_id` (usuarios operativos y asesores) → Party Identity; `keycloak_user_id` (`sub`) → Keycloak; `country_id`, `administrative_division_id`, `city_id` → Geography |
 | Eventos | Ninguno |
-| Autenticación | Token del usuario propagado a Party Identity y Geography; los consumidores propagan el token de su usuario o usan su propio `client_credentials` |
-| Spec | `specs/004-operational-context-core/` |
+| Autenticación | Token del usuario propagado a Party Identity y Geography; `client_credentials` del cliente `operational-context-service` (`view-users`, `query-clients`) hacia la Admin API de Keycloak; los consumidores propagan el token de su usuario o usan su propio `client_credentials` con `perm:operational-context:platform:lookup` |
+| Spec | `specs/004-operational-context-core/`, `specs/005-operational-context-users/` |

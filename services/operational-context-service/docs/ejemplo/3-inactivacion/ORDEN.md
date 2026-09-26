@@ -2,7 +2,7 @@
 
 [← Todos los ejercicios](../README.md)
 
-**Qué enseña:** Inactivar una empresa **sin eliminarla ni modificar sus sucursales**, ver cómo la sucursal informa el estado de su empresa, el rechazo al crear sucursales bajo una empresa inactiva, la reactivación y la transición repetida; quién puede cada acción (`supervisor.test` reactiva pero no inactiva).
+**Qué enseña:** Inactivar una empresa **sin eliminarla ni modificar sus sucursales**, ver cómo la sucursal informa el estado de su empresa, el rechazo al crear sucursales bajo una empresa inactiva, la reactivación y la transición repetida; quién puede cada acción (inactivar y reactivar empresas exige además `platform:administer`: solo `admin.test`).
 
 **Datos:** **ficticios** — detalle y decisiones en [00-datos-ficticios.md](00-datos-ficticios.md).
 

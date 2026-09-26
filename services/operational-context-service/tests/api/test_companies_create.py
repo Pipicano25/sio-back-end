@@ -19,7 +19,11 @@ def _count(test_engine):
 
 def test_create_with_defaults(api_as, fake_organizations):
     organization_id = fake_organizations.add()
-    client = api_as("perm:operational-context:companies:create", sub="admin-sub")
+    client = api_as(
+        "perm:operational-context:companies:create",
+        "perm:operational-context:platform:administer",
+        sub="admin-sub",
+    )
 
     response = client.post(URL, json=company_payload(organization_id))
 
@@ -175,4 +179,15 @@ def test_unknown_fields_are_422(api, fake_organizations, unknown_field):
     assert response.status_code == 422
     assert response.json()["code"] == "OPERATIONAL_CONTEXT.VALIDATION_ERROR"
     assert response.json()["errors"][0]["field"] == unknown_field
+    assert fake_organizations.count() == 0
+
+
+def test_create_requires_platform_scope(api_as, fake_organizations):
+    """FR-043 (Fase B): `supervisor.test` tiene `companies:create`, pero no `platform:administer`."""
+    supervisor = api_as("perm:all:all:read", "perm:all:all:create", "perm:all:all:update", sub="supervisor.test")
+
+    response = supervisor.post(URL, json=company_payload(fake_organizations.add()))
+
+    assert response.status_code == 403
+    assert "perm:operational-context:platform:administer" in response.json()["detail"]
     assert fake_organizations.count() == 0

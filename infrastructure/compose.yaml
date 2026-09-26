@@ -488,6 +488,14 @@ services:
       PARTY_IDENTITY_TIMEOUT_SECONDS: ${PARTY_IDENTITY_TIMEOUT_SECONDS:-5}
       GEOGRAPHY_SERVICE_BASE_URL: http://geography-service:8000
       GEOGRAPHY_TIMEOUT_SECONDS: ${GEOGRAPHY_TIMEOUT_SECONDS:-5}
+      # Admin API de Keycloak de solo lectura con el cliente técnico propio
+      # (specs/005-operational-context-users/contracts/keycloak-dependency.md).
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      OPERATIONAL_CONTEXT_CLIENT_ID: operational-context-service
+      OPERATIONAL_CONTEXT_CLIENT_SECRET: ${OPERATIONAL_CONTEXT_CLIENT_SECRET}
+      KEYCLOAK_TIMEOUT_SECONDS: ${KEYCLOAK_TIMEOUT_SECONDS:-5}
+      SIO_API_CLIENT_ID: sio-api
 
     ports:
       - "127.0.0.1:${OPERATIONAL_CONTEXT_SERVICE_PORT:-8104}:8000"

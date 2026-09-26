@@ -9,9 +9,11 @@ unicidad.
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from typing import Any
 from uuid import UUID
 
+from operational_context_service.application.access_scope import AccessScope
 from operational_context_service.application.exceptions import (
     DuplicateOrganizationIdentityError,
     InvalidStatusTransitionError,
@@ -81,19 +83,33 @@ class CompanyService:
 
     # ------------------------------------------------------------------ consultas
 
-    def get(self, company_id: UUID) -> Company:
-        """Obtiene una empresa en cualquier estado (contrato Provider)."""
+    def get(self, scope: AccessScope, company_id: UUID, *, lookup_read: bool = True) -> Company:
+        """Obtiene una empresa en cualquier estado dentro del alcance (contrato Provider).
+
+        Fuera del alcance responde igual que si no existiera (DS-06); la lectura
+        por UUID admite además `platform:lookup` (FR-045).
+        """
         company = self.repository.get_by_id(company_id)
         self.repository.end_read()
 
         if company is None:
             raise NotFoundError("La empresa solicitada no existe.")
 
+        scope.ensure_company_visible(company_id, lookup_read=lookup_read)
+
         return company
 
-    def list(self, filters: CompanyFilters, *, page: int, page_size: int) -> PageResult[Company]:
-        """Colección paginada; por defecto solo `ACTIVE` (FR-015)."""
-        result = self.repository.list_all(filters, page=page, page_size=page_size)
+    def list(
+        self,
+        scope: AccessScope,
+        filters: CompanyFilters,
+        *,
+        page: int,
+        page_size: int,
+    ) -> PageResult[Company]:
+        """Colección paginada y filtrada por alcance; por defecto solo `ACTIVE` (FR-015, FR-040)."""
+        scoped = replace(filters, company_ids=scope.company_filter())
+        result = self.repository.list_all(scoped, page=page, page_size=page_size)
         self.repository.end_read()
 
         return result
@@ -121,14 +137,15 @@ class CompanyService:
 
     def update(
         self,
+        scope: AccessScope,
         company_id: UUID,
         data: dict[str, Any],
         *,
         expected_version: int,
         actor_id: str,
     ) -> Company:
-        """Modifica una empresa (FR-016, FR-063, DS-06)."""
-        current = self.get(company_id)
+        """Modifica una empresa del alcance (FR-016, FR-063, FR-043)."""
+        current = self.get(scope, company_id, lookup_read=False)
 
         if current.version != expected_version:
             raise VersionConflictError
@@ -164,24 +181,42 @@ class CompanyService:
             actor_id=actor_id,
         )
 
-    def deactivate(self, company_id: UUID, *, expected_version: int, actor_id: str) -> Company:
-        """Inactiva sin eliminar y sin modificar sus sucursales (DS-07, DS-11)."""
-        return self._change_status(company_id, INACTIVE, expected_version, actor_id)
+    def deactivate(
+        self,
+        scope: AccessScope,
+        company_id: UUID,
+        *,
+        expected_version: int,
+        actor_id: str,
+    ) -> Company:
+        """Inactiva sin eliminar y sin modificar sus sucursales (DS-07, DS-11).
 
-    def reactivate(self, company_id: UUID, *, expected_version: int, actor_id: str) -> Company:
-        """Reactiva una empresa inactiva (DS-11)."""
-        return self._change_status(company_id, ACTIVE, expected_version, actor_id)
+        La ruta exige además `platform:administer` (FR-043).
+        """
+        return self._change_status(scope, company_id, INACTIVE, expected_version, actor_id)
+
+    def reactivate(
+        self,
+        scope: AccessScope,
+        company_id: UUID,
+        *,
+        expected_version: int,
+        actor_id: str,
+    ) -> Company:
+        """Reactiva una empresa inactiva (DS-11); la ruta exige `platform:administer`."""
+        return self._change_status(scope, company_id, ACTIVE, expected_version, actor_id)
 
     # ------------------------------------------------------------------ apoyo
 
     def _change_status(
         self,
+        scope: AccessScope,
         company_id: UUID,
         target: EntityStatus,
         expected_version: int,
         actor_id: str,
     ) -> Company:
-        current = self.get(company_id)
+        current = self.get(scope, company_id, lookup_read=False)
 
         if current.version != expected_version:
             raise VersionConflictError

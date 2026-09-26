@@ -27,11 +27,14 @@ htmlcov/
 **/.env.*
 !**/.env.example
 
+docs/contratos-solicitud-forntent-a-backend.pdf
 .claude/
+CLAUDE.md
 .specify/
 specs/
 docs/development-roadmap.md
 docs/tools/update_roadmap_progress.py
+docs/service-map.md
 
 # Logs y temporales
 *.log

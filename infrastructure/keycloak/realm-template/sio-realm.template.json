@@ -110,6 +110,22 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "operational-context-service",
+      "name": "Operational Context Service",
+      "description": "Identidad técnica de operational-context-service (client_credentials). Solo lectura de la Admin API: verificar cuentas al registrar usuarios operativos y leer permisos efectivos en la comprobación técnica de acceso (DS-14).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${OPERATIONAL_CONTEXT_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true
     }
   ],
   "roles": {
@@ -1040,6 +1056,14 @@
           "description": "Eliminar o desactivar user_branches en operational-context"
         },
         {
+          "name": "perm:operational-context:platform:administer",
+          "description": "Alcance de plataforma en operational-context: ver y administrar todas las empresas sin membresía; registrar, inactivar y reactivar empresas (DS-05). Lo concede perm:all:all:all."
+        },
+        {
+          "name": "perm:operational-context:platform:lookup",
+          "description": "Consulta técnica en operational-context: leer por UUID empresas, sucursales y usuarios operativos y comprobar el acceso de cualquier usuario, sin membresía y sin escrituras (FR-045)."
+        },
+        {
           "name": "perm:purchase:purchases:create",
           "description": "Crear purchases en purchase"
         },
@@ -1275,6 +1299,17 @@
       "clientRoles": {
         "sio-api": [
           "perm:geography:global_countries:read"
+        ]
+      }
+    },
+    {
+      "username": "service-account-operational-context-service",
+      "enabled": true,
+      "serviceAccountClientId": "operational-context-service",
+      "clientRoles": {
+        "realm-management": [
+          "view-users",
+          "query-clients"
         ]
       }
     },

@@ -7,13 +7,17 @@ Para cada llamada:
    reciba `403` y que los usuarios con permiso obtengan la misma respuesta en las consultas.
 2. La ejecuta como administrador y comprueba el código de estado documentado.
 
+Fase B: una URL puede exigir permisos adicionales (`also`, p. ej. `platform:administer`) y
+las consultas de un usuario con permiso pero sin membresía en la empresa responden `404`
+(aislamiento, DS-06). El estado real de cada usuario se registra en `verified`.
+
 Las llamadas a Party Identity y Geography (clase C, Principio IV) no se ejecutan: se simulan
 con los dobles de los puertos y el permiso se toma del ejercicio.
 """
 
 import re
 
-from tests.examples.users import USERS, allowed
+from tests.examples.users import USERS, allowed_all
 
 PLACEHOLDER = re.compile(r"<([A-Z0-9_]+)>")
 PERMISSION = re.compile(r"perm:[a-z0-9_-]+:[a-z0-9_-]+:[a-z0-9_-]+")
@@ -54,21 +58,29 @@ def _check_access(call, clients, method, path, kwargs, expected, record):
     found = PERMISSION.search(probe.text)
     assert found, f"{call['title']}: el 403 no indica el permiso requerido: {probe.text}"
     permission = found.group(0)
-    record.update(permission=permission, forbidden_example=probe.json(), access={}, verified={})
+    permissions = [permission, *call.get("also", [])]
+    record.update(
+        permission=permission,
+        also=list(call.get("also", [])),
+        forbidden_example=probe.json(),
+        access={},
+        verified={},
+    )
 
     for user in USERS:
         name = user["username"]
-        can = allowed(user, permission)
+        can = allowed_all(user, permissions)
         record["access"][name] = can
         if not can:
             response = clients[name].request(method, path, **kwargs)
             assert response.status_code == 403, (
-                f"{call['title']}: {name} no tiene {permission} y respondió {response.status_code}"
+                f"{call['title']}: {name} no tiene {permissions} y respondió {response.status_code}"
             )
             record["verified"][name] = 403
         elif method == "GET" and name != ADMIN:
             response = clients[name].request(method, path, **kwargs)
-            assert response.status_code in expected, (
+            # Con permiso pero fuera del alcance (sin membresía activa): 404 (DS-06).
+            assert response.status_code in [*expected, 404], (
                 f"{call['title']}: {name} tiene lectura y respondió {response.status_code}: {response.text}"
             )
             record["verified"][name] = response.status_code
@@ -84,7 +96,7 @@ def run_exercise(api, exercise, clients=None):
             if call["external"]:
                 if clients is not None:
                     record["permission"] = call["perm"]
-                    record["access"] = {user["username"]: allowed(user, call["perm"]) for user in USERS}
+                    record["access"] = {user["username"]: allowed_all(user, call["perm"]) for user in USERS}
                 ctx.update(call["fake"])
                 record["external"] = True
                 records.append(record)

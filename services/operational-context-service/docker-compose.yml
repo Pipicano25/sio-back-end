@@ -58,6 +58,9 @@ services:
       SIO_AUTH_JWKS_URL: http://host.docker.internal:8081/realms/sio/protocol/openid-connect/certs
       PARTY_IDENTITY_SERVICE_BASE_URL: http://host.docker.internal:8002/api/v1
       GEOGRAPHY_SERVICE_BASE_URL: http://host.docker.internal:8000
+      # Admin API de Keycloak (solo lectura); el resto de variables KEYCLOAK_* y
+      # OPERATIONAL_CONTEXT_CLIENT_* se leen de .env.
+      KEYCLOAK_BASE_URL: http://host.docker.internal:8081
     ports:
       - "${OPERATIONAL_CONTEXT_SERVICE_PORT:-8004}:8000"
     extra_hosts:

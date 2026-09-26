@@ -7,30 +7,30 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 ## Resumen por usuario
 
 - **`admin.test`**: puede ejecutar **todo el ejercicio**.
-- **`supervisor.test`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Inactivar la empresa con la versión vigente*): sobre `operational-context` solo tiene `create`, `read`, `update`; le falta `delete`. Sí puede hacer las consultas (`GET`) de los pasos 03, 04.
-- **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar la empresa*): sobre `operational-context` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 03, 04.
-- **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar la empresa*): sobre `operational-context` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 03, 04.
-- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 01 (*Consultar la organización SERVICIOS EJEMPLO FICTICIOS S.A.S. en Party Identity Service*): no tiene ningún permiso sobre `party-identity`. Sí puede hacer las consultas (`GET`) de los pasos 03, 04.
-- **`reportes.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar la empresa*): sobre `operational-context` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 03, 04.
-- **`consulta.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar la empresa*): sobre `operational-context` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 03, 04.
+- **`supervisor.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar la empresa*): sobre `operational-context` solo tiene `create`, `read`, `update`; le falta `administer`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 03, 04 responden `404` (aislamiento por empresa).
+- **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar la empresa*): sobre `operational-context` solo tiene `read`; le falta `create`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 03, 04 responden `404` (aislamiento por empresa).
+- **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar la empresa*): sobre `operational-context` solo tiene `read`; le falta `create`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 03, 04 responden `404` (aislamiento por empresa).
+- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 01 (*Consultar la organización SERVICIOS EJEMPLO FICTICIOS S.A.S. en Party Identity Service*): no tiene ningún permiso sobre `party-identity`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 03, 04 responden `404` (aislamiento por empresa).
+- **`reportes.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar la empresa*): sobre `operational-context` solo tiene `read`; le falta `create`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 03, 04 responden `404` (aislamiento por empresa).
+- **`consulta.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar la empresa*): sobre `operational-context` solo tiene `read`; le falta `create`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 03, 04 responden `404` (aislamiento por empresa).
 
-**Para hacer el ejercicio completo use `admin.test`.** `supervisor.test` puede crear, modificar y reactivar, pero no inactivar.
+**Para hacer el ejercicio completo use `admin.test`** (tiene `platform:administer` por `perm:all:all:all`). Los demás usuarios solo operan en las empresas donde tienen membresía `ACTIVE`; `supervisor.test` puede crear y modificar allí, pero no inactivar ni registrar, inactivar o reactivar empresas.
 
 ## Permiso por URL
 
-✅ = el usuario puede ejecutar la llamada · ❌ = recibe `403 Forbidden`.
+✅ = el usuario tiene el permiso (o los permisos) de la llamada · ❌ = recibe `403 Forbidden`. Tener el permiso no basta en las URL con 🔒: fuera de sus empresas el usuario recibe `404`.
 
 | Paso | Llamada | Método y URL | Permiso requerido | admin | supervisor | compras | ventas | inventario | reportes | consulta |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | [01](01-consultar-organizacion.md) | 1. Consultar la organización SERVICIOS EJEMPLO FICTICIOS S.A.S. en Party Identity Service | `GET http://localhost:8002/api/v1/organization-identities` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| [02](02-registrar-empresa-y-sucursal.md) | 1. Registrar la empresa | `POST /api/v1/companies` | `perm:operational-context:companies:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [02](02-registrar-empresa-y-sucursal.md) | 2. Registrar la sucursal | `POST /api/v1/companies/{id}/branches` | `perm:operational-context:branches:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [03](03-inactivar-empresa.md) | 1. Inactivar la empresa con la versión vigente | `POST /api/v1/companies/{id}/deactivate` | `perm:operational-context:companies:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [03](03-inactivar-empresa.md) | 2. Consultar la sucursal | `GET /api/v1/branches/{id}` | `perm:operational-context:branches:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [03](03-inactivar-empresa.md) | 3. Intentar crear otra sucursal (rechazado) | `POST /api/v1/companies/{id}/branches` | `perm:operational-context:branches:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [04](04-reactivar-empresa.md) | 1. Reactivar la empresa | `POST /api/v1/companies/{id}/reactivate` | `perm:operational-context:companies:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [04](04-reactivar-empresa.md) | 2. Intentar reactivarla otra vez (rechazado) | `POST /api/v1/companies/{id}/reactivate` | `perm:operational-context:companies:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [04](04-reactivar-empresa.md) | 3. Consultar la sucursal otra vez | `GET /api/v1/branches/{id}` | `perm:operational-context:branches:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [02](02-registrar-empresa-y-sucursal.md) | 1. Registrar la empresa | `POST /api/v1/companies` | `perm:operational-context:companies:create` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [02](02-registrar-empresa-y-sucursal.md) | 2. Registrar la sucursal | `POST /api/v1/companies/{id}/branches` 🔒 | `perm:operational-context:branches:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [03](03-inactivar-empresa.md) | 1. Inactivar la empresa con la versión vigente | `POST /api/v1/companies/{id}/deactivate` 🔒 | `perm:operational-context:companies:delete` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [03](03-inactivar-empresa.md) | 2. Consultar la sucursal | `GET /api/v1/branches/{id}` 🔒 | `perm:operational-context:branches:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [03](03-inactivar-empresa.md) | 3. Intentar crear otra sucursal (rechazado) | `POST /api/v1/companies/{id}/branches` 🔒 | `perm:operational-context:branches:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [04](04-reactivar-empresa.md) | 1. Reactivar la empresa | `POST /api/v1/companies/{id}/reactivate` 🔒 | `perm:operational-context:companies:update` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [04](04-reactivar-empresa.md) | 2. Intentar reactivarla otra vez (rechazado) | `POST /api/v1/companies/{id}/reactivate` 🔒 | `perm:operational-context:companies:update` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [04](04-reactivar-empresa.md) | 3. Consultar la sucursal otra vez | `GET /api/v1/branches/{id}` 🔒 | `perm:operational-context:branches:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Ejemplos de uso con los usuarios
 
@@ -54,7 +54,7 @@ curl -s -X POST "http://localhost:8004/api/v1/companies" \
   -d '{"organization_identity_id": "<ORG_EMPRESA>"}'
 ```
 
-Responde `201 Created`: `admin.test` tiene `perm:all:all:all`, que cubre `perm:operational-context:companies:create`. Reemplace las variables `<…>` por los `id` guardados.
+Responde `201 Created`: `admin.test` tiene `perm:all:all:all`, que cubre `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`. Reemplace las variables `<…>` por los `id` guardados.
 
 ### 2. `consulta.test` intenta crear (rechazado)
 
@@ -88,18 +88,18 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-`consulta.test` solo tiene `perm:all:all:read`: puede **leer**, pero la URL exige `perm:operational-context:companies:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
+`consulta.test` solo tiene `perm:all:all:read`: puede **leer**, pero la URL exige `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
 
-### 3. `consulta.test` consulta (permitido)
+### 3. `consulta.test` consulta
 
 ```bash
 curl -s -X GET "http://localhost:8004/api/v1/branches/<SUCURSAL>" \
   -H "Authorization: Bearer $TOKEN_CONSULTA"
 ```
 
-Responde `200 OK` con la misma información que ve `admin.test` en el paso 03: `perm:all:all:read` cubre `perm:operational-context:branches:read`. Lo mismo pasa con `reportes.test`, `compras.test`, `ventas.test` e `inventario.test`.
+Responde `404 Not Found`: `perm:all:all:read` cubre `perm:operational-context:branches:read`, pero `consulta.test` **no es miembro** de la empresa del paso 03. Fuera de su alcance, el recurso se trata como inexistente (aislamiento por empresa, DS-06).
 
-### 4. `inventario.test` consulta (permitido)
+### 4. `inventario.test` consulta
 
 ```bash
 TOKEN_INVENTARIO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
@@ -113,7 +113,7 @@ curl -s -X GET "http://localhost:8004/api/v1/branches/<SUCURSAL>" \
   -H "Authorization: Bearer $TOKEN_INVENTARIO"
 ```
 
-Responde `200 OK`: `inventario.test` tiene `perm:operational-context:all:read`, porque Inventory trabaja por empresa y sucursal. No tiene lectura en Party Identity, así que no podría consultar allá la razón social de la empresa.
+Responde `404 Not Found`: `inventario.test` tiene `perm:operational-context:all:read`, pero no es miembro de la empresa. Tener el permiso no basta: también se necesita la membresía.
 
 ### 5. `supervisor.test` intenta inactivar (rechazado)
 

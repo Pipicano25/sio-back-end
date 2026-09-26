@@ -16,7 +16,7 @@ UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 PLACEHOLDER = re.compile(r"<([A-Z0-9_]+)>")
 AUDIT = {"created_at", "updated_at", "created_by", "updated_by", "trace_id", "type", "instance", "title",
          "valid_from"}
-TIMESTAMP_KEYS = {"valid_to"}
+TIMESTAMP_KEYS = {"valid_to", "assigned_at", "deactivated_at"}
 STATUS_TEXT = {200: "200 OK", 201: "201 Created", 409: "409 Conflict", 422: "422 Unprocessable Content"}
 DATA_FILE = "00-datos-ficticios.md"
 
@@ -144,7 +144,8 @@ def render_call(number, c, record, reverse):
         out += ["```json", dumps(c["body"]), "```", ""]
     permission = (record or {}).get("permission") or c.get("perm")
     if permission:
-        out += permission_lines(permission)
+        also = (record or {}).get("also", c.get("also", []))
+        out += permission_lines([permission, *also], c)
     if c["why"]:
         out += ["**Por qué se hace así**", ""]
         out += [f"- {w}" for w in c["why"]]

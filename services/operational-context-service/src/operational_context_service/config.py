@@ -1,7 +1,7 @@
 """Configuración propia de Operational Context Service."""
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,14 +19,27 @@ class Settings:
         party_identity_timeout_seconds: Tiempo de espera de cada llamada.
         geography_base_url: URL base de Geography Service, con su prefijo vigente.
         geography_timeout_seconds: Tiempo de espera de cada llamada.
+        keycloak_base_url: URL base de Keycloak para el token técnico y la Admin
+            API de solo lectura (R-06, R-16).
+        keycloak_client_id: Cliente técnico propio del servicio (DS-14).
+        keycloak_client_secret: Secreto del cliente técnico; nunca se registra.
+        keycloak_realm: Realm de SIO.
+        keycloak_timeout_seconds: Tiempo de espera de cada llamada a Keycloak.
+        sio_api_client_id: Cliente cuyos roles son los permisos SIO.
     """
 
     docs_enabled: bool
     database_url: str
     party_identity_base_url: str
     geography_base_url: str
+    keycloak_base_url: str
+    keycloak_client_id: str
+    keycloak_client_secret: str = field(repr=False)
     party_identity_timeout_seconds: float = 5.0
     geography_timeout_seconds: float = 5.0
+    keycloak_realm: str = "sio"
+    keycloak_timeout_seconds: float = 5.0
+    sio_api_client_id: str = "sio-api"
 
 
 def load_settings() -> Settings:
@@ -54,6 +67,15 @@ def load_settings() -> Settings:
             "GEOGRAPHY_TIMEOUT_SECONDS",
             default=5.0,
         ),
+        keycloak_base_url=_required_text("KEYCLOAK_BASE_URL").rstrip("/"),
+        keycloak_realm=_read_text("KEYCLOAK_REALM", default="sio"),
+        keycloak_client_id=_required_text("OPERATIONAL_CONTEXT_CLIENT_ID"),
+        keycloak_client_secret=_required_text("OPERATIONAL_CONTEXT_CLIENT_SECRET"),
+        keycloak_timeout_seconds=_read_positive_float(
+            "KEYCLOAK_TIMEOUT_SECONDS",
+            default=5.0,
+        ),
+        sio_api_client_id=_read_text("SIO_API_CLIENT_ID", default="sio-api"),
     )
 
 

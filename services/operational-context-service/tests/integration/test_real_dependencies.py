@@ -192,3 +192,97 @@ def test_real_unknown_organization_is_422(client):
 
     assert response.status_code == 422
     assert response.json()["code"] == "OPERATIONAL_CONTEXT.ORGANIZATION_IDENTITY_NOT_FOUND"
+
+
+# ---------------------------------------------------------------------------
+# Fase B (specs/005-operational-context-users, FR-094): Keycloak Admin API de
+# solo lectura y personas de Party Identity reales. Exige el realm renderizado
+# con el cliente técnico `operational-context-service` y su secreto en el
+# entorno del servicio. Cada ejecución crea una persona ficticia de validación.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def person_id(client, geography):
+    """Persona nueva y exclusiva de esta ejecución (datos ficticios de validación)."""
+    rules = client.get(
+        f"{PARTY_IDENTITY}/identification-type-rules",
+        params={"party_kind": "PERSON", "country_id": geography["colombia"], "sigla": "CC", "is_active": "true"},
+    ).raise_for_status().json()["items"]
+    if not rules:
+        pytest.skip("Party Identity no tiene la regla CC activa para Colombia (ejecute su seed).")
+
+    for _ in range(5):
+        # Número que cumple el patrón vigente de la regla (sin valores fijos), como la organización.
+        number = _conforming_number(rules[0]["number_pattern"])
+        response = client.post(f"{PARTY_IDENTITY}/person-identities", json={
+            "identification_country_id": geography["colombia"],
+            "identification_type": "CC",
+            "identification_number": number,
+            "first_name": f"PRUEBA{RUN_ID}",
+            "last_name": "DATO FICTICIO DE VALIDACION",
+            "birth_date": "1990-01-01",
+        })
+        if response.status_code == 201:
+            return response.json()["id"]
+        if response.status_code != 409:
+            pytest.skip(f"Party Identity no aceptó la persona de validación: {response.status_code} {response.text}")
+    pytest.fail("No se obtuvo un número de identificación libre tras 5 intentos.")
+
+
+@pytest.fixture(scope="module")
+def company_id(client, organization_id):
+    companies = client.get(
+        f"{OPERATIONAL_CONTEXT}/api/v1/companies", params={"organization_identity_id": organization_id}
+    ).json()["items"]
+    if companies:
+        return companies[0]["id"]
+    response = client.post(f"{OPERATIONAL_CONTEXT}/api/v1/companies", json={"organization_identity_id": organization_id})
+    assert response.status_code == 201, response.text
+    return response.json()["id"]
+
+
+def test_register_member_by_username_against_real_keycloak(client, company_id, person_id):
+    response = client.post(f"{OPERATIONAL_CONTEXT}/api/v1/companies/{company_id}/application-users", json={
+        "username": "compras.test",
+        "person_identity_id": person_id,
+        "display_name": f"Validación {RUN_ID} (dato ficticio)",
+    })
+
+    if response.status_code == 503 and response.json().get("dependency") == "keycloak":
+        pytest.skip("Keycloak Admin no disponible: renderice e importe el realm con operational-context-service.")
+    assert response.status_code == 201, response.text
+    assert response.json()["keycloak_user_id"] != "compras.test"  # se guarda el `sub`, no el username
+
+
+def test_unknown_username_is_422_against_real_keycloak(client, company_id):
+    # Persona sin membresía: el duplicado por persona se evalúa antes que la cuenta (orden del alta).
+    response = client.post(f"{OPERATIONAL_CONTEXT}/api/v1/companies/{company_id}/application-users", json={
+        "username": f"no-existe-{RUN_ID.lower()}",
+        "person_identity_id": str(uuid4()),
+        "display_name": "No existe",
+    })
+
+    assert response.status_code == 422, response.text
+    assert response.json()["code"] == "OPERATIONAL_CONTEXT.KEYCLOAK_USER_NOT_FOUND"
+
+
+def test_technical_access_evaluates_real_roles(client, company_id):
+    """`admin.test` tiene `platform:lookup` por `perm:all:all:all`; se evalúan los roles de compras.test."""
+    members = client.get(
+        f"{OPERATIONAL_CONTEXT}/api/v1/companies/{company_id}/application-users",
+    ).json()["items"]
+    if not members:
+        pytest.skip("La prueba anterior debía registrar el usuario operativo.")
+    sub = members[0]["keycloak_user_id"]
+
+    allowed = client.get(f"{OPERATIONAL_CONTEXT}/api/v1/operational-access", params={
+        "company_id": company_id, "keycloak_user_id": sub, "permission": "perm:purchase:purchases:create",
+    })
+    denied = client.get(f"{OPERATIONAL_CONTEXT}/api/v1/operational-access", params={
+        "company_id": company_id, "keycloak_user_id": sub, "permission": "perm:sales:sales:create",
+    })
+
+    assert allowed.status_code == denied.status_code == 200
+    assert allowed.json()["allowed"] is True
+    assert denied.json()["reason"] == "PERMISSION_DENIED"

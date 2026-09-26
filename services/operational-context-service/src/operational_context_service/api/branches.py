@@ -10,6 +10,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
+from operational_context_service.api.access_scope import get_access_scope
 from operational_context_service.api.dependencies import get_branch_service
 from operational_context_service.api.filters.branch_filters import branch_filters
 from operational_context_service.api.pagination import PaginationParams
@@ -19,6 +20,7 @@ from operational_context_service.api.schemas.branch import (
     BranchUpdate,
 )
 from operational_context_service.api.schemas.common import PaginatedResponse, StatusActionRequest
+from operational_context_service.application.access_scope import AccessScope
 from operational_context_service.application.branch_service import BranchService
 from operational_context_service.application.ports import BranchFilters
 
@@ -40,10 +42,12 @@ def build_router(auth: SIOAuth) -> APIRouter:
         company_id: UUID,
         pagination: PaginationParams = Depends(),
         filters: BranchFilters = Depends(branch_filters),
+        scope: AccessScope = Depends(get_access_scope),
         service: BranchService = Depends(get_branch_service),
     ) -> PaginatedResponse[BranchResponse]:
         """Página de sucursales; por defecto solo `ACTIVE` (FR-023)."""
         result = service.list(
+            scope,
             company_id,
             filters,
             page=pagination.page,
@@ -70,10 +74,11 @@ def build_router(auth: SIOAuth) -> APIRouter:
         payload: BranchCreate,
         actor_id: CurrentSubject,
         response: Response,
+        scope: AccessScope = Depends(get_access_scope),
         service: BranchService = Depends(get_branch_service),
     ):
         """Registra una sucursal bajo una empresa `ACTIVE` (FR-020)."""
-        branch = service.create(company_id, payload.model_dump(), actor_id=actor_id)
+        branch = service.create(scope, company_id, payload.model_dump(), actor_id=actor_id)
         response.headers["Location"] = f"/api/v1/branches/{branch.id}"
 
         return branch
@@ -86,10 +91,11 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def get_branch(
         branch_id: UUID,
+        scope: AccessScope = Depends(get_access_scope),
         service: BranchService = Depends(get_branch_service),
     ):
         """Sucursal por UUID en cualquier estado, con el estado de su empresa (FR-051)."""
-        return service.get(branch_id)
+        return service.get(scope, branch_id)
 
     @router.put(
         "/branches/{branch_id}",
@@ -101,6 +107,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         branch_id: UUID,
         payload: BranchUpdate,
         actor_id: CurrentSubject,
+        scope: AccessScope = Depends(get_access_scope),
         service: BranchService = Depends(get_branch_service),
     ):
         """Reemplazo completo con versión esperada; la empresa es inmutable (FR-022)."""
@@ -108,6 +115,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         expected_version = data.pop("version")
 
         return service.update(
+            scope,
             branch_id,
             data,
             expected_version=expected_version,
@@ -124,10 +132,11 @@ def build_router(auth: SIOAuth) -> APIRouter:
         branch_id: UUID,
         payload: StatusActionRequest,
         actor_id: CurrentSubject,
+        scope: AccessScope = Depends(get_access_scope),
         service: BranchService = Depends(get_branch_service),
     ):
         """Inactiva sin eliminar (D7)."""
-        return service.deactivate(branch_id, expected_version=payload.version, actor_id=actor_id)
+        return service.deactivate(scope, branch_id, expected_version=payload.version, actor_id=actor_id)
 
     @router.post(
         "/branches/{branch_id}/reactivate",
@@ -139,9 +148,10 @@ def build_router(auth: SIOAuth) -> APIRouter:
         branch_id: UUID,
         payload: StatusActionRequest,
         actor_id: CurrentSubject,
+        scope: AccessScope = Depends(get_access_scope),
         service: BranchService = Depends(get_branch_service),
     ):
         """Reactiva si su empresa está `ACTIVE` (FR-026)."""
-        return service.reactivate(branch_id, expected_version=payload.version, actor_id=actor_id)
+        return service.reactivate(scope, branch_id, expected_version=payload.version, actor_id=actor_id)
 
     return router

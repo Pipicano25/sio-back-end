@@ -56,13 +56,14 @@ def load_for_update(
 def commit_or_translate(
     session: Session,
     *,
-    duplicates: dict[str, type[OperationalContextError]],
+    duplicates: dict[str, type[OperationalContextError] | OperationalContextError],
 ) -> None:
-    """Confirma la transacción traduciendo unicidad y versión.
+    """Confirma la transacción traduciendo unicidad, FK internas y versión.
 
     Args:
         session: Sesión activa.
-        duplicates: Nombre de restricción → excepción de aplicación.
+        duplicates: Nombre de restricción → excepción de aplicación (clase o
+            instancia, p. ej. con el `field` afectado).
     """
     try:
         session.commit()

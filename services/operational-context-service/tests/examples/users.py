@@ -52,3 +52,16 @@ def matching_grant(user, permission):
 
 def allowed(user, permission):
     return matching_grant(user, permission) is not None
+
+
+def as_list(permissions):
+    """Una URL puede exigir más de un permiso (p. ej. `companies:create` + `platform:administer`)."""
+    return [permissions] if isinstance(permissions, str) else list(permissions)
+
+
+def allowed_all(user, permissions):
+    return all(allowed(user, permission) for permission in as_list(permissions))
+
+
+def first_missing(user, permissions):
+    return next((p for p in as_list(permissions) if not allowed(user, p)), None)

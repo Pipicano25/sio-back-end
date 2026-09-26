@@ -1,7 +1,8 @@
 # Operational Context Service — Domain Map
 
 ## Responsabilidad
-Administrar el contexto operativo de las empresas, sucursales y usuarios dentro de SIO.
+Administrar el contexto operativo de las empresas, sus sucursales, las personas que operan en ellas
+(usuarios operativos) y sus asesores dentro de SIO, y aislar los datos por empresa.
 
 ## Entidades propietarias
 
@@ -9,37 +10,44 @@ Administrar el contexto operativo de las empresas, sucursales y usuarios dentro 
 - `Company` (`companies`): empresa cliente de la plataforma y su sede operativa principal.
 - `Branch` (`branches`): sucursales de una empresa.
 
-### Fase B — pendientes (bloque 8 del roadmap)
-- `ApplicationUser`
-- `UserBranch`
-- `CompanyAdvisorAssignment`
+### Fase B — implementadas (bloque 8 del roadmap, `specs/005-operational-context-users/`)
+- `ApplicationUser` (`application_users`): membresía de una persona humana (cuenta de Keycloak +
+  `PersonIdentity`) en una empresa. Como máximo una `ACTIVE` por empresa y persona y por empresa y
+  cuenta; historial conservado; sin unicidad global de `sub` ni de persona.
+- `UserBranch` (`user_branches`): asignación de un usuario operativo a una sucursal de su misma
+  empresa (FK compuestas con `company_id`); autor `assigned_by` obligatorio.
+- `CompanyAdvisorAssignment` (`company_advisor_assignments`): asesores con vigencia; un solo principal
+  vigente; cambio de principal atómico; asignaciones cerradas inmutables.
 
 ## Referencias externas principales
 - `companies.organization_identity_id` → Party Identity Service (`OrganizationIdentity`): identidad
   legal; la razón social, el nombre comercial y la identificación se consultan allá, no se copian.
+- `application_users.person_identity_id` y `company_advisor_assignments.person_identity_id` → Party
+  Identity Service (`PersonIdentity`): nombres, documentos y contacto se consultan allá.
+- `application_users.keycloak_user_id` → Keycloak (`sub`, texto opaco). Credenciales, sesiones,
+  roles y permisos pertenecen a Keycloak; SIO solo lee la cuenta (Admin API) con su cliente técnico.
 - `country_id`, `administrative_division_id`, `city_id` (empresa y sucursal) → Geography Service.
-- Autenticación, credenciales, sesiones y roles → Keycloak.
 
-Todas son `UUID REF` sin FK física. La única FK es interna: `branches.company_id → companies.id`.
+Todas son `UUID REF` o `sub` sin FK física. Las FK son internas: `branches.company_id`,
+`application_users.company_id`, las FK compuestas de `user_branches` y
+`company_advisor_assignments.company_id`.
 
-## Consumidores (contrato Provider)
-- Commercial Relationship (`company_id`), Inventory (`company_id`, `branch_id`), Purchase y Sales
-  (empresa y sucursal): `GET /api/v1/companies/{id}` y `GET /api/v1/branches/{id}`.
+## Aislamiento por empresa
+- El permiso de Keycloak decide **qué** hace el usuario; la membresía `ACTIVE` decide **en qué
+  empresas**. Fuera de su alcance, todo recurso responde `404` como si no existiera (DS-06).
+- `perm:operational-context:platform:administer`: ver y administrar todas las empresas; registrar,
+  inactivar y reactivar empresas (solo `perm:all:all:all` en el realm vigente).
+- `perm:operational-context:platform:lookup`: identidades técnicas; lectura por UUID sin membresía y
+  acceso operativo de otro usuario; nunca escrituras.
+
+## Consumidores (contratos Provider)
+- Commercial Relationship (`company_id`), Inventory (`company_id`, `branch_id`), Purchase y Sales:
+  `GET /api/v1/companies/{id}` y `GET /api/v1/branches/{id}`.
+- Inventory, Purchase y Sales: `GET /api/v1/operational-access` (acceso operativo con causa estable) y
+  `GET /api/v1/application-users/{id}` (usuario operativo de sus documentos).
+- Audit: `GET /api/v1/application-users/{id}`.
+- Aplicación web: `GET /api/v1/me/operational-context`.
 - Party Identity Fase B podrá validar `confirmed_by_company_id` de los perfiles de contacto.
-
-## Requisitos registrados para la Fase B
-- **Aislamiento por empresa (DS-02)**: la Fase B DEBE filtrar empresas y sucursales por el usuario
-  autenticado; en la Fase A la autorización es solo por permiso.
-- **Membresía persona/usuario–empresa (DS-03)**:
-  - una misma identidad autenticada (`sub`) PUEDE participar en varias empresas, simultánea o
-    históricamente; por lo tanto `sub` NO DEBE tener una restricción de unicidad **global**;
-  - la Fase B decide la estructura concreta de membresía; si `ApplicationUser` representa la
-    pertenencia de un usuario a una empresa, PUEDE existir una unicidad compuesta como
-    `(company_id, keycloak_sub)`, y una misma combinación empresa + identidad no debe duplicarse
-    activamente;
-  - terminar la relación con una empresa cierra o inactiva únicamente esa membresía; nunca elimina
-    ni inactiva la `PersonIdentity` ni impide relaciones con otras empresas.
-- La Fase A no guarda personas: la única unicidad externa es organización → empresa.
 
 ## Ubicación
 `services/operational-context-service/docs/domain-map.md`

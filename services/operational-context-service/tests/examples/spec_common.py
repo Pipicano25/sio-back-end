@@ -11,6 +11,8 @@ que la prueba registra en los dobles de los puertos (Principio IV).
 from __future__ import annotations
 
 API = "/api/v1"
+# Alcance de plataforma (Fase B, DS-05): registrar, inactivar y reactivar empresas.
+PLATFORM = ["perm:operational-context:platform:administer"]
 PARTY_IDENTITY = "http://localhost:8002/api/v1"
 GEOGRAPHY = "http://localhost:8000"
 
@@ -50,6 +52,7 @@ def call(
     sample_status=200,
     perm=None,
     fake=None,
+    also=(),
 ):
     """Una llamada a la API.
 
@@ -58,6 +61,8 @@ def call(
     - `show`: claves de la respuesta que se muestran en el documento.
     - `external`: nombre del otro servicio (Party Identity o Geography): la llamada no
       se ejecuta en la validación y `fake` indica el valor simulado de cada variable.
+    - `also`: permisos adicionales que exige la URL además del que indica el `403`
+      (p. ej. `perm:operational-context:platform:administer`, Fase B).
     """
     return dict(
         title=title,
@@ -74,6 +79,7 @@ def call(
         sample_status=sample_status,
         perm=perm,
         fake=fake or {},
+        also=list(also),
     )
 
 
@@ -157,4 +163,56 @@ def get_city(variable, city_id, name, division_variable):
             "id": f"<{variable}>", "country_id": "<PAIS_CO>",
             "administrative_division_id": f"<{division_variable}>", "name": name, "status": "ACTIVE",
         }], "page": 1, "page_size": 20, "total_records": 1, "total_pages": 1},
+    )
+
+
+# ---- Fase B: organizaciones, personas y cuentas ficticias de los ejercicios 4 a 6 ----
+ORG_EJ4 = "7a1c0f10-0000-4000-8000-000000000e04"
+ORG_EJ4B = "7a1c0f10-0000-4000-8000-000000000e4b"
+ORG_EJ5 = "7a1c0f10-0000-4000-8000-000000000e05"
+ORG_EJ6 = "7a1c0f10-0000-4000-8000-000000000e06"
+ORGANIZATIONS.update({ORG_EJ4: "ACTIVE", ORG_EJ4B: "ACTIVE", ORG_EJ5: "ACTIVE", ORG_EJ6: "ACTIVE"})
+
+PER_SUPERVISOR = "9e9e9e9e-0000-4000-8000-000000000001"
+PER_COMPRAS = "9e9e9e9e-0000-4000-8000-000000000002"
+PER_ASESOR_1 = "9e9e9e9e-0000-4000-8000-000000000011"
+PER_ASESOR_2 = "9e9e9e9e-0000-4000-8000-000000000012"
+PER_ASESOR_3 = "9e9e9e9e-0000-4000-8000-000000000013"
+PERSONS = {
+    PER_SUPERVISOR: "ACTIVE",
+    PER_COMPRAS: "ACTIVE",
+    PER_ASESOR_1: "ACTIVE",
+    PER_ASESOR_2: "ACTIVE",
+    PER_ASESOR_3: "ACTIVE",
+}
+
+# Cuenta técnica de un cliente `client_credentials` (no puede ser usuario operativo, FR-019).
+TECHNICAL_ACCOUNT = "service-account-inventory-service"
+
+
+def get_person(variable, person_id, description):
+    """Busca la persona en Party Identity y guarda su `id` (FR-016)."""
+    return call(
+        f"Consultar la persona {description} en Party Identity Service",
+        "GET",
+        f"{PARTY_IDENTITY}/person-identities?search=<documento>",
+        external="Party Identity Service",
+        perm="perm:party-identity:person_identities:read",
+        why=[
+            "Operational Context **no guarda** nombres ni documentos de las personas: solo el `id` de su "
+            "`PersonIdentity` en **Party Identity Service** (DS-16, Principio III).",
+            "Si la persona no existe, se registra primero en Party Identity con sus datos oficiales.",
+        ],
+        save={variable: "items[0].id"},
+        fake={variable: person_id},
+        sample={
+            "items": [{
+                "id": f"<{variable}>",
+                "identification_type": "CC",
+                "identification_number": "<documento oficial; dato ficticio aquí>",
+                "first_name": "<nombre ficticio>",
+                "status": "ACTIVE",
+            }],
+            "page": 1, "page_size": 20, "total_records": 1, "total_pages": 1,
+        },
     )

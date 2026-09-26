@@ -2,6 +2,7 @@
 
 from tests.examples.spec_common import (
     API,
+    PLATFORM,
     CIU_MEDELLIN,
     DIV_ANTIOQUIA,
     ORG_EJ1,
@@ -73,7 +74,7 @@ EX1 = dict(
                 call(
                     "Registrar la empresa con su sede operativa principal",
                     "POST",
-                    f"{API}/companies",
+                    f"{API}/companies", also=PLATFORM,
                     body=COMPANY,
                     why=[
                         "`organization_identity_id` es **obligatorio**: la empresa se identifica por su organización.",
@@ -86,7 +87,7 @@ EX1 = dict(
                 call(
                     "Intentar registrar una empresa con una organización inexistente (rechazado)",
                     "POST",
-                    f"{API}/companies",
+                    f"{API}/companies", also=PLATFORM,
                     body={"organization_identity_id": UNKNOWN_ORGANIZATION},
                     why=["Party Identity responde `404`: la API responde `422 ORGANIZATION_IDENTITY_NOT_FOUND` y no guarda nada."],
                     expect=422,

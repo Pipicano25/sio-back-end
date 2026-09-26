@@ -7,8 +7,9 @@ def _url(company):
     return f"/api/v1/companies/{company['id']}"
 
 
-def test_update_increments_version_and_audit(api_as, create_company):
+def test_update_increments_version_and_audit(api_as, create_company, make_member):
     company = create_company()
+    make_member(company["id"], "editor")
     client = api_as("perm:operational-context:companies:update", sub="editor")
 
     response = client.put(_url(company), json=update_body(company, phone="+57 1 111 1111"))

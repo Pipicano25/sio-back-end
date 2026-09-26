@@ -188,3 +188,165 @@ class DependencyUnavailableError(OperationalContextError):
         self.provider = provider
         self.cause = cause
         self.operation = operation
+
+
+# ---------------------------------------------------------------------------
+# Fase B (feature 005): códigos por causa de dominio (FR-004). La
+# indisponibilidad de Keycloak usa `DependencyUnavailableError` con
+# `provider="keycloak"`; el `code` público sigue siendo DEPENDENCY_UNAVAILABLE y
+# la dependencia se expone en la extensión `dependency` (C-13).
+# ---------------------------------------------------------------------------
+
+# Causas internas nuevas (solo logs).
+KEYCLOAK_TOKEN_REJECTED = "KEYCLOAK_TOKEN_REJECTED"
+KEYCLOAK_ADMIN_DENIED = "KEYCLOAK_ADMIN_DENIED"
+KEYCLOAK_UNREACHABLE = "KEYCLOAK_UNREACHABLE"
+KEYCLOAK_AMBIGUOUS_USERNAME = "KEYCLOAK_AMBIGUOUS_USERNAME"
+PERSON_VALIDATION_DENIED = "PERSON_VALIDATION_DENIED"
+
+from operational_context_service.domain.validity import InvalidValidityPeriodError  # noqa: E402
+
+__all__ += [
+    "BranchCompanyMismatchError",
+    "BranchInactiveError",
+    "DuplicateAdvisorAssignmentError",
+    "DuplicateMembershipError",
+    "DuplicateUserBranchError",
+    "InvalidValidityPeriodError",
+    "KeycloakUserDisabledError",
+    "KeycloakUserNotFoundError",
+    "MembershipInactiveError",
+    "NoActivePrimaryAdvisorError",
+    "PersonIdentityInactiveError",
+    "PersonIdentityNotFoundError",
+    "PrimaryAdvisorExistsError",
+    "PrimaryAdvisorMismatchError",
+    "TechnicalAccountNotAllowedError",
+]
+
+
+class KeycloakUserNotFoundError(OperationalContextError):
+    """No existe en Keycloak una cuenta con ese `sub` o nombre de usuario (FR-011)."""
+
+    code = "KEYCLOAK_USER_NOT_FOUND"
+    title = "Cuenta inexistente"
+    default_message = "No existe una cuenta de Keycloak con el identificador indicado."
+
+
+class KeycloakUserDisabledError(OperationalContextError):
+    """La cuenta existe pero está deshabilitada en Keycloak (FR-011)."""
+
+    code = "KEYCLOAK_USER_DISABLED"
+    title = "Cuenta deshabilitada"
+    default_message = "La cuenta de Keycloak indicada está deshabilitada."
+
+
+class TechnicalAccountNotAllowedError(OperationalContextError):
+    """Las cuentas técnicas no se registran como usuarios operativos (FR-019)."""
+
+    code = "TECHNICAL_ACCOUNT_NOT_ALLOWED"
+    title = "Cuenta técnica no permitida"
+    default_message = (
+        "La cuenta indicada es la cuenta de servicio de un cliente técnico y no "
+        "puede registrarse como usuario operativo."
+    )
+
+
+class PersonIdentityNotFoundError(OperationalContextError):
+    """Party Identity no conoce la persona indicada (FR-017, FR-051)."""
+
+    code = "PERSON_IDENTITY_NOT_FOUND"
+    title = "Persona inexistente"
+    default_message = "La persona indicada no existe en Party Identity Service."
+
+
+class PersonIdentityInactiveError(OperationalContextError):
+    """La persona existe pero está inactiva (FR-017, FR-051)."""
+
+    code = "PERSON_IDENTITY_INACTIVE"
+    title = "Persona inactiva"
+    default_message = (
+        "La persona indicada está inactiva en Party Identity Service y no admite "
+        "nuevas referencias."
+    )
+
+
+class DuplicateMembershipError(OperationalContextError):
+    """Ya existe una membresía `ACTIVE` de esa persona o cuenta en la empresa (FR-012)."""
+
+    code = "DUPLICATE_MEMBERSHIP"
+    title = "Membresía duplicada"
+    default_message = (
+        "Ya existe una membresía activa de esa persona o de esa cuenta en la empresa."
+    )
+
+
+class MembershipInactiveError(OperationalContextError):
+    """La membresía está inactiva (FR-020)."""
+
+    code = "MEMBERSHIP_INACTIVE"
+    title = "Membresía inactiva"
+    default_message = "La membresía del usuario operativo está inactiva."
+
+
+class BranchInactiveError(OperationalContextError):
+    """La sucursal está inactiva (FR-020)."""
+
+    code = "BRANCH_INACTIVE"
+    title = "Sucursal inactiva"
+    default_message = "La sucursal está inactiva."
+
+
+class BranchCompanyMismatchError(OperationalContextError):
+    """La sucursal no pertenece a la empresa de la membresía (FR-020, RC-06)."""
+
+    code = "BRANCH_COMPANY_MISMATCH"
+    title = "Sucursal de otra empresa"
+    default_message = "La sucursal no pertenece a la empresa del usuario operativo."
+
+
+class DuplicateUserBranchError(OperationalContextError):
+    """Ya existe la asignación usuario + sucursal (FR-021)."""
+
+    code = "DUPLICATE_USER_BRANCH"
+    title = "Asignación duplicada"
+    default_message = (
+        "El usuario ya tiene una asignación a esa sucursal; si está inactiva, "
+        "reactívela."
+    )
+
+
+class PrimaryAdvisorExistsError(OperationalContextError):
+    """Ya hay un asesor principal vigente (FR-052)."""
+
+    code = "PRIMARY_ADVISOR_EXISTS"
+    title = "Ya existe un asesor principal"
+    default_message = (
+        "La empresa ya tiene un asesor principal vigente; use el cambio de asesor principal."
+    )
+
+
+class DuplicateAdvisorAssignmentError(OperationalContextError):
+    """La persona ya es asesora vigente de la empresa (FR-052)."""
+
+    code = "DUPLICATE_ADVISOR_ASSIGNMENT"
+    title = "Asesor ya vigente"
+    default_message = "La persona ya es asesora vigente de la empresa."
+
+
+class NoActivePrimaryAdvisorError(OperationalContextError):
+    """Cambio de principal sin principal vigente (FR-053)."""
+
+    code = "NO_ACTIVE_PRIMARY_ADVISOR"
+    title = "Sin asesor principal vigente"
+    default_message = "La empresa no tiene un asesor principal vigente que reemplazar."
+
+
+class PrimaryAdvisorMismatchError(OperationalContextError):
+    """La asignación indicada no es la principal vigente de la empresa (FR-053)."""
+
+    code = "PRIMARY_ADVISOR_MISMATCH"
+    title = "Asignación principal incorrecta"
+    default_message = (
+        "La asignación indicada no es la asignación principal vigente de la empresa."
+    )

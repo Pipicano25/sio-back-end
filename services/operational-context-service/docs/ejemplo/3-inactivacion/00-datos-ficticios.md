@@ -18,6 +18,6 @@
 | Inactivar | Cambia `status` a `INACTIVE`; la empresa sigue consultable y **no** se elimina (D7). |
 | Sin cascada | Las sucursales conservan su propio `status`; su respuesta informa `company_status` (DS-07). |
 | Consumidores | Una sucursal sirve para nuevas operaciones solo si `status` y `company_status` son `ACTIVE`. |
-| Permisos | Inactivar exige `delete`; reactivar exige `update` (DS-11). |
+| Permisos | Inactivar exige `delete`; reactivar exige `update` (DS-11); ambas, además, `platform:administer` (Fase B). |
 
 [Empezar → paso 01](01-consultar-organizacion.md)

@@ -20,11 +20,13 @@ POST /api/v1/companies/<EMPRESA>/deactivate
 }
 ```
 
-**Permiso que exige la URL:** `perm:operational-context:companies:delete`
+**Permisos que exige la URL (todos):** `perm:operational-context:companies:delete` + `perm:operational-context:platform:administer`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
 - ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `operational-context` solo tienen `read`; les falta `delete`
-- ℹ️ Inactivar una empresa (`POST .../deactivate`) exige `delete`, aunque no la elimina; reactivar (`POST .../reactivate`) exige `update`. Por eso `supervisor.test` puede reactivar pero no inactivar.
+- ℹ️ Inactivar una empresa (`POST .../deactivate`) exige `delete`, aunque no la elimina; reactivar (`POST .../reactivate`) exige `update`. Desde la Fase B ambas exigen además `perm:operational-context:platform:administer`: `supervisor.test` no puede ninguna de las dos.
+- ℹ️ Alcance de plataforma (Fase B, DS-05): registrar, inactivar y reactivar empresas y ver todas las empresas sin ser miembro. Solo lo concede `perm:all:all:all` (`administradores`); los comodines de lectura, creación o modificación **no** lo conceden.
+- 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
 
@@ -49,6 +51,7 @@ GET /api/v1/branches/<SUCURSAL>
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`), `reportes.test` (por `perm:all:all:read`), `consulta.test` (por `perm:all:all:read`)
 - ℹ️ Las rutas de sucursales exigen solo permisos de `branches`, aunque la colección y el alta estén bajo `/api/v1/companies/{id}/branches`.
+- 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
 
@@ -81,6 +84,7 @@ POST /api/v1/companies/<EMPRESA>/branches
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
 - ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `operational-context` solo tienen `read`; les falta `create`
+- 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
 

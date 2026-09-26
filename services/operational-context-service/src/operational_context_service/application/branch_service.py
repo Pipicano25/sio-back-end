@@ -12,6 +12,7 @@ import logging
 from typing import Any
 from uuid import UUID
 
+from operational_context_service.application.access_scope import AccessScope
 from operational_context_service.application.exceptions import (
     CompanyInactiveError,
     DuplicateBranchCodeError,
@@ -38,6 +39,8 @@ from operational_context_service.domain.timezone import normalize_timezone
 from operational_context_service.observability import SERVICE_LOGGER
 
 logger = logging.getLogger(SERVICE_LOGGER)
+
+BRANCH_NOT_FOUND_MESSAGE = "La sucursal solicitada no existe."
 
 BRANCH_FIELDS = (
     "code",
@@ -79,26 +82,36 @@ class BranchService:
 
     # ------------------------------------------------------------------ consultas
 
-    def get(self, branch_id: UUID) -> Branch:
-        """Obtiene una sucursal en cualquier estado (contrato Provider)."""
+    def get(self, scope: AccessScope, branch_id: UUID, *, lookup_read: bool = True) -> Branch:
+        """Obtiene una sucursal en cualquier estado dentro del alcance (contrato Provider).
+
+        Fuera del alcance de su empresa responde igual que si no existiera (DS-06).
+        """
         branch = self.repository.get_by_id(branch_id)
         self.repository.end_read()
 
         if branch is None:
-            raise NotFoundError("La sucursal solicitada no existe.")
+            raise NotFoundError(BRANCH_NOT_FOUND_MESSAGE)
+
+        scope.ensure_company_visible(
+            branch.company_id,
+            lookup_read=lookup_read,
+            not_found_message=BRANCH_NOT_FOUND_MESSAGE,
+        )
 
         return branch
 
     def list(
         self,
+        scope: AccessScope,
         company_id: UUID,
         filters: BranchFilters,
         *,
         page: int,
         page_size: int,
     ) -> PageResult[Branch]:
-        """Sucursales de una empresa; `404` si la empresa no existe (FR-023)."""
-        self._get_company(company_id)
+        """Sucursales de una empresa visible; `404` si no existe o está fuera del alcance."""
+        self._get_company(scope, company_id)
         result = self.repository.list_by_company(company_id, filters, page=page, page_size=page_size)
         self.repository.end_read()
 
@@ -106,9 +119,16 @@ class BranchService:
 
     # ------------------------------------------------------------------ escritura
 
-    def create(self, company_id: UUID, data: dict[str, Any], *, actor_id: str) -> Branch:
-        """Registra una sucursal bajo una empresa `ACTIVE` (FR-020, FR-021)."""
-        company = self._get_company(company_id)
+    def create(
+        self,
+        scope: AccessScope,
+        company_id: UUID,
+        data: dict[str, Any],
+        *,
+        actor_id: str,
+    ) -> Branch:
+        """Registra una sucursal bajo una empresa `ACTIVE` del alcance (FR-020, FR-021)."""
+        company = self._get_company(scope, company_id)
 
         if company.status != ACTIVE:
             raise CompanyInactiveError
@@ -131,6 +151,7 @@ class BranchService:
 
     def update(
         self,
+        scope: AccessScope,
         branch_id: UUID,
         data: dict[str, Any],
         *,
@@ -138,7 +159,7 @@ class BranchService:
         actor_id: str,
     ) -> Branch:
         """Modifica una sucursal; la empresa es inmutable (FR-022, FR-025)."""
-        current = self.get(branch_id)
+        current = self.get(scope, branch_id, lookup_read=False)
 
         if current.version != expected_version:
             raise VersionConflictError
@@ -173,9 +194,16 @@ class BranchService:
             actor_id=actor_id,
         )
 
-    def deactivate(self, branch_id: UUID, *, expected_version: int, actor_id: str) -> Branch:
+    def deactivate(
+        self,
+        scope: AccessScope,
+        branch_id: UUID,
+        *,
+        expected_version: int,
+        actor_id: str,
+    ) -> Branch:
         """Inactiva sin eliminar (FR-026, DS-11)."""
-        current = self.get(branch_id)
+        current = self.get(scope, branch_id, lookup_read=False)
 
         if current.version != expected_version:
             raise VersionConflictError
@@ -193,9 +221,16 @@ class BranchService:
 
         return branch
 
-    def reactivate(self, branch_id: UUID, *, expected_version: int, actor_id: str) -> Branch:
+    def reactivate(
+        self,
+        scope: AccessScope,
+        branch_id: UUID,
+        *,
+        expected_version: int,
+        actor_id: str,
+    ) -> Branch:
         """Reactiva si la empresa sigue `ACTIVE` (FR-026, RN-09)."""
-        current = self.get(branch_id)
+        current = self.get(scope, branch_id, lookup_read=False)
 
         if current.version != expected_version:
             raise VersionConflictError
@@ -217,12 +252,14 @@ class BranchService:
 
     # ------------------------------------------------------------------ apoyo
 
-    def _get_company(self, company_id: UUID) -> Company:
+    def _get_company(self, scope: AccessScope, company_id: UUID) -> Company:
         company = self.companies.get_by_id(company_id)
         self.companies.end_read()
 
         if company is None:
             raise NotFoundError("La empresa solicitada no existe.")
+
+        scope.ensure_company_visible(company_id)
 
         return company
 

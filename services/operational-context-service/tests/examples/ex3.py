@@ -1,6 +1,6 @@
 """Ejercicio 3 de docs/ejemplo/: inactivación de empresa y efecto en sus sucursales (FR-017, FR-026, DS-07, DS-11)."""
 
-from tests.examples.spec_common import API, ORG_EJ3, call, get_organization, step
+from tests.examples.spec_common import API, PLATFORM, ORG_EJ3, call, get_organization, step
 
 EX3 = dict(
     folder="3-inactivacion",
@@ -8,7 +8,7 @@ EX3 = dict(
     focus=(
         "Inactivar una empresa **sin eliminarla ni modificar sus sucursales**, ver cómo la sucursal informa el estado "
         "de su empresa, el rechazo al crear sucursales bajo una empresa inactiva, la reactivación y la transición "
-        "repetida; quién puede cada acción (`supervisor.test` reactiva pero no inactiva)."
+        "repetida; quién puede cada acción (inactivar y reactivar empresas exige además `platform:administer`: solo `admin.test`)."
     ),
     data=[
         ("Organización", "SERVICIOS EJEMPLO FICTICIOS S.A.S. (**ficticia**)"),
@@ -18,7 +18,7 @@ EX3 = dict(
         ("Inactivar", "Cambia `status` a `INACTIVE`; la empresa sigue consultable y **no** se elimina (D7)."),
         ("Sin cascada", "Las sucursales conservan su propio `status`; su respuesta informa `company_status` (DS-07)."),
         ("Consumidores", "Una sucursal sirve para nuevas operaciones solo si `status` y `company_status` son `ACTIVE`."),
-        ("Permisos", "Inactivar exige `delete`; reactivar exige `update` (DS-11)."),
+        ("Permisos", "Inactivar exige `delete`; reactivar exige `update` (DS-11); ambas, además, `platform:administer` (Fase B)."),
     ],
     order_rules=[
         ("Empresa y sucursal antes de inactivar", "El efecto se observa en la sucursal existente."),
@@ -29,7 +29,7 @@ EX3 = dict(
              [get_organization("ORG_EMPRESA", ORG_EJ3, "SERVICIOS EJEMPLO FICTICIOS S.A.S.")]),
         step("02-registrar-empresa-y-sucursal.md", "Registrar la empresa y su sucursal",
              "Crear la empresa y una sucursal activa.", [
-                 call("Registrar la empresa", "POST", f"{API}/companies",
+                 call("Registrar la empresa", "POST", f"{API}/companies", also=PLATFORM,
                       body={"organization_identity_id": "<ORG_EMPRESA>"},
                       why=["Empresa mínima: solo la organización."],
                       save={"EMPRESA": "id"}, show=["id", "status", "version"]),
@@ -43,7 +43,7 @@ EX3 = dict(
             "Inactivar la empresa",
             "Inactivar la empresa y ver el efecto en su sucursal.",
             [
-                call("Inactivar la empresa con la versión vigente", "POST", f"{API}/companies/<EMPRESA>/deactivate",
+                call("Inactivar la empresa con la versión vigente", "POST", f"{API}/companies/<EMPRESA>/deactivate", also=PLATFORM,
                      body={"version": 1},
                      why=["Exige el permiso `delete` aunque no elimina: cambia `status` a `INACTIVE`."],
                      show=["status", "version"]),
@@ -62,10 +62,10 @@ EX3 = dict(
             "Reactivar la empresa",
             "Reactivar la empresa y comprobar la transición repetida.",
             [
-                call("Reactivar la empresa", "POST", f"{API}/companies/<EMPRESA>/reactivate", body={"version": 2},
-                     why=["Exige el permiso `update`; por eso `supervisor.test` puede reactivar."],
+                call("Reactivar la empresa", "POST", f"{API}/companies/<EMPRESA>/reactivate", also=PLATFORM, body={"version": 2},
+                     why=["Exige el permiso `update` y, desde la Fase B, `platform:administer`: solo `admin.test` puede reactivar empresas."],
                      show=["status", "version"]),
-                call("Intentar reactivarla otra vez (rechazado)", "POST", f"{API}/companies/<EMPRESA>/reactivate",
+                call("Intentar reactivarla otra vez (rechazado)", "POST", f"{API}/companies/<EMPRESA>/reactivate", also=PLATFORM,
                      body={"version": 3},
                      why=["Ya está `ACTIVE`: `409 INVALID_STATUS_TRANSITION`, sin cambiar la versión."],
                      expect=409, show=["status", "code", "detail"]),

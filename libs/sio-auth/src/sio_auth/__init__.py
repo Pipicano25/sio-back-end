@@ -18,6 +18,7 @@ from .errors import (
     SIOAuthError,
 )
 from .models import SioPermission
+from .permissions import evaluate_permission
 from .tokens import TokenClaims
 
 
@@ -30,6 +31,7 @@ __all__ = [
     "SIOAuth",
     "SIOAuthError",
     "SioPermission",
+    "evaluate_permission",
     "TokenClaims",
     "get_current_claims",
     "get_current_subject",

@@ -100,3 +100,32 @@ guardó para esa request.
 `TokenClaims.permissions` contiene únicamente los roles `perm:...` que pudieron
 interpretarse correctamente. Ninguno de los dos se completa desde una lista
 local.
+
+## Evaluar roles obtenidos por otra vía
+
+Cuando un servicio necesita saber si **otro usuario** (no el de la solicitud)
+tendría un permiso, por ejemplo con sus roles efectivos leídos de Keycloak,
+usa la función pública `evaluate_permission`:
+
+```python
+from sio_auth import SioPermission, evaluate_permission
+
+roles = ["perm:inventory:all:all", "otro-rol"]  # roles efectivos del usuario objetivo
+required = SioPermission("inventory", "movements", "create")
+
+evaluate_permission(roles, required)  # True
+```
+
+- Es una función pura: no consulta Keycloak ni tiene efectos.
+- Aplica exactamente el mismo algoritmo que `auth.permission`: ignora los roles
+  sin prefijo `perm:` o mal formados y admite `all` en cualquier segmento
+  (incluido `perm:all:all:all`).
+- No sustituye a `auth.permission`: la autorización de cada endpoint se sigue
+  declarando con `auth.permission(...)` sobre el token de la solicitud.
+
+## Versiones
+
+| Versión | Cambio |
+| --- | --- |
+| `0.3.0` | Nueva función pública `evaluate_permission(roles, required)` (compatible). |
+| `0.2.0` | Versión previa. |

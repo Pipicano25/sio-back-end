@@ -12,7 +12,11 @@ SUPERVISOR = ("perm:all:all:read", "perm:all:all:create", "perm:all:all:update")
 def test_deactivate_company_keeps_row_and_does_not_touch_branches(api_as, api, create_company, create_branch, test_engine):
     company = create_company()
     branch = create_branch(company["id"])
-    admin = api_as("perm:operational-context:companies:delete", sub="admin-2")
+    admin = api_as(
+        "perm:operational-context:companies:delete",
+        "perm:operational-context:platform:administer",
+        sub="admin-2",
+    )
 
     response = admin.post(f"/api/v1/companies/{company['id']}/deactivate", json={"version": 1})
 
@@ -70,16 +74,30 @@ def test_stale_version_is_409(api, create_company, create_branch, resource):
     assert response.json()["code"] == "OPERATIONAL_CONTEXT.VERSION_CONFLICT"
 
 
-@pytest.mark.parametrize("resource", ["companies", "branches"])
-def test_supervisor_cannot_deactivate_but_can_reactivate(api_as, api, create_company, create_branch, resource):
+def test_supervisor_member_cannot_deactivate_but_can_reactivate_branch(
+    api_as, api, create_company, create_branch, make_member
+):
     company = create_company()
-    target = company if resource == "companies" else create_branch(company["id"])
+    branch = create_branch(company["id"])
+    make_member(company["id"], "supervisor.test")
     supervisor = api_as(*SUPERVISOR, sub="supervisor.test")
-    url = f"/api/v1/{resource}/{target['id']}"
+    url = f"/api/v1/branches/{branch['id']}"
 
     assert supervisor.post(f"{url}/deactivate", json={"version": 1}).status_code == 403
     api.post(f"{url}/deactivate", json={"version": 1})
     assert supervisor.post(f"{url}/reactivate", json={"version": 2}).status_code == 200
+
+
+def test_company_status_actions_require_platform_scope(api_as, api, create_company, make_member):
+    """FR-043 (Fase B): ni siendo miembro, `supervisor.test` inactiva ni reactiva empresas."""
+    company = create_company()
+    make_member(company["id"], "supervisor.test")
+    supervisor = api_as(*SUPERVISOR, sub="supervisor.test")
+    url = f"/api/v1/companies/{company['id']}"
+
+    assert supervisor.post(f"{url}/deactivate", json={"version": 1}).status_code == 403
+    api.post(f"{url}/deactivate", json={"version": 1})
+    assert supervisor.post(f"{url}/reactivate", json={"version": 2}).status_code == 403
 
 
 def test_branch_deactivate_and_reactivate(api, create_company, create_branch):

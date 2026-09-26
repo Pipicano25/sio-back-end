@@ -118,3 +118,64 @@ def test_application_and_domain_do_not_define_http_status():
             assert "status_code" not in source, module.__name__
             assert "fastapi" not in source.lower(), module.__name__
             assert "starlette" not in source.lower(), module.__name__
+
+
+# --------------------------------------------------------------------------
+# Fase B: extensión `dependency` en DEPENDENCY_UNAVAILABLE (C-13) y códigos nuevos.
+# --------------------------------------------------------------------------
+
+
+def test_party_identity_unavailable_keeps_code_and_adds_dependency(api, fake_organizations):
+    fake_organizations.mode = "unavailable"
+
+    response = api.post(
+        "/api/v1/companies",
+        json={"organization_identity_id": str(fake_organizations.add())},
+    )
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["code"] == "OPERATIONAL_CONTEXT.DEPENDENCY_UNAVAILABLE"
+    assert body["dependency"] == "party-identity"
+
+
+def test_geography_unavailable_keeps_code_and_adds_dependency(api, fake_organizations, fake_geography, geo):
+    fake_geography.mode = "unavailable"
+
+    response = api.post(
+        "/api/v1/companies",
+        json={
+            "organization_identity_id": str(fake_organizations.add()),
+            "country_id": str(geo.colombia),
+        },
+    )
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["code"] == "OPERATIONAL_CONTEXT.DEPENDENCY_UNAVAILABLE"
+    assert body["dependency"] == "geography"
+
+
+def test_new_phase_b_codes_have_http_status():
+    from operational_context_service.api.errors import status_for_code
+
+    expected = {
+        "KEYCLOAK_USER_NOT_FOUND": 422,
+        "KEYCLOAK_USER_DISABLED": 422,
+        "TECHNICAL_ACCOUNT_NOT_ALLOWED": 422,
+        "PERSON_IDENTITY_NOT_FOUND": 422,
+        "PERSON_IDENTITY_INACTIVE": 422,
+        "MEMBERSHIP_INACTIVE": 422,
+        "BRANCH_INACTIVE": 422,
+        "BRANCH_COMPANY_MISMATCH": 422,
+        "INVALID_VALIDITY_PERIOD": 422,
+        "DUPLICATE_MEMBERSHIP": 409,
+        "DUPLICATE_USER_BRANCH": 409,
+        "PRIMARY_ADVISOR_EXISTS": 409,
+        "DUPLICATE_ADVISOR_ASSIGNMENT": 409,
+        "NO_ACTIVE_PRIMARY_ADVISOR": 409,
+        "PRIMARY_ADVISOR_MISMATCH": 409,
+        "DEPENDENCY_UNAVAILABLE": 503,
+    }
+
+    assert {code: status_for_code(code) for code in expected} == expected
