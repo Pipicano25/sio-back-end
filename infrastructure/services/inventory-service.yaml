@@ -1,0 +1,36 @@
+name: sio-inventory-service
+
+# Proyecto compose "sio-inventory-service": por ahora solo su base de datos propia;
+# el contenedor de aplicación se agregará aquí cuando exista. Se une a
+# "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
+
+services:
+  inventory-db:
+    image: postgres:${POSTGRES_VERSION}
+    restart: unless-stopped
+    networks:
+      - sio-network
+    container_name: sio-inventory-db
+    environment:
+      POSTGRES_DB: ${INVENTORY_DB_NAME}
+      POSTGRES_USER: ${INVENTORY_DB_USER}
+      POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${INVENTORY_DB_PORT}:5432"
+    volumes:
+      - inventory_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${INVENTORY_DB_USER} -d ${INVENTORY_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  inventory_db_data:
+    name: sio-inventory-db-data
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

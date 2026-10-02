@@ -1,0 +1,36 @@
+name: sio-audit-service
+
+# Proyecto compose "sio-audit-service": por ahora solo su base de datos propia;
+# el contenedor de aplicación se agregará aquí cuando exista. Se une a
+# "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
+
+services:
+  audit-db:
+    image: postgres:${POSTGRES_VERSION}
+    restart: unless-stopped
+    networks:
+      - sio-network
+    container_name: sio-audit-db
+    environment:
+      POSTGRES_DB: ${AUDIT_DB_NAME}
+      POSTGRES_USER: ${AUDIT_DB_USER}
+      POSTGRES_PASSWORD: ${AUDIT_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${AUDIT_DB_PORT}:5432"
+    volumes:
+      - audit_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUDIT_DB_USER} -d ${AUDIT_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  audit_db_data:
+    name: sio-audit-db-data
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

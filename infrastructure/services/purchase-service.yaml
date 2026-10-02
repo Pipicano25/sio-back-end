@@ -1,0 +1,36 @@
+name: sio-purchase-service
+
+# Proyecto compose "sio-purchase-service": por ahora solo su base de datos propia;
+# el contenedor de aplicación se agregará aquí cuando exista. Se une a
+# "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
+
+services:
+  purchase-db:
+    image: postgres:${POSTGRES_VERSION}
+    restart: unless-stopped
+    networks:
+      - sio-network
+    container_name: sio-purchase-db
+    environment:
+      POSTGRES_DB: ${PURCHASE_DB_NAME}
+      POSTGRES_USER: ${PURCHASE_DB_USER}
+      POSTGRES_PASSWORD: ${PURCHASE_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${PURCHASE_DB_PORT}:5432"
+    volumes:
+      - purchase_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PURCHASE_DB_USER} -d ${PURCHASE_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  purchase_db_data:
+    name: sio-purchase-db-data
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

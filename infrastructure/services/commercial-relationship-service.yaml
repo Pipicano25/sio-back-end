@@ -1,0 +1,36 @@
+name: sio-commercial-relationship-service
+
+# Proyecto compose "sio-commercial-relationship-service": por ahora solo su base de datos propia;
+# el contenedor de aplicación se agregará aquí cuando exista. Se une a
+# "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
+
+services:
+  commercial-relationship-db:
+    image: postgres:${POSTGRES_VERSION}
+    restart: unless-stopped
+    networks:
+      - sio-network
+    container_name: sio-commercial-relationship-db
+    environment:
+      POSTGRES_DB: ${COMMERCIAL_RELATIONSHIP_DB_NAME}
+      POSTGRES_USER: ${COMMERCIAL_RELATIONSHIP_DB_USER}
+      POSTGRES_PASSWORD: ${COMMERCIAL_RELATIONSHIP_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${COMMERCIAL_RELATIONSHIP_DB_PORT}:5432"
+    volumes:
+      - commercial_relationship_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${COMMERCIAL_RELATIONSHIP_DB_USER} -d ${COMMERCIAL_RELATIONSHIP_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  commercial_relationship_db_data:
+    name: sio-commercial-relationship-db-data
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

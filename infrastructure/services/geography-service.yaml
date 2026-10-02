@@ -1,0 +1,78 @@
+name: sio-geography-service
+
+# Proyecto compose "sio-geography-service": base de datos propia y contenedor de
+# aplicación de geography-service. Se une a "sio-network", creada por el proyecto
+# "sio" (infrastructure/compose.yaml), que debe estar levantado antes: ahí
+# viven Keycloak y RabbitMQ (depends_on no cruza proyectos; el orden lo
+# garantiza infrastructure/scripts/rebuild-all.sh).
+
+services:
+  geography-db:
+    image: postgres:${POSTGRES_VERSION}
+    restart: unless-stopped
+    networks:
+      - sio-network
+    container_name: sio-geography-db
+    environment:
+      POSTGRES_DB: ${GEOGRAPHY_DB_NAME}
+      POSTGRES_USER: ${GEOGRAPHY_DB_USER}
+      POSTGRES_PASSWORD: ${GEOGRAPHY_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${GEOGRAPHY_DB_PORT}:5432"
+    volumes:
+      - geography_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GEOGRAPHY_DB_USER} -d ${GEOGRAPHY_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  geography-service:
+    build:
+      context: ../..
+      dockerfile: services/geography-service/Dockerfile
+    image: sio/geography-service:${SIO_SERVICES_VERSION}
+    container_name: sio-geography-service
+    restart: unless-stopped
+
+    environment:
+      DATABASE_URL: postgresql+psycopg://${GEOGRAPHY_DB_USER}:${GEOGRAPHY_DB_PASSWORD}@geography-db:5432/${GEOGRAPHY_DB_NAME}
+      # KC_HOSTNAME determina el claim `iss` de todo token emitido, sin
+      # importar por qué red se alcanzó Keycloak: debe coincidir
+      # exactamente con KEYCLOAK_PUBLIC_URL. SIO_AUTH_JWKS_URL, en
+      # cambio, es la ruta real que este contenedor usa para *obtener*
+      # las llaves públicas, y debe resolverse dentro de `sio-network`
+      # (el contenedor no tiene acceso a "localhost" del host) — por eso
+      # difiere del host:puerto expuesto en KEYCLOAK_PUBLIC_URL.
+      # geography-service usa los nombres de variable de sio-auth.
+      SIO_AUTH_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+      SIO_AUTH_AUDIENCE: sio-api
+      SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
+
+    ports:
+      - "127.0.0.1:${GEOGRAPHY_SERVICE_PORT:-8102}:8000"
+
+    depends_on:
+      geography-db:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+    networks:
+      - sio-network
+
+volumes:
+  geography_db_data:
+    name: sio-geography-db-data
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

@@ -1,0 +1,77 @@
+name: sio-product-catalog-service
+
+# Proyecto compose "sio-product-catalog-service": base de datos propia y contenedor de
+# aplicación de product-catalog-service. Se une a "sio-network", creada por el proyecto
+# "sio" (infrastructure/compose.yaml), que debe estar levantado antes: ahí
+# viven Keycloak y RabbitMQ (depends_on no cruza proyectos; el orden lo
+# garantiza infrastructure/scripts/rebuild-all.sh).
+
+services:
+  product-catalog-db:
+    image: postgres:${POSTGRES_VERSION}
+    restart: unless-stopped
+    networks:
+      - sio-network
+    container_name: sio-product-catalog-db
+    environment:
+      POSTGRES_DB: ${PRODUCT_CATALOG_DB_NAME}
+      POSTGRES_USER: ${PRODUCT_CATALOG_DB_USER}
+      POSTGRES_PASSWORD: ${PRODUCT_CATALOG_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${PRODUCT_CATALOG_DB_PORT}:5432"
+    volumes:
+      - product_catalog_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PRODUCT_CATALOG_DB_USER} -d ${PRODUCT_CATALOG_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  product-catalog-service:
+    build:
+      context: ../..
+      dockerfile: services/product-catalog-service/Dockerfile
+    image: sio/product-catalog-service:${SIO_SERVICES_VERSION}
+    container_name: sio-product-catalog-service
+    restart: unless-stopped
+
+    environment:
+      DATABASE_URL: postgresql+psycopg://${PRODUCT_CATALOG_DB_USER}:${PRODUCT_CATALOG_DB_PASSWORD}@product-catalog-db:5432/${PRODUCT_CATALOG_DB_NAME}
+      # Igual que geography-service: el issuer debe coincidir con
+      # KEYCLOAK_PUBLIC_URL y las llaves se obtienen dentro de sio-network.
+      # product-catalog-service usa los nombres de variable de sio-auth.
+      SIO_AUTH_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+      SIO_AUTH_AUDIENCE: sio-api
+      SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
+      # La URL incluye el prefijo de ruta de Party Identity (/api/v1) y es
+      # configurable (contracts/party-identity-dependency.md).
+      PARTY_IDENTITY_SERVICE_BASE_URL: ${PARTY_IDENTITY_SERVICE_BASE_URL:-http://party-identity-service:8000/api/v1}
+      PARTY_IDENTITY_TIMEOUT_SECONDS: ${PARTY_IDENTITY_TIMEOUT_SECONDS:-3}
+
+    ports:
+      - "127.0.0.1:${PRODUCT_CATALOG_SERVICE_PORT:-8103}:8000"
+
+    depends_on:
+      product-catalog-db:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+    networks:
+      - sio-network
+
+volumes:
+  product_catalog_db_data:
+    name: sio-product-catalog-db-data
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

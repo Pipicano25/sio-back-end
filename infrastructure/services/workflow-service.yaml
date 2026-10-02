@@ -1,0 +1,36 @@
+name: sio-workflow-service
+
+# Proyecto compose "sio-workflow-service": por ahora solo su base de datos propia;
+# el contenedor de aplicación se agregará aquí cuando exista. Se une a
+# "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
+
+services:
+  workflow-db:
+    image: postgres:${POSTGRES_VERSION}
+    restart: unless-stopped
+    networks:
+      - sio-network
+    container_name: sio-workflow-db
+    environment:
+      POSTGRES_DB: ${WORKFLOW_DB_NAME}
+      POSTGRES_USER: ${WORKFLOW_DB_USER}
+      POSTGRES_PASSWORD: ${WORKFLOW_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${WORKFLOW_DB_PORT}:5432"
+    volumes:
+      - workflow_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${WORKFLOW_DB_USER} -d ${WORKFLOW_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  workflow_db_data:
+    name: sio-workflow-db-data
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

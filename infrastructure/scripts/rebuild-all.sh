@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
 #
-# SIO - Regeneración del entorno integrado (infrastructure/compose.yaml)
+# SIO - Regeneración del entorno integrado
 #
-# Incluye Keycloak + su base, RabbitMQ, las bases de cada microservicio y los
-# microservicios con imagen propia.
+# El entorno se reparte en varios proyectos compose:
+#   - "sio" (infrastructure/compose.yaml): solo infraestructura compartida
+#     (Keycloak + su base, RabbitMQ) y la red sio-network;
+#   - "sio-<microservicio>" (infrastructure/services/<microservicio>.yaml): la
+#     base propia del microservicio y, si ya existe, su contenedor de
+#     aplicación. Se unen a sio-network, así que "sio" se levanta primero.
+#
+# Si encuentra contenedores de microservicios aún dentro del proyecto "sio"
+# (versión anterior del entorno), los elimina como huérfanos al bajar "sio";
+# los volúmenes conservan su nombre, así que la información no se pierde.
 #
 # Dos modos:
 #
@@ -56,6 +64,8 @@ INFRA_DIR="$(dirname "$SCRIPT_DIR")"
 REPO_DIR="$(dirname "$INFRA_DIR")"
 ENV_FILE="$INFRA_DIR/.env"
 COMPOSE_FILE="$INFRA_DIR/compose.yaml"
+STACKS_DIR="$INFRA_DIR/services"
+INFRA_PROJECT=sio
 
 # Git Bash (MSYS) convierte los argumentos que parecen rutas POSIX en rutas de
 # Windows: "/app/services/..." llegaría al contenedor como
@@ -64,6 +74,7 @@ COMPOSE_FILE="$INFRA_DIR/compose.yaml"
 if command -v cygpath >/dev/null 2>&1; then
     ENV_FILE="$(cygpath -m "$ENV_FILE")"
     COMPOSE_FILE="$(cygpath -m "$COMPOSE_FILE")"
+    STACKS_DIR="$(cygpath -m "$STACKS_DIR")"
     export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 fi
 
@@ -85,13 +96,21 @@ for arg in "$@"; do
     esac
 done
 
-# Microservicios con imagen propia en compose.yaml (todos usan Alembic).
+# Microservicios con imagen propia (todos usan Alembic). Cada uno vive en el
+# proyecto compose "sio-<microservicio>" (infrastructure/services/).
 SERVICES=(
     geography-service
     product-catalog-service
     party-identity-service
     operational-context-service
 )
+
+# Proyectos compose del entorno: primero la infraestructura, luego uno por
+# cada archivo de infrastructure/services/ (incluye los que aún solo tienen base).
+PROJECTS=("$INFRA_PROJECT")
+for file in "$STACKS_DIR"/*.yaml; do
+    [ -f "$file" ] && PROJECTS+=("sio-$(basename "$file" .yaml)")
+done
 
 # --- Registro de lo realizado (para el resumen final) -----------------------
 CURRENT_STEP=""
@@ -146,8 +165,32 @@ duration() {
     if [ "$s" -ge 60 ]; then printf '%dm %02ds' $((s / 60)) $((s % 60)); else printf '%ds' "$s"; fi
 }
 
+# compose <proyecto> <args...>: docker compose sobre el archivo del proyecto.
+# El nombre se pasa explícito para que ninguna COMPOSE_PROJECT_NAME heredada
+# junte todos los servicios en un mismo proyecto.
 compose() {
-    docker compose --file "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
+    local project=$1 file
+    shift
+    if [ "$project" = "$INFRA_PROJECT" ]; then
+        file="$COMPOSE_FILE"
+    else
+        file="$STACKS_DIR/${project#sio-}.yaml"
+    fi
+    docker compose --project-name "$project" --file "$file" --env-file "$ENV_FILE" "$@"
+}
+
+# Proyecto compose de un microservicio.
+project_of() {
+    echo "sio-$1"
+}
+
+# Indica si un proyecto compose pertenece a este entorno.
+is_own_project() {
+    local project
+    for project in "${PROJECTS[@]}"; do
+        [ "$project" = "$1" ] && return 0
+    done
+    return 1
 }
 
 confirm() {
@@ -161,38 +204,39 @@ confirm() {
 
 # shellcheck disable=SC1090
 set -a; . "$ENV_FILE"; set +a
+# Un COMPOSE_PROJECT_NAME heredado (p. ej. de un .env anterior) no debe
+# imponerse sobre el "name:" de cada archivo.
+unset COMPOSE_PROJECT_NAME
 
-PROJECT_NAME="$(compose config --format json | grep -oE '"name": *"[^"]+"' | head -1 | sed -E 's/.*"([^"]+)"$/\1/')"
-
-# Estado de todos los contenedores definidos en compose.yaml, agrupados en
-# levantados, detenidos y no iniciados (nunca creados en este proyecto).
+# Estado de todos los contenedores definidos en cada proyecto compose:
+# levantados (✔), detenidos (■) y no iniciados (✘, nunca creados).
 report_containers() {
-    local service name state health
-    local running=() stopped=() missing=()
-    local states
+    local project service name state health states
+    local running=0 stopped=0 missing=0
+    local lines=()
 
-    states="$(compose ps -a --format '{{.Service}}|{{.Name}}|{{.State}}|{{.Health}}' 2>/dev/null || true)"
+    for project in "${PROJECTS[@]}"; do
+        lines+=("  $project")
+        states="$(compose "$project" ps -a --format '{{.Service}}|{{.Name}}|{{.State}}|{{.Health}}' 2>/dev/null || true)"
+        while read -r service; do
+            [ -n "$service" ] || continue
+            IFS='|' read -r _ name state health <<< "$(grep -E "^${service}\|" <<< "$states" | head -1)" || true
+            if [ -z "${state:-}" ]; then
+                missing=$((missing + 1))
+                lines+=("$(printf '    ✘ %-30s %s' "$service" "no iniciado")")
+            elif [ "$state" = running ]; then
+                running=$((running + 1))
+                lines+=("$(printf '    ✔ %-30s %-38s %s' "$service" "$name" "${health:-sin healthcheck}")")
+            else
+                stopped=$((stopped + 1))
+                lines+=("$(printf '    ■ %-30s %-38s %s' "$service" "$name" "$state")")
+            fi
+            name=""; state=""; health=""
+        done < <(compose "$project" config --services 2>/dev/null | sort)
+    done
 
-    while read -r service; do
-        [ -n "$service" ] || continue
-        IFS='|' read -r _ name state health <<< "$(grep -E "^${service}\|" <<< "$states" | head -1)" || true
-        if [ -z "${state:-}" ]; then
-            missing+=("$service")
-        elif [ "$state" = running ]; then
-            running+=("$(printf '%-30s %-38s %s' "$service" "$name" "${health:-sin healthcheck}")")
-        else
-            stopped+=("$(printf '%-30s %-38s %s' "$service" "$name" "$state")")
-        fi
-        name=""; state=""; health=""
-    done < <(compose config --services 2>/dev/null | sort)
-
-    echo "Contenedores ($PROJECT_NAME):"
-    echo "  Levantados (${#running[@]}):"
-    for line in "${running[@]}"; do echo "    ✔ $line"; done
-    echo "  Detenidos (${#stopped[@]}):"
-    for line in "${stopped[@]}"; do echo "    ■ $line"; done
-    echo "  No iniciados (${#missing[@]}):"
-    for line in "${missing[@]}"; do echo "    ✘ $line"; done
+    echo "Contenedores (${#PROJECTS[@]} proyectos): levantados $running, detenidos $stopped, no iniciados $missing"
+    for line in "${lines[@]}"; do echo "$line"; done
 }
 
 # Resumen completo de la ejecución: se muestra siempre al salir.
@@ -282,8 +326,9 @@ fi
 
 if [ "$MODE" = full ]; then
     echo
-    echo "Esto BORRARÁ todos los volúmenes del proyecto '$PROJECT_NAME'"
-    echo "(bases de datos, Keycloak y RabbitMQ) y los regenerará desde cero."
+    echo "Esto BORRARÁ los volúmenes de todos los proyectos del entorno"
+    echo "(${PROJECTS[*]}):"
+    echo "bases de datos, Keycloak y RabbitMQ, y los regenerará desde cero."
     confirm "¿Continuar?" || { echo "Cancelado."; exit 0; }
 fi
 
@@ -321,13 +366,38 @@ else
     echo "Sin problemas de permisos."
 fi
 
+# Configuración resuelta (JSON) de todos los proyectos del entorno.
+all_configs() {
+    local project
+    for project in "${PROJECTS[@]}"; do
+        compose "$project" config --format json
+    done
+}
+
+# Un contenedor de cualquier proyecto propio no es conflicto: aunque esté en
+# otro proyecto del entorno (p. ej. un microservicio que antes vivía en "sio"),
+# lo elimina el "down" de su proyecto actual más adelante.
+container_names() {
+    grep -oE '"container_name": *"[^"]+"' | sed -E 's/.*"([^"]+)"$/\1/'
+}
+
 step "Buscando contenedores con nombres en conflicto"
+INFRA_CONTAINERS=" $(compose "$INFRA_PROJECT" config --format json | container_names | tr '\n' ' ') "
 CONFLICTS=()
+LEGACY=()
 while read -r name; do
     [ -n "$name" ] || continue
     owner="$(docker inspect "$name" --format '{{index .Config.Labels "com.docker.compose.project"}}' 2>/dev/null)" || continue
-    [ "$owner" = "$PROJECT_NAME" ] || CONFLICTS+=("$name|${owner:-sin proyecto compose}")
-done < <(compose config --format json | grep -oE '"container_name": *"[^"]+"' | sed -E 's/.*"([^"]+)"$/\1/')
+    if [ "$owner" = "$INFRA_PROJECT" ] && [[ "$INFRA_CONTAINERS" != *" $name "* ]]; then
+        LEGACY+=("$name")
+    elif ! is_own_project "$owner"; then
+        CONFLICTS+=("$name|${owner:-sin proyecto compose}")
+    fi
+done < <(all_configs | container_names)
+if [ "${#LEGACY[@]}" -gt 0 ]; then
+    echo "Contenedores de microservicios aún dentro del proyecto '$INFRA_PROJECT' (se moverán a su propio proyecto):"
+    for name in "${LEGACY[@]}"; do echo "  - $name"; done
+fi
 
 if [ "${#CONFLICTS[@]}" -gt 0 ]; then
     echo "Estos contenedores pertenecen a otro proyecto y usan un nombre que este entorno necesita:"
@@ -350,7 +420,7 @@ fi
 PORTS=()
 while read -r port; do
     [ -n "$port" ] && PORTS+=("$port")
-done < <(compose config --format json | grep -oE '"published": *"?[0-9]+' | grep -oE '[0-9]+$' | sort -un)
+done < <(all_configs | grep -oE '"published": *"?[0-9]+' | grep -oE '[0-9]+$' | sort -un)
 
 # Variable(s) de .env que definen un puerto, para indicar qué cambiar.
 port_vars() {
@@ -361,7 +431,7 @@ step "Buscando puertos ocupados por otros contenedores"
 PORT_HOLDERS=()
 while IFS='|' read -r name owner ports; do
     [ -n "$name" ] || continue
-    [ "$owner" = "$PROJECT_NAME" ] && continue
+    is_own_project "$owner" && continue
     for port in "${PORTS[@]}"; do
         if grep -qE ":${port}->" <<< "$ports"; then
             PORT_HOLDERS+=("$name|${owner:-sin proyecto compose}|$port")
@@ -398,13 +468,29 @@ port_in_use() {
 }
 
 # --- Bajar ------------------------------------------------------------------
+# Orden: primero los contenedores heredados de "sio" (si no, retienen los
+# volúmenes que el modo completo debe borrar), luego cada microservicio y al
+# final "sio", que es dueño de sio-network.
+if [ "${#LEGACY[@]}" -gt 0 ]; then
+    step "Sacando los microservicios del proyecto '$INFRA_PROJECT'"
+    docker rm -f "${LEGACY[@]}" >/dev/null
+    note "Contenedores retirados de '$INFRA_PROJECT' (pasan a su propio proyecto; volúmenes intactos): ${LEGACY[*]}"
+fi
+
+DOWN_ARGS=(--remove-orphans)
 if [ "$MODE" = full ]; then
     step "Bajando contenedores y eliminando volúmenes"
-    compose down --volumes --remove-orphans
-    note "Volúmenes del proyecto '$PROJECT_NAME' eliminados (información anterior borrada)"
+    DOWN_ARGS+=(--volumes)
 else
     step "Bajando contenedores (se conservan los volúmenes)"
-    compose down --remove-orphans
+fi
+for project in "${PROJECTS[@]:1}" "$INFRA_PROJECT"; do
+    echo "--- $project"
+    compose "$project" down "${DOWN_ARGS[@]}"
+done
+if [ "$MODE" = full ]; then
+    note "Volúmenes de todos los proyectos eliminados (información anterior borrada)"
+else
     note "Volúmenes conservados: la información anterior se mantiene"
 fi
 
@@ -429,10 +515,10 @@ echo "Puertos libres: ${PORTS[*]}"
 # Keycloak va primero: todos los microservicios dependen de él para validar
 # tokens, así que si falla se detiene aquí antes de construir lo demás.
 step "Construyendo Keycloak ${BUILD_ARGS[*]:-}"
-compose build "${BUILD_ARGS[@]}" keycloak
+compose "$INFRA_PROJECT" build "${BUILD_ARGS[@]}" keycloak
 
 step "Levantando Keycloak y esperando su healthcheck (puede tardar ~1 min)"
-compose up -d --wait keycloak-db keycloak
+compose "$INFRA_PROJECT" up -d --wait keycloak-db keycloak
 if [ "$MODE" = full ]; then
     note "Keycloak: realm '${KEYCLOAK_REALM}' reimportado desde la plantilla"
 else
@@ -440,17 +526,23 @@ else
 fi
 
 step "Construyendo microservicios ${BUILD_ARGS[*]:-}"
-compose build "${BUILD_ARGS[@]}" "${SERVICES[@]}"
+for service in "${SERVICES[@]}"; do
+    echo "--- $service"
+    compose "$(project_of "$service")" build "${BUILD_ARGS[@]}" "$service"
+done
 note "Imágenes construidas: keycloak ${SERVICES[*]}${BUILD_ARGS[*]:+ (${BUILD_ARGS[*]})}"
 
 step "Levantando el resto de servicios y esperando healthchecks"
-compose up -d --wait
+for project in "${PROJECTS[@]}"; do
+    echo "--- $project"
+    compose "$project" up -d --wait
+done
 
 # --- Migraciones ----------------------------------------------------------------
 # Revisión de Alembic vigente de un servicio ("ninguna" si la base está vacía).
 alembic_revision() {
     local rev
-    rev="$(compose exec -T "$1" alembic current 2>/dev/null | awk 'NF {last = $1} END {print last}')"
+    rev="$(compose "$(project_of "$1")" exec -T "$1" alembic current 2>/dev/null | awk 'NF {last = $1} END {print last}')"
     echo "${rev:-ninguna}"
 }
 
@@ -458,7 +550,7 @@ step "Aplicando migraciones"
 for service in "${SERVICES[@]}"; do
     echo "--- $service"
     before="$(alembic_revision "$service")"
-    compose exec -T "$service" alembic upgrade head
+    compose "$(project_of "$service")" exec -T "$service" alembic upgrade head
     after="$(alembic_revision "$service")"
     if [ "$before" = "$after" ]; then
         note "Migraciones $service: sin cambios (revisión $after)"
@@ -469,11 +561,12 @@ done
 
 # --- Datos iniciales ----------------------------------------------------------
 # Ejecuta un seed mostrando su salida y registra su última línea en el resumen.
+# Uso: run_seed <etiqueta> <microservicio> <comando...>
 run_seed() {
-    local label=$1 out last
-    shift
+    local label=$1 service=$2 out last
+    shift 2
     out="$(mktemp)"
-    compose exec -T "$@" | tee "$out"
+    compose "$(project_of "$service")" exec -T "$service" "$@" | tee "$out"
     last="$(awk 'NF {line = $0} END {print line}' "$out")"
     rm -f "$out"
     note "Datos iniciales $label: cargados${last:+ — $last}"
@@ -492,7 +585,7 @@ if [ "$MODE" = full ]; then
     step "Datos iniciales: party-identity-service (modo país explícito)"
     # El id de Colombia lo genera Geography; se lee de su base para no depender
     # del token técnico de Keycloak.
-    COLOMBIA_ID="$(compose exec -T geography-db \
+    COLOMBIA_ID="$(compose "$(project_of geography-service)" exec -T geography-db \
         psql -U "$GEOGRAPHY_DB_USER" -d "$GEOGRAPHY_DB_NAME" -tA \
         -c "SELECT id FROM global_countries WHERE iso2_code = 'CO'" | tr -d '[:space:]')"
 
@@ -515,8 +608,10 @@ fi
 
 if [ "$FINAL_STATE" = stop ]; then
     step "Deteniendo contenedores (se conservan contenedores y datos)"
-    compose stop
-    note "Contenedores detenidos. Para levantarlos: docker compose --file \"$COMPOSE_FILE\" --env-file \"$ENV_FILE\" start"
+    for project in "${PROJECTS[@]:1}" "$INFRA_PROJECT"; do
+        compose "$project" stop
+    done
+    note "Contenedores detenidos. Para levantarlos: docker compose --file <archivo> --env-file \"$ENV_FILE\" start, empezando por \"$COMPOSE_FILE\" y luego cada $STACKS_DIR/<microservicio>.yaml"
 else
     note "Contenedores dejados levantados"
 fi

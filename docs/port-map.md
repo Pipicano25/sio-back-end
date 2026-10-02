@@ -27,7 +27,7 @@ Reglas:
 
 | Entorno | Archivo compose | Archivo de variables | Rango API | Rango BD | Rango BD pruebas |
 |---|---|---|---|---|---|
-| Integrado | `infrastructure/compose.yaml` (`rebuild-all.sh`) | `infrastructure/.env` | `8101–8111` | `5440–5450` | — (no tiene) |
+| Integrado | `infrastructure/compose.yaml` (proyecto `sio`: Keycloak, RabbitMQ) + `infrastructure/services/<servicio>.yaml` (proyecto `sio-<servicio>`: su base y su API) — `rebuild-all.sh` | `infrastructure/.env` | `8101–8111` | `5440–5450` | — (no tiene) |
 | Independiente por servicio | `services/<servicio>/docker-compose.yml` | `services/<servicio>/.env` | `8000–8010` | `55432–55452` (pares con su prueba) | idem |
 
 El entorno independiente no levanta Keycloak: usa el del entorno integrado a
@@ -64,7 +64,7 @@ través del host (`host.docker.internal:${KEYCLOAK_HTTP_PORT}`).
 | workflow-service | *(reservado)* | `WORKFLOW_SERVICE_PORT` | `8111` | `sio-workflow-db` | `WORKFLOW_DB_PORT` | `5450` |
 
 *(reservado)*: el servicio aún no tiene contenedor de aplicación en
-`compose.yaml`; el puerto queda apartado para cuando se agregue.
+`infrastructure/services/<servicio>.yaml`; el puerto queda apartado para cuando se agregue.
 
 ## Microservicios — entorno independiente (`services/<servicio>/.env`)
 
