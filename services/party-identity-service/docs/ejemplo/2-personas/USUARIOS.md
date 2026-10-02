@@ -10,7 +10,7 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 - **`supervisor.test`**: **no puede completar el ejercicio**. Se detiene en el paso 04 (*Inactivar a ANA MARIA*): sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`. Sí puede hacer las consultas (`GET`) de los pasos 04.
 - **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar a ANA MARIA con cédula*): sobre `party-identity` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
 - **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar a ANA MARIA con cédula*): sobre `party-identity` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
-- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar a ANA MARIA con cédula*): no tiene ningún permiso sobre `party-identity`. No puede hacer ninguna consulta de Party Identity.
+- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar a ANA MARIA con cédula*): no tiene ningún permiso sobre `party-identity`. No puede hacer ninguna de las consultas (`GET`) de Party Identity de este ejercicio.
 - **`reportes.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar a ANA MARIA con cédula*): sobre `party-identity` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
 - **`consulta.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Registrar a ANA MARIA con cédula*): sobre `party-identity` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
 
@@ -88,7 +88,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-`consulta.test` solo tiene `perm:all:all:read`: puede **leer**, pero la URL exige `perm:party-identity:person_identities:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
+`consulta.test` sobre `party-identity` solo tiene `read`; le falta `create`: puede **leer**, pero la URL exige `perm:party-identity:person_identities:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
 
 ### 3. `consulta.test` consulta (permitido)
 
@@ -97,7 +97,7 @@ curl -s -X GET "http://localhost:8002/api/v1/person-identities" \
   -H "Authorization: Bearer $TOKEN_CONSULTA"
 ```
 
-Responde `200 OK` con la misma información que ve `admin.test` en el paso 04: `perm:all:all:read` cubre `perm:party-identity:person_identities:read`. Lo mismo pasa con `reportes.test`, `compras.test` y `ventas.test`.
+Responde `200 OK` con la misma información que ve `admin.test` en el paso 04: `perm:party-identity:person_identities:read` cubre `perm:party-identity:person_identities:read`. También pueden: `supervisor.test`, `compras.test`, `ventas.test`, `reportes.test`.
 
 ### 4. `inventario.test` consulta (rechazado)
 
@@ -113,7 +113,7 @@ curl -s -X GET "http://localhost:8002/api/v1/person-identities" \
   -H "Authorization: Bearer $TOKEN_INVENTARIO"
 ```
 
-Responde `403 Forbidden`: `inventario.test` no tiene ningún permiso sobre `party-identity` (lee el catálogo, Geography y Operational Context, pero no identidades).
+Responde `403 Forbidden`: `inventario.test` no tiene ningún permiso sobre `party-identity`.
 
 ### 5. `supervisor.test` intenta inactivar o retirar (rechazado)
 

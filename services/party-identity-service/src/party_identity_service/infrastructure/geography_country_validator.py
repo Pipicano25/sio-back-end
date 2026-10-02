@@ -140,7 +140,9 @@ class HTTPGeographyCountryValidator:
                 GEOGRAPHY_UNAVAILABLE,
                 type(exc).__name__,
             )
-            raise DependencyUnavailableError(cause=GEOGRAPHY_UNAVAILABLE) from None
+            raise DependencyUnavailableError(
+                dependency="geography", cause=GEOGRAPHY_UNAVAILABLE
+            ) from None
 
     @staticmethod
     def _unavailable(status_code: int) -> DependencyUnavailableError:
@@ -151,11 +153,15 @@ class HTTPGeographyCountryValidator:
                 COUNTRY_VALIDATION_DENIED,
                 status_code,
             )
-            return DependencyUnavailableError(cause=COUNTRY_VALIDATION_DENIED)
+            return DependencyUnavailableError(
+                dependency="geography", cause=COUNTRY_VALIDATION_DENIED
+            )
 
         logger.warning(
             "Geography respondió de forma inesperada causa=%s estado=%s",
             GEOGRAPHY_UNAVAILABLE,
             status_code,
         )
-        return DependencyUnavailableError(cause=GEOGRAPHY_UNAVAILABLE)
+        return DependencyUnavailableError(
+            dependency="geography", cause=GEOGRAPHY_UNAVAILABLE
+        )

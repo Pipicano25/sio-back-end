@@ -65,3 +65,80 @@ def test_network_errors_and_timeouts(exception) -> None:
 def test_response_without_token_is_error() -> None:
     with pytest.raises(TokenRequestError):
         _fetch(lambda request: httpx.Response(200, json={}))
+
+
+# --------------------------------------------------------------------------
+# Token en caché para la API (T032; R-06, política de Operational Context)
+# --------------------------------------------------------------------------
+
+
+class _Clock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def _cached(handler, clock):
+    from party_identity_service.infrastructure.keycloak_token_client import (
+        CachedClientCredentialsToken,
+    )
+
+    return CachedClientCredentialsToken(
+        token_url=TOKEN_URL,
+        client_id="party-identity-service",
+        client_secret=SECRET,
+        timeout_seconds=2.0,
+        transport=httpx.MockTransport(handler),
+        clock=clock,
+    )
+
+
+def test_cached_token_is_reused_and_renewed_before_expiry() -> None:
+    issued = []
+
+    def handler(request):
+        issued.append(1)
+        return httpx.Response(200, json={"access_token": f"token-{len(issued)}", "expires_in": 300})
+
+    clock = _Clock()
+    cache = _cached(handler, clock)
+
+    assert cache.get() == "token-1"
+    clock.now += 200
+    assert cache.get() == "token-1"
+    clock.now += 80  # quedan 20 s (< margen de 30 s): se renueva
+    assert cache.get() == "token-2"
+    assert len(issued) == 2
+
+
+def test_invalidate_forces_new_token() -> None:
+    issued = []
+
+    def handler(request):
+        issued.append(1)
+        return httpx.Response(200, json={"access_token": f"token-{len(issued)}", "expires_in": 300})
+
+    cache = _cached(handler, _Clock())
+    assert cache.get() == "token-1"
+    cache.invalidate()
+    assert cache.get() == "token-2"
+
+
+@pytest.mark.parametrize(
+    "handler",
+    [
+        lambda request: httpx.Response(401, json={"error": "unauthorized_client"}),
+        lambda request: httpx.Response(200, json={"token_type": "bearer"}),
+    ],
+)
+def test_cached_token_errors_never_expose_secret(handler, caplog) -> None:
+    cache = _cached(handler, _Clock())
+
+    with pytest.raises(TokenRequestError) as error:
+        cache.get()
+
+    assert SECRET not in str(error.value)
+    assert SECRET not in caplog.text
+    assert SECRET not in repr(cache)

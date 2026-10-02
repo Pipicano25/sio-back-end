@@ -10,7 +10,8 @@ class Settings:
     """Representa la configuración del microservicio.
 
     La configuración no selecciona comportamientos funcionales distintos por
-    entorno: Geography se consume siempre con el mismo contrato (FR-044).
+    entorno: Geography y Operational Context se consumen siempre con el mismo
+    contrato (FR-044, FR-101).
 
     Attributes:
         docs_enabled: Indica si Swagger y OpenAPI están habilitados.
@@ -18,10 +19,15 @@ class Settings:
         geography_service_base_url: URL base de Geography Service, incluido
             su prefijo de ruta vigente.
         geography_timeout_seconds: Tiempo de espera de las llamadas a Geography.
-        keycloak_token_url: Endpoint de tokens de Keycloak (solo `seed`).
+        operational_context_service_base_url: URL base de Operational Context
+            Service, con su prefijo `/api/v1` (confirmación de perfiles).
+        operational_context_timeout_seconds: Tiempo de espera de las llamadas
+            a Operational Context.
+        keycloak_token_url: Endpoint de tokens de Keycloak (`seed` y consulta
+            técnica a Operational Context).
         keycloak_timeout_seconds: Tiempo de espera al pedir el token técnico.
-        client_id: Cliente técnico del servicio (solo `seed`).
-        client_secret: Secreto del cliente técnico (solo `seed`).
+        client_id: Cliente técnico del servicio.
+        client_secret: Secreto del cliente técnico.
         seed_country_id: País explícito para el `seed` (modo independiente).
     """
 
@@ -29,6 +35,8 @@ class Settings:
     database_url: str
     geography_service_base_url: str
     geography_timeout_seconds: float = 5.0
+    operational_context_service_base_url: str = "http://localhost:8004/api/v1"
+    operational_context_timeout_seconds: float = 5.0
     keycloak_token_url: str | None = None
     keycloak_timeout_seconds: float = 5.0
     client_id: str | None = None
@@ -57,6 +65,14 @@ def load_settings() -> Settings:
         ),
         geography_timeout_seconds=_read_positive_float(
             name="GEOGRAPHY_TIMEOUT_SECONDS",
+            default=5.0,
+        ),
+        operational_context_service_base_url=_read_text(
+            name="OPERATIONAL_CONTEXT_SERVICE_BASE_URL",
+            default="http://localhost:8004/api/v1",
+        ),
+        operational_context_timeout_seconds=_read_positive_float(
+            name="OPERATIONAL_CONTEXT_TIMEOUT_SECONDS",
             default=5.0,
         ),
         keycloak_token_url=_read_optional_text("KEYCLOAK_TOKEN_URL"),

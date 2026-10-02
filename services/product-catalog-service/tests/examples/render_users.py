@@ -203,8 +203,10 @@ def render_users(ex, records):
         out += curl_for(c, "TOKEN_CONSULTA")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += [f"`consulta.test` solo tiene `perm:all:all:read`: puede **leer** en todos los servicios, pero la URL exige `{p}`. "
-                "El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
+        consulta = next(u for u in USERS if u["username"] == "consulta.test")
+        grants = ", ".join(f"`{g}`" for g in consulta["perms"] if g.startswith("perm:product-catalog:")) or "ninguno"
+        out += [f"`consulta.test` solo tiene lecturas explícitas (en el catálogo: {grants}): puede **leer**, pero la "
+                f"URL exige `{p}`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
 
     n += 1
     read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET" and s_i == len(ex["steps"]) - 1)
@@ -212,9 +214,12 @@ def render_users(ex, records):
         s_i, c_i, s, c, p, r = read
         out += [f"### {n}. `consulta.test` consulta el resultado (permitido)", ""]
         out += curl_for(c, "TOKEN_CONSULTA")
+        consulta = next(u for u in USERS if u["username"] == "consulta.test")
+        readers = [f"`{u['username']}`" for u in USERS
+                   if u["username"] not in ("admin.test", "consulta.test") and matching_grant(u, p)]
         out += ["", f"Responde `200 OK` con la misma información que ve `admin.test` en el paso {s_i + 1:02d}: "
-                f"`perm:all:all:read` cubre `{p}`. Lo mismo pasa con `reportes.test`, `compras.test`, "
-                "`ventas.test` e `inventario.test`, que tienen lectura sobre `product-catalog`.", ""]
+                f"`{matching_grant(consulta, p)}` cubre `{p}`. Lo mismo pasa con {', '.join(readers)}, que tienen "
+                "lectura sobre `product-catalog`.", ""]
 
     deactivate = pick_example(rows, lambda s_i, c, p, r: p.endswith(":deactivate"))
     if deactivate:
@@ -239,9 +244,11 @@ def render_users(ex, records):
         out += curl_for(c, "TOKEN_INVENTARIO")
         out += ["", "Respuesta `403 Forbidden` (formato de Party Identity Service):", "", "```json",
                 json.dumps({"detail": f"Falta el permiso requerido: {p}"}, ensure_ascii=False, indent=2), "```", ""]
+        searchers = [f"`{u['username']}`" for u in USERS
+                     if u["username"] not in ("admin.test", "inventario.test") and matching_grant(u, p)]
         out += ["`inventario.test` lee el catálogo (`perm:product-catalog:all:read`) y Geography, pero **no** tiene "
-                "ningún permiso sobre `party-identity`. `compras.test` y `ventas.test` sí pueden hacer esta búsqueda "
-                "(`perm:party-identity:all:read`).", ""]
+                f"ningún permiso sobre `party-identity`. Sí pueden hacer esta búsqueda: {', '.join(searchers)} "
+                f"(lectura explícita de `{p}`).", ""]
 
     n += 1
     out += [f"### {n}. Sin token (rechazado)", "",
@@ -274,7 +281,9 @@ def render_general(exercises, all_records):
             "3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, "
             "`all` vale como comodín en cualquier parte:",
             "   - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.",
-            "   - `perm:all:all:read` → solo `read`, pero en todos los servicios.",
+            "   - `perm:all:all:read` → solo `read`, pero en todos los servicios (en el realm vigente solo lo tiene "
+            "`supervisores`; `reportes` y `consulta` tienen lecturas **explícitas** de todos los servicios, salvo los "
+            "datos de contacto y representantes legales de Party Identity).",
             "   - `perm:product-catalog:all:read` → solo `read`, solo en el catálogo.",
             "4. Cada URL exige **un** permiso concreto (por ejemplo `perm:product-catalog:brands:create`). "
             "Si ninguno de los permisos del usuario lo cubre, el servicio responde `403 Forbidden` e indica cuál falta. "
@@ -294,7 +303,12 @@ def render_general(exercises, all_records):
         "consulta.test": "Solo consultar",
     }
     for u in USERS:
-        perms = "<br>".join(f"`{p}`" for p in u["perms"])
+        if len(u["perms"]) <= 10:
+            perms = "<br>".join(f"`{p}`" for p in u["perms"])
+        else:
+            own = [p for p in u["perms"] if p.startswith("perm:product-catalog:") or ":all:" in p]
+            perms = (f"{len(u['perms'])} permisos explícitos; en el catálogo: "
+                     + "<br>".join(f"`{p}`" for p in own))
         out.append(f"| `{u['username']}` | `{u['group']}` | {perms} | {summary.get(u['username'], '')} |")
     out.append("")
 

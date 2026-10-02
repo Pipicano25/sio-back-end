@@ -129,3 +129,90 @@ def test_downgrade_fails_explicitly_with_non_uuid_actors(fresh_schema: Engine) -
         with fresh_schema.begin() as connection:
             connection.execute(text("TRUNCATE TABLE identification_type_rules"))
         command.upgrade(config, "head")
+
+
+# --------------------------------------------------------------------------
+# Fase B (T012; FR-094, Principio VIII)
+# --------------------------------------------------------------------------
+
+PHASE_A_HEAD = "0012_audit_actor_as_text"
+PHASE_B_TABLES = (
+    "global_business_sectors",
+    "person_contact_profiles",
+    "organization_contact_profiles",
+    "organization_contact_persons",
+    "organization_business_sectors",
+    "organization_legal_representatives",
+)
+
+
+def test_phase_b_tables_exist_with_audit_and_version(fresh_schema: Engine) -> None:
+    tables = set(inspect(fresh_schema).get_table_names())
+    assert set(PHASE_B_TABLES).issubset(tables)
+
+    for table in PHASE_B_TABLES:
+        columns = _columns(fresh_schema, table)
+        for name in ("created_by", "updated_by"):
+            assert str(columns[name]["type"]) == "VARCHAR(255)"
+            assert columns[name]["nullable"] is False
+        for name in ("created_at", "updated_at", "version"):
+            assert columns[name]["nullable"] is False
+
+
+def test_legal_representatives_has_no_created_by_user_id(fresh_schema: Engine) -> None:
+    """C-02: el estándar usa `created_by_user_id`; prevalece D1."""
+    columns = _columns(fresh_schema, "organization_legal_representatives")
+
+    assert "created_by_user_id" not in columns
+    assert str(columns["source_document_reference"]["type"]) == "VARCHAR(1000)"
+
+
+def test_downgrade_to_phase_a_head_removes_phase_b_and_keeps_phase_a(fresh_schema: Engine) -> None:
+    config = build_alembic_config()
+
+    command.downgrade(config, PHASE_A_HEAD)
+    tables = set(inspect(fresh_schema).get_table_names())
+    assert not set(PHASE_B_TABLES) & tables
+    assert set(AUDITED_TABLES).issubset(tables)
+
+    command.upgrade(config, "head")
+    assert set(PHASE_B_TABLES).issubset(set(inspect(fresh_schema).get_table_names()))
+
+
+def test_upgrade_over_phase_a_data_preserves_rows(fresh_schema: Engine) -> None:
+    config = build_alembic_config()
+    command.downgrade(config, PHASE_A_HEAD)
+
+    with fresh_schema.begin() as connection:
+        connection.execute(text(
+            "INSERT INTO person_identities (id, identification_country_id, identification_type, "
+            "identification_number, first_name, last_name, verification_status, status, version, "
+            "created_by, updated_by) VALUES (gen_random_uuid(), gen_random_uuid(), 'CC', "
+            "'1000000999', 'ANA', 'PRUEBA', 'UNVERIFIED', 'ACTIVE', 1, 'user-a', 'user-a')"
+        ))
+        connection.execute(text(
+            "INSERT INTO organization_identities (id, country_id, identification_type, "
+            "identification_number, legal_name, status, version, created_by, updated_by) "
+            "VALUES (gen_random_uuid(), gen_random_uuid(), 'NIT', '900000999-1', "
+            "'ORGANIZACION FICTICIA', 'ACTIVE', 1, 'user-a', 'user-a')"
+        ))
+        before = connection.execute(text(
+            "SELECT (SELECT count(*) FROM person_identities), "
+            "(SELECT count(*) FROM organization_identities), "
+            "(SELECT count(*) FROM identification_type_rules)"
+        )).one()
+
+    try:
+        command.upgrade(config, "head")
+
+        with fresh_schema.connect() as connection:
+            after = connection.execute(text(
+                "SELECT (SELECT count(*) FROM person_identities), "
+                "(SELECT count(*) FROM organization_identities), "
+                "(SELECT count(*) FROM identification_type_rules)"
+            )).one()
+
+        assert tuple(after) == tuple(before)
+    finally:
+        with fresh_schema.begin() as connection:
+            connection.execute(text("TRUNCATE TABLE person_identities, organization_identities CASCADE"))

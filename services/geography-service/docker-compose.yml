@@ -2,7 +2,7 @@ services:
 
   geography-db:
     image: postgres:17-alpine
-    container_name: sio-geography-db
+    container_name: sio-geography-dev-db
     restart: unless-stopped
 
     environment:
@@ -58,7 +58,7 @@ services:
       start_period: 5s
 
   geography-service:
-    container_name: sio-geography-service
+    container_name: sio-geography-service-dev
     restart: unless-stopped
 
     build:
@@ -72,13 +72,13 @@ services:
       DATABASE_URL: >-
         postgresql+psycopg://${GEOGRAPHY_DB_USER}:${GEOGRAPHY_DB_PASSWORD}@geography-db:5432/${GEOGRAPHY_DB_NAME}
 
-      # El JWT fue emitido con localhost:8081 como issuer.
-      # Este valor NO debe cambiar.
-      SIO_AUTH_ISSUER: http://localhost:8081/realms/sio
+      # El JWT se emite con KEYCLOAK_PUBLIC_URL (infrastructure/.env) como issuer.
+      # KEYCLOAK_HTTP_PORT debe coincidir con el puerto de esa URL.
+      SIO_AUTH_ISSUER: http://localhost:${KEYCLOAK_HTTP_PORT:-8081}/realms/sio
 
       # Desde un contenedor, localhost sería el propio contenedor.
       # Para obtener las claves públicas usamos el host.
-      SIO_AUTH_JWKS_URL: http://host.docker.internal:8081/realms/sio/protocol/openid-connect/certs
+      SIO_AUTH_JWKS_URL: http://host.docker.internal:${KEYCLOAK_HTTP_PORT:-8081}/realms/sio/protocol/openid-connect/certs
 
     ports:
       - "${GEOGRAPHY_SERVICE_PORT:-8000}:8000"

@@ -81,3 +81,56 @@ def get_colombia():
             "page": 1, "page_size": 20, "total_records": 1, "total_pages": 1,
         },
     )
+
+
+# --------------------------------------------------------------------------
+# Fase B: llamadas externas simuladas (Principio IV)
+# --------------------------------------------------------------------------
+
+OPERATIONAL_CONTEXT = "http://localhost:8004"
+
+
+def get_company():
+    """Consulta la empresa en Operational Context (otro servicio) y guarda su `id` como `<EMPRESA>`."""
+    from tests.conftest import COMPANY_ID
+
+    return call(
+        "Consultar la empresa desde la que se confirma en Operational Context",
+        "GET",
+        f"{OPERATIONAL_CONTEXT}/api/v1/companies?status=ACTIVE",
+        external=True,
+        perm="perm:operational-context:companies:read",
+        why=[
+            "El perfil de contacto se confirma **desde una empresa**: Party Identity guarda solo el `id` de la empresa "
+            "(`confirmed_by_company_id`) y el del usuario operativo que confirmó (`confirmed_by_user_id`).",
+            "Para confirmar, el usuario debe tener una **membresía `ACTIVE`** en esa empresa (Operational Context, "
+            "ejercicio 4 de su `docs/ejemplo/`). Party Identity la comprueba con su propio cliente técnico; el usuario "
+            "**no** necesita permisos de Operational Context para confirmar.",
+        ],
+        save={"EMPRESA": "items[0].id"},
+        fake={"EMPRESA": str(COMPANY_ID)},
+        sample={"items": [{"id": "<EMPRESA>", "status": "ACTIVE"}], "page": 1, "page_size": 20,
+                "total_records": 1, "total_pages": 1},
+    )
+
+
+def get_city():
+    """Consulta la ciudad en Geography y guarda `<DIVISION>` y `<CIUDAD>` (coherentes con `<PAIS_CO>`)."""
+    from tests.conftest import CITY_ID, DIVISION_ID
+
+    return call(
+        "Consultar la ciudad y su división en Geography Service",
+        "GET",
+        f"{GEOGRAPHY}/global-cities?country_id=<PAIS_CO>&search=BOGOTA",
+        external=True,
+        perm="perm:geography:global_cities:read",
+        why=[
+            "La dirección del perfil usa `country_id`, `administrative_division_id` y `city_id` de Geography; Party "
+            "Identity valida que existan, estén `ACTIVE` y sean coherentes entre sí (ciudad de esa división y país).",
+        ],
+        save={"DIVISION": "items[0].administrative_division_id", "CIUDAD": "items[0].id"},
+        fake={"DIVISION": str(DIVISION_ID), "CIUDAD": str(CITY_ID)},
+        sample={"items": [{"id": "<CIUDAD>", "name": "BOGOTA, D.C.", "country_id": "<PAIS_CO>",
+                           "administrative_division_id": "<DIVISION>", "status": "ACTIVE"}],
+                "page": 1, "page_size": 20, "total_records": 1, "total_pages": 1},
+    )

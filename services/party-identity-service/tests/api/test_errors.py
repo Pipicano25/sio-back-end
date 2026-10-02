@@ -128,3 +128,111 @@ def test_application_and_domain_layers_do_not_define_http_status() -> None:
                     names = [alias.name for alias in node.names]
                     for name in [module, *names]:
                         assert name.split(".")[0] not in forbidden_modules, path
+
+
+# --------------------------------------------------------------------------
+# Fase B: extensión `dependency` y códigos nuevos (T006; RC-19, C-09, FR-003)
+# --------------------------------------------------------------------------
+
+
+def test_phase_a_dependency_unavailable_keeps_code_and_adds_dependency(api, fake_countries) -> None:
+    """Regla 4.3: mismo estado y `code` de la Fase A, con `dependency: geography`."""
+    fake_countries.mode = "unavailable"
+
+    body = _assert_problem(
+        api.post("/api/v1/organization-identities", json={
+            "country_id": random_uuid(),
+            "identification_type": "NIT",
+            "identification_number": "900000001-1",
+            "legal_name": "ORGANIZACION FICTICIA S.A.S.",
+        }),
+        503,
+        "DEPENDENCY_UNAVAILABLE",
+    )
+
+    assert body["dependency"] == "geography"
+
+
+@pytest.mark.parametrize("dependency", ["geography", "operational-context", "keycloak"])
+def test_dependency_unavailable_problem_carries_dependency(app, api, dependency: str) -> None:
+    router = APIRouter()
+
+    @router.get("/api/v1/_dependency")
+    def fail():
+        raise app_exceptions.DependencyUnavailableError(dependency=dependency, cause="TEST")
+
+    app.include_router(router)
+    body = _assert_problem(api.get("/api/v1/_dependency"), 503, "DEPENDENCY_UNAVAILABLE")
+
+    assert body["dependency"] == dependency
+    assert "TEST" not in body["detail"]
+
+
+def test_confirmation_membership_invalid_carries_reason(app, api) -> None:
+    router = APIRouter()
+
+    @router.get("/api/v1/_membership")
+    def fail():
+        raise app_exceptions.ConfirmationMembershipInvalidError(reason="USER_NOT_MEMBER")
+
+    app.include_router(router)
+    body = _assert_problem(api.get("/api/v1/_membership"), 422, "CONFIRMATION_MEMBERSHIP_INVALID")
+
+    assert body["reason"] == "USER_NOT_MEMBER"
+
+
+@pytest.mark.parametrize(
+    "error_class, code",
+    [
+        ("LocationInactiveError", "LOCATION_INACTIVE"),
+        ("GeographyIncoherentError", "GEOGRAPHY_INCOHERENT"),
+        ("GeographyParentRequiredError", "GEOGRAPHY_PARENT_REQUIRED"),
+    ],
+)
+def test_geography_errors_carry_field(app, api, error_class: str, code: str) -> None:
+    router = APIRouter()
+
+    @router.get("/api/v1/_geo")
+    def fail():
+        raise getattr(app_exceptions, error_class)(field="city_id")
+
+    app.include_router(router)
+    body = _assert_problem(api.get("/api/v1/_geo"), 422, code)
+
+    assert body["field"] == "city_id"
+
+
+PHASE_B_STATUS = {
+    "CONTACT_PROFILE_NOT_FOUND": 404,
+    "CONTACT_PROFILE_ALREADY_CLOSED": 409,
+    "PERSON_IDENTITY_INACTIVE": 422,
+    "ORGANIZATION_IDENTITY_INACTIVE": 422,
+    "PERSON_IDENTITY_NOT_FOUND": 422,
+    "ADMINISTRATIVE_DIVISION_NOT_FOUND": 422,
+    "CITY_NOT_FOUND": 422,
+    "LOCATION_INACTIVE": 422,
+    "GEOGRAPHY_INCOHERENT": 422,
+    "GEOGRAPHY_PARENT_REQUIRED": 422,
+    "COMPANY_NOT_FOUND": 422,
+    "COMPANY_INACTIVE": 422,
+    "CONFIRMATION_MEMBERSHIP_INVALID": 422,
+    "INVALID_PRIMARY_CONTACT": 422,
+    "PRIMARY_CONTACT_CONFLICT": 409,
+    "DUPLICATE_ACTIVE_CONTACT_PERSON": 409,
+    "DUPLICATE_SECTOR_CODE": 409,
+    "INVALID_SECTOR_HIERARCHY": 422,
+    "SECTOR_HAS_ACTIVE_CHILDREN": 409,
+    "SECTOR_INACTIVE": 422,
+    "DUPLICATE_ACTIVE_SECTOR_ASSIGNMENT": 409,
+    "PRIMARY_SECTOR_CONFLICT": 409,
+    "INVALID_PRIMARY_SECTOR": 422,
+    "PRIMARY_REPRESENTATIVE_CONFLICT": 409,
+    "DUPLICATE_ACTIVE_REPRESENTATIVE": 409,
+}
+
+
+@pytest.mark.parametrize("code, status", sorted(PHASE_B_STATUS.items()))
+def test_phase_b_codes_have_contract_status(code: str, status: int) -> None:
+    """Catálogo de `contracts/errors.md` de la feature 006."""
+    assert api_errors.status_for_code(code) == status
+    assert any(cls.code == code for cls in _application_error_classes())

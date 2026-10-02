@@ -6,10 +6,15 @@ un mensaje y, cuando aplica, contexto. El estado HTTP lo asigna exclusivamente
 fechas de nacimiento completos (DS-09).
 """
 
-from typing import Any
+from typing import Any, Literal
 
 COUNTRY_VALIDATION_DENIED = "COUNTRY_VALIDATION_DENIED"
 GEOGRAPHY_UNAVAILABLE = "GEOGRAPHY_UNAVAILABLE"
+OPERATIONAL_CONTEXT_VALIDATION_DENIED = "OPERATIONAL_CONTEXT_VALIDATION_DENIED"
+OPERATIONAL_CONTEXT_UNAVAILABLE = "OPERATIONAL_CONTEXT_UNAVAILABLE"
+KEYCLOAK_TOKEN_UNAVAILABLE = "KEYCLOAK_TOKEN_UNAVAILABLE"
+
+Dependency = Literal["geography", "operational-context", "keycloak"]
 
 
 class PartyIdentityError(Exception):
@@ -187,22 +192,293 @@ class InvalidStatusTransitionError(PartyIdentityError):
 
 
 class DependencyUnavailableError(PartyIdentityError):
-    """No fue posible validar contra una dependencia externa.
+    """No fue posible validar contra una dependencia externa (DS-14).
+
+    Todas las fallas de dependencia comparten el código público
+    `DEPENDENCY_UNAVAILABLE`; la extensión `dependency` indica cuál falló
+    (cambio aditivo respecto de la Fase A, regla 4.3).
 
     Attributes:
-        cause: Causa interna solo para logs (`COUNTRY_VALIDATION_DENIED` o
-            `GEOGRAPHY_UNAVAILABLE`); nunca se expone en la respuesta.
+        dependency: `geography`, `operational-context` o `keycloak`; se expone
+            como extensión del Problem Details.
+        cause: Causa interna solo para logs (p. ej. `COUNTRY_VALIDATION_DENIED`);
+            nunca se expone en la respuesta.
     """
 
     code = "DEPENDENCY_UNAVAILABLE"
     title = "Dependencia no disponible"
-    default_message = "No fue posible validar el país contra Geography Service."
+    default_message = "No fue posible validar contra un servicio externo."
+
+    _MESSAGES: dict[str, str] = {
+        "geography": "No fue posible validar el país contra Geography Service.",
+        "operational-context": "No fue posible validar la membresía en Operational Context.",
+        "keycloak": "No fue posible obtener la identidad técnica del servicio.",
+    }
 
     def __init__(
         self,
         message: str | None = None,
         *,
-        cause: str = GEOGRAPHY_UNAVAILABLE,
+        dependency: Dependency,
+        cause: str,
     ) -> None:
-        super().__init__(message)
+        super().__init__(
+            message or self._MESSAGES.get(dependency),
+            context={"dependency": dependency},
+        )
+        self.dependency = dependency
         self.cause = cause
+
+
+# --------------------------------------------------------------------------
+# Fase B: perfiles, contactos, sectores y representantes (contracts/errors.md)
+# --------------------------------------------------------------------------
+
+
+class ContactProfileNotFoundError(PartyIdentityError):
+    """No hay perfil vigente (consulta) o nunca existió perfil (cierre)."""
+
+    code = "CONTACT_PROFILE_NOT_FOUND"
+    title = "Perfil de contacto inexistente"
+    default_message = "La identidad no tiene un perfil de contacto vigente."
+
+
+class ContactProfileAlreadyClosedError(PartyIdentityError):
+    """No hay perfil vigente pero sí historia cerrada (cierre repetido)."""
+
+    code = "CONTACT_PROFILE_ALREADY_CLOSED"
+    title = "Perfil de contacto ya cerrado"
+    default_message = "El perfil de contacto ya está cerrado; no hay versión vigente."
+
+
+class PersonIdentityInactiveError(PartyIdentityError):
+    """La persona está `INACTIVE` y no admite relaciones nuevas."""
+
+    code = "PERSON_IDENTITY_INACTIVE"
+    title = "Persona inactiva"
+    default_message = "La persona está inactiva y no admite nuevas asignaciones."
+
+
+class OrganizationIdentityInactiveError(PartyIdentityError):
+    """La organización está `INACTIVE` y no admite relaciones nuevas."""
+
+    code = "ORGANIZATION_IDENTITY_INACTIVE"
+    title = "Organización inactiva"
+    default_message = "La organización está inactiva y no admite nuevas asignaciones."
+
+
+class PersonIdentityNotFoundError(PartyIdentityError):
+    """La persona indicada en el cuerpo no existe."""
+
+    code = "PERSON_IDENTITY_NOT_FOUND"
+    title = "Persona inexistente"
+    default_message = "La persona indicada no existe."
+
+
+class AdministrativeDivisionNotFoundError(PartyIdentityError):
+    """La división administrativa no existe en Geography Service."""
+
+    code = "ADMINISTRATIVE_DIVISION_NOT_FOUND"
+    title = "División administrativa inexistente"
+    default_message = "La división administrativa indicada no existe en Geography Service."
+
+
+class CityNotFoundError(PartyIdentityError):
+    """La ciudad no existe en Geography Service."""
+
+    code = "CITY_NOT_FOUND"
+    title = "Ciudad inexistente"
+    default_message = "La ciudad indicada no existe en Geography Service."
+
+
+class _FieldContextMixin:
+    """Añade la extensión `field` a un error de geografía."""
+
+    def __init__(self, message: str | None = None, *, field: str) -> None:
+        PartyIdentityError.__init__(self, message, context={"field": field})
+        self.field = field
+
+
+class LocationInactiveError(_FieldContextMixin, PartyIdentityError):
+    """Un nivel geográfico está `INACTIVE`."""
+
+    code = "LOCATION_INACTIVE"
+    title = "Ubicación inactiva"
+    default_message = "La ubicación indicada está inactiva en Geography Service."
+
+
+class GeographyIncoherentError(_FieldContextMixin, PartyIdentityError):
+    """La división o la ciudad no corresponden a los niveles superiores."""
+
+    code = "GEOGRAPHY_INCOHERENT"
+    title = "Geografía incoherente"
+    default_message = "La ubicación no es coherente con los niveles superiores indicados."
+
+
+class GeographyParentRequiredError(_FieldContextMixin, PartyIdentityError):
+    """Se informó un nivel inferior sin el país."""
+
+    code = "GEOGRAPHY_PARENT_REQUIRED"
+    title = "Falta el nivel geográfico superior"
+    default_message = "La división o la ciudad exigen informar el país."
+
+
+class CompanyNotFoundError(PartyIdentityError):
+    """La empresa de confirmación no existe en Operational Context."""
+
+    code = "COMPANY_NOT_FOUND"
+    title = "Empresa inexistente"
+    default_message = "La empresa indicada no existe en Operational Context."
+
+
+class CompanyInactiveError(PartyIdentityError):
+    """La empresa de confirmación está inactiva."""
+
+    code = "COMPANY_INACTIVE"
+    title = "Empresa inactiva"
+    default_message = "La empresa indicada está inactiva."
+
+
+class ConfirmationMembershipInvalidError(PartyIdentityError):
+    """El usuario no tiene membresía `ACTIVE` en la empresa de confirmación."""
+
+    code = "CONFIRMATION_MEMBERSHIP_INVALID"
+    title = "Membresía de confirmación inválida"
+    default_message = (
+        "El usuario no tiene una membresía activa en la empresa desde la que "
+        "confirma el perfil."
+    )
+
+    def __init__(self, message: str | None = None, *, reason: str) -> None:
+        super().__init__(message, context={"reason": reason})
+        self.reason = reason
+
+
+class InvalidPrimaryContactError(PartyIdentityError):
+    """`set-primary` sobre un contacto `INACTIVE`."""
+
+    code = "INVALID_PRIMARY_CONTACT"
+    title = "Contacto principal inválido"
+    default_message = "Solo un contacto activo puede marcarse como principal."
+
+
+class PrimaryContactConflictError(PartyIdentityError):
+    """Ya existe un contacto principal vigente."""
+
+    code = "PRIMARY_CONTACT_CONFLICT"
+    title = "Contacto principal existente"
+    default_message = (
+        "La organización ya tiene un contacto principal; use set-primary para "
+        "sustituirlo."
+    )
+
+
+class DuplicateActiveContactPersonError(PartyIdentityError):
+    """La persona ya es contacto vigente de la organización."""
+
+    code = "DUPLICATE_ACTIVE_CONTACT_PERSON"
+    title = "Contacto duplicado"
+    default_message = "La persona ya es contacto vigente de la organización."
+
+
+class DuplicateSectorCodeError(PartyIdentityError):
+    """El código ya existe en el sistema de clasificación."""
+
+    code = "DUPLICATE_SECTOR_CODE"
+    title = "Código de sector duplicado"
+    default_message = "Ya existe un sector con ese código en el sistema de clasificación."
+
+
+class InvalidSectorHierarchyError(PartyIdentityError):
+    """Padre inexistente, inactivo, de otro sistema o ciclo."""
+
+    code = "INVALID_SECTOR_HIERARCHY"
+    title = "Jerarquía de sectores inválida"
+    default_message = (
+        "El sector superior debe existir, estar activo, pertenecer al mismo "
+        "sistema de clasificación y no formar ciclos."
+    )
+
+
+class SectorHasActiveChildrenError(PartyIdentityError):
+    """El sector tiene hijos `ACTIVE`."""
+
+    code = "SECTOR_HAS_ACTIVE_CHILDREN"
+    title = "Sector con hijos activos"
+    default_message = "No se puede inactivar un sector con sectores hijos activos."
+
+
+class SectorInactiveError(PartyIdentityError):
+    """El sector está `INACTIVE` y no admite asignaciones nuevas."""
+
+    code = "SECTOR_INACTIVE"
+    title = "Sector inactivo"
+    default_message = "El sector está inactivo y no admite nuevas asignaciones."
+
+
+class DuplicateActiveSectorAssignmentError(PartyIdentityError):
+    """La organización ya tiene ese sector vigente."""
+
+    code = "DUPLICATE_ACTIVE_SECTOR_ASSIGNMENT"
+    title = "Sector ya asignado"
+    default_message = "La organización ya tiene ese sector vigente."
+
+
+class PrimarySectorConflictError(PartyIdentityError):
+    """Ya existe un sector principal vigente."""
+
+    code = "PRIMARY_SECTOR_CONFLICT"
+    title = "Sector principal existente"
+    default_message = (
+        "La organización ya tiene un sector principal; use set-primary para "
+        "sustituirlo."
+    )
+
+
+class InvalidPrimarySectorError(PartyIdentityError):
+    """`set-primary` sobre una asignación cerrada."""
+
+    code = "INVALID_PRIMARY_SECTOR"
+    title = "Sector principal inválido"
+    default_message = "Solo una asignación vigente puede marcarse como principal."
+
+
+class PrimaryRepresentativeConflictError(PartyIdentityError):
+    """Ya existe un representante `PRIMARY` vigente."""
+
+    code = "PRIMARY_REPRESENTATIVE_CONFLICT"
+    title = "Representante principal existente"
+    default_message = (
+        "La organización ya tiene un representante legal PRIMARY vigente; use "
+        "set-primary para sustituirlo."
+    )
+
+
+class DuplicateActiveRepresentativeError(PartyIdentityError):
+    """La persona ya tiene una relación vigente con la organización."""
+
+    code = "DUPLICATE_ACTIVE_REPRESENTATIVE"
+    title = "Representante duplicado"
+    default_message = (
+        "La persona ya tiene una relación de representación vigente con la "
+        "organización."
+    )
+
+
+class DomainValidationError(PartyIdentityError):
+    """Validación de entrada detectada en la capa de aplicación.
+
+    Usa el código público existente `VALIDATION_ERROR` con el mismo detalle por
+    campo (`errors[]`) que la validación de esquemas (D13); no es un código nuevo.
+    """
+
+    code = "VALIDATION_ERROR"
+    title = "Solicitud inválida"
+    default_message = "La solicitud contiene datos inválidos."
+
+    def __init__(self, field: str, message: str) -> None:
+        super().__init__(
+            None,
+            context={"errors": [{"field": field, "message": message, "code": "VALIDATION_ERROR"}]},
+        )
+        self.field = field

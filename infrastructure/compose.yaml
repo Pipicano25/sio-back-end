@@ -275,6 +275,9 @@ services:
       SIO_WEB_REDIRECT_URI: ${SIO_WEB_REDIRECT_URI}
 
       KEYCLOAK_TEST_USER_PASSWORD: ${KEYCLOAK_TEST_USER_PASSWORD}
+      # Secretos de los clientes técnicos referenciados en la plantilla del realm.
+      PARTY_IDENTITY_CLIENT_SECRET: ${PARTY_IDENTITY_CLIENT_SECRET}
+      OPERATIONAL_CONTEXT_CLIENT_SECRET: ${OPERATIONAL_CONTEXT_CLIENT_SECRET}
 
     ports:
       - "127.0.0.1:${KEYCLOAK_HTTP_PORT}:8080"
@@ -349,17 +352,19 @@ services:
       DATABASE_URL: postgresql+psycopg://${GEOGRAPHY_DB_USER}:${GEOGRAPHY_DB_PASSWORD}@geography-db:5432/${GEOGRAPHY_DB_NAME}
       # KC_HOSTNAME determina el claim `iss` de todo token emitido, sin
       # importar por qué red se alcanzó Keycloak: debe coincidir
-      # exactamente con KEYCLOAK_PUBLIC_URL. KEYCLOAK_JWKS_URL, en
+      # exactamente con KEYCLOAK_PUBLIC_URL. SIO_AUTH_JWKS_URL, en
       # cambio, es la ruta real que este contenedor usa para *obtener*
       # las llaves públicas, y debe resolverse dentro de `sio-network`
       # (el contenedor no tiene acceso a "localhost" del host) — por eso
       # difiere del host:puerto expuesto en KEYCLOAK_PUBLIC_URL.
-      KEYCLOAK_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
-      KEYCLOAK_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
-      KEYCLOAK_AUDIENCE: sio-api
+      # geography-service usa los nombres de variable de sio-auth.
+      SIO_AUTH_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+      SIO_AUTH_AUDIENCE: sio-api
+      SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
 
     ports:
-      - "127.0.0.1:${GEOGRAPHY_SERVICE_PORT}:8000"
+      - "127.0.0.1:${GEOGRAPHY_SERVICE_PORT:-8102}:8000"
 
     depends_on:
       geography-db:
@@ -397,7 +402,10 @@ services:
       # Geography publica hoy sus rutas sin /api/v1; la URL incluye su prefijo.
       GEOGRAPHY_SERVICE_BASE_URL: http://geography-service:8000
       GEOGRAPHY_TIMEOUT_SECONDS: ${GEOGRAPHY_TIMEOUT_SECONDS:-5}
-      # Identidad técnica usada solo por el seed en modo Geography:
+      # Operational Context: confirmación de perfiles de contacto (vía técnica).
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: ${OPERATIONAL_CONTEXT_SERVICE_BASE_URL:-http://operational-context-service:8000/api/v1}
+      OPERATIONAL_CONTEXT_TIMEOUT_SECONDS: ${OPERATIONAL_CONTEXT_TIMEOUT_SECONDS:-5}
+      # Identidad técnica: seed en modo Geography y consulta a Operational Context:
       #   docker compose exec party-identity-service python -m party_identity_service.seed load
       KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
       KEYCLOAK_TIMEOUT_SECONDS: ${KEYCLOAK_TIMEOUT_SECONDS:-5}

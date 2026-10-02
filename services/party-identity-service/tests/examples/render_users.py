@@ -21,7 +21,29 @@ NOTES = {
     "reactivar (`POST .../reactivate`) exige `update`.",
     "perm:party-identity:organization_identities:delete": "Inactivar exige `delete`; reactivar exige `update`. Por eso "
     "`supervisor.test` puede reactivar pero no inactivar.",
+    "perm:party-identity:organization_contact_profiles:create": "Registrar una versión del perfil exige además que el "
+    "usuario tenga una membresía `ACTIVE` en la empresa indicada (la comprueba Party Identity con su cliente técnico "
+    "contra Operational Context). El usuario **no** necesita permisos de Operational Context; un administrador de "
+    "plataforma sin membresía recibe `422 CONFIRMATION_MEMBERSHIP_INVALID`.",
+    "perm:party-identity:person_contact_profiles:create": "Igual que en organizaciones: se exige membresía `ACTIVE` en "
+    "la empresa desde la que se confirma, sin permisos de Operational Context.",
+    "perm:party-identity:organization_contact_profiles:delete": "Cerrar el perfil (`POST .../contact-profile:close`) "
+    "exige `delete`, aunque no elimina: la versión queda en el historial.",
+    "perm:party-identity:person_contact_profiles:delete": "Cerrar el perfil exige `delete`; no elimina.",
+    "perm:party-identity:organization_contact_persons:update": "`:set-primary` y `:reactivate` exigen `update`; "
+    "`is_primary` no se cambia con `PUT`.",
+    "perm:party-identity:organization_legal_representatives:read": "Dato sensible: solo lo leen los grupos con "
+    "necesidad explícita (`administradores`, `supervisores`); `compras`, `ventas`, `reportes` y `consulta` reciben `403`.",
+    "perm:party-identity:organization_legal_representatives:create": "`:set-primary` también exige `create`: crea el "
+    "primer `PRIMARY` o sustituye el vigente cerrándolo.",
 }
+
+SENSITIVE_RESOURCES = (
+    "person_contact_profiles",
+    "organization_contact_profiles",
+    "organization_contact_persons",
+    "organization_legal_representatives",
+)
 
 
 # ------------------------------------------------------------------ utilidades
@@ -39,6 +61,9 @@ def reason(user, permission):
         if g_service in ("all", service) and g_resource in ("all", resource):
             related.append(g_action)
     if not related:
+        on_service = any(role.split(":")[1] in ("all", service) for role in user["perms"])
+        if on_service:
+            return f"tiene permisos sobre `{service}`, pero ninguno sobre `{resource}`"
         return f"no tiene ningún permiso sobre `{service}`"
     actions = ", ".join(f"`{a}`" for a in sorted(set(related)))
     return f"sobre `{service}` solo tiene {actions}; le falta `{action}`"
@@ -46,7 +71,7 @@ def reason(user, permission):
 
 def plural(text):
     return (text.replace("solo tiene", "solo tienen").replace("le falta", "les falta")
-            .replace("no tiene ningún", "no tienen ningún"))
+            .replace("no tiene ningún", "no tienen ningún").replace("tiene permisos", "tienen permisos"))
 
 
 def endpoint(c):
@@ -146,7 +171,7 @@ def user_summary(rows):
             if reads:
                 text += " Sí puede hacer las consultas (`GET`) de los pasos " + ", ".join(f"{n:02d}" for n in reads) + "."
             else:
-                text += " No puede hacer ninguna consulta de Party Identity."
+                text += " No puede hacer ninguna de las consultas (`GET`) de Party Identity de este ejercicio."
         lines.append(f"- {text}")
     return lines
 
@@ -203,25 +228,44 @@ def render_users(ex, records):
         out += curl_for(c, "TOKEN_CONSULTA")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += [f"`consulta.test` solo tiene `perm:all:all:read`: puede **leer**, pero la URL exige `{p}`. "
+        out += [f"`consulta.test` {reason(consulta, p)}: puede **leer**, pero la URL exige `{p}`. "
                 "El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
 
-    read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET")
+    read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET"
+                        and matching_grant(consulta, p))
     if read:
         n += 1
         s_i, c_i, s, c, p, r = read
+        readers = [f"`{u['username']}`" for u in USERS
+                   if u["username"] not in ("admin.test", "consulta.test") and matching_grant(u, p)]
         out += [f"### {n}. `consulta.test` consulta (permitido)", ""]
         out += curl_for(c, "TOKEN_CONSULTA")
         out += ["", f"Responde `200 OK` con la misma información que ve `admin.test` en el paso {s_i + 1:02d}: "
-                f"`perm:all:all:read` cubre `{p}`. Lo mismo pasa con `reportes.test`, `compras.test` y `ventas.test`.", ""]
+                f"`{matching_grant(consulta, p)}` cubre `{p}`."
+                + (f" También pueden: {', '.join(readers)}." if readers else ""), ""]
 
+    sensitive = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET"
+                             and not matching_grant(consulta, p))
+    if sensitive:
         n += 1
-        out += [f"### {n}. `inventario.test` consulta (rechazado)", ""]
-        out += token_command("inventario.test", "TOKEN_INVENTARIO")
-        out += [""]
-        out += curl_for(c, "TOKEN_INVENTARIO")
-        out += ["", "Responde `403 Forbidden`: `inventario.test` no tiene ningún permiso sobre `party-identity` "
-                "(lee el catálogo, Geography y Operational Context, pero no identidades).", ""]
+        s_i, c_i, s, c, p, r = sensitive
+        readers = [f"`{u['username']}`" for u in USERS if matching_grant(u, p)]
+        out += [f"### {n}. `consulta.test` consulta un dato sensible (rechazado)", ""]
+        out += curl_for(c, "TOKEN_CONSULTA")
+        out += ["", f"Responde `403 Forbidden`: `{p}` es un recurso sensible con permiso específico; "
+                f"`consulta.test` {reason(consulta, p)}. Solo pueden leerlo: {', '.join(readers)}.", ""]
+
+    sample = read or sensitive
+    if sample:
+        s_i, c_i, s, c, p, r = sample
+        inventario = next(u for u in USERS if u["username"] == "inventario.test")
+        if not matching_grant(inventario, p):
+            n += 1
+            out += [f"### {n}. `inventario.test` consulta (rechazado)", ""]
+            out += token_command("inventario.test", "TOKEN_INVENTARIO")
+            out += [""]
+            out += curl_for(c, "TOKEN_INVENTARIO")
+            out += ["", f"Responde `403 Forbidden`: `inventario.test` {reason(inventario, p)}.", ""]
 
     deactivate = pick_example(rows, lambda s_i, c, p, r: p.endswith(":delete"))
     if deactivate:
@@ -267,8 +311,15 @@ def render_general(exercises, all_records):
             "3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, "
             "`all` vale como comodín en cualquier parte:",
             "   - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.",
-            "   - `perm:all:all:read` → solo `read`, pero en todos los servicios.",
-            "   - `perm:party-identity:all:read` → solo `read`, solo en Party Identity.",
+            "   - `perm:all:all:read` → solo `read`, pero en todos los servicios (en el realm vigente solo lo tiene "
+            "`supervisores`).",
+            "   - `perm:party-identity:all:read` → solo `read`, solo en Party Identity (ya no lo tiene ningún grupo de "
+            "solo lectura).",
+            "   - Mínimo privilegio (Q-C1): los perfiles de contacto, las personas de contacto y los representantes "
+            "legales exigen su **permiso específico**. `compras` y `ventas` tienen lecturas explícitas de Party Identity "
+            "que incluyen contactos pero **no** representantes legales; `reportes` y `consulta` tienen lecturas "
+            "explícitas de todos los servicios **sin** esos cuatro recursos. Leer una persona u organización no da "
+            "acceso a sus contactos.",
             "4. Cada URL exige **un** permiso concreto (por ejemplo `perm:party-identity:person_identities:create`). "
             "Si ninguno de los permisos del usuario lo cubre, el servicio responde `403 Forbidden` e indica cuál falta. "
             "Sin token, o con un token vencido, responde `401 Unauthorized`.",
@@ -278,16 +329,21 @@ def render_general(exercises, all_records):
             "Todos comparten la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD` (`infrastructure/.env`).", "",
             "| Usuario | Grupo | Permisos del grupo | En Party Identity puede |", "| --- | --- | --- | --- |"]
     summary = {
-        "admin.test": "Todo, incluido inactivar y retirar",
-        "supervisor.test": "Consultar, crear, modificar y reactivar. **No** inactivar ni retirar",
-        "compras.test": "Solo consultar",
-        "ventas.test": "Solo consultar",
+        "admin.test": "Todo, incluido inactivar, retirar y cerrar",
+        "supervisor.test": "Consultar, crear, modificar y reactivar. **No** inactivar, retirar ni cerrar",
+        "compras.test": "Consultar identidades, contactos y sectores. **No** representantes legales",
+        "ventas.test": "Consultar identidades, contactos y sectores. **No** representantes legales",
         "inventario.test": "Nada: no tiene permisos sobre `party-identity`",
-        "reportes.test": "Solo consultar",
-        "consulta.test": "Solo consultar",
+        "reportes.test": "Consultar identidades, reglas y sectores. **No** contactos ni representantes legales",
+        "consulta.test": "Consultar identidades, reglas y sectores. **No** contactos ni representantes legales",
     }
     for u in USERS:
-        perms = "<br>".join(f"`{p}`" for p in u["perms"])
+        if len(u["perms"]) <= 10:
+            perms = "<br>".join(f"`{p}`" for p in u["perms"])
+        else:
+            own = [p for p in u["perms"] if p.startswith("perm:party-identity:") or ":all:" in p]
+            perms = (f"{len(u['perms'])} permisos explícitos; en Party Identity: "
+                     + "<br>".join(f"`{p}`" for p in own))
         out.append(f"| `{u['username']}` | `{u['group']}` | {perms} | {summary.get(u['username'], '')} |")
     out.append("")
 
@@ -317,12 +373,15 @@ def render_general(exercises, all_records):
 
     out += ["## Permisos que no son obvios", ""]
     out += [f"- `{p}`: {text}" for p, text in NOTES.items()]
-    out += ["- Las URL de `http://localhost:8000` son de **Geography**: exigen permisos de ese servicio.", ""]
+    out += ["- Las URL de `http://localhost:8000` son de **Geography** y las de `http://localhost:8004` de "
+            "**Operational Context**: exigen permisos de esos servicios. Confirmar un perfil de contacto **no** exige "
+            "permisos de Operational Context: la membresía la comprueba Party Identity con su cliente técnico.", ""]
 
     out += ["## Qué usuario usar", "",
             "| Para… | Usuario |", "| --- | --- |",
             "| Hacer los ejercicios completos | `admin.test` |",
             "| Crear y modificar sin poder inactivar ni retirar | `supervisor.test` |",
-            "| Verificar lo cargado | `consulta.test` o `reportes.test` |",
+            "| Verificar lo cargado (sin datos de contacto) | `consulta.test` o `reportes.test` |",
+            "| Consultar contactos de clientes o proveedores | `compras.test` o `ventas.test` |",
             "| Probar rechazos por falta de permiso | `consulta.test` en cualquier `POST` o `PUT`; `inventario.test` en cualquier llamada |", ""]
     return "\n".join(out)

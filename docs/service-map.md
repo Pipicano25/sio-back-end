@@ -43,16 +43,17 @@ El modelo actual también documenta un `Finance Service`, pero no se incluyó po
 
 | Campo | Valor |
 | --- | --- |
-| Responsabilidad | Identidad global de personas y organizaciones y reglas de identificación (Fase A: 3 entidades; ver su `domain-map.md`) |
+| Responsabilidad | Identidad global de personas y organizaciones, reglas de identificación, contactos, sectores económicos y representantes legales (9 entidades; ver su `domain-map.md`) |
 | Ruta | `services/party-identity-service/` |
 | Puerto | `8002` (entorno del servicio), `8101` (entorno integrado `infrastructure/`); interno `8000` |
 | Base de datos | PostgreSQL propia `sio_party_identity` (servicio: `55435`, pruebas: `55436`); integrado `party_identity` (`5441`) |
-| Depende de | Keycloak (clase B); Geography Service (clase C, `GET global-countries/{id}` y `GET global-countries?iso3_code=`) |
-| Es consumido por | Product Catalog Service y Operational Context Service (en uso); Commercial Relationship (futuro) — contrato `identity-lookup-provider.md` |
-| Referencias externas | `country_id`, `identification_country_id` → Geography Service |
+| Depende de | Keycloak (clase B: validación de tokens y `client_credentials`); Geography Service (clase C, `GET global-countries/{id}`, `GET global-countries?iso3_code=`, `GET global-administrative-divisions/{id}`, `GET global-cities/{id}`); Operational Context Service (clase C, `GET /api/v1/operational-access` vía técnica, solo al confirmar perfiles de contacto) |
+| Es consumido por | Product Catalog Service y Operational Context Service (en uso); Commercial Relationship, Sales y Purchase (futuros) — contratos `identity-lookup-provider.md` (003) y `contact-lookup-provider.md` (006) |
+| Referencias externas | `country_id`, `identification_country_id` → Geography Service; `country_id`, `administrative_division_id`, `city_id` (perfiles de contacto) → Geography Service; `confirmed_by_company_id` → Company y `confirmed_by_user_id` → ApplicationUser (Operational Context) |
 | Eventos | Ninguno |
-| Autenticación | Token del usuario propagado a Geography; `client_credentials` del cliente `party-identity-service` solo para el `seed` (modo Geography); los consumidores propagan el token de su usuario o usan su propio `client_credentials` |
-| Spec | `specs/003-party-identity-core/` |
+| Autenticación | Token del usuario propagado a Geography; `client_credentials` del cliente `party-identity-service` para el `seed` (modo Geography) y para Operational Context (`platform:lookup`, `application_users:read`; renovación una vez ante `401`); los consumidores propagan el token de su usuario o usan su propio `client_credentials` con el permiso específico de cada recurso |
+| Nota | Dependencia en ambos sentidos con Operational Context sin recursión (C-07): ninguna lectura de Party Identity llama a Operational Context y `operational-access` no llama a Party Identity |
+| Spec | `specs/003-party-identity-core/`, `specs/006-party-identity-complementary/` |
 
 ### operational-context-service
 
@@ -63,7 +64,7 @@ El modelo actual también documenta un `Finance Service`, pero no se incluyó po
 | Puerto | `8004` (entorno del servicio), `8104` (entorno integrado `infrastructure/`); interno `8000` |
 | Base de datos | PostgreSQL propia `sio_operational_context` (servicio: `55439`, pruebas: `55440`); integrado `operational_context` (`5440`) |
 | Depende de | Keycloak (clase B: validación de tokens; Admin API de solo lectura con cliente técnico propio para verificar cuentas y leer permisos efectivos); Party Identity Service (clase C, `GET /api/v1/organization-identities/{id}` y `GET /api/v1/person-identities/{id}`); Geography Service (clase C, `GET global-countries/{id}`, `GET global-administrative-divisions/{id}`, `GET global-cities/{id}`) |
-| Es consumido por | Commercial Relationship, Inventory, Purchase, Sales y Audit (futuros) — contratos `operational-context-provider.md` (004) y `operational-access-provider.md` (005) |
+| Es consumido por | Party Identity (en uso: `operational-access` vía técnica para confirmar perfiles de contacto); Commercial Relationship, Inventory, Purchase, Sales y Audit (futuros) — contratos `operational-context-provider.md` (004) y `operational-access-provider.md` (005) |
 | Referencias externas | `organization_identity_id` → Party Identity; `person_identity_id` (usuarios operativos y asesores) → Party Identity; `keycloak_user_id` (`sub`) → Keycloak; `country_id`, `administrative_division_id`, `city_id` → Geography |
 | Eventos | Ninguno |
 | Autenticación | Token del usuario propagado a Party Identity y Geography; `client_credentials` del cliente `operational-context-service` (`view-users`, `query-clients`) hacia la Admin API de Keycloak; los consumidores propagan el token de su usuario o usan su propio `client_credentials` con `perm:operational-context:platform:lookup` |

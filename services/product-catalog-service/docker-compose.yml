@@ -73,14 +73,14 @@ services:
       DATABASE_URL: >-
         postgresql+psycopg://${PRODUCT_CATALOG_DB_USER}:${PRODUCT_CATALOG_DB_PASSWORD}@product-catalog-dev-db:5432/${PRODUCT_CATALOG_DB_NAME}
 
-      # El JWT fue emitido con localhost:8081 como issuer.
-      # Este valor NO debe cambiar.
-      SIO_AUTH_ISSUER: http://localhost:8081/realms/sio
+      # El JWT se emite con KEYCLOAK_PUBLIC_URL (infrastructure/.env) como issuer.
+      # KEYCLOAK_HTTP_PORT debe coincidir con el puerto de esa URL.
+      SIO_AUTH_ISSUER: http://localhost:${KEYCLOAK_HTTP_PORT:-8081}/realms/sio
 
       # Desde el contenedor, localhost sería el propio contenedor.
       # Para obtener las claves públicas usamos el host.
-      SIO_AUTH_JWKS_URL: http://host.docker.internal:8081/realms/sio/protocol/openid-connect/certs
-      PARTY_IDENTITY_SERVICE_BASE_URL: http://host.docker.internal:8002/api/v1
+      SIO_AUTH_JWKS_URL: http://host.docker.internal:${KEYCLOAK_HTTP_PORT:-8081}/realms/sio/protocol/openid-connect/certs
+      PARTY_IDENTITY_SERVICE_BASE_URL: http://host.docker.internal:${PARTY_IDENTITY_SERVICE_PORT:-8002}/api/v1
 
     ports:
       - "${PRODUCT_CATALOG_SERVICE_PORT:-8003}:8000"

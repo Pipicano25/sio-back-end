@@ -130,3 +130,16 @@ def test_returns_uuid_type() -> None:
     validator = _validator(_status(200, {"items": [{"id": str(country_id), "iso3_code": "COL"}]}))
 
     assert isinstance(validator.find_id_by_iso3("col"), UUID)
+
+
+def test_dependency_unavailable_errors_declare_geography_dependency() -> None:
+    """Regla 4.3 (T009): todos los caminos de indisponibilidad indican `geography`."""
+    for status in (401, 403, 500):
+        validator = HTTPGeographyCountryValidator(
+            base_url="http://geography.test",
+            authorization="Bearer x",
+            transport=httpx.MockTransport(lambda request, status=status: httpx.Response(status)),
+        )
+        with pytest.raises(DependencyUnavailableError) as error:
+            validator.exists(uuid4())
+        assert error.value.dependency == "geography"

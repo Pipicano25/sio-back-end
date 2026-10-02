@@ -84,7 +84,7 @@
     {
       "clientId": "party-identity-service",
       "name": "Party Identity Service",
-      "description": "Identidad técnica de party-identity-service (client_credentials). Solo la usa el seed para consultar Geography.",
+      "description": "Identidad técnica de party-identity-service (client_credentials). La usan el seed para consultar Geography y la confirmación de perfiles de contacto para consultar Operational Context (vía técnica de operational-access).",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
@@ -1206,6 +1206,14 @@
         {
           "name": "perm:sales:sale_sequences:delete",
           "description": "Eliminar o desactivar sale_sequences en sales"
+        },
+        {
+          "name": "perm:payment_reference:global_payment_condition_types:read",
+          "description": "Lectura de global_payment_condition_types (nombre de servicio que declara payment-reference-service)"
+        },
+        {
+          "name": "perm:payment_reference:global_payment_methods:read",
+          "description": "Lectura de global_payment_methods (nombre de servicio que declara payment-reference-service)"
         }
       ]
     }
@@ -1240,7 +1248,14 @@
           "perm:geography:all:read",
           "perm:payment-reference:all:read",
           "perm:product-catalog:all:read",
-          "perm:party-identity:all:read",
+          "perm:party-identity:identification_type_rules:read",
+          "perm:party-identity:person_identities:read",
+          "perm:party-identity:organization_identities:read",
+          "perm:party-identity:person_contact_profiles:read",
+          "perm:party-identity:organization_contact_profiles:read",
+          "perm:party-identity:organization_contact_persons:read",
+          "perm:party-identity:global_business_sectors:read",
+          "perm:party-identity:organization_business_sectors:read",
           "perm:commercial-relationship:all:read",
           "perm:operational-context:all:read"
         ]
@@ -1255,7 +1270,14 @@
           "perm:geography:all:read",
           "perm:payment-reference:all:read",
           "perm:product-catalog:all:read",
-          "perm:party-identity:all:read",
+          "perm:party-identity:identification_type_rules:read",
+          "perm:party-identity:person_identities:read",
+          "perm:party-identity:organization_identities:read",
+          "perm:party-identity:person_contact_profiles:read",
+          "perm:party-identity:organization_contact_profiles:read",
+          "perm:party-identity:organization_contact_persons:read",
+          "perm:party-identity:global_business_sectors:read",
+          "perm:party-identity:organization_business_sectors:read",
           "perm:commercial-relationship:all:read",
           "perm:operational-context:all:read"
         ]
@@ -1277,7 +1299,57 @@
       "clientRoles": {
         "sio-api": [
           "reportes",
-          "perm:all:all:read"
+          "perm:commercial-relationship:company_customers:read",
+          "perm:commercial-relationship:company_products:read",
+          "perm:commercial-relationship:company_suppliers:read",
+          "perm:commercial-relationship:customer_credit_profiles:read",
+          "perm:commercial-relationship:customer_payment_conditions:read",
+          "perm:commercial-relationship:customer_segments:read",
+          "perm:commercial-relationship:product_pricing_policies:read",
+          "perm:commercial-relationship:supplier_commercial_conditions:read",
+          "perm:commercial-relationship:supplier_evaluations:read",
+          "perm:commercial-relationship:supplier_payment_conditions:read",
+          "perm:commercial-relationship:supplier_products:read",
+          "perm:geography:global_administrative_divisions:read",
+          "perm:geography:global_cities:read",
+          "perm:geography:global_countries:read",
+          "perm:operational-context:application_users:read",
+          "perm:operational-context:branches:read",
+          "perm:operational-context:companies:read",
+          "perm:operational-context:company_advisor_assignments:read",
+          "perm:operational-context:user_branches:read",
+          "perm:party-identity:global_business_sectors:read",
+          "perm:party-identity:identification_type_rules:read",
+          "perm:party-identity:organization_business_sectors:read",
+          "perm:party-identity:organization_identities:read",
+          "perm:party-identity:person_identities:read",
+          "perm:payment-reference:global_payment_condition_types:read",
+          "perm:payment-reference:global_payment_methods:read",
+          "perm:product-catalog:attribute-definitions:read",
+          "perm:product-catalog:brands:read",
+          "perm:product-catalog:categories:read",
+          "perm:product-catalog:global_categories:read",
+          "perm:product-catalog:global_category_attributes:read",
+          "perm:product-catalog:global_product_attribute_values:read",
+          "perm:product-catalog:global_products:read",
+          "perm:product-catalog:global_units_of_measure:read",
+          "perm:product-catalog:group-types:read",
+          "perm:product-catalog:packaging-types:read",
+          "perm:product-catalog:product_assets:read",
+          "perm:product-catalog:product_attribute_definitions:read",
+          "perm:product-catalog:products:read",
+          "perm:product-catalog:units-of-measure:read",
+          "perm:purchase:purchase_details:read",
+          "perm:purchase:purchase_lifecycle_events:read",
+          "perm:purchase:purchase_operations:read",
+          "perm:purchase:purchase_sequences:read",
+          "perm:purchase:purchases:read",
+          "perm:sales:sale_details:read",
+          "perm:sales:sale_operations:read",
+          "perm:sales:sale_sequences:read",
+          "perm:sales:sales:read",
+          "perm:payment_reference:global_payment_condition_types:read",
+          "perm:payment_reference:global_payment_methods:read"
         ]
       }
     },
@@ -1286,7 +1358,57 @@
       "clientRoles": {
         "sio-api": [
           "consulta",
-          "perm:all:all:read"
+          "perm:commercial-relationship:company_customers:read",
+          "perm:commercial-relationship:company_products:read",
+          "perm:commercial-relationship:company_suppliers:read",
+          "perm:commercial-relationship:customer_credit_profiles:read",
+          "perm:commercial-relationship:customer_payment_conditions:read",
+          "perm:commercial-relationship:customer_segments:read",
+          "perm:commercial-relationship:product_pricing_policies:read",
+          "perm:commercial-relationship:supplier_commercial_conditions:read",
+          "perm:commercial-relationship:supplier_evaluations:read",
+          "perm:commercial-relationship:supplier_payment_conditions:read",
+          "perm:commercial-relationship:supplier_products:read",
+          "perm:geography:global_administrative_divisions:read",
+          "perm:geography:global_cities:read",
+          "perm:geography:global_countries:read",
+          "perm:operational-context:application_users:read",
+          "perm:operational-context:branches:read",
+          "perm:operational-context:companies:read",
+          "perm:operational-context:company_advisor_assignments:read",
+          "perm:operational-context:user_branches:read",
+          "perm:party-identity:global_business_sectors:read",
+          "perm:party-identity:identification_type_rules:read",
+          "perm:party-identity:organization_business_sectors:read",
+          "perm:party-identity:organization_identities:read",
+          "perm:party-identity:person_identities:read",
+          "perm:payment-reference:global_payment_condition_types:read",
+          "perm:payment-reference:global_payment_methods:read",
+          "perm:product-catalog:attribute-definitions:read",
+          "perm:product-catalog:brands:read",
+          "perm:product-catalog:categories:read",
+          "perm:product-catalog:global_categories:read",
+          "perm:product-catalog:global_category_attributes:read",
+          "perm:product-catalog:global_product_attribute_values:read",
+          "perm:product-catalog:global_products:read",
+          "perm:product-catalog:global_units_of_measure:read",
+          "perm:product-catalog:group-types:read",
+          "perm:product-catalog:packaging-types:read",
+          "perm:product-catalog:product_assets:read",
+          "perm:product-catalog:product_attribute_definitions:read",
+          "perm:product-catalog:products:read",
+          "perm:product-catalog:units-of-measure:read",
+          "perm:purchase:purchase_details:read",
+          "perm:purchase:purchase_lifecycle_events:read",
+          "perm:purchase:purchase_operations:read",
+          "perm:purchase:purchase_sequences:read",
+          "perm:purchase:purchases:read",
+          "perm:sales:sale_details:read",
+          "perm:sales:sale_operations:read",
+          "perm:sales:sale_sequences:read",
+          "perm:sales:sales:read",
+          "perm:payment_reference:global_payment_condition_types:read",
+          "perm:payment_reference:global_payment_methods:read"
         ]
       }
     }
@@ -1298,7 +1420,9 @@
       "serviceAccountClientId": "party-identity-service",
       "clientRoles": {
         "sio-api": [
-          "perm:geography:global_countries:read"
+          "perm:geography:global_countries:read",
+          "perm:operational-context:platform:lookup",
+          "perm:operational-context:application_users:read"
         ]
       }
     },

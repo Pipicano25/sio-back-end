@@ -47,7 +47,10 @@ Todas son `UUID REF` o `sub` sin FK física. Las FK son internas: `branches.comp
   `GET /api/v1/application-users/{id}` (usuario operativo de sus documentos).
 - Audit: `GET /api/v1/application-users/{id}`.
 - Aplicación web: `GET /api/v1/me/operational-context`.
-- Party Identity Fase B podrá validar `confirmed_by_company_id` de los perfiles de contacto.
+- Party Identity (Fase B, `specs/006-party-identity-complementary/`): `GET /api/v1/operational-access`
+  por la vía técnica (cliente `party-identity-service` con `platform:lookup` y `application_users:read`)
+  para confirmar perfiles de contacto: guarda `confirmed_by_company_id` y el `application_user_id`.
+  Sin recursión: `operational-access` no llama a Party Identity.
 
 ## Ubicación
 `services/operational-context-service/docs/domain-map.md`

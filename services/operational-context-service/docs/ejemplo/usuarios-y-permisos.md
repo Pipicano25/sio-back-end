@@ -10,7 +10,7 @@ Este documento explica qué usuarios de prueba trae el realm de Keycloak (`infra
 2. Los permisos vienen en el token, en `resource_access.sio-api.roles`. Keycloak se los asigna por el **grupo** al que pertenece el usuario.
 3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, `all` vale como comodín en cualquier parte:
    - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.
-   - `perm:all:all:read` → solo `read`, pero en todos los servicios.
+   - `perm:all:all:read` → solo `read`, pero en todos los servicios (en el realm vigente solo lo tiene `supervisores`; `reportes` y `consulta` tienen lecturas **explícitas** de todos los servicios, salvo los datos de contacto y representantes legales de Party Identity).
    - `perm:operational-context:all:read` → solo `read`, solo en Operational Context.
 4. Cada URL exige un permiso concreto (por ejemplo `perm:operational-context:companies:create`); registrar, inactivar y reactivar empresas exigen además `perm:operational-context:platform:administer`. Si falta alguno, el servicio responde `403 Forbidden` e indica cuál. Sin token, o con un token vencido, responde `401 Unauthorized`.
 5. El permiso se revisa **antes** que el cuerpo: un usuario sin permiso recibe `403` aunque el JSON esté mal.
@@ -24,11 +24,11 @@ Todos comparten la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD` (`in
 | --- | --- | --- | --- |
 | `admin.test` | `administradores` | `perm:all:all:all` | Todo, en todas las empresas (alcance de plataforma) |
 | `supervisor.test` | `supervisores` | `perm:all:all:read`<br>`perm:all:all:create`<br>`perm:all:all:update` | En sus empresas: consultar, crear, modificar y reactivar sucursales, usuarios y asignaciones. **No** inactivar ni registrar, inactivar o reactivar empresas |
-| `compras.test` | `compras` | `perm:purchase:all:all`<br>`perm:geography:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:party-identity:all:read`<br>`perm:commercial-relationship:all:read`<br>`perm:operational-context:all:read` | Solo consultar, en sus empresas |
-| `ventas.test` | `ventas` | `perm:sales:all:all`<br>`perm:geography:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:party-identity:all:read`<br>`perm:commercial-relationship:all:read`<br>`perm:operational-context:all:read` | Solo consultar, en sus empresas |
+| `compras.test` | `compras` | 14 permisos explícitos; en Operational Context: `perm:purchase:all:all`<br>`perm:geography:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:commercial-relationship:all:read`<br>`perm:operational-context:all:read` | Solo consultar, en sus empresas |
+| `ventas.test` | `ventas` | 14 permisos explícitos; en Operational Context: `perm:sales:all:all`<br>`perm:geography:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:commercial-relationship:all:read`<br>`perm:operational-context:all:read` | Solo consultar, en sus empresas |
 | `inventario.test` | `inventario` | `perm:geography:all:read`<br>`perm:product-catalog:all:read`<br>`perm:operational-context:all:read` | Solo consultar, en sus empresas |
-| `reportes.test` | `reportes` | `perm:all:all:read` | Solo consultar, en sus empresas |
-| `consulta.test` | `consulta` | `perm:all:all:read` | Solo consultar, en sus empresas |
+| `reportes.test` | `reportes` | 51 permisos explícitos; en Operational Context: `perm:operational-context:application_users:read`<br>`perm:operational-context:branches:read`<br>`perm:operational-context:companies:read`<br>`perm:operational-context:company_advisor_assignments:read`<br>`perm:operational-context:user_branches:read` | Solo consultar, en sus empresas |
+| `consulta.test` | `consulta` | 51 permisos explícitos; en Operational Context: `perm:operational-context:application_users:read`<br>`perm:operational-context:branches:read`<br>`perm:operational-context:companies:read`<br>`perm:operational-context:company_advisor_assignments:read`<br>`perm:operational-context:user_branches:read` | Solo consultar, en sus empresas |
 
 ## Cómo obtener el token de cada usuario
 

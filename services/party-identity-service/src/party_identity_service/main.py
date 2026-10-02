@@ -7,8 +7,24 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from sio_auth import SIOAuth
 
-from party_identity_service.api.dependencies import CountryDirectoryFactory
+from party_identity_service.api.dependencies import (
+    CountryDirectoryFactory,
+    LocationDirectoryFactory,
+)
+from party_identity_service.api.business_sectors import (
+    build_organization_sectors_router,
+    build_sectors_router,
+)
+from party_identity_service.api.contact_persons import (
+    build_router as build_contact_persons_router,
+)
+from party_identity_service.api.contact_profiles import (
+    build_router as build_contact_profiles_router,
+)
 from party_identity_service.api.errors import register_error_handlers
+from party_identity_service.api.legal_representatives import (
+    build_router as build_legal_representatives_router,
+)
 from party_identity_service.api.health import build_router as build_health_router
 from party_identity_service.api.identification_type_rules import (
     build_router as build_identification_type_rules_router,
@@ -24,8 +40,19 @@ from party_identity_service.api.security import build_auth
 from party_identity_service.api.tracing import TracingMiddleware
 from party_identity_service.config import Settings, load_settings
 from party_identity_service.infrastructure.database import Database
+from party_identity_service.application.ports import MembershipResolver
 from party_identity_service.infrastructure.geography_country_validator import (
     HTTPGeographyCountryValidator,
+)
+from party_identity_service.infrastructure.geography_location_directory import (
+    HTTPGeographyLocationDirectory,
+)
+from party_identity_service.infrastructure.keycloak_token_client import (
+    CachedClientCredentialsToken,
+    MissingClientCredentials,
+)
+from party_identity_service.infrastructure.operational_context_membership_resolver import (
+    HTTPOperationalContextMembershipResolver,
 )
 from party_identity_service.observability import configure_logging
 
@@ -60,11 +87,62 @@ def build_country_directory_factory(settings: Settings) -> CountryDirectoryFacto
     return factory
 
 
+def build_location_directory_factory(settings: Settings) -> LocationDirectoryFactory:
+    """Fábrica del adaptador HTTP de país, división y ciudad (R-07).
+
+    Propaga el token del usuario de la solicitud (D5), igual que la Fase A.
+    """
+
+    def factory(request: Request) -> HTTPGeographyLocationDirectory:
+        return HTTPGeographyLocationDirectory(
+            base_url=settings.geography_service_base_url,
+            authorization=request.headers.get("authorization"),
+            timeout_seconds=settings.geography_timeout_seconds,
+        )
+
+    return factory
+
+
+def build_membership_resolver(settings: Settings) -> MembershipResolver:
+    """Adaptador HTTP único hacia Operational Context con el cliente técnico (R-06).
+
+    Si faltan las variables del cliente técnico, el servicio arranca igual y la
+    confirmación de perfiles responde `503` con `dependency: keycloak` (R-15).
+    """
+    missing = [
+        name
+        for name, value in (
+            ("KEYCLOAK_TOKEN_URL", settings.keycloak_token_url),
+            ("PARTY_IDENTITY_CLIENT_ID", settings.client_id),
+            ("PARTY_IDENTITY_CLIENT_SECRET", settings.client_secret),
+        )
+        if not value
+    ]
+    tokens = (
+        MissingClientCredentials(missing)
+        if missing
+        else CachedClientCredentialsToken(
+            token_url=settings.keycloak_token_url,
+            client_id=settings.client_id,
+            client_secret=settings.client_secret,
+            timeout_seconds=settings.keycloak_timeout_seconds,
+        )
+    )
+
+    return HTTPOperationalContextMembershipResolver(
+        base_url=settings.operational_context_service_base_url,
+        tokens=tokens,
+        timeout_seconds=settings.operational_context_timeout_seconds,
+    )
+
+
 def create_app(
     settings: Settings | None = None,
     *,
     auth: SIOAuth | None = None,
     country_directory_factory: CountryDirectoryFactory | None = None,
+    location_directory_factory: LocationDirectoryFactory | None = None,
+    membership_resolver: MembershipResolver | None = None,
 ) -> FastAPI:
     """Construye la aplicación FastAPI del microservicio.
 
@@ -75,6 +153,10 @@ def create_app(
         country_directory_factory: Fábrica opcional del puerto de Geography.
             Solo las pruebas la inyectan; si se omite, se usa siempre el
             adaptador HTTP real.
+        location_directory_factory: Fábrica opcional del puerto de país,
+            división y ciudad (Fase B); misma regla.
+        membership_resolver: Puerto opcional hacia Operational Context (Fase
+            B); misma regla. No hay modos por entorno (FR-101).
 
     Returns:
         Aplicación FastAPI con salud, API `/api/v1`, errores RFC 9457,
@@ -113,6 +195,14 @@ def create_app(
         country_directory_factory
         or build_country_directory_factory(current_settings)
     )
+    app.state.location_directory_factory = (
+        location_directory_factory
+        or build_location_directory_factory(current_settings)
+    )
+    app.state.membership_resolver = (
+        membership_resolver
+        or build_membership_resolver(current_settings)
+    )
 
     public_paths = set(HEALTH_PUBLIC_PATHS)
 
@@ -139,6 +229,16 @@ def create_app(
         build_identification_type_rules_router(current_auth),
         prefix=API_PREFIX,
     )
+    # Fase B
+    for kind in ("person", "organization"):
+        app.include_router(
+            build_contact_profiles_router(current_auth, kind),
+            prefix=API_PREFIX,
+        )
+    app.include_router(build_contact_persons_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_sectors_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_organization_sectors_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_legal_representatives_router(current_auth), prefix=API_PREFIX)
 
     current_auth.protect(
         app,

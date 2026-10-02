@@ -52,15 +52,15 @@ services:
     environment:
       DATABASE_URL: >-
         postgresql+psycopg://${OPERATIONAL_CONTEXT_DB_USER:-sio_operational_context}:${OPERATIONAL_CONTEXT_DB_PASSWORD:-sio_operational_context_dev_change_me}@operational-context-dev-db:5432/${OPERATIONAL_CONTEXT_DB_NAME:-sio_operational_context}
-      # El JWT se emite con localhost:8081 como issuer; este valor no debe cambiar.
-      SIO_AUTH_ISSUER: http://localhost:8081/realms/sio
+      # El JWT se emite con KEYCLOAK_PUBLIC_URL como issuer: KEYCLOAK_HTTP_PORT debe coincidir.
+      SIO_AUTH_ISSUER: http://localhost:${KEYCLOAK_HTTP_PORT:-8081}/realms/sio
       # Desde el contenedor, localhost es el propio contenedor: las claves se leen del host.
-      SIO_AUTH_JWKS_URL: http://host.docker.internal:8081/realms/sio/protocol/openid-connect/certs
-      PARTY_IDENTITY_SERVICE_BASE_URL: http://host.docker.internal:8002/api/v1
-      GEOGRAPHY_SERVICE_BASE_URL: http://host.docker.internal:8000
+      SIO_AUTH_JWKS_URL: http://host.docker.internal:${KEYCLOAK_HTTP_PORT:-8081}/realms/sio/protocol/openid-connect/certs
+      PARTY_IDENTITY_SERVICE_BASE_URL: http://host.docker.internal:${PARTY_IDENTITY_SERVICE_PORT:-8002}/api/v1
+      GEOGRAPHY_SERVICE_BASE_URL: http://host.docker.internal:${GEOGRAPHY_SERVICE_PORT:-8000}
       # Admin API de Keycloak (solo lectura); el resto de variables KEYCLOAK_* y
       # OPERATIONAL_CONTEXT_CLIENT_* se leen de .env.
-      KEYCLOAK_BASE_URL: http://host.docker.internal:8081
+      KEYCLOAK_BASE_URL: http://host.docker.internal:${KEYCLOAK_HTTP_PORT:-8081}
     ports:
       - "${OPERATIONAL_CONTEXT_SERVICE_PORT:-8004}:8000"
     extra_hosts:

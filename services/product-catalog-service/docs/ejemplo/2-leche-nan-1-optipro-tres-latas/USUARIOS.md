@@ -116,7 +116,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-`consulta.test` solo tiene `perm:all:all:read`: puede **leer** en todos los servicios, pero la URL exige `perm:product-catalog:brands:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
+`consulta.test` solo tiene lecturas explícitas (en el catálogo: `perm:product-catalog:attribute-definitions:read`, `perm:product-catalog:brands:read`, `perm:product-catalog:categories:read`, `perm:product-catalog:global_categories:read`, `perm:product-catalog:global_category_attributes:read`, `perm:product-catalog:global_product_attribute_values:read`, `perm:product-catalog:global_products:read`, `perm:product-catalog:global_units_of_measure:read`, `perm:product-catalog:group-types:read`, `perm:product-catalog:packaging-types:read`, `perm:product-catalog:product_assets:read`, `perm:product-catalog:product_attribute_definitions:read`, `perm:product-catalog:products:read`, `perm:product-catalog:units-of-measure:read`): puede **leer**, pero la URL exige `perm:product-catalog:brands:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
 
 ### 3. `consulta.test` consulta el resultado (permitido)
 
@@ -125,7 +125,7 @@ curl -s -X GET "http://localhost:8003/api/v1/products/<PRODUCTO>?expand=detail" 
   -H "Authorization: Bearer $TOKEN_CONSULTA"
 ```
 
-Responde `200 OK` con la misma información que ve `admin.test` en el paso 12: `perm:all:all:read` cubre `perm:product-catalog:products:read`. Lo mismo pasa con `reportes.test`, `compras.test`, `ventas.test` e `inventario.test`, que tienen lectura sobre `product-catalog`.
+Responde `200 OK` con la misma información que ve `admin.test` en el paso 12: `perm:product-catalog:products:read` cubre `perm:product-catalog:products:read`. Lo mismo pasa con `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, que tienen lectura sobre `product-catalog`.
 
 ### 4. `inventario.test` busca el fabricante (rechazado)
 
@@ -149,7 +149,7 @@ Respuesta `403 Forbidden` (formato de Party Identity Service):
 }
 ```
 
-`inventario.test` lee el catálogo (`perm:product-catalog:all:read`) y Geography, pero **no** tiene ningún permiso sobre `party-identity`. `compras.test` y `ventas.test` sí pueden hacer esta búsqueda (`perm:party-identity:all:read`).
+`inventario.test` lee el catálogo (`perm:product-catalog:all:read`) y Geography, pero **no** tiene ningún permiso sobre `party-identity`. Sí pueden hacer esta búsqueda: `supervisor.test`, `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` (lectura explícita de `perm:party-identity:organization_identities:read`).
 
 ### 5. Sin token (rechazado)
 

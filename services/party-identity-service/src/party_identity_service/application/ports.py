@@ -297,3 +297,17 @@ class IdentificationTypeRuleRepository(Protocol):
     ) -> list[IdentificationRule]:
         """Obtiene las reglas activas y vigentes por país y sigla."""
         ...
+
+
+# Puertos de la Fase B (integraciones y repositorios): definidos en su propio
+# módulo y reexportados aquí como punto único de los contratos de aplicación.
+from party_identity_service.application.phase_b_ports import (  # noqa: E402,F401
+    BusinessSectorRepository,
+    ContactPersonRepository,
+    ContactProfileRepository,
+    LegalRepresentativeRepository,
+    LocationDirectory,
+    LocationRecord,
+    MembershipResolver,
+    OrganizationBusinessSectorRepository,
+)

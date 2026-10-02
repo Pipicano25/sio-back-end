@@ -10,7 +10,7 @@ Este documento explica qué usuarios de prueba trae el realm de Keycloak (`infra
 2. Los permisos vienen en el token, en `resource_access.sio-api.roles`. Keycloak se los asigna por el **grupo** al que pertenece el usuario (el usuario no tiene roles propios).
 3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, `all` vale como comodín en cualquier parte:
    - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.
-   - `perm:all:all:read` → solo `read`, pero en todos los servicios.
+   - `perm:all:all:read` → solo `read`, pero en todos los servicios (en el realm vigente solo lo tiene `supervisores`; `reportes` y `consulta` tienen lecturas **explícitas** de todos los servicios, salvo los datos de contacto y representantes legales de Party Identity).
    - `perm:product-catalog:all:read` → solo `read`, solo en el catálogo.
 4. Cada URL exige **un** permiso concreto (por ejemplo `perm:product-catalog:brands:create`). Si ninguno de los permisos del usuario lo cubre, el servicio responde `403 Forbidden` e indica cuál falta. Sin token, o con un token vencido, responde `401 Unauthorized`.
 5. El permiso se revisa **antes** que el cuerpo: un usuario sin permiso recibe `403` aunque el JSON esté mal.
@@ -23,11 +23,11 @@ Todos comparten la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD` (`in
 | --- | --- | --- | --- |
 | `admin.test` | `administradores` | `perm:all:all:all` | Todo, incluido inactivar |
 | `supervisor.test` | `supervisores` | `perm:all:all:read`<br>`perm:all:all:create`<br>`perm:all:all:update` | Consultar, crear y modificar. **No** inactivar |
-| `compras.test` | `compras` | `perm:purchase:all:all`<br>`perm:geography:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:party-identity:all:read`<br>`perm:commercial-relationship:all:read`<br>`perm:operational-context:all:read` | Solo consultar |
-| `ventas.test` | `ventas` | `perm:sales:all:all`<br>`perm:geography:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:party-identity:all:read`<br>`perm:commercial-relationship:all:read`<br>`perm:operational-context:all:read` | Solo consultar |
+| `compras.test` | `compras` | 14 permisos explícitos; en el catálogo: `perm:purchase:all:all`<br>`perm:geography:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:commercial-relationship:all:read`<br>`perm:operational-context:all:read` | Solo consultar |
+| `ventas.test` | `ventas` | 14 permisos explícitos; en el catálogo: `perm:sales:all:all`<br>`perm:geography:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:commercial-relationship:all:read`<br>`perm:operational-context:all:read` | Solo consultar |
 | `inventario.test` | `inventario` | `perm:geography:all:read`<br>`perm:product-catalog:all:read`<br>`perm:operational-context:all:read` | Solo consultar (y no puede consultar fabricantes en Party Identity) |
-| `reportes.test` | `reportes` | `perm:all:all:read` | Solo consultar |
-| `consulta.test` | `consulta` | `perm:all:all:read` | Solo consultar |
+| `reportes.test` | `reportes` | 51 permisos explícitos; en el catálogo: `perm:product-catalog:attribute-definitions:read`<br>`perm:product-catalog:brands:read`<br>`perm:product-catalog:categories:read`<br>`perm:product-catalog:global_categories:read`<br>`perm:product-catalog:global_category_attributes:read`<br>`perm:product-catalog:global_product_attribute_values:read`<br>`perm:product-catalog:global_products:read`<br>`perm:product-catalog:global_units_of_measure:read`<br>`perm:product-catalog:group-types:read`<br>`perm:product-catalog:packaging-types:read`<br>`perm:product-catalog:product_assets:read`<br>`perm:product-catalog:product_attribute_definitions:read`<br>`perm:product-catalog:products:read`<br>`perm:product-catalog:units-of-measure:read` | Solo consultar |
+| `consulta.test` | `consulta` | 51 permisos explícitos; en el catálogo: `perm:product-catalog:attribute-definitions:read`<br>`perm:product-catalog:brands:read`<br>`perm:product-catalog:categories:read`<br>`perm:product-catalog:global_categories:read`<br>`perm:product-catalog:global_category_attributes:read`<br>`perm:product-catalog:global_product_attribute_values:read`<br>`perm:product-catalog:global_products:read`<br>`perm:product-catalog:global_units_of_measure:read`<br>`perm:product-catalog:group-types:read`<br>`perm:product-catalog:packaging-types:read`<br>`perm:product-catalog:product_assets:read`<br>`perm:product-catalog:product_attribute_definitions:read`<br>`perm:product-catalog:products:read`<br>`perm:product-catalog:units-of-measure:read` | Solo consultar |
 
 ## Cómo obtener el token de cada usuario
 

@@ -90,3 +90,27 @@ def _constraint_name(exc: IntegrityError) -> str | None:
     diag = getattr(exc.orig, "diag", None)
 
     return getattr(diag, "constraint_name", None)
+
+
+def flush_or_translate(
+    session: Session,
+    *,
+    duplicates: dict[str, type[PartyIdentityError]],
+) -> None:
+    """Igual que `commit_or_translate`, para un `flush` intermedio de una transacción."""
+    try:
+        session.flush()
+
+    except IntegrityError as exc:
+        session.rollback()
+        constraint = _constraint_name(exc)
+
+        for name, error in duplicates.items():
+            if constraint == name:
+                raise error from None
+
+        raise
+
+    except StaleDataError:
+        session.rollback()
+        raise VersionConflictError from None

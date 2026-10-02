@@ -431,3 +431,15 @@ class IdentificationTypeRuleModel(Base):
     __mapper_args__ = {
         "version_id_col": version,
     }
+
+
+# Modelos de la Fase B: se definen en un módulo propio y se reexportan aquí para
+# que `models` siga siendo el punto único de registro de la metadata.
+from party_identity_service.infrastructure.phase_b_models import (  # noqa: E402,F401
+    GlobalBusinessSectorModel,
+    OrganizationBusinessSectorModel,
+    OrganizationContactPersonModel,
+    OrganizationContactProfileModel,
+    OrganizationLegalRepresentativeModel,
+    PersonContactProfileModel,
+)

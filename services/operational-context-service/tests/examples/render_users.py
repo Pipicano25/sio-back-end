@@ -251,8 +251,8 @@ def render_users(ex, records):
         out += curl_for(c, "TOKEN_CONSULTA")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += [f"`consulta.test` solo tiene `perm:all:all:read`: puede **leer**, pero la URL exige {permission_text(p)}. "
-                "El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
+        out += [f"`consulta.test` solo tiene lecturas explícitas (sin `create`, `update` ni `delete`): puede **leer**, "
+                f"pero la URL exige {permission_text(p)}. El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
 
     read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET")
     if read:
@@ -262,12 +262,12 @@ def render_users(ex, records):
         out += [f"### {n}. `consulta.test` consulta", ""]
         out += curl_for(c, "TOKEN_CONSULTA")
         if verified.get("consulta.test", 200) == 404:
-            out += ["", f"Responde `404 Not Found`: `perm:all:all:read` cubre {permission_text(p)}, pero "
+            out += ["", f"Responde `404 Not Found`: `{matching_grant(consulta, as_list(p)[0])}` cubre {permission_text(p)}, pero "
                     "`consulta.test` **no es miembro** de la empresa del paso " f"{s_i + 1:02d}. Fuera de su alcance, "
                     "el recurso se trata como inexistente (aislamiento por empresa, DS-06).", ""]
         else:
             out += ["", f"Responde `200 OK` con la misma información que ve `admin.test` en el paso {s_i + 1:02d}: "
-                    f"`perm:all:all:read` cubre {permission_text(p)}.", ""]
+                    f"`{matching_grant(consulta, as_list(p)[0])}` cubre {permission_text(p)}.", ""]
 
         n += 1
         out += [f"### {n}. `inventario.test` consulta", ""]
@@ -325,7 +325,9 @@ def render_general(exercises, all_records):
             "3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, "
             "`all` vale como comodín en cualquier parte:",
             "   - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.",
-            "   - `perm:all:all:read` → solo `read`, pero en todos los servicios.",
+            "   - `perm:all:all:read` → solo `read`, pero en todos los servicios (en el realm vigente solo lo tiene "
+            "`supervisores`; `reportes` y `consulta` tienen lecturas **explícitas** de todos los servicios, salvo los "
+            "datos de contacto y representantes legales de Party Identity).",
             "   - `perm:operational-context:all:read` → solo `read`, solo en Operational Context.",
             "4. Cada URL exige un permiso concreto (por ejemplo `perm:operational-context:companies:create`); registrar, "
             "inactivar y reactivar empresas exigen además `perm:operational-context:platform:administer`. "
@@ -350,7 +352,12 @@ def render_general(exercises, all_records):
         "consulta.test": "Solo consultar, en sus empresas",
     }
     for u in USERS:
-        perms = "<br>".join(f"`{p}`" for p in u["perms"])
+        if len(u["perms"]) <= 10:
+            perms = "<br>".join(f"`{p}`" for p in u["perms"])
+        else:
+            own = [p for p in u["perms"] if p.startswith("perm:operational-context:") or ":all:" in p]
+            perms = (f"{len(u['perms'])} permisos explícitos; en Operational Context: "
+                     + "<br>".join(f"`{p}`" for p in own))
         out.append(f"| `{u['username']}` | `{u['group']}` | {perms} | {summary.get(u['username'], '')} |")
     out.append("")
 

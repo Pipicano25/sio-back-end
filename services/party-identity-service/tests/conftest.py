@@ -55,6 +55,13 @@ FUNCTIONAL_TABLES = (
     "identification_type_rules",
     "person_identities",
     "organization_identities",
+    # Fase B
+    "person_contact_profiles",
+    "organization_contact_profiles",
+    "organization_contact_persons",
+    "organization_business_sectors",
+    "organization_legal_representatives",
+    "global_business_sectors",
 )
 
 ADMIN_PERMISSION = "perm:party-identity:all:all"
@@ -260,9 +267,9 @@ class FakeCountryDirectory:
 
     def _check_mode(self) -> None:
         if self.mode == "unavailable":
-            raise DependencyUnavailableError(cause=GEOGRAPHY_UNAVAILABLE)
+            raise DependencyUnavailableError(dependency="geography", cause=GEOGRAPHY_UNAVAILABLE)
         if self.mode == "denied":
-            raise DependencyUnavailableError(cause=COUNTRY_VALIDATION_DENIED)
+            raise DependencyUnavailableError(dependency="geography", cause=COUNTRY_VALIDATION_DENIED)
 
     @property
     def exists_calls(self) -> int:
@@ -272,6 +279,123 @@ class FakeCountryDirectory:
 @pytest.fixture
 def fake_countries() -> FakeCountryDirectory:
     return FakeCountryDirectory()
+
+
+# --------------------------------------------------------------------------
+# Fase B: Geography (direcciones) y Operational Context simulados (solo pruebas)
+# --------------------------------------------------------------------------
+
+DIVISION_ID = UUID("0c3f1a86-3f7b-4c55-9b1e-6f0e8a1d2c02")
+"""División ficticia de `COLOMBIA_ID` que reconoce el doble de Geography."""
+
+CITY_ID = UUID("0c3f1a86-3f7b-4c55-9b1e-6f0e8a1d2c03")
+"""Ciudad ficticia de `DIVISION_ID`."""
+
+COMPANY_ID = UUID("6a1d0000-0000-4000-8000-000000000001")
+"""Empresa ficticia de Operational Context."""
+
+NON_MEMBER_COMPANY_ID = UUID("6a1d0000-0000-4000-8000-000000000002")
+"""Empresa ficticia en la que ningún usuario de prueba tiene membresía (`USER_NOT_MEMBER`)."""
+
+UNAVAILABLE_COMPANY_ID = UUID("6a1d0000-0000-4000-8000-000000000003")
+"""Empresa ficticia cuya consulta simula Operational Context no disponible (`503`)."""
+
+
+class FakeLocationDirectory:
+    """Doble del puerto `LocationDirectory` (país, división y ciudad).
+
+    `records` contiene `LocationRecord` por UUID; `mode = "unavailable"`
+    simula Geography caído. Registra las llamadas (FR-037).
+    """
+
+    def __init__(self) -> None:
+        from party_identity_service.application.ports import LocationRecord
+
+        self.records = {
+            COLOMBIA_ID: LocationRecord(id=COLOMBIA_ID, status="ACTIVE"),
+            DIVISION_ID: LocationRecord(id=DIVISION_ID, status="ACTIVE", country_id=COLOMBIA_ID),
+            CITY_ID: LocationRecord(
+                id=CITY_ID, status="ACTIVE", country_id=COLOMBIA_ID, administrative_division_id=DIVISION_ID
+            ),
+        }
+        self.mode = "ok"
+        self.calls: list[tuple[str, UUID]] = []
+
+    def _get(self, kind: str, record_id: UUID):
+        self.calls.append((kind, record_id))
+        if self.mode == "unavailable":
+            raise DependencyUnavailableError(dependency="geography", cause=GEOGRAPHY_UNAVAILABLE)
+        return self.records.get(record_id)
+
+    def get_country(self, country_id: UUID):
+        return self._get("country", country_id)
+
+    def get_administrative_division(self, division_id: UUID):
+        return self._get("division", division_id)
+
+    def get_city(self, city_id: UUID):
+        return self._get("city", city_id)
+
+
+class FakeMembershipResolver:
+    """Doble espía del puerto `MembershipResolver` (Operational Context).
+
+    `outcome`: `ok`, `USER_NOT_MEMBER`, `USER_MEMBERSHIP_INACTIVE`,
+    `COMPANY_INACTIVE`, `COMPANY_NOT_FOUND`, `unavailable` o `keycloak`.
+    Devuelve un `ApplicationUser` estable por (`company_id`, `sub`) y registra
+    cada llamada (prueba conductual de C-07).
+    """
+
+    def __init__(self) -> None:
+        self.outcome = "ok"
+        self.calls: list[tuple[UUID, str]] = []
+        self.delay_seconds = 0.0
+
+    @staticmethod
+    def application_user_id(company_id: UUID, keycloak_user_id: str) -> UUID:
+        from uuid import NAMESPACE_URL, uuid5
+
+        return uuid5(NAMESPACE_URL, f"{company_id}:{keycloak_user_id}")
+
+    def resolve(self, *, company_id: UUID, keycloak_user_id: str) -> UUID:
+        from party_identity_service.application.exceptions import (
+            CompanyInactiveError,
+            CompanyNotFoundError,
+            ConfirmationMembershipInvalidError,
+        )
+
+        self.calls.append((company_id, keycloak_user_id))
+        if self.delay_seconds:
+            time.sleep(self.delay_seconds)
+        if company_id == NON_MEMBER_COMPANY_ID:
+            raise ConfirmationMembershipInvalidError(reason="USER_NOT_MEMBER")
+        if company_id == UNAVAILABLE_COMPANY_ID:
+            raise DependencyUnavailableError(
+                dependency="operational-context", cause="OPERATIONAL_CONTEXT_UNAVAILABLE"
+            )
+        if self.outcome == "ok":
+            return self.application_user_id(company_id, keycloak_user_id)
+        if self.outcome in {"USER_NOT_MEMBER", "USER_MEMBERSHIP_INACTIVE"}:
+            raise ConfirmationMembershipInvalidError(reason=self.outcome)
+        if self.outcome == "COMPANY_INACTIVE":
+            raise CompanyInactiveError
+        if self.outcome == "COMPANY_NOT_FOUND":
+            raise CompanyNotFoundError
+        if self.outcome == "keycloak":
+            raise DependencyUnavailableError(dependency="keycloak", cause="KEYCLOAK_TOKEN_UNAVAILABLE")
+        raise DependencyUnavailableError(
+            dependency="operational-context", cause="OPERATIONAL_CONTEXT_UNAVAILABLE"
+        )
+
+
+@pytest.fixture
+def fake_locations() -> FakeLocationDirectory:
+    return FakeLocationDirectory()
+
+
+@pytest.fixture
+def fake_membership() -> FakeMembershipResolver:
+    return FakeMembershipResolver()
 
 
 # --------------------------------------------------------------------------
@@ -295,11 +419,15 @@ def app(
     clean_database: None,
     test_auth: SIOAuth,
     fake_countries: FakeCountryDirectory,
+    fake_locations: FakeLocationDirectory,
+    fake_membership: FakeMembershipResolver,
 ):
     return create_app(
         test_settings,
         auth=test_auth,
         country_directory_factory=lambda request: fake_countries,
+        location_directory_factory=lambda request: fake_locations,
+        membership_resolver=fake_membership,
     )
 
 

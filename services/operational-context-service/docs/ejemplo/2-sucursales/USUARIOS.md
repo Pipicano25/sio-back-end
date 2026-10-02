@@ -93,7 +93,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-`consulta.test` solo tiene `perm:all:all:read`: puede **leer**, pero la URL exige `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
+`consulta.test` solo tiene lecturas explícitas (sin `create`, `update` ni `delete`): puede **leer**, pero la URL exige `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
 
 ### 3. `consulta.test` consulta
 
@@ -102,7 +102,7 @@ curl -s -X GET "http://localhost:8004/api/v1/companies/<EMPRESA>/branches" \
   -H "Authorization: Bearer $TOKEN_CONSULTA"
 ```
 
-Responde `404 Not Found`: `perm:all:all:read` cubre `perm:operational-context:branches:read`, pero `consulta.test` **no es miembro** de la empresa del paso 05. Fuera de su alcance, el recurso se trata como inexistente (aislamiento por empresa, DS-06).
+Responde `404 Not Found`: `perm:operational-context:branches:read` cubre `perm:operational-context:branches:read`, pero `consulta.test` **no es miembro** de la empresa del paso 05. Fuera de su alcance, el recurso se trata como inexistente (aislamiento por empresa, DS-06).
 
 ### 4. `inventario.test` consulta
 

@@ -8,6 +8,11 @@ Regla D11 provisional (`contracts/errors.md`): `400` solo si el cuerpo JSON no
 se puede interpretar; `422` para toda validación de entrada (cuerpo, ruta y
 consulta) y de dominio; `409` unicidad, versión y transición; `404` recurso
 de la ruta inexistente; `503` dependencia no disponible.
+
+Extensiones (DS-14): `dependency` en todo `DEPENDENCY_UNAVAILABLE`, `reason` en
+`CONFIRMATION_MEMBERSHIP_INVALID` y `field` en los errores de geografía; las
+aporta el `context` de cada excepción. `detail` nunca incluye datos de contacto
+(FR-095).
 """
 
 from __future__ import annotations
@@ -49,6 +54,33 @@ _STATUS_BY_CODE: dict[str, int] = {
     "VERSION_CONFLICT": 409,
     "INVALID_STATUS_TRANSITION": 409,
     "DEPENDENCY_UNAVAILABLE": 503,
+    "VALIDATION_ERROR": 422,
+    # Fase B (specs/006-party-identity-complementary/contracts/errors.md)
+    "CONTACT_PROFILE_NOT_FOUND": 404,
+    "CONTACT_PROFILE_ALREADY_CLOSED": 409,
+    "PERSON_IDENTITY_INACTIVE": 422,
+    "ORGANIZATION_IDENTITY_INACTIVE": 422,
+    "PERSON_IDENTITY_NOT_FOUND": 422,
+    "ADMINISTRATIVE_DIVISION_NOT_FOUND": 422,
+    "CITY_NOT_FOUND": 422,
+    "LOCATION_INACTIVE": 422,
+    "GEOGRAPHY_INCOHERENT": 422,
+    "GEOGRAPHY_PARENT_REQUIRED": 422,
+    "COMPANY_NOT_FOUND": 422,
+    "COMPANY_INACTIVE": 422,
+    "CONFIRMATION_MEMBERSHIP_INVALID": 422,
+    "INVALID_PRIMARY_CONTACT": 422,
+    "PRIMARY_CONTACT_CONFLICT": 409,
+    "DUPLICATE_ACTIVE_CONTACT_PERSON": 409,
+    "DUPLICATE_SECTOR_CODE": 409,
+    "INVALID_SECTOR_HIERARCHY": 422,
+    "SECTOR_HAS_ACTIVE_CHILDREN": 409,
+    "SECTOR_INACTIVE": 422,
+    "DUPLICATE_ACTIVE_SECTOR_ASSIGNMENT": 409,
+    "PRIMARY_SECTOR_CONFLICT": 409,
+    "INVALID_PRIMARY_SECTOR": 422,
+    "PRIMARY_REPRESENTATIVE_CONFLICT": 409,
+    "DUPLICATE_ACTIVE_REPRESENTATIVE": 409,
 }
 
 _HTTP_CODES = {
