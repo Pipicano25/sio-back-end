@@ -30,6 +30,10 @@ POST /api/v1/organization-identities
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
 - ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
 
+**Por qué se hace así**
+
+- Las personas de contacto, sectores y representantes cuelgan de una organización `ACTIVE` de Party Identity; se registra primero con datos **ficticios** (NIT que cumple la regla `NIT`, no es real).
+
 **Respuesta esperada — `201 Created`** (abreviada)
 
 ```json
@@ -65,6 +69,10 @@ POST /api/v1/person-identities
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
 - ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
 
+**Por qué se hace así**
+
+- Un representante es una `PersonIdentity` `ACTIVE` de Party Identity (datos **ficticios**); la relación guarda solo su `id`.
+
 **Respuesta esperada — `201 Created`** (abreviada)
 
 ```json
@@ -99,6 +107,10 @@ POST /api/v1/person-identities
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
 - ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+
+**Por qué se hace así**
+
+- Un representante es una `PersonIdentity` `ACTIVE` de Party Identity (datos **ficticios**); la relación guarda solo su `id`.
 
 **Respuesta esperada — `201 Created`** (abreviada)
 

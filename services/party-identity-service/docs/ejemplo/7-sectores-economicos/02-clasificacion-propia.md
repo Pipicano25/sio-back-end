@@ -69,6 +69,10 @@ POST /api/v1/global-business-sectors
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
 - ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
 
+**Por qué se hace así**
+
+- El padre debe existir, estar `ACTIVE` y ser de la misma clasificación; no se permiten ciclos.
+
 **Respuesta esperada — `201 Created`** (abreviada)
 
 ```json
@@ -163,6 +167,10 @@ POST /api/v1/global-business-sectors/<SECTOR_X1>:deactivate
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
 - ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `delete`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+
+**Por qué se hace así**
+
+- Se inactiva primero el hijo; exige `delete` y la versión vigente. Nunca se borra.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 

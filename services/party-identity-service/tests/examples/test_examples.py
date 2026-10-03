@@ -201,3 +201,15 @@ def test_legal_data_is_marked_as_fictitious():
     for exercise in EXERCISES:
         data = (DOCS / exercise["folder"] / "00-datos-ficticios.md").read_text(encoding="utf-8")
         assert "ficticio" in data.lower(), exercise["folder"]
+
+
+def test_every_call_is_justified():
+    """Principio XXII: cada llamada documenta por qué se hace así (justificación del JSON)."""
+    missing = [
+        f"{exercise['folder']} / {step['file']} / {call['title']}"
+        for exercise in EXERCISES
+        for step in exercise["steps"]
+        for call in step["calls"]
+        if not call["why"]
+    ]
+    assert not missing, missing

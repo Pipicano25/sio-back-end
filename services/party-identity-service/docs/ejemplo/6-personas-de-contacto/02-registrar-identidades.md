@@ -30,6 +30,10 @@ POST /api/v1/organization-identities
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
 - ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
 
+**Por qué se hace así**
+
+- Las personas de contacto, sectores y representantes cuelgan de una organización `ACTIVE` de Party Identity; se registra primero con datos **ficticios** (NIT que cumple la regla `NIT`, no es real).
+
 **Respuesta esperada — `201 Created`** (abreviada)
 
 ```json
@@ -64,6 +68,10 @@ POST /api/v1/person-identities
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
 - ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+
+**Por qué se hace así**
+
+- Un contacto puede vincular una `PersonIdentity` existente y `ACTIVE`; Party Identity no copia su nombre ni su documento en el contacto.
 
 **Respuesta esperada — `201 Created`** (abreviada)
 

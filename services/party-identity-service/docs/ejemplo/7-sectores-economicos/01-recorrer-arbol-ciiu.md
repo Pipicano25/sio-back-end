@@ -42,6 +42,10 @@ GET /api/v1/global-business-sectors?classification_system=CIIU_REV5_AC&code=A
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `reportes.test` (por `perm:party-identity:global_business_sectors:read`), `consulta.test` (por `perm:party-identity:global_business_sectors:read`)
 - ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
 
+**Por qué se hace así**
+
+- `classification_system` + `code` identifican un sector; el `id` cambia entre entornos, el código no.
+
 **Respuesta esperada — `200 OK`** (abreviada)
 
 ```json
@@ -85,6 +89,10 @@ GET /api/v1/global-business-sectors?classification_system=CIIU_REV5_AC&code=0123
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `reportes.test` (por `perm:party-identity:global_business_sectors:read`), `consulta.test` (por `perm:party-identity:global_business_sectors:read`)
 - ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
+
+**Por qué se hace así**
+
+- Se asignan **clases** (4 dígitos), el nivel más específico; el filtro `code` es exacto.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 

@@ -68,6 +68,11 @@ POST /api/v1/organization-identities/<ORG_LAB>/contact-persons
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
 - ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`; `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `organization_contact_persons`
 
+**Por qué se hace así**
+
+- Contacto sin persona vinculada: basta un medio de contacto (aquí el teléfono).
+- Se crea como no principal (`is_primary` por defecto `false`): ya hay un principal y solo puede haber uno.
+
 **Respuesta esperada — `201 Created`** (abreviada)
 
 ```json
