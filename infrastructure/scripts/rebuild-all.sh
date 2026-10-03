@@ -594,6 +594,11 @@ if [ "$MODE" = full ]; then
 
     run_seed "party-identity-service (Colombia $COLOMBIA_ID)" party-identity-service \
         python -m party_identity_service.seed load --country-id "$COLOMBIA_ID"
+
+    step "Datos iniciales: party-identity-service (sectores CIIU Rev. 5 A.C.)"
+    # Snapshot oficial del DANE incluido en la imagen; no usa red.
+    run_seed "party-identity-service (sectores CIIU)" party-identity-service \
+        python -m party_identity_service.seed load-business-sectors
 else
     skip_step "Datos iniciales (solo en modo completo; la información se conservó)"
 fi

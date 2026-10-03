@@ -65,7 +65,7 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 
 | Método y URL | Permiso requerido | admin | supervisor | compras | ventas | inventario | reportes | consulta | Ejercicios |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `GET http://localhost:8000/global-countries` | `perm:geography:global_countries:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5, 6, 8 |
+| `GET http://localhost:8000/global-countries` | `perm:geography:global_countries:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5, 6, 7, 8 |
 | `GET /api/v1/identification-type-rules` | `perm:party-identity:identification_type_rules:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 1 |
 | `POST /api/v1/identification-type-rules` | `perm:party-identity:identification_type_rules:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 1 |
 | `PUT /api/v1/identification-type-rules/{id}` | `perm:party-identity:identification_type_rules:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 1 |
@@ -76,7 +76,7 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 | `PUT /api/v1/person-identities/{id}` | `perm:party-identity:person_identities:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 2 |
 | `POST /api/v1/person-identities/{id}/deactivate` | `perm:party-identity:person_identities:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 2, 5 |
 | `GET /api/v1/person-identities` | `perm:party-identity:person_identities:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 2 |
-| `POST /api/v1/organization-identities` | `perm:party-identity:organization_identities:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 3, 4, 6, 8 |
+| `POST /api/v1/organization-identities` | `perm:party-identity:organization_identities:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 3, 4, 6, 7, 8 |
 | `POST /api/v1/organization-identities/{id}/deactivate` | `perm:party-identity:organization_identities:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 3 |
 | `POST /api/v1/organization-identities/{id}/reactivate` | `perm:party-identity:organization_identities:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 3 |
 | `GET /api/v1/organization-identities/{id}` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 3 |
@@ -93,6 +93,15 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 | `GET /api/v1/organization-contact-persons/{id}` | `perm:party-identity:organization_contact_persons:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | 6 |
 | `POST /api/v1/organization-contact-persons/{id}:deactivate` | `perm:party-identity:organization_contact_persons:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 6 |
 | `GET /api/v1/organization-identities/{id}/contact-persons` | `perm:party-identity:organization_contact_persons:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | 6 |
+| `GET /api/v1/global-business-sectors` | `perm:party-identity:global_business_sectors:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 7 |
+| `GET /api/v1/global-business-sectors/{id}` | `perm:party-identity:global_business_sectors:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 7 |
+| `POST /api/v1/global-business-sectors` | `perm:party-identity:global_business_sectors:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 7 |
+| `PUT /api/v1/global-business-sectors/{id}` | `perm:party-identity:global_business_sectors:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 7 |
+| `POST /api/v1/global-business-sectors/{id}:deactivate` | `perm:party-identity:global_business_sectors:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 7 |
+| `POST /api/v1/organization-identities/{id}/business-sectors` | `perm:party-identity:organization_business_sectors:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 7 |
+| `POST /api/v1/organization-business-sectors/{id}:set-primary` | `perm:party-identity:organization_business_sectors:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 7 |
+| `POST /api/v1/organization-business-sectors/{id}:close` | `perm:party-identity:organization_business_sectors:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 7 |
+| `GET /api/v1/organization-identities/{id}/business-sectors` | `perm:party-identity:organization_business_sectors:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 7 |
 | `POST /api/v1/organization-identities/{id}/legal-representatives:set-primary` | `perm:party-identity:organization_legal_representatives:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 8 |
 | `POST /api/v1/organization-identities/{id}/legal-representatives` | `perm:party-identity:organization_legal_representatives:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 8 |
 | `POST /api/v1/organization-legal-representatives/{id}:close` | `perm:party-identity:organization_legal_representatives:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 8 |

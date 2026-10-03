@@ -1,6 +1,10 @@
-"""Comando de carga inicial: `python -m party_identity_service.seed load`.
+"""Comandos de carga inicial.
 
-Modos (FR-017):
+- `python -m party_identity_service.seed load`: reglas de identificación de Colombia.
+- `python -m party_identity_service.seed load-business-sectors`: catálogo CIIU Rev. 5 A.C. desde el
+  snapshot versionado (FR-055–FR-058). Sin red: no consulta Geography ni pide token.
+
+Modos de `load` (FR-017):
 
 - país explícito: `load --country-id <uuid>` o `PARTY_IDENTITY_SEED_COUNTRY_ID`
   (el parámetro prevalece). No consulta Geography ni pide token.
@@ -25,6 +29,10 @@ from party_identity_service.infrastructure.geography_country_validator import (
 from party_identity_service.infrastructure.keycloak_token_client import (
     TokenRequestError,
     fetch_client_credentials_token,
+)
+from party_identity_service.seed.business_sectors_loader import (
+    SnapshotError,
+    load_business_sectors,
 )
 from party_identity_service.seed.constants import COUNTRY_ID_VARIABLE
 from party_identity_service.seed.loader import load_seed
@@ -72,9 +80,16 @@ def build_geography_directory(settings: Settings) -> HTTPGeographyCountryValidat
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m party_identity_service.seed",
-        description="Carga idempotente de las reglas de identificación iniciales de Colombia.",
+        description=(
+            "Carga idempotente de las reglas de identificación iniciales de Colombia (load) "
+            "o del catálogo CIIU Rev. 5 A.C. (load-business-sectors)."
+        ),
     )
-    parser.add_argument("command", choices=["load"], help="Operación a ejecutar.")
+    parser.add_argument(
+        "command",
+        choices=["load", "load-business-sectors"],
+        help="Operación a ejecutar.",
+    )
     parser.add_argument(
         "--country-id",
         type=_uuid,
@@ -88,6 +103,10 @@ def main(argv: list[str] | None = None) -> int:
 
     load_dotenv(override=False)
     settings = load_settings()
+
+    if args.command == "load-business-sectors":
+        return _load_business_sectors(settings)
+
     country_id = args.country_id or settings.seed_country_id
     database = Database(settings.database_url)
 
@@ -115,6 +134,31 @@ def main(argv: list[str] | None = None) -> int:
     for warning in stats.warnings:
         print(f"Advertencia: {warning}")
 
+    return 0
+
+
+def _load_business_sectors(settings: Settings) -> int:
+    """Carga el catálogo CIIU desde el snapshot, sin dependencias externas."""
+    database = Database(settings.database_url)
+
+    try:
+        with database.session_factory() as session:
+            stats = load_business_sectors(session)
+
+    except (SnapshotError, OSError) as exc:
+        print(f"Error: la carga de sectores no escribió datos. {exc}", file=sys.stderr)
+        return 1
+
+    finally:
+        database.dispose()
+
+    levels = ", ".join(f"{level} {count}" for level, count in stats.by_level.items())
+    print(f"Clasificación: {stats.classification_system}; snapshot SHA-256 {stats.checksum}")
+    print(f"Registros por nivel: {levels}")
+    print(
+        f"global_business_sectors: {stats.created} creados, {stats.updated} actualizados, "
+        f"{stats.unchanged} sin cambios"
+    )
     return 0
 
 

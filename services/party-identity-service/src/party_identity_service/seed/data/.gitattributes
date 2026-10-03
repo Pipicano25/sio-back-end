@@ -1,0 +1,4 @@
+# Snapshot CIIU: el SHA-256 se calcula sobre los bytes exactos; git no debe convertir saltos de línea.
+*.csv text eol=lf
+*.md text eol=lf
+*.xlsx binary

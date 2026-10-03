@@ -51,7 +51,7 @@ def test_contact_data_without_email_phone_or_address_has_no_contact() -> None:
     assert not data.has_contact
 
 
-@pytest.mark.parametrize("value, expected", [("  a01 ", "A01"), ("ciiu_rev4_ac", "CIIU_REV4_AC")])
+@pytest.mark.parametrize("value, expected", [("  a01 ", "A01"), ("ciiu_rev5_ac", "CIIU_REV5_AC")])
 def test_sector_codes_are_normalized(value: str, expected: str) -> None:
     assert normalize_code(value) == expected
 

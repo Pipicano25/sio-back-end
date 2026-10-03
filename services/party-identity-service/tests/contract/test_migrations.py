@@ -216,3 +216,35 @@ def test_upgrade_over_phase_a_data_preserves_rows(fresh_schema: Engine) -> None:
     finally:
         with fresh_schema.begin() as connection:
             connection.execute(text("TRUNCATE TABLE person_identities, organization_identities CASCADE"))
+
+
+# --------------------------------------------------------------------------
+# 0018: `name` del sector a 255 (CIIU Rev. 5 A.C., T112)
+# --------------------------------------------------------------------------
+
+def test_business_sector_name_allows_official_ciiu_titles(fresh_schema: Engine) -> None:
+    columns = _columns(fresh_schema, "global_business_sectors")
+
+    assert str(columns["name"]["type"]) == "VARCHAR(255)"
+
+
+def test_downgrade_0018_fails_with_long_sector_names(fresh_schema: Engine) -> None:
+    config = build_alembic_config()
+
+    with fresh_schema.begin() as connection:
+        connection.execute(text(
+            "INSERT INTO global_business_sectors (id, classification_system, code, name, created_by, "
+            "updated_by) VALUES (gen_random_uuid(), 'PRUEBA', '15', :name, 'system:x', 'system:x')"
+        ), {"name": "x" * 222})
+
+    try:
+        with pytest.raises(RuntimeError, match="180 caracteres"):
+            command.downgrade(config, "0017_create_legal_reps")
+    finally:
+        with fresh_schema.begin() as connection:
+            connection.execute(text("TRUNCATE TABLE global_business_sectors CASCADE"))
+        command.upgrade(config, "head")
+
+    command.downgrade(config, "0017_create_legal_reps")
+    assert str(_columns(fresh_schema, "global_business_sectors")["name"]["type"]) == "VARCHAR(180)"
+    command.upgrade(config, "head")

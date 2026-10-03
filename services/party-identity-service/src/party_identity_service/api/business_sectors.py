@@ -59,7 +59,7 @@ def build_sectors_router(auth: SIOAuth) -> APIRouter:
         parent_sector_id: UUID | None = None,
         level_root: bool = Query(default=False, description="Solo sectores sin padre."),
         status_filter: Literal["ACTIVE", "INACTIVE"] = Query(default="ACTIVE", alias="status"),
-        search: str | None = Query(default=None, max_length=180),
+        search: str | None = Query(default=None, max_length=255),
         pagination: PaginationParams = Depends(),
         service: BusinessSectorService = Depends(get_business_sector_service),
     ):

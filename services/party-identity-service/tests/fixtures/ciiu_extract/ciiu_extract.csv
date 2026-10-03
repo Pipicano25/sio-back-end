@@ -1,0 +1,56 @@
+level,code,name,parent_code
+SECTION,A,"Agricultura, ganadería, caza, silvicultura y pesca",
+DIVISION,01,"Agricultura, ganadería, caza y actividades de servicios conexas",A
+GROUP,011,Cultivos agrícolas transitorios,01
+CLASS,0111,"Cultivo de cereales (excepto arroz), legumbres y semillas oleaginosas",011
+CLASS,0112,Cultivo de arroz,011
+CLASS,0113,"Cultivo de hortalizas, raíces y tubérculos",011
+CLASS,0114,Cultivo de tabaco,011
+CLASS,0115,Cultivo de plantas de fibra,011
+CLASS,0119,Otros cultivos transitorios n.c.p.,011
+GROUP,012,Cultivos agrícolas permanentes,01
+CLASS,0121,Cultivo de frutas tropicales y subtropicales,012
+CLASS,0122,Cultivo de plátano y banano,012
+CLASS,0123,Cultivo de café,012
+CLASS,0124,Cultivo de caña de azúcar,012
+CLASS,0125,Cultivo de flor de corte,012
+CLASS,0126,Cultivo de palma para aceite (palma africana) y otros frutos oleaginosos,012
+CLASS,0127,Cultivo de plantas con las que se preparan bebidas,012
+CLASS,0128,Cultivo de especias y de plantas aromáticas y medicinales,012
+CLASS,0129,Otros cultivos permanentes n.c.p.,012
+GROUP,013,"Propagación de plantas (actividades de los viveros, excepto las de los viveros forestales)",01
+CLASS,0130,"Propagación de plantas (actividades de los viveros, excepto las de los viveros forestales)",013
+GROUP,014,Ganadería,01
+CLASS,0141,Cría de ganado bovino y bufalino,014
+CLASS,0142,Cría de caballos y otros equinos,014
+CLASS,0143,Cría de ovejas y cabras,014
+CLASS,0144,Cría de ganado porcino,014
+CLASS,0145,Cría de aves de corral,014
+CLASS,0149,Cría de otros animales n.c.p.,014
+GROUP,015,Explotación mixta (agrícola y pecuaria),01
+CLASS,0150,Explotación mixta (agrícola y pecuaria),015
+GROUP,016,"Actividades de apoyo a la agricultura y la ganadería, y actividades posteriores a la cosecha",01
+CLASS,0161,Actividades de apoyo a la agricultura,016
+CLASS,0162,Actividades de apoyo a la ganadería,016
+CLASS,0163,Actividades posteriores a la cosecha,016
+CLASS,0164,Tratamiento de semillas para propagación,016
+GROUP,017,"Caza ordinaria, caza mediante trampas y actividades de servicios conexas",01
+CLASS,0170,"Caza ordinaria, caza mediante trampas y actividades de servicios conexas",017
+DIVISION,02,Silvicultura y extracción de madera,A
+GROUP,021,Silvicultura y otras actividades forestales,02
+CLASS,0210,Silvicultura y otras actividades forestales,021
+GROUP,022,Extracción de madera,02
+CLASS,0220,Extracción de madera,022
+GROUP,023,Recolección de productos forestales diferentes a la madera,02
+CLASS,0230,Recolección de productos forestales diferentes a la madera,023
+GROUP,024,Servicios de apoyo a la silvicultura,02
+CLASS,0240,Servicios de apoyo a la silvicultura,024
+DIVISION,03,Pesca y acuicultura,A
+GROUP,031,Pesca,03
+CLASS,0311,Pesca marítima,031
+CLASS,0312,Pesca de agua dulce,031
+GROUP,032,Acuicultura,03
+CLASS,0321,Acuicultura marítima,032
+CLASS,0322,Acuicultura de agua dulce,032
+GROUP,033,Actividades de apoyo a la pesca y la acuicultura,03
+CLASS,0330,Actividades de apoyo a la pesca y la acuicultura,033

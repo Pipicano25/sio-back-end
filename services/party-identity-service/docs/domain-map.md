@@ -17,8 +17,8 @@ sector económico y representantes legales.
 - `PersonContactProfile` (`person_contact_profiles`): versionado; una versión vigente por persona.
 - `OrganizationContactProfile` (`organization_contact_profiles`): versionado; una vigente por organización.
 - `OrganizationContactPerson` (`organization_contact_persons`): activo / inactivo; un principal como máximo.
-- `GlobalBusinessSector` (`global_business_sectors`): catálogo jerárquico; CIIU Rev. 4 A.C. (`CIIU_REV4_AC`)
-  por `seed` (snapshot oficial pendiente, tarea manual T005).
+- `GlobalBusinessSector` (`global_business_sectors`): catálogo jerárquico; CIIU Rev. 5 A.C. (`CIIU_REV5_AC`)
+  por `seed` desde el snapshot oficial del DANE (`seed/data/ciiu_rev5_ac/`).
 - `OrganizationBusinessSector` (`organization_business_sectors`): vigencia `[valid_from, valid_to)`; un principal.
 - `OrganizationLegalRepresentative` (`organization_legal_representatives`): vigencia; un `PRIMARY` vigente.
 

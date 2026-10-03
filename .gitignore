@@ -65,6 +65,11 @@ docs/service-map.md
 *.csv
 *.cvs
 *.tsv
+# Excepción: snapshot oficial versionado del seed CIIU (DANE) y su extracto de
+# pruebas (FR-056 de party-identity-service). Se empaqueta con el servicio.
+!services/party-identity-service/src/party_identity_service/seed/data/**/*.csv
+!services/party-identity-service/src/party_identity_service/seed/data/**/*.xlsx
+!services/party-identity-service/tests/fixtures/**/*.csv
 
 # spec-kit / agente: no versionar credenciales que el agente pueda guardar aquí
 .claude/settings.local.json

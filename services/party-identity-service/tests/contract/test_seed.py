@@ -125,3 +125,43 @@ def test_cli_geography_mode_without_credentials_fails_without_writing(monkeypatc
     assert seed_main.main(["load"]) == 1
     with test_engine.connect() as connection:
         assert connection.execute(text("SELECT count(*) FROM identification_type_rules")).scalar_one() == 0
+
+
+# --------------------------------------------------------------------------
+# load-business-sectors (T069): no cambia `load` ni usa Geography/Keycloak
+# --------------------------------------------------------------------------
+
+def test_cli_load_business_sectors_needs_no_geography_nor_token(monkeypatch, test_database_url, test_engine, clean_database) -> None:
+    monkeypatch.setenv("DATABASE_URL", test_database_url)
+    for name in ("PARTY_IDENTITY_SEED_COUNTRY_ID", "KEYCLOAK_TOKEN_URL", "PARTY_IDENTITY_CLIENT_ID", "PARTY_IDENTITY_CLIENT_SECRET"):
+        monkeypatch.setenv(name, "")
+    monkeypatch.setattr(seed_main, "build_geography_directory", lambda settings: pytest.fail("no debe usarse"))
+
+    assert seed_main.main(["load-business-sectors"]) == 0
+    assert seed_main.main(["load-business-sectors"]) == 0
+    with test_engine.connect() as connection:
+        assert connection.execute(text("SELECT count(*) FROM global_business_sectors")).scalar_one() == 919
+        assert connection.execute(text("SELECT count(*) FROM identification_type_rules")).scalar_one() == 0
+
+
+def test_cli_load_rules_does_not_touch_business_sectors(monkeypatch, test_database_url, test_engine, clean_database) -> None:
+    monkeypatch.setenv("DATABASE_URL", test_database_url)
+
+    assert seed_main.main(["load", "--country-id", str(COLOMBIA_ID)]) == 0
+    with test_engine.connect() as connection:
+        assert connection.execute(text("SELECT count(*) FROM identification_type_rules")).scalar_one() == 8
+        assert connection.execute(text("SELECT count(*) FROM global_business_sectors")).scalar_one() == 0
+
+
+def test_cli_load_business_sectors_fails_without_writing_on_bad_snapshot(monkeypatch, tmp_path, test_database_url, test_engine, clean_database) -> None:
+    from party_identity_service.seed import business_sectors_loader
+
+    (tmp_path / "ciiu_rev5_ac.csv").write_text("level,code,name,parent_code\nSECTION,A,x,\n", encoding="utf-8")
+    (tmp_path / "SOURCE.md").write_text("- **SHA-256 del CSV (`ciiu_rev5_ac.csv`)**: `" + "0" * 64 + "`\n", encoding="utf-8")
+    monkeypatch.setenv("DATABASE_URL", test_database_url)
+    monkeypatch.setattr(business_sectors_loader.load_business_sectors, "__kwdefaults__",
+                        {**business_sectors_loader.load_business_sectors.__kwdefaults__, "snapshot_dir": tmp_path})
+
+    assert seed_main.main(["load-business-sectors"]) == 1
+    with test_engine.connect() as connection:
+        assert connection.execute(text("SELECT count(*) FROM global_business_sectors")).scalar_one() == 0

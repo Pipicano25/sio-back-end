@@ -62,10 +62,12 @@ todas las empresas.
 | [4 — Perfil de contacto de una organización](4-perfil-de-organizacion/ORDEN.md) | Confirmación desde una empresa, **no-op**, **nueva versión**, historial, geografía inválida, **usuario sin membresía**, **dependencia caída** y **cierre** (y su repetición); `compras` lee, `reportes`/`consulta` reciben `403` |
 | [5 — Perfil de contacto de una persona](5-perfil-de-persona/ORDEN.md) | Cliente persona natural sin dirección; **inactivar la persona** no cierra el perfil pero impide versiones nuevas |
 | [6 — Personas de contacto](6-personas-de-contacto/ORDEN.md) | Contacto vinculado a una persona, **principal único**, `409` al crear otro, **`set-primary`** e inactivación; consulta Provider por `id` |
+| [7 — Sectores económicos](7-sectores-economicos/ORDEN.md) | Árbol **CIIU Rev. 5 A.C.** del `seed` (sección → clase), clasificación propia, **`409` al inactivar un sector con hijos activos**, asignación a una organización, **`set-primary`** y cierre con historial |
 | [8 — Representantes legales](8-representantes-legales/ORDEN.md) | Primer `PRIMARY` con **`set-primary`**, `409` por alta ordinaria, sustitución, suplente con **referencia documental** y cierre; dato sensible (`403` para `compras`) |
 
-El ejercicio 7 (sectores económicos con el árbol **CIIU Rev. 4 A.C.**) se agrega cuando el `seed`
-tenga el snapshot oficial del DANE (tarea manual T005 de la feature 006).
+El ejercicio 7 necesita el catálogo CIIU cargado: `python -m party_identity_service.seed
+load-business-sectors` (datos oficiales del DANE; fuente y SHA-256 en
+`src/party_identity_service/seed/data/ciiu_rev5_ac/SOURCE.md`).
 
 ## Usuarios y permisos
 

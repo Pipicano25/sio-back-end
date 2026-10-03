@@ -12,7 +12,7 @@ from party_identity_service.domain.business_sector import SectorStatus
 
 SystemCode = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]
 SectorCode = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=40)]
-SectorName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=180)]
+SectorName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
 
 
 class BusinessSectorCreate(BaseModel):

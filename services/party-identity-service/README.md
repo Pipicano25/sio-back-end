@@ -22,7 +22,7 @@ representantes legales.
 | Perfil de contacto de persona | `person_contact_profiles` | Versión vigente / cerrada (`is_active`, `valid_from`, `valid_to`) |
 | Perfil de contacto de organización | `organization_contact_profiles` | Versión vigente / cerrada |
 | Persona de contacto | `organization_contact_persons` | `ACTIVE`/`INACTIVE` (`is_active`); principal único |
-| Sector económico | `global_business_sectors` | `ACTIVE`/`INACTIVE`; jerárquico (CIIU Rev. 4 A.C., `CIIU_REV4_AC`) |
+| Sector económico | `global_business_sectors` | `ACTIVE`/`INACTIVE`; jerárquico (CIIU Rev. 5 A.C., `CIIU_REV5_AC`) |
 | Sector de una organización | `organization_business_sectors` | Vigente / cerrada; principal único; no se reactiva |
 | Representante legal | `organization_legal_representatives` | Vigente / cerrada; un `PRIMARY` vigente como máximo; no se reactiva |
 
@@ -173,10 +173,18 @@ su entorno Colombia tiene otro `id`, el `seed` crea las reglas correctas y lista
 advertencia (no se eliminan).
 
 **Catálogo de sectores (Fase B):** `python -m party_identity_service.seed load-business-sectors`
-carga la CIIU Rev. 4 A.C. completa (`CIIU_REV4_AC`) desde el snapshot oficial del DANE versionado en
-`src/party_identity_service/seed/data/ciiu_rev4_ac/` (fuente, edición, fecha y SHA-256 en su
-`SOURCE.md`). Verifica el checksum, no usa Internet, es idempotente y carga en una sola transacción.
-*Pendiente: el snapshot oficial aún no se ha incorporado (tarea manual T005 de la feature 006).*
+carga la CIIU Rev. 5 A.C. completa (`CIIU_REV5_AC`: 22 secciones, 87 divisiones, 266 grupos y 544
+clases) desde el snapshot oficial del DANE versionado en `src/party_identity_service/seed/data/ciiu_rev5_ac/`
+(fuente, edición, fecha y SHA-256 en su `SOURCE.md`). Verifica el checksum, no usa Internet ni
+Keycloak, es idempotente (conserva los UUID; solo actualiza nombre o padre si cambian) y carga en una
+sola transacción. En el entorno integrado:
+
+```bash
+docker compose --file infrastructure/services/party-identity-service.yaml --env-file infrastructure/.env   exec party-identity-service python -m party_identity_service.seed load-business-sectors
+```
+
+Para actualizar el snapshot cuando el DANE publique otra versión: `pip install -e ".[tools]"` y
+`python scripts/ciiu/convert_dane_ciiu.py` (detalle en `SOURCE.md`).
 
 ## Pruebas
 

@@ -145,7 +145,7 @@ def test_filters(api) -> None:
 
 @pytest.mark.parametrize(
     "overrides",
-    [{"code": "x" * 41}, {"name": "x" * 181}, {"classification_system": "x" * 31}],
+    [{"code": "x" * 41}, {"name": "x" * 256}, {"classification_system": "x" * 31}],
 )
 def test_lengths(api, overrides) -> None:
     payload = {"classification_system": "T", "code": "A", "name": "n", **overrides}

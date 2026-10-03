@@ -1,4 +1,4 @@
-"""Modelos SQLAlchemy de la Fase B (migraciones 0013–0017).
+"""Modelos SQLAlchemy de la Fase B (migraciones 0013–0018).
 
 Se separan de `models.py` (Fase A) para no alterar ese módulo; comparten la
 misma `Base` y se registran al importar `models`.
@@ -69,7 +69,7 @@ class GlobalBusinessSectorModel(_AuditMixin, Base):
     )
     classification_system: Mapped[str] = mapped_column(String(30), nullable=False)
     code: Mapped[str] = mapped_column(String(40), nullable=False)
-    name: Mapped[str] = mapped_column(String(180), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(
         String(20),

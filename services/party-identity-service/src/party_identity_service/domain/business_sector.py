@@ -7,8 +7,8 @@ from uuid import UUID
 
 SectorStatus = Literal["ACTIVE", "INACTIVE"]
 
-CIIU_CLASSIFICATION_SYSTEM = "CIIU_REV4_AC"
-"""Identificador estable de la CIIU Rev. 4 A.C. del DANE (DS-10)."""
+CIIU_CLASSIFICATION_SYSTEM = "CIIU_REV5_AC"
+"""Identificador estable de la CIIU Rev. 5 A.C. del DANE (DS-10; Resolución DANE 992 de 2026)."""
 
 
 def normalize_code(value: str) -> str:

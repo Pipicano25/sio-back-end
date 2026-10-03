@@ -26,6 +26,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy.orm import sessionmaker
 
+from party_identity_service.seed.business_sectors_loader import load_business_sectors
 from party_identity_service.seed.loader import load_seed
 from tests.conftest import COLOMBIA_ID, ApiClient, truncate_all
 from tests.examples.exercises import EXERCISES
@@ -56,10 +57,12 @@ def _clients(test_client, make_token):
 
 
 def _seed(engine):
-    """Reglas iniciales de Colombia en modo país explícito (sin Geography)."""
+    """Reglas iniciales de Colombia (modo país explícito, sin Geography) y catálogo CIIU Rev. 5 A.C."""
     factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
     with factory() as session:
         load_seed(session, country_id=COLOMBIA_ID)
+    with factory() as session:
+        load_business_sectors(session)
 
 
 def _check_documents(documents):
