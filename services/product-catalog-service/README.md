@@ -117,7 +117,17 @@ pytest -m performance -o addopts=""     # volumen: 500 000 productos (SC-002, SC
   lectura puedan consultar; exige que `docs/ejemplo/` coincida con lo generado y que no haya
   secretos. Tras cambiar un ejercicio, un contrato o el realm, regenere la documentación con
   `PRODUCT_CATALOG_EXAMPLES_WRITE=1 pytest tests/examples` y revise el diff.
-- Marcador `integration`: reservado para pruebas con Keycloak real (no hay ninguna todavía).
+- Marcador `integration`: `tests/integration/test_party_identity_integration.py` valida el
+  fabricante contra Party Identity y Keycloak reales (alta y cambio con organización existente,
+  `422 MANUFACTURER_NOT_FOUND` en alta y modificación sin alterar el producto, `X-Trace-Id`
+  propagado). Se ejecuta con `pytest -m integration` contra el entorno integrado
+  (`infrastructure/`): Product Catalog `8103`, Party Identity `8101`, Geography `8102`, Keycloak
+  `8081`; se cambian con `PRODUCT_CATALOG_INTEGRATION_BASE_URL`,
+  `PARTY_IDENTITY_INTEGRATION_BASE_URL` (con `/api/v1`), `GEOGRAPHY_INTEGRATION_BASE_URL` y
+  `KEYCLOAK_TOKEN_URL`. La contraseña de `admin.test` se lee de `KEYCLOAK_TEST_USER_PASSWORD` o de
+  `infrastructure/.env`. Es repetible: cada ejecución crea organizaciones y un producto ficticios
+  de validación. La caída del proveedor (`503 DEPENDENCY_UNAVAILABLE`) se verifica a mano
+  deteniendo `sio-party-identity-service`.
 
 ## Consumo de la API
 
