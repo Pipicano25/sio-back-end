@@ -1,0 +1,129 @@
+# Paso 01 de 04 — Consultar la empresa y las organizaciones
+
+Ejercicio 3 — Proveedores, bloqueo y desbloqueo · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](02-seleccionar-proveedores.md)
+
+**Objetivo:** Obtener `<EMPRESA>` y las dos organizaciones.
+
+**Necesita (de pasos anteriores):** `<NIT>`
+
+**Deja guardado para los siguientes pasos:** `<EMPRESA>`, `<ORG_PROVEEDOR>`, `<ORG_PROVEEDOR_2>`
+
+---
+
+## 1. Consultar la empresa DISTRIBUIDORA PROVEEDORES FICTICIA S.A.S. en Operational Context
+
+> **Otro servicio:** esta llamada va a **Operational Context Service**, no a Commercial Relationship. No se ejecuta en la validación automática: su resultado se simula.
+
+```http
+GET http://localhost:8004/api/v1/me/operational-context
+```
+
+**Permiso que exige la URL:** `perm:operational-context:application_users:read`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`), `reportes.test` (por `perm:operational-context:application_users:read`), `consulta.test` (por `perm:operational-context:application_users:read`)
+
+**Por qué se hace así**
+
+- Commercial Relationship **no guarda** empresas: usa el `company_id` de Operational Context y, en cada solicitud, le pregunta si el usuario tiene membresía `ACTIVE` en ella (DS-02).
+- `me/operational-context` lista las empresas donde el usuario es miembro: de ahí se toma el `id`.
+
+**Respuesta esperada — `200 OK`** (abreviada)
+
+```json
+{
+  "keycloak_user_id": "<sub del usuario>",
+  "memberships": [
+    {
+      "application_user_id": "<id generado>",
+      "company_id": "<EMPRESA>",
+      "company_status": "ACTIVE",
+      "status": "ACTIVE",
+      "branches": []
+    }
+  ]
+}
+```
+
+**Guardar:** `memberships[0].company_id` → `<EMPRESA>`
+
+## 2. Consultar la organización LABORATORIO EJEMPLO FICTICIO S.A.S. en Party Identity
+
+> **Otro servicio:** esta llamada va a **Party Identity Service**, no a Commercial Relationship. No se ejecuta en la validación automática: su resultado se simula.
+
+```http
+GET http://localhost:8002/api/v1/organization-identities?search=<NIT>
+```
+
+**Permiso que exige la URL:** `perm:party-identity:organization_identities:read`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `reportes.test` (por `perm:party-identity:organization_identities:read`), `consulta.test` (por `perm:party-identity:organization_identities:read`)
+- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `organization_identities` de `party-identity`
+
+**Por qué se hace así**
+
+- Commercial Relationship **no guarda** la razón social ni el NIT: solo el `id` de la `OrganizationIdentity` (Principio III). El NIT real se toma de una fuente oficial (RUT, RUES).
+
+**Respuesta esperada — `200 OK`** (abreviada)
+
+```json
+{
+  "items": [
+    {
+      "id": "<ORG_PROVEEDOR>",
+      "identification_type": "NIT",
+      "identification_number": "<NIT obtenido del RUT; dato ficticio aquí>",
+      "legal_name": "LABORATORIO EJEMPLO FICTICIO S.A.S.",
+      "status": "ACTIVE"
+    }
+  ],
+  "page": 1,
+  "page_size": 20,
+  "total_records": 1,
+  "total_pages": 1
+}
+```
+
+**Guardar:** `items[0].id` → `<ORG_PROVEEDOR>`
+
+## 3. Consultar la organización IMPORTADORA EJEMPLO FICTICIA S.A.S. en Party Identity
+
+> **Otro servicio:** esta llamada va a **Party Identity Service**, no a Commercial Relationship. No se ejecuta en la validación automática: su resultado se simula.
+
+```http
+GET http://localhost:8002/api/v1/organization-identities?search=<NIT>
+```
+
+**Permiso que exige la URL:** `perm:party-identity:organization_identities:read`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `reportes.test` (por `perm:party-identity:organization_identities:read`), `consulta.test` (por `perm:party-identity:organization_identities:read`)
+- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `organization_identities` de `party-identity`
+
+**Por qué se hace así**
+
+- Commercial Relationship **no guarda** la razón social ni el NIT: solo el `id` de la `OrganizationIdentity` (Principio III). El NIT real se toma de una fuente oficial (RUT, RUES).
+
+**Respuesta esperada — `200 OK`** (abreviada)
+
+```json
+{
+  "items": [
+    {
+      "id": "<ORG_PROVEEDOR_2>",
+      "identification_type": "NIT",
+      "identification_number": "<NIT obtenido del RUT; dato ficticio aquí>",
+      "legal_name": "IMPORTADORA EJEMPLO FICTICIA S.A.S.",
+      "status": "ACTIVE"
+    }
+  ],
+  "page": 1,
+  "page_size": 20,
+  "total_records": 1,
+  "total_pages": 1
+}
+```
+
+**Guardar:** `items[0].id` → `<ORG_PROVEEDOR_2>`
+
+---
+
+[Orden del ejercicio](ORDEN.md) · [Paso siguiente →](02-seleccionar-proveedores.md)

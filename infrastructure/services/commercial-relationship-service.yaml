@@ -1,8 +1,9 @@
 name: sio-commercial-relationship-service
 
-# Proyecto compose "sio-commercial-relationship-service": por ahora solo su base de datos propia;
-# el contenedor de aplicación se agregará aquí cuando exista. Se une a
-# "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
+# Proyecto compose "sio-commercial-relationship-service": base de datos propia y contenedor de
+# aplicación de commercial-relationship-service. Se une a "sio-network", creada por el proyecto
+# "sio" (infrastructure/compose.yaml), que debe estar levantado antes: ahí vive Keycloak
+# (depends_on no cruza proyectos; el orden lo garantiza infrastructure/scripts/rebuild-all.sh).
 
 services:
   commercial-relationship-db:
@@ -25,6 +26,54 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  commercial-relationship-service:
+    build:
+      context: ../..
+      dockerfile: services/commercial-relationship-service/Dockerfile
+    image: sio/commercial-relationship-service:${SIO_SERVICES_VERSION}
+    container_name: sio-commercial-relationship-service
+    restart: unless-stopped
+
+    environment:
+      DATABASE_URL: postgresql+psycopg://${COMMERCIAL_RELATIONSHIP_DB_USER}:${COMMERCIAL_RELATIONSHIP_DB_PASSWORD}@commercial-relationship-db:5432/${COMMERCIAL_RELATIONSHIP_DB_NAME}
+      # El issuer debe coincidir con KEYCLOAK_PUBLIC_URL; las llaves se
+      # obtienen dentro de sio-network.
+      SIO_AUTH_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+      SIO_AUTH_AUDIENCE: sio-api
+      SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
+      # Las URL de los proveedores incluyen /api/v1
+      # (specs/007-commercial-relationship-core/contracts/*-dependency.md).
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+      OPERATIONAL_CONTEXT_TIMEOUT_SECONDS: ${OPERATIONAL_CONTEXT_TIMEOUT_SECONDS:-5}
+      PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
+      PRODUCT_CATALOG_TIMEOUT_SECONDS: ${PRODUCT_CATALOG_TIMEOUT_SECONDS:-5}
+      PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
+      PARTY_IDENTITY_TIMEOUT_SECONDS: ${PARTY_IDENTITY_TIMEOUT_SECONDS:-5}
+      # Identidad técnica propia (client_credentials) solo hacia Product Catalog (R-05).
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      COMMERCIAL_RELATIONSHIP_CLIENT_ID: commercial-relationship-service
+      COMMERCIAL_RELATIONSHIP_CLIENT_SECRET: ${COMMERCIAL_RELATIONSHIP_CLIENT_SECRET}
+      KEYCLOAK_TIMEOUT_SECONDS: ${KEYCLOAK_TIMEOUT_SECONDS:-5}
+
+    ports:
+      - "127.0.0.1:${COMMERCIAL_RELATIONSHIP_SERVICE_PORT:-8106}:8000"
+
+    depends_on:
+      commercial-relationship-db:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+    networks:
+      - sio-network
 
 volumes:
   commercial_relationship_db_data:

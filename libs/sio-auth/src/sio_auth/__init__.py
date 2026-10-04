@@ -4,7 +4,12 @@ Los microservicios deben importar desde este módulo
 en lugar de usar módulos internos.
 """
 
-from .auth import SIOAuth
+from .auth import (
+    DENIED_PERMISSION_ATTRIBUTE,
+    FORBIDDEN_DETAIL,
+    LOGGER_NAME,
+    SIOAuth,
+)
 from .config import AuthSettings
 from .dependencies import (
     CurrentClaims,
@@ -23,6 +28,9 @@ from .tokens import TokenClaims
 
 
 __all__ = [
+    "DENIED_PERMISSION_ATTRIBUTE",
+    "FORBIDDEN_DETAIL",
+    "LOGGER_NAME",
     "AuthConfigurationError",
     "AuthenticationError",
     "AuthSettings",

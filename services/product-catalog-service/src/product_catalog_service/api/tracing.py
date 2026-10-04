@@ -36,7 +36,9 @@ def current_trace_id() -> str | None:
 
 NO_TRACE = "-"
 LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] trace_id=%(trace_id)s %(message)s"
-TRACED_LOGGERS = ("product_catalog_service", "uvicorn", "uvicorn.error", "uvicorn.access")
+# `sio_auth` registra las denegaciones por permiso (el permiso no viaja en el `403`).
+AUTH_LOGGER = "sio_auth"
+TRACED_LOGGERS = ("product_catalog_service", AUTH_LOGGER, "uvicorn", "uvicorn.error", "uvicorn.access")
 
 
 class TraceIdFilter(logging.Filter):
@@ -67,13 +69,14 @@ def configure_logging() -> None:
                 handler.addFilter(TraceIdFilter())
             handler.setFormatter(formatter)
 
-    service_logger = logging.getLogger("product_catalog_service")
-    if not service_logger.handlers:
-        handler = logging.StreamHandler()
-        handler.addFilter(TraceIdFilter())
-        handler.setFormatter(formatter)
-        service_logger.addHandler(handler)
-        service_logger.setLevel(logging.INFO)
+    for name in ("product_catalog_service", AUTH_LOGGER):
+        service_logger = logging.getLogger(name)
+        if not service_logger.handlers:
+            handler = logging.StreamHandler()
+            handler.addFilter(TraceIdFilter())
+            handler.setFormatter(formatter)
+            service_logger.addHandler(handler)
+            service_logger.setLevel(logging.INFO)
 
 
 def build_traceparent(trace_id: str) -> str:

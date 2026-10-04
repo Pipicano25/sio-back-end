@@ -103,6 +103,7 @@ SERVICES=(
     product-catalog-service
     party-identity-service
     operational-context-service
+    commercial-relationship-service
 )
 
 # Proyectos compose del entorno: primero la infraestructura, luego uno por

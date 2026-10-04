@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Collection
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -14,6 +15,20 @@ from .middleware import SIOAuthMiddleware
 from .models import SioPermission
 from .permissions import has_permission
 from .tokens import AccessTokenDecoder, TokenClaims
+
+LOGGER_NAME = "sio_auth"
+"""Logger donde sio-auth registra las denegaciones por permiso (con el permiso exigido)."""
+
+DENIED_PERMISSION_ATTRIBUTE = "sio_required_permission"
+"""Atributo del registro de log con el permiso exigido (texto `perm:...`), para pruebas."""
+
+FORBIDDEN_DETAIL = (
+    "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, "
+    "solicítelo al administrador del sistema indicando el trace_id de esta respuesta."
+)
+"""`detail` de todo `403` por permiso: nunca nombra el permiso, el rol ni la regla."""
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 class SIOAuth:
@@ -56,16 +71,31 @@ class SIOAuth:
         resource: str,
         action: str,
     ) -> Callable[[Request], TokenClaims]:
-        """Devuelve los claims únicamente cuando Keycloak suministró un permiso compatible."""
+        """Devuelve los claims únicamente cuando Keycloak suministró un permiso compatible.
+
+        Sin el permiso responde `403` con un `detail` descriptivo que **no** revela el
+        permiso exigido (fallo de seguridad: enumeración de permisos). El permiso se
+        registra solo en el log del servidor (`sio_auth`, nivel WARNING) para que
+        soporte lo diagnostique con el `trace_id` de la respuesta.
+        """
 
         required = SioPermission(service, resource, action)
 
         def dependency(request: Request) -> TokenClaims:
             claims = get_current_claims(request)
             if not has_permission(claims.permissions, required):
+                logger.warning(
+                    "Acceso denegado por permiso insuficiente sujeto=%s permiso_requerido=%s "
+                    "metodo=%s ruta=%s",
+                    claims.subject,
+                    required,
+                    request.method,
+                    request.url.path,
+                    extra={DENIED_PERMISSION_ATTRIBUTE: str(required)},
+                )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Falta el permiso requerido: {required}",
+                    detail=FORBIDDEN_DETAIL,
                 )
             return claims
 

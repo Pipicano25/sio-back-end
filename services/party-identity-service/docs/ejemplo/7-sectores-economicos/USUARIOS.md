@@ -93,7 +93,7 @@ Respuesta `403 Forbidden`:
   "type": "https://sio/errors/party-identity/forbidden",
   "title": "Acceso denegado",
   "status": 403,
-  "detail": "Falta el permiso requerido: perm:party-identity:global_business_sectors:create",
+  "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
   "instance": "/api/v1/global-business-sectors",
   "code": "PARTY_IDENTITY.FORBIDDEN",
   "trace_id": "<trace_id>"
@@ -150,7 +150,7 @@ Respuesta `403 Forbidden`:
   "type": "https://sio/errors/party-identity/forbidden",
   "title": "Acceso denegado",
   "status": 403,
-  "detail": "Falta el permiso requerido: perm:party-identity:global_business_sectors:delete",
+  "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
   "instance": "/api/v1/global-business-sectors/{id}:deactivate",
   "code": "PARTY_IDENTITY.FORBIDDEN",
   "trace_id": "<trace_id>"

@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "commercial-relationship-service"
+version = "0.1.0"
+description = "Microservicio de relación comercial de SIO: productos adoptados, clientes y proveedores por empresa."
+requires-python = ">=3.12"
+
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.30,<1.0",
+    "httpx>=0.27,<1.0",
+
+    "sqlalchemy>=2.0,<3.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "alembic>=1.14,<2.0",
+    "python-dotenv>=1.0,<2.0",
+
+    # Commercial Relationship requiere sio-auth >= 0.4.0 (403 sin el permiso; permiso en el
+    # log `sio_auth`, que los ejemplos leen); al utilizar una referencia
+    # local file: la versión mínima no se expresa en la misma cadena PEP 508, por lo
+    # que debe verificarse contra libs/sio-auth/pyproject.toml (hoy 0.4.0).
+    "sio-auth @ file:../../libs/sio-auth",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.3,<9.0",
+    "httpx>=0.27,<1.0",
+    "PyJWT[crypto]>=2.8,<3.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+addopts = "-ra -m 'not integration and not performance'"
+markers = [
+    "integration: pruebas opcionales contra Keycloak, Operational Context, Product Catalog y Party Identity reales",
+    "performance: pruebas de volumen (SC-009)",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/commercial_relationship_service"]

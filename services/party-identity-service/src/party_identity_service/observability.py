@@ -13,7 +13,9 @@ from contextvars import ContextVar
 SERVICE_LOGGER = "party_identity_service"
 NO_TRACE = "-"
 LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] trace_id=%(trace_id)s %(message)s"
-TRACED_LOGGERS = (SERVICE_LOGGER, "uvicorn", "uvicorn.error", "uvicorn.access")
+# `sio_auth` registra las denegaciones por permiso (el permiso no viaja en el `403`).
+AUTH_LOGGER = "sio_auth"
+TRACED_LOGGERS = (SERVICE_LOGGER, AUTH_LOGGER, "uvicorn", "uvicorn.error", "uvicorn.access")
 
 _current_trace_id: ContextVar[str | None] = ContextVar("trace_id", default=None)
 
@@ -65,11 +67,12 @@ def configure_logging() -> None:
                 handler.addFilter(TraceIdFilter())
             handler.setFormatter(formatter)
 
-    service_logger = logging.getLogger(SERVICE_LOGGER)
+    for name in (SERVICE_LOGGER, AUTH_LOGGER):
+        service_logger = logging.getLogger(name)
 
-    if not service_logger.handlers:
-        handler = logging.StreamHandler()
-        handler.addFilter(TraceIdFilter())
-        handler.setFormatter(formatter)
-        service_logger.addHandler(handler)
-        service_logger.setLevel(logging.INFO)
+        if not service_logger.handlers:
+            handler = logging.StreamHandler()
+            handler.addFilter(TraceIdFilter())
+            handler.setFormatter(formatter)
+            service_logger.addHandler(handler)
+            service_logger.setLevel(logging.INFO)

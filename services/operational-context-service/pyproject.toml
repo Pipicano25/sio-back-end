@@ -24,7 +24,8 @@ dependencies = [
     # Validación de correo para EmailStr (R-08).
     "email-validator>=2.1,<3.0",
 
-    # Requiere sio-auth >= 0.3.0 (función pública evaluate_permission, R-11). Una
+    # Requiere sio-auth >= 0.4.0 (evaluate_permission, R-11; 403 sin el permiso, que los
+    # ejemplos leen del log `sio_auth`). Una
     # referencia directa no admite especificador de versión: la versión la fija
     # libs/sio-auth/pyproject.toml.
     "sio-auth @ file:../../libs/sio-auth",

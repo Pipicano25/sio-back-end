@@ -4,6 +4,8 @@ import json
 import re
 from collections import OrderedDict
 
+from sio_auth import FORBIDDEN_DETAIL
+
 from tests.examples.users import USERS, matching_grant
 
 SHORT = {u["username"]: u["username"].replace(".test", "") for u in USERS}
@@ -119,7 +121,7 @@ def curl_for(c, token_var):
 def forbidden_body(record, permission, path):
     body = dict(record.get("forbidden_example") or {})
     if not body:
-        return {"detail": f"Falta el permiso requerido: {permission}"}
+        return {"detail": FORBIDDEN_DETAIL}
     body["instance"] = UUID_IN_TEXT.sub("{id}", PLACEHOLDER.sub("{id}", path.split("?")[0])).replace("http://localhost:8003", "")
     body["trace_id"] = "<trace_id>"
     return body
@@ -243,7 +245,7 @@ def render_users(ex, records):
         out += [""]
         out += curl_for(c, "TOKEN_INVENTARIO")
         out += ["", "Respuesta `403 Forbidden` (formato de Party Identity Service):", "", "```json",
-                json.dumps({"detail": f"Falta el permiso requerido: {p}"}, ensure_ascii=False, indent=2), "```", ""]
+                json.dumps({"detail": FORBIDDEN_DETAIL}, ensure_ascii=False, indent=2), "```", ""]
         searchers = [f"`{u['username']}`" for u in USERS
                      if u["username"] not in ("admin.test", "inventario.test") and matching_grant(u, p)]
         out += ["`inventario.test` lee el catálogo (`perm:product-catalog:all:read`) y Geography, pero **no** tiene "

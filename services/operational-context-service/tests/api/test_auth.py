@@ -1,9 +1,11 @@
 """Autenticación y autorización por operación (RC-01, FR-002, FR-003; prueba obligatoria 13)."""
 
 import dataclasses
+import logging
 
 import pytest
 from fastapi.testclient import TestClient
+from sio_auth import DENIED_PERMISSION_ATTRIBUTE, FORBIDDEN_DETAIL, LOGGER_NAME
 
 from operational_context_service.main import create_app
 from tests.conftest import ApiClient
@@ -58,16 +60,20 @@ def test_without_token_is_401(anonymous, method, path, resource, action):
 
 
 @pytest.mark.parametrize("method, path, resource, action", OPERATIONS, ids=IDS)
-def test_without_exact_permission_is_403(api_as, method, path, resource, action):
+def test_without_exact_permission_is_403(api_as, caplog, method, path, resource, action):
     other_actions = [a for a in ("read", "create", "update", "delete") if a != action]
     client = api_as(*[f"perm:operational-context:{resource}:{a}" for a in other_actions])
 
-    response = client.request(method, path, json={})
+    with caplog.at_level(logging.WARNING, logger=LOGGER_NAME):
+        response = client.request(method, path, json={})
 
     assert response.status_code == 403
     body = response.json()
     assert body["code"] == "OPERATIONAL_CONTEXT.FORBIDDEN"
-    assert f"perm:operational-context:{resource}:{action}" in body["detail"]
+    # El permiso exigido no se revela al cliente; queda solo en el log del servidor.
+    assert body["detail"] == FORBIDDEN_DETAIL and "perm:" not in response.text
+    denied = [getattr(r, DENIED_PERMISSION_ATTRIBUTE) for r in caplog.records if r.name == LOGGER_NAME]
+    assert denied == [f"perm:operational-context:{resource}:{action}"]
 
 
 @pytest.mark.parametrize("method, path, resource, action", OPERATIONS, ids=IDS)

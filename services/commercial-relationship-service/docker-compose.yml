@@ -1,0 +1,86 @@
+# Entorno de desarrollo independiente de commercial-relationship-service (Principio IV).
+# Nombres de contenedor y puertos distintos de los de infrastructure/ (docs/port-map.md).
+services:
+  commercial-relationship-dev-db:
+    image: postgres:17-alpine
+    container_name: sio-commercial-relationship-dev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${COMMERCIAL_RELATIONSHIP_DB_NAME:-sio_commercial_relationship}
+      POSTGRES_USER: ${COMMERCIAL_RELATIONSHIP_DB_USER:-sio_commercial_relationship}
+      POSTGRES_PASSWORD: ${COMMERCIAL_RELATIONSHIP_DB_PASSWORD:-sio_commercial_relationship_dev_change_me}
+    ports:
+      - "127.0.0.1:${COMMERCIAL_RELATIONSHIP_DB_PORT:-55442}:5432"
+    volumes:
+      - commercial_relationship_dev_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  commercial-relationship-test-db:
+    image: postgres:17-alpine
+    container_name: sio-commercial-relationship-test-db
+    profiles:
+      - test
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${COMMERCIAL_RELATIONSHIP_TEST_DB_NAME:-sio_commercial_relationship_test}
+      POSTGRES_USER: ${COMMERCIAL_RELATIONSHIP_TEST_DB_USER:-sio_commercial_relationship_test}
+      POSTGRES_PASSWORD: ${COMMERCIAL_RELATIONSHIP_TEST_DB_PASSWORD:-sio_commercial_relationship_test_dev_change_me}
+    ports:
+      - "127.0.0.1:${COMMERCIAL_RELATIONSHIP_TEST_DB_PORT:-55443}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  commercial-relationship-service:
+    container_name: sio-commercial-relationship-service-dev
+    restart: unless-stopped
+    build:
+      context: ../..
+      dockerfile: services/commercial-relationship-service/Dockerfile
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: >-
+        postgresql+psycopg://${COMMERCIAL_RELATIONSHIP_DB_USER:-sio_commercial_relationship}:${COMMERCIAL_RELATIONSHIP_DB_PASSWORD:-sio_commercial_relationship_dev_change_me}@commercial-relationship-dev-db:5432/${COMMERCIAL_RELATIONSHIP_DB_NAME:-sio_commercial_relationship}
+      # El JWT se emite con KEYCLOAK_PUBLIC_URL como issuer: KEYCLOAK_HTTP_PORT debe coincidir.
+      SIO_AUTH_ISSUER: http://localhost:${KEYCLOAK_HTTP_PORT:-8081}/realms/sio
+      # Desde el contenedor, localhost es el propio contenedor: las claves se leen del host.
+      SIO_AUTH_JWKS_URL: http://host.docker.internal:${KEYCLOAK_HTTP_PORT:-8081}/realms/sio/protocol/openid-connect/certs
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://host.docker.internal:${OPERATIONAL_CONTEXT_SERVICE_PORT:-8004}/api/v1
+      PRODUCT_CATALOG_SERVICE_BASE_URL: http://host.docker.internal:${PRODUCT_CATALOG_SERVICE_PORT:-8003}/api/v1
+      PARTY_IDENTITY_SERVICE_BASE_URL: http://host.docker.internal:${PARTY_IDENTITY_SERVICE_PORT:-8002}/api/v1
+      # Token técnico; el resto de variables KEYCLOAK_* y COMMERCIAL_RELATIONSHIP_CLIENT_*
+      # se leen de .env.
+      KEYCLOAK_BASE_URL: http://host.docker.internal:${KEYCLOAK_HTTP_PORT:-8081}
+    ports:
+      - "${COMMERCIAL_RELATIONSHIP_SERVICE_PORT:-8005}:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      commercial-relationship-dev-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+volumes:
+  commercial_relationship_dev_db_data:

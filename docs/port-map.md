@@ -56,7 +56,7 @@ través del host (`host.docker.internal:${KEYCLOAK_HTTP_PORT}`).
 | product-catalog-service | `sio-product-catalog-service` | `PRODUCT_CATALOG_SERVICE_PORT` | `8103` | `sio-product-catalog-db` | `PRODUCT_CATALOG_DB_PORT` | `5444` |
 | operational-context-service | `sio-operational-context-service` | `OPERATIONAL_CONTEXT_SERVICE_PORT` | `8104` | `sio-operational-context-db` | `OPERATIONAL_CONTEXT_DB_PORT` | `5440` |
 | payment-reference-service | `sio-payment-reference-service` *(reservado)* | `PAYMENT_REFERENCE_SERVICE_PORT` | `8105` | `sio-payment-reference-db` | `PAYMENT_REFERENCE_DB_PORT` | `5443` |
-| commercial-relationship-service | *(reservado)* | `COMMERCIAL_RELATIONSHIP_SERVICE_PORT` | `8106` | `sio-commercial-relationship-db` | `COMMERCIAL_RELATIONSHIP_DB_PORT` | `5445` |
+| commercial-relationship-service | `sio-commercial-relationship-service` | `COMMERCIAL_RELATIONSHIP_SERVICE_PORT` | `8106` | `sio-commercial-relationship-db` | `COMMERCIAL_RELATIONSHIP_DB_PORT` | `5445` |
 | purchase-service | *(reservado)* | `PURCHASE_SERVICE_PORT` | `8107` | `sio-purchase-db` | `PURCHASE_DB_PORT` | `5446` |
 | sales-service | *(reservado)* | `SALES_SERVICE_PORT` | `8108` | `sio-sales-db` | `SALES_DB_PORT` | `5447` |
 | inventory-service | *(reservado)* | `INVENTORY_SERVICE_PORT` | `8109` | `sio-inventory-db` | `INVENTORY_DB_PORT` | `5448` |
@@ -95,6 +95,7 @@ Nombres de contenedor del entorno independiente:
 | party-identity-service | `sio-party-identity-service-dev` | `sio-party-identity-dev-db` | `sio-party-identity-test-db` |
 | product-catalog-service | `sio-product-catalog-service-dev` | `sio-product-catalog-dev-db` | `sio-product-catalog-test-db` |
 | operational-context-service | `sio-operational-context-service-dev` | `sio-operational-context-dev-db` | `sio-operational-context-test-db` |
+| commercial-relationship-service | `sio-commercial-relationship-service-dev` | `sio-commercial-relationship-dev-db` | `sio-commercial-relationship-test-db` |
 
 ### Dependencias entre servicios en el entorno independiente
 
@@ -109,6 +110,7 @@ nombre que usa el proveedor en su propio `.env`:
 | party-identity-service | `GEOGRAPHY_SERVICE_PORT=8000`, `OPERATIONAL_CONTEXT_SERVICE_PORT=8004` |
 | product-catalog-service | `PARTY_IDENTITY_SERVICE_PORT=8002` |
 | operational-context-service | `GEOGRAPHY_SERVICE_PORT=8000`, `PARTY_IDENTITY_SERVICE_PORT=8002` |
+| commercial-relationship-service | `OPERATIONAL_CONTEXT_SERVICE_PORT=8004`, `PRODUCT_CATALOG_SERVICE_PORT=8003`, `PARTY_IDENTITY_SERVICE_PORT=8002` |
 
 Si se cambia el puerto de un proveedor, se cambia en su `.env` y en el `.env`
 de cada consumidor de esta tabla (y en las `*_BASE_URL` con `localhost` que se

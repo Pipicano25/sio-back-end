@@ -88,7 +88,7 @@ Respuesta `403 Forbidden`:
   "type": "https://sio/errors/operational-context/forbidden",
   "title": "Acceso denegado",
   "status": 403,
-  "detail": "Falta el permiso requerido: perm:operational-context:companies:create",
+  "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
   "instance": "/api/v1/companies",
   "code": "OPERATIONAL_CONTEXT.FORBIDDEN",
   "trace_id": "<trace_id>"
@@ -145,7 +145,7 @@ Respuesta `403 Forbidden`:
   "type": "https://sio/errors/operational-context/forbidden",
   "title": "Acceso denegado",
   "status": 403,
-  "detail": "Falta el permiso requerido: perm:operational-context:application_users:delete",
+  "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
   "instance": "/api/v1/application-users/{id}/deactivate",
   "code": "OPERATIONAL_CONTEXT.FORBIDDEN",
   "trace_id": "<trace_id>"

@@ -4,6 +4,8 @@ import json
 import re
 from collections import OrderedDict
 
+from sio_auth import FORBIDDEN_DETAIL
+
 from tests.examples.users import USERS, allowed_all, as_list, first_missing, matching_grant
 
 SHORT = {u["username"]: u["username"].replace(".test", "") for u in USERS}
@@ -158,7 +160,7 @@ def curl_for(c, token_var):
 def forbidden_body(record, permission, path):
     body = dict(record.get("forbidden_example") or {})
     if not body:
-        return {"detail": f"Falta el permiso requerido: {as_list(permission)[0]}"}
+        return {"detail": FORBIDDEN_DETAIL}
     body["instance"] = UUID_IN_TEXT.sub("{id}", PLACEHOLDER.sub("{id}", path.split("?")[0]))
     body["trace_id"] = "<trace_id>"
     return body

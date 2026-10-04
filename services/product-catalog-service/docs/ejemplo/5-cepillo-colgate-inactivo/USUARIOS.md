@@ -113,7 +113,7 @@ Respuesta `403 Forbidden`:
   "type": "https://sio/errors/product-catalog/forbidden",
   "title": "Acceso denegado",
   "status": 403,
-  "detail": "Falta el permiso requerido: perm:product-catalog:brands:create",
+  "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
   "instance": "/api/v1/brands",
   "code": "PRODUCT_CATALOG.FORBIDDEN",
   "trace_id": "<trace_id>"
@@ -154,7 +154,7 @@ Respuesta `403 Forbidden`:
   "type": "https://sio/errors/product-catalog/forbidden",
   "title": "Acceso denegado",
   "status": 403,
-  "detail": "Falta el permiso requerido: perm:product-catalog:products:deactivate",
+  "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
   "instance": "/api/v1/products/{id}/deactivate",
   "code": "PRODUCT_CATALOG.FORBIDDEN",
   "trace_id": "<trace_id>"
@@ -181,7 +181,7 @@ Respuesta `403 Forbidden` (formato de Party Identity Service):
 
 ```json
 {
-  "detail": "Falta el permiso requerido: perm:party-identity:organization_identities:read"
+  "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta."
 }
 ```
 

@@ -76,6 +76,22 @@ def operation():
 `sio-auth` compara ese permiso con los roles que realmente llegaron en el JWT.
 No consulta una lista local de permisos conocidos.
 
+### Respuesta sin permiso (`403`)
+
+Si el token no trae un permiso compatible, la dependencia responde `403` con un
+`detail` descriptivo que **nunca** nombra el permiso, el rol ni la regla exigidos
+(revelarlos facilita enumerar los permisos del sistema):
+
+> Su usuario no tiene permiso para realizar esta operación. Si necesita acceso,
+> solicítelo al administrador del sistema indicando el trace_id de esta respuesta.
+
+El texto está en `sio_auth.FORBIDDEN_DETAIL`. El permiso exigido se registra solo
+en el log del servidor, en el logger `sio_auth` (`sio_auth.LOGGER_NAME`), nivel
+`WARNING`, con el sujeto, el método y la ruta; el registro lleva además el atributo
+`sio_required_permission` (`sio_auth.DENIED_PERMISSION_ATTRIBUTE`) para que las
+pruebas lo lean sin depender del cuerpo de la respuesta. Los servicios que agregan
+`trace_id` a sus logs deben incluir el logger `sio_auth`.
+
 Un grant recibido desde Keycloak puede contener `all` en cualquiera de sus tres
 segmentos. La interpretación del wildcard ocurre solamente dentro de
 `sio-auth`.

@@ -3,6 +3,7 @@
 import logging
 
 import pytest
+from sio_auth import DENIED_PERMISSION_ATTRIBUTE, FORBIDDEN_DETAIL, LOGGER_NAME
 
 from operational_context_service.observability import SERVICE_LOGGER
 from tests.conftest import company_payload, random_uuid
@@ -182,12 +183,16 @@ def test_unknown_fields_are_422(api, fake_organizations, unknown_field):
     assert fake_organizations.count() == 0
 
 
-def test_create_requires_platform_scope(api_as, fake_organizations):
+def test_create_requires_platform_scope(api_as, fake_organizations, caplog):
     """FR-043 (Fase B): `supervisor.test` tiene `companies:create`, pero no `platform:administer`."""
     supervisor = api_as("perm:all:all:read", "perm:all:all:create", "perm:all:all:update", sub="supervisor.test")
 
-    response = supervisor.post(URL, json=company_payload(fake_organizations.add()))
+    with caplog.at_level(logging.WARNING, logger=LOGGER_NAME):
+        response = supervisor.post(URL, json=company_payload(fake_organizations.add()))
 
     assert response.status_code == 403
-    assert "perm:operational-context:platform:administer" in response.json()["detail"]
+    # El permiso exigido no se revela al cliente; queda solo en el log del servidor.
+    assert response.json()["detail"] == FORBIDDEN_DETAIL and "perm:" not in response.text
+    denied = [getattr(r, DENIED_PERMISSION_ATTRIBUTE) for r in caplog.records if r.name == LOGGER_NAME]
+    assert denied == ["perm:operational-context:platform:administer"]
     assert fake_organizations.count() == 0

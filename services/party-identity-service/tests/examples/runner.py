@@ -2,8 +2,8 @@
 
 Para cada llamada:
 
-1. Si se entregan clientes por usuario, la repite sin permisos para leer, de la respuesta `403`,
-   el permiso exacto que exige la URL; comprueba que cada usuario de prueba sin ese permiso
+1. Si se entregan clientes por usuario, la repite sin permisos y lee el permiso exacto que exige
+   la URL del log de `sio-auth` (la respuesta `403` nunca lo revela, y se comprueba); comprueba que cada usuario de prueba sin ese permiso
    reciba `403` y que los usuarios con permiso obtengan la misma respuesta en las consultas.
 2. La ejecuta como administrador y comprueba el código de estado documentado.
 
@@ -11,15 +11,42 @@ Las llamadas a Geography (clase C, Principio IV) no se ejecutan: el país se sim
 `FakeCountryDirectory` y el permiso se toma del ejercicio.
 """
 
+import logging
 import re
+
+from sio_auth import DENIED_PERMISSION_ATTRIBUTE, LOGGER_NAME
 
 from tests.examples.users import USERS, allowed
 
 PLACEHOLDER = re.compile(r"<([A-Z0-9_]+)>")
-PERMISSION = re.compile(r"perm:[a-z0-9_-]+:[a-z0-9_-]+:[a-z0-9_-]+")
 ADMIN = "admin.test"
 NO_PERMISSIONS = "__sin_permisos__"
 
+
+
+class _DeniedPermissions(logging.Handler):
+    """Captura el permiso que `sio-auth` registra al denegar (nunca viaja en la respuesta)."""
+
+    def __init__(self) -> None:
+        super().__init__(logging.WARNING)
+        self.permissions: list[str] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        value = getattr(record, DENIED_PERMISSION_ATTRIBUTE, None)
+        if value:
+            self.permissions.append(value)
+
+
+def _probe(client, method, path, kwargs):
+    """Repite la llamada sin permisos y devuelve la respuesta y el permiso registrado en el log."""
+    handler = _DeniedPermissions()
+    log = logging.getLogger(LOGGER_NAME)
+    log.addHandler(handler)
+    try:
+        response = client.request(method, path, **kwargs)
+    finally:
+        log.removeHandler(handler)
+    return response, handler.permissions
 
 def substitute(value, ctx):
     if isinstance(value, str):
@@ -49,11 +76,11 @@ def resolve(data, path):
 
 
 def _check_access(call, clients, method, path, kwargs, expected, record):
-    probe = clients[NO_PERMISSIONS].request(method, path, **kwargs)
+    probe, denied = _probe(clients[NO_PERMISSIONS], method, path, kwargs)
     assert probe.status_code == 403, f"{call['title']}: sin permisos respondió {probe.status_code}"
-    found = PERMISSION.search(probe.text)
-    assert found, f"{call['title']}: el 403 no indica el permiso requerido: {probe.text}"
-    permission = found.group(0)
+    assert "perm:" not in probe.text, f"{call['title']}: el 403 revela un permiso: {probe.text}"
+    assert len(denied) == 1, f"{call['title']}: sio-auth registró {denied} al denegar"
+    permission = denied[0]
     record.update(permission=permission, forbidden_example=probe.json(), access={}, verified={})
 
     for user in USERS:
