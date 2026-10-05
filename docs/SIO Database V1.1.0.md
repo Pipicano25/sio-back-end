@@ -1470,16 +1470,18 @@ No almacena stock actual, movimientos, lotes reales ni niveles de reposición po
 | `expiration_tracking_enabled` | `BOOLEAN`       | NN, DEFAULT `FALSE` | Indica si los lotes del producto requieren fecha de vencimiento.                              |
 | `is_purchasable`              | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Disponible para nuevas operaciones de compra.                                                 |
 | `is_sellable`                 | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Disponible para nuevas operaciones de venta.                                                  |
-| `is_active`                   | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Estado del producto dentro de la empresa.                                                     |
-| `created_by_user_id`          | `UUID`          | REF, NN             | Usuario creador.                                                                              |
+| `status`                      | `VARCHAR(20)`   | NN, CK, DEFAULT `'ACTIVE'` | Estado del producto dentro de la empresa: `ACTIVE` o `INACTIVE`.                       |
+| `created_by`                  | `VARCHAR(255)`  | NN                  | `sub` del token de quien crea el registro (Constitución D1); inmutable.                        |
+| `updated_by`                  | `VARCHAR(255)`  | NN                  | `sub` del token de quien realizó la última modificación (Constitución D1).                     |
 | `version`                     | `INTEGER`       | NN, DEFAULT `1`     | Control de concurrencia.                                                                      |
 | `created_at`                  | `TIMESTAMPTZ`   | NN                  | Fecha de creación.                                                                            |
 | `updated_at`                  | `TIMESTAMPTZ`   | NN                  | Última modificación.                                                                          |
 
 ### Reglas y restricciones
 
-- La combinación `company_id` y `global_product_id` debe ser única.
-- `internal_code` debe ser único por empresa sin diferenciar mayúsculas y minúsculas.
+- La combinación `company_id` y `global_product_id` debe ser única en cualquier estado: un producto inactivo se reactiva, no se vuelve a adoptar.
+- `internal_code` se guarda sin espacios al inicio ni al final, no puede quedar vacío y es único por empresa sin diferenciar mayúsculas y minúsculas (índice único sobre `company_id` y `lower(internal_code)`), en cualquier estado: inactivar no libera el código; para reutilizarlo se cambia antes el del registro inactivo.
+- `status` admite `ACTIVE` e `INACTIVE` (`CHECK`); los cambios de estado se hacen con acciones explícitas de inactivar y reactivar.
 - `reference_code` no tiene obligación de ser único.
 - `global_product_id` es una referencia externa a Product Catalog Service y no utiliza una llave foránea física.
 - Solo un `GlobalProduct` activo puede utilizarse para crear una nueva adopción empresarial.
@@ -1488,8 +1490,13 @@ No almacena stock actual, movimientos, lotes reales ni niveles de reposición po
 - `expiration_tracking_enabled = TRUE` requiere `lot_tracking_enabled = TRUE`.
 - Cuando `inventory_control_enabled = FALSE`, el producto no debe generar nuevos saldos, movimientos, políticas o lotes ordinarios en Inventory Service.
 - El stock mínimo y demás niveles de reposición no pertenecen a esta entidad; se configuran por sucursal mediante `InventoryPolicy`.
-- Un producto empresarial inactivo no puede utilizarse en nuevas operaciones ordinarias.
+- Un producto empresarial con `status = INACTIVE` no puede utilizarse en nuevas operaciones ordinarias.
 - La desactivación no elimina compras, ventas, precios, inventario o relaciones históricas.
+
+> **Reconciliación (2026-10-04):** sección alineada con `specs/007-commercial-relationship-core`
+> (Commercial Relationship Fase A): `status` con `CHECK` en lugar de `is_active` (BR-01) y auditoría
+> `created_by`/`updated_by` con el `sub` en lugar de `created_by_user_id` (BR-02). Los nombres de
+> restricciones e índices están en el `data-model.md` de esa feature.
 
 ### Relaciones
 
@@ -1566,22 +1573,23 @@ Esta entidad es administrada exclusivamente por los usuarios autorizados de la e
 | `organization_identity_id`    | `UUID`         | REF, nullable      | Identidad global de organización administrada por Party Identity Service.    |
 | `internal_code`               | `VARCHAR(60)`  | NN                 | Código interno del cliente.                                                  |
 | `display_name`                | `VARCHAR(200)` | NN                 | Nombre visible dentro de la empresa.                                         |
-| `customer_segment_id`         | `UUID`         | FK, nullable       | Segmento comercial privado asignado por la empresa.                          |
 | `preferred_contact_person_id` | `UUID`         | REF, nullable      | Persona de contacto preferida administrada por Party Identity Service.       |
-| `is_active`                   | `BOOLEAN`      | NN, DEFAULT `TRUE` | Disponible para ventas nuevas.                                               |
-| `created_by_user_id`          | `UUID`         | REF, NN            | Usuario creador.                                                             |
+| `status`                      | `VARCHAR(20)`  | NN, CK, DEFAULT `'ACTIVE'` | `ACTIVE` (disponible para ventas nuevas) o `INACTIVE`.               |
+| `created_by`                  | `VARCHAR(255)` | NN                 | `sub` del token de quien crea el registro (Constitución D1); inmutable.      |
+| `updated_by`                  | `VARCHAR(255)` | NN                 | `sub` del token de quien realizó la última modificación (Constitución D1).   |
 | `version`                     | `INTEGER`      | NN, DEFAULT `1`    | Control concurrente.                                                         |
 | `created_at`                  | `TIMESTAMPTZ`  | NN                 | Creación.                                                                    |
 | `updated_at`                  | `TIMESTAMPTZ`  | NN                 | Modificación.                                                                |
 
 ### Reglas y restricciones
 
-- `internal_code` es único por empresa.
+- `internal_code` se guarda sin espacios al inicio ni al final, no puede quedar vacío y es único por empresa sin diferenciar mayúsculas y minúsculas (índice único sobre `company_id` y `lower(internal_code)`), en cualquier estado.
+- `status` admite `ACTIVE` e `INACTIVE` (`CHECK`); los cambios de estado se hacen con acciones explícitas de inactivar y reactivar.
 - Cuando `customer_kind` es `PERSON`, `person_identity_id` es obligatorio y `organization_identity_id` debe ser nulo.
 - Cuando `customer_kind` es `ORGANIZATION`, `organization_identity_id` es obligatorio y `person_identity_id` debe ser nulo.
 - `preferred_contact_person_id` solo puede informarse para clientes `ORGANIZATION` y debe pertenecer a la misma `OrganizationIdentity`.
-- Una empresa solo puede relacionarse una vez con la misma identidad global.
-- Solo clientes activos pueden utilizarse en ventas nuevas.
+- Una empresa solo puede relacionarse una vez con la misma identidad global, en cualquier estado (índices únicos parciales sobre `company_id` y `person_identity_id` u `organization_identity_id`).
+- Solo clientes con `status = ACTIVE` pueden utilizarse en ventas nuevas.
 - Los datos generales de contacto se consultan en el perfil global activo correspondiente y no se duplican por empresa.
 - El saldo de cartera no pertenece a esta entidad y se consulta desde `Finance Service`.
 
@@ -1590,6 +1598,14 @@ Esta entidad es administrada exclusivamente por los usuarios autorizados de la e
 - Se utiliza desde `Sale` mediante `company_customer_id`.
 - Puede tener condiciones de compra mediante `CustomerPaymentCondition` y evaluación crediticia mediante `CustomerCreditProfile`.
 - Consulta `PersonContactProfile` o `OrganizationContactProfile` según `customer_kind`.
+
+> **Reconciliación (2026-10-04):** sección alineada con `specs/007-commercial-relationship-core`
+> (Commercial Relationship Fase A): `status` con `CHECK` en lugar de `is_active` (BR-01); auditoría
+> `created_by`/`updated_by` con el `sub` en lugar de `created_by_user_id` (BR-02); `internal_code`
+> único sin diferenciar mayúsculas (BR-04). **Segmentación (BR-03):** `customer_segment_id` no
+> forma parte de la Fase A ni del MVP. `CustomerSegment` (§5.2) pertenece a una evolución
+> posterior; la Spec que lo introduzca definirá su relación con `CompanyCustomer` y la agregará
+> mediante una migración nueva.
 
 ## 5.4 CompanySupplier
 
@@ -1619,16 +1635,20 @@ Una compra utiliza `company_supplier_id`, no `organization_identity_id` porque e
 | `internal_code`               | `VARCHAR(60)`  | NN              | Código interno.                                                        |
 | `display_name`                | `VARCHAR(200)` | NN              | Nombre visible en la empresa.                                          |
 | `preferred_contact_person_id` | `UUID`         | REF, nullable   | Persona de contacto preferida administrada por Party Identity Service. |
-| `relationship_status`         | `VARCHAR(20)`  | NN, CK          | `ACTIVE`, `INACTIVE` o `BLOCKED`.                                      |
-| `created_by_user_id`          | `UUID`         | REF, NN         | Usuario creador.                                                       |
+| `status`                      | `VARCHAR(20)`  | NN, CK, DEFAULT `'ACTIVE'` | `ACTIVE`, `INACTIVE` o `BLOCKED`.                           |
+| `block_reason`                | `VARCHAR(500)` | nullable        | Motivo del bloqueo: obligatorio con `BLOCKED` y nulo en los demás estados. |
+| `created_by`                  | `VARCHAR(255)` | NN              | `sub` del token de quien crea el registro (Constitución D1); inmutable. |
+| `updated_by`                  | `VARCHAR(255)` | NN              | `sub` del token de quien realizó la última modificación (Constitución D1). |
 | `version`                     | `INTEGER`      | NN, DEFAULT `1` | Control concurrente.                                                   |
 | `created_at`                  | `TIMESTAMPTZ`  | NN              | Creación.                                                              |
 | `updated_at`                  | `TIMESTAMPTZ`  | NN              | Modificación.                                                          |
 
 ### Reglas y restricciones
 
-- Una empresa solo puede seleccionar una vez la misma organización.
-- `internal_code` es único por empresa.
+- Una empresa solo puede seleccionar una vez la misma organización, en cualquier estado.
+- `internal_code` se guarda sin espacios al inicio ni al final, no puede quedar vacío y es único por empresa sin diferenciar mayúsculas y minúsculas (índice único sobre `company_id` y `lower(internal_code)`), en cualquier estado.
+- `status` admite `ACTIVE`, `INACTIVE` y `BLOCKED` (`CHECK`); los cambios de estado se hacen con acciones explícitas de inactivar, reactivar, bloquear y desbloquear (un proveedor `BLOCKED` se desbloquea; no se reactiva directamente).
+- `block_reason` es obligatorio al pasar a `BLOCKED` (texto de 1 a 500 caracteres que no quede vacío tras recortar espacios), se conserva mientras el proveedor esté `BLOCKED` y se borra al desbloquear; en cualquier otro estado es nulo (`CHECK` de consistencia entre `status` y `block_reason`). El historial de bloqueos corresponde a audit-service.
 - Solo proveedores `ACTIVE` pueden utilizarse en compras nuevas.
 - Los datos generales de contacto se consultan en `OrganizationContactProfile` y no se duplican por empresa.
 - El saldo de cartera del proveedor no pertenece a esta entidad; se consulta desde Finance Service.
@@ -1639,6 +1659,12 @@ Una compra utiliza `company_supplier_id`, no `organization_identity_id` porque e
 - Se utiliza desde `Purchase` mediante `company_supplier_id`.
 - Puede tener varias condiciones de pago vigentes mediante `SupplierPaymentCondition`.
 - Consulta la versión activa de `OrganizationContactProfile`.
+
+> **Reconciliación (2026-10-04):** sección alineada con `specs/007-commercial-relationship-core`
+> (Commercial Relationship Fase A): `status` con `CHECK` en lugar de `relationship_status` (BR-01);
+> auditoría `created_by`/`updated_by` con el `sub` en lugar de `created_by_user_id` (BR-02);
+> `internal_code` único sin diferenciar mayúsculas (BR-04); `block_reason` obligatorio con
+> `BLOCKED` (BR-05).
 
 ## 5.5 SupplierCommercialCondition
 

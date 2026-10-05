@@ -1,6 +1,9 @@
 """Pruebas reales de permisos de sio-auth contra Keycloak.
 
-Estas pruebas no usan .env ni variables de entorno.
+La contraseña del usuario de prueba (`KEYCLOAK_TEST_USER_PASSWORD`) y la URL y el realm de
+Keycloak (`KEYCLOAK_PUBLIC_URL`, `KEYCLOAK_REALM`) se leen de la variable de entorno o, si no
+existe, de `infrastructure/.env`; la contraseña no tiene valor por defecto y, si falta, las
+pruebas se omiten. Ejecución: `pytest tests/validar_token_env.py`.
 
 Validan:
 1. Que Keycloak esté disponible.
@@ -12,6 +15,9 @@ Validan:
 """
 
 from __future__ import annotations
+
+import os
+from pathlib import Path
 
 import pytest
 import requests
@@ -30,19 +36,47 @@ from sio_auth.tokens import AccessTokenDecoder, TokenClaims
 # CONFIGURACIÓN EXCLUSIVA DE ESTA PRUEBA
 # =====================================================================
 #
-# Estos valores pertenecen al escenario de prueba.
+# Estos valores pertenecen al escenario de prueba; ninguno es una credencial.
 # NO forman parte de la configuración interna de sio-auth.
 # NO se empaquetan dentro de la librería instalada porque están fuera de src/.
 #
 
-KEYCLOAK_BASE_URL = "http://localhost:8081"
-KEYCLOAK_REALM = "sio"
+# Mismo criterio que `services/get_token.py` y las pruebas de integración de los
+# servicios: primero la variable de entorno y, si no existe, `infrastructure/.env`
+# (no versionado; `infrastructure/.env.example` documenta las variables con
+# valores ficticios).
+INFRASTRUCTURE_ENV = Path(__file__).resolve().parents[3] / "infrastructure" / ".env"
+
+
+def _setting(name: str) -> str | None:
+    value = os.environ.get(name, "").strip()
+    if not value and INFRASTRUCTURE_ENV.is_file():
+        for line in INFRASTRUCTURE_ENV.read_text(encoding="utf-8").splitlines():
+            key, separator, content = line.partition("=")
+            if separator and key.strip() == name:
+                value = content.strip().strip('"').strip("'")
+    return value or None
+
+
+KEYCLOAK_BASE_URL = (_setting("KEYCLOAK_PUBLIC_URL") or "http://localhost:8081").rstrip("/")
+KEYCLOAK_REALM = _setting("KEYCLOAK_REALM") or "sio"
 
 KEYCLOAK_TEST_CLIENT_ID = "sio-web"
 KEYCLOAK_TEST_USERNAME = "admin.test"
-KEYCLOAK_TEST_PASSWORD = "SioTest123Sio"
+
+# La contraseña NUNCA se escribe en el código ni tiene valor por defecto
+# (Constitución, Principio IX).
+PASSWORD_VARIABLE = "KEYCLOAK_TEST_USER_PASSWORD"
+KEYCLOAK_TEST_PASSWORD = _setting(PASSWORD_VARIABLE)
 
 SIO_AUTH_AUDIENCE = "sio-api"
+
+if not KEYCLOAK_TEST_PASSWORD:
+    pytest.skip(
+        f"Defina {PASSWORD_VARIABLE} (variable de entorno o infrastructure/.env) para "
+        "ejecutar las pruebas reales contra Keycloak.",
+        allow_module_level=True,
+    )
 
 
 ISSUER = f"{KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}"

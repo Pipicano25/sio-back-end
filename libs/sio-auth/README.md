@@ -145,3 +145,22 @@ evaluate_permission(roles, required)  # True
 | --- | --- |
 | `0.3.0` | Nueva función pública `evaluate_permission(roles, required)` (compatible). |
 | `0.2.0` | Versión previa. |
+
+## Pruebas reales contra Keycloak
+
+`tests/validar_token_env.py` obtiene un token real de `admin.test` y lo valida con
+`sio-auth`. No se ejecuta con la suite ordinaria (no sigue el patrón `test_*.py`):
+
+```bash
+pytest tests/validar_token_env.py
+```
+
+| Variable | Uso | Dónde se define |
+| --- | --- | --- |
+| `KEYCLOAK_TEST_USER_PASSWORD` | Contraseña de los usuarios de prueba (secreto, sin valor por defecto) | Variable de entorno o `infrastructure/.env` |
+| `KEYCLOAK_PUBLIC_URL` | URL pública de Keycloak (por defecto `http://localhost:8081`) | Variable de entorno o `infrastructure/.env` |
+| `KEYCLOAK_REALM` | Realm (por defecto `sio`) | Variable de entorno o `infrastructure/.env` |
+
+La variable de entorno tiene prioridad sobre `infrastructure/.env`. `infrastructure/.env` no se
+versiona; `infrastructure/.env.example` documenta las variables con valores ficticios. Sin
+contraseña, las pruebas se omiten. Ningún valor secreto se escribe en el código.
