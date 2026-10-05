@@ -1,31 +1,37 @@
 # Ejercicios de uso — Commercial Relationship Service
 
 Ejercicios paso a paso, ejecutados automáticamente contra la API por `tests/examples/test_examples.py`
-(Principio XXII). Muestran cómo **adoptar productos**, **incorporar clientes** y **seleccionar y bloquear
-proveedores**, y qué usuario de prueba puede hacer cada llamada.
+(Principio XXII). Muestran cómo **adoptar productos**, **incorporar clientes**, **seleccionar y bloquear
+proveedores** (Fase A) y cómo configurar **presentaciones**, **proveedores por producto**, **condiciones de
+pago** y **listas de precios** (Fase B), y qué usuario de prueba puede hacer cada llamada.
 
 | Ejercicio | Qué enseña | Datos |
 | --- | --- | --- |
 | [1 — Adopción de productos](1-adopcion-de-productos/ORDEN.md) | Adoptar productos globales con los datos privados de la empresa; rechazos (inactivo, incompleto, adopción y código repetidos); precio y moneda con sus decimales; consulta por lotes; inactivar y reactivar; resumen de mis empresas, una por página | **Reales** del sistema anterior (`docs/CAMPOS PRODUCTOS.xlsx`) |
 | [2 — Clientes](2-clientes/ORDEN.md) | Cliente persona y cliente organización con contacto preferido; contacto de otra organización; la propia empresa como cliente; modificar, inactivar y reactivar | Ficticios |
 | [3 — Proveedores](3-proveedores/ORDEN.md) | Seleccionar proveedores; la misma organización como cliente y proveedor; bloquear con motivo; editar sin desbloquear; desbloquear e inactivar | Ficticios |
+| [4 — Presentaciones](4-presentaciones/ORDEN.md) | Adoptar presentaciones globales; predeterminada de compra y su cambio en la misma operación; presentación de otro producto y adopción repetida (rechazos); inactivar la predeterminada | Producto **real** (fila 40); presentaciones ficticias |
+| [5 — Proveedores por producto y condiciones](5-proveedores-por-producto-y-condiciones/ORDEN.md) | Relación general y por presentación; unidad distinta de la base y relación repetida (rechazos); contado con plazo (rechazo), contado con descuento y crédito predeterminado | Producto y `Nombre Proveedor` **reales** (fila 40); proveedor, costos y condiciones ficticios |
+| [6 — Listas de precios](6-listas-de-precios/ORDEN.md) | Lista predeterminada; precio real; solapamiento y precio en vigencia (rechazos); cambio de precio con vigencia futura; precio aplicable con respaldo y con lista explícita sin precio | `Precio Lista 10` **real** (fila 16577); el resto ficticio |
 
 - [Usuarios y permisos](usuarios-y-permisos.md): cómo se evalúan los permisos y la membresía, los usuarios
   de prueba y la matriz de todas las URL.
-- [Mapeo de columnas del Excel](mapeo-campos-excel.md): qué columna de la fuente va a `CompanyProduct` y
-  cuáles pertenecen a otras fases o servicios.
+- [Mapeo de columnas del Excel](mapeo-campos-excel.md): qué columna de la fuente va a `CompanyProduct`, a
+  `SupplierProduct` y a las listas de precios, y cuáles pertenecen a otros servicios.
 
 Cada ejercicio es independiente: puede ejecutarse en una base nueva.
 
 ## Antes de empezar
 
 1. **Servicios en ejecución.** Commercial Relationship en `http://localhost:8005` (entorno del servicio) o
-   `http://localhost:8106` (entorno integrado), con Keycloak, Operational Context, Product Catalog y Party
-   Identity disponibles.
+   `http://localhost:8106` (entorno integrado), con Keycloak, Operational Context, Product Catalog, Party
+   Identity y, para el ejercicio 5, Payment Reference disponibles.
 2. **Datos en los otros servicios.** Las llamadas marcadas **«Otro servicio»** no van a Commercial
-   Relationship: obtienen `id` de Operational Context (empresa), Product Catalog (productos globales) o Party
-   Identity (personas, organizaciones y contactos). En la validación automática esos resultados se simulan con
-   `id` ficticios.
+   Relationship: obtienen `id` de Operational Context (empresa), Product Catalog (productos y presentaciones
+   globales, unidad base), Party Identity (personas, organizaciones y contactos) o Payment Reference (tipos de
+   condición de pago). En la validación automática esos resultados se simulan con `id` ficticios. **Ningún
+   usuario necesita permisos de Payment Reference** para registrar condiciones: el servicio lo consulta con su
+   propia identidad técnica (DS-02).
 3. **Membresía en la empresa.** El usuario que ejecuta el ejercicio debe tener una membresía `ACTIVE` en la
    empresa en Operational Context. Sin ella, todas las URL de este servicio responden `404`, **también para
    `admin.test`**: ningún permiso de usuario exime de la membresía (DS-03). El resumen de empresas
@@ -42,8 +48,9 @@ Cada ejercicio es independiente: puede ejecutarse en una base nueva.
   no), por qué se hace así y la respuesta esperada (abreviada).
 - `USUARIOS.md`: resumen por usuario, permiso por URL y ejemplos con usuarios que pueden y que no.
 - Las variables `<NOMBRE>` se reemplazan por los `id` guardados en pasos anteriores.
-- Los importes (`sale_price`, `reference_cost`) se envían como número o texto y se **devuelven siempre como
-  texto decimal** (por ejemplo `"1500.00"`), nunca como número JSON.
+- Los importes (`sale_price`, `reference_cost`, `unit_price`, `credit_limit`, costos, cantidades y porcentajes)
+  se envían como número o texto y se **devuelven siempre como texto decimal** (por ejemplo `"1500.00"`), nunca
+  como número JSON. `unit_price` y `credit_limit` usan los decimales de su moneda.
 
 ## Validación
 

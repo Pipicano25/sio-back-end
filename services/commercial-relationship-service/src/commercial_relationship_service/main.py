@@ -7,8 +7,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from sio_auth import SIOAuth
 
+from commercial_relationship_service.api.applicable_prices import (
+    build_router as build_applicable_prices_router,
+)
 from commercial_relationship_service.api.company_customers import (
     build_router as build_customers_router,
+)
+from commercial_relationship_service.api.company_product_presentations import (
+    build_router as build_presentations_router,
 )
 from commercial_relationship_service.api.company_products import (
     build_router as build_products_router,
@@ -23,12 +29,25 @@ from commercial_relationship_service.api.dependencies import (
     AccessDirectoryFactory,
     CompanyDirectoryFactory,
     PartyDirectoryFactory,
+    PaymentDirectoryFactory,
     ProductDirectoryFactory,
 )
 from commercial_relationship_service.api.errors import register_error_handlers
 from commercial_relationship_service.api.health import build_router as build_health_router
-from commercial_relationship_service.api.openapi import configure_bearer_openapi
+from commercial_relationship_service.api.openapi import OPENAPI_TAGS, configure_bearer_openapi
+from commercial_relationship_service.api.price_list_items import (
+    build_router as build_price_list_items_router,
+)
+from commercial_relationship_service.api.price_lists import (
+    build_router as build_price_lists_router,
+)
 from commercial_relationship_service.api.security import build_auth
+from commercial_relationship_service.api.supplier_payment_conditions import (
+    build_router as build_payment_conditions_router,
+)
+from commercial_relationship_service.api.supplier_products import (
+    build_router as build_supplier_products_router,
+)
 from commercial_relationship_service.api.tracing import TracingMiddleware
 from commercial_relationship_service.config import Settings, load_settings
 from commercial_relationship_service.infrastructure.database import Database
@@ -41,6 +60,9 @@ from commercial_relationship_service.infrastructure.operational_context_director
 )
 from commercial_relationship_service.infrastructure.party_identity_directory import (
     HTTPPartyDirectory,
+)
+from commercial_relationship_service.infrastructure.payment_reference_directory import (
+    HTTPPaymentReferenceDirectory,
 )
 from commercial_relationship_service.infrastructure.product_catalog_directory import (
     HTTPProductCatalogDirectory,
@@ -81,19 +103,25 @@ def build_company_directory_factory(settings: Settings) -> CompanyDirectoryFacto
     return factory
 
 
-def build_product_directory_factory(settings: Settings) -> ProductDirectoryFactory:
-    """Product Catalog con la identidad técnica propia (R-05).
+def build_token_client(settings: Settings) -> KeycloakTokenClient:
+    """Cliente `client_credentials` propio, compartido por Product Catalog y Payment Reference.
 
     Una sola instancia por proceso para reutilizar el token técnico. No llama a
     Keycloak al arrancar.
     """
-    token_client = KeycloakTokenClient(
+    return KeycloakTokenClient(
         base_url=settings.keycloak_base_url,
         realm=settings.keycloak_realm,
         client_id=settings.keycloak_client_id,
         client_secret=settings.keycloak_client_secret,
         timeout_seconds=settings.keycloak_timeout_seconds,
     )
+
+
+def build_product_directory_factory(
+    settings: Settings, token_client: KeycloakTokenClient
+) -> ProductDirectoryFactory:
+    """Product Catalog con la identidad técnica propia (R-05)."""
     directory = HTTPProductCatalogDirectory(
         base_url=settings.product_catalog_base_url,
         timeout_seconds=settings.product_catalog_timeout_seconds,
@@ -101,6 +129,22 @@ def build_product_directory_factory(settings: Settings) -> ProductDirectoryFacto
     )
 
     def factory(request: Request) -> HTTPProductCatalogDirectory:
+        return directory
+
+    return factory
+
+
+def build_payment_directory_factory(
+    settings: Settings, token_client: KeycloakTokenClient
+) -> PaymentDirectoryFactory:
+    """Payment Reference con la identidad técnica propia (DS-02, R-08)."""
+    directory = HTTPPaymentReferenceDirectory(
+        base_url=settings.payment_reference_base_url,
+        timeout_seconds=settings.payment_reference_timeout_seconds,
+        token_client=token_client,
+    )
+
+    def factory(request: Request) -> HTTPPaymentReferenceDirectory:
         return directory
 
     return factory
@@ -127,6 +171,7 @@ def create_app(
     company_directory_factory: CompanyDirectoryFactory | None = None,
     product_directory_factory: ProductDirectoryFactory | None = None,
     party_directory_factory: PartyDirectoryFactory | None = None,
+    payment_directory_factory: PaymentDirectoryFactory | None = None,
 ) -> FastAPI:
     """Construye la aplicación FastAPI del microservicio.
 
@@ -145,10 +190,12 @@ def create_app(
     app = FastAPI(
         title=SERVICE_TITLE,
         description=(
-            "Relación comercial privada de cada empresa: productos adoptados, clientes y "
-            "proveedores."
+            "Relación comercial privada de cada empresa: productos adoptados y sus "
+            "presentaciones, clientes, proveedores, productos de proveedor, condiciones de pago "
+            "y listas de precios."
         ),
         version=SERVICE_VERSION,
+        openapi_tags=OPENAPI_TAGS,
         docs_url="/docs" if current_settings.docs_enabled else None,
         redoc_url=None,
         openapi_url="/openapi.json" if current_settings.docs_enabled else None,
@@ -163,8 +210,12 @@ def create_app(
     app.state.company_directory_factory = (
         company_directory_factory or build_company_directory_factory(current_settings)
     )
+    token_client = build_token_client(current_settings)
     app.state.product_directory_factory = (
-        product_directory_factory or build_product_directory_factory(current_settings)
+        product_directory_factory or build_product_directory_factory(current_settings, token_client)
+    )
+    app.state.payment_directory_factory = (
+        payment_directory_factory or build_payment_directory_factory(current_settings, token_client)
     )
     app.state.party_directory_factory = party_directory_factory or build_party_directory_factory(
         current_settings
@@ -184,6 +235,12 @@ def create_app(
     app.include_router(build_customers_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_suppliers_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_summaries_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_presentations_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_supplier_products_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_payment_conditions_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_price_lists_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_price_list_items_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_applicable_prices_router(current_auth), prefix=API_PREFIX)
 
     current_auth.protect(app, public_paths=public_paths)
     # Último middleware agregado = más externo: envuelve también a sio-auth.

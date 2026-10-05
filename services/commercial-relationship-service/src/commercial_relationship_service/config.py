@@ -18,6 +18,8 @@ class Settings:
         operational_context_base_url: URL base de Operational Context, con `/api/v1`.
         product_catalog_base_url: URL base de Product Catalog, con `/api/v1`.
         party_identity_base_url: URL base de Party Identity, con `/api/v1`.
+        payment_reference_base_url: URL base de Payment Reference, **sin** `/api/v1`
+            (el proveedor aún no publica el prefijo, GAP-PR-14; C-06 de la 010).
         keycloak_base_url: URL base de Keycloak para el token técnico (R-05).
         keycloak_client_id: Cliente técnico propio del servicio.
         keycloak_client_secret: Secreto del cliente técnico; nunca se registra.
@@ -33,9 +35,11 @@ class Settings:
     keycloak_base_url: str
     keycloak_client_id: str
     keycloak_client_secret: str = field(repr=False)
+    payment_reference_base_url: str = "http://localhost:8105"
     operational_context_timeout_seconds: float = 5.0
     product_catalog_timeout_seconds: float = 5.0
     party_identity_timeout_seconds: float = 5.0
+    payment_reference_timeout_seconds: float = 5.0
     keycloak_realm: str = "sio"
     keycloak_timeout_seconds: float = 5.0
 
@@ -71,6 +75,14 @@ def load_settings() -> Settings:
         ),
         party_identity_timeout_seconds=_read_positive_float(
             "PARTY_IDENTITY_TIMEOUT_SECONDS",
+            default=5.0,
+        ),
+        payment_reference_base_url=_read_text(
+            "PAYMENT_REFERENCE_SERVICE_BASE_URL",
+            default="http://localhost:8105",
+        ),
+        payment_reference_timeout_seconds=_read_positive_float(
+            "PAYMENT_REFERENCE_TIMEOUT_SECONDS",
             default=5.0,
         ),
         keycloak_base_url=_required_text("KEYCLOAK_BASE_URL").rstrip("/"),

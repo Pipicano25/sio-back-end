@@ -44,6 +44,28 @@ class GlobalProductRef:
 
 
 @dataclass(frozen=True, slots=True)
+class GlobalPresentationRef:
+    """Presentación global según `presentations/batch-lookup` (R-07)."""
+
+    found: bool
+    global_product_id: UUID | None = None
+    status: str | None = None
+    eligible_for_adoption: bool | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class PaymentConditionTypeRef:
+    """Tipo de condición de pago de Payment Reference (R-08).
+
+    `code` se usa solo en memoria para FR-033; nunca se guarda (Principio III).
+    """
+
+    id: UUID
+    code: str
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
 class IdentityRef:
     """Persona u organización de Party Identity: solo su estado (FR-057)."""
 
@@ -97,9 +119,37 @@ class ProductCatalogDirectory(Protocol):
         """Raises `DependencyUnavailableError`."""
         ...
 
-    def register_first_use(self, global_product_id: UUID) -> None:
-        """Raises `GlobalProductNotFoundError`, `GlobalProductNotEligibleError` o
-        `DependencyUnavailableError`."""
+    def register_first_use(
+        self,
+        global_product_id: UUID,
+        global_product_presentation_id: UUID | None = None,
+    ) -> None:
+        """Primer uso del producto o, si se indica, de la presentación (R-07).
+
+        Raises `GlobalProductNotFoundError`, `GlobalProductNotEligibleError` (sin
+        presentación), `GlobalPresentationNotFoundError`,
+        `GlobalPresentationNotEligibleError`, `GlobalPresentationOfOtherProductError`
+        (con presentación) o `DependencyUnavailableError`.
+        """
+        ...
+
+    def lookup_presentation(self, global_product_presentation_id: UUID) -> GlobalPresentationRef:
+        """Elegibilidad de una presentación global. Raises `DependencyUnavailableError`."""
+        ...
+
+    def get_product_base_unit(self, global_product_id: UUID) -> UUID | None:
+        """`base_unit_id` del producto global; `None` si no existe (FR-022).
+
+        Raises `DependencyUnavailableError`.
+        """
+        ...
+
+
+class PaymentReferenceDirectory(Protocol):
+    """Payment Reference con la identidad técnica propia (R-08, DS-02)."""
+
+    def get_condition_type(self, condition_type_id: UUID) -> PaymentConditionTypeRef | None:
+        """`None` si no existe. Raises `DependencyUnavailableError`."""
         ...
 
 

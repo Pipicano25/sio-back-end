@@ -1003,6 +1003,54 @@
           "description": "Eliminar o desactivar supplier_products en commercial-relationship"
         },
         {
+          "name": "perm:commercial-relationship:company_product_presentations:create",
+          "description": "Crear company_product_presentations en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_product_presentations:read",
+          "description": "Consultar company_product_presentations en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_product_presentations:update",
+          "description": "Actualizar company_product_presentations en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:company_product_presentations:delete",
+          "description": "Eliminar o desactivar company_product_presentations en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:price_lists:create",
+          "description": "Crear price_lists en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:price_lists:read",
+          "description": "Consultar price_lists en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:price_lists:update",
+          "description": "Actualizar price_lists en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:price_lists:delete",
+          "description": "Eliminar o desactivar price_lists en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:price_list_items:create",
+          "description": "Crear price_list_items en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:price_list_items:read",
+          "description": "Consultar price_list_items en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:price_list_items:update",
+          "description": "Actualizar price_list_items en commercial-relationship"
+        },
+        {
+          "name": "perm:commercial-relationship:price_list_items:delete",
+          "description": "Eliminar o desactivar price_list_items en commercial-relationship"
+        },
+        {
           "name": "perm:commercial-relationship:supplier_evaluations:create",
           "description": "Crear supplier_evaluations en commercial-relationship"
         },
@@ -1353,6 +1401,9 @@
           "perm:commercial-relationship:supplier_evaluations:read",
           "perm:commercial-relationship:supplier_payment_conditions:read",
           "perm:commercial-relationship:supplier_products:read",
+          "perm:commercial-relationship:company_product_presentations:read",
+          "perm:commercial-relationship:price_lists:read",
+          "perm:commercial-relationship:price_list_items:read",
           "perm:geography:global_administrative_divisions:read",
           "perm:geography:global_cities:read",
           "perm:geography:global_countries:read",
@@ -1412,6 +1463,9 @@
           "perm:commercial-relationship:supplier_evaluations:read",
           "perm:commercial-relationship:supplier_payment_conditions:read",
           "perm:commercial-relationship:supplier_products:read",
+          "perm:commercial-relationship:company_product_presentations:read",
+          "perm:commercial-relationship:price_lists:read",
+          "perm:commercial-relationship:price_list_items:read",
           "perm:geography:global_administrative_divisions:read",
           "perm:geography:global_cities:read",
           "perm:geography:global_countries:read",
@@ -1458,6 +1512,7 @@
   ],
   "users": [
     {
+      "id": "28bfb849-0520-423f-82b4-5bf16e7214de",
       "username": "service-account-party-identity-service",
       "enabled": true,
       "serviceAccountClientId": "party-identity-service",
@@ -1470,6 +1525,7 @@
       }
     },
     {
+      "id": "acee0c1b-1554-47c4-aca3-b05509661c23",
       "username": "service-account-operational-context-service",
       "enabled": true,
       "serviceAccountClientId": "operational-context-service",
@@ -1481,17 +1537,20 @@
       }
     },
     {
+      "id": "4d586bde-69d8-4f30-b05a-50b4ec68f72f",
       "username": "service-account-commercial-relationship-service",
       "enabled": true,
       "serviceAccountClientId": "commercial-relationship-service",
       "clientRoles": {
         "sio-api": [
           "perm:product-catalog:products:read",
-          "perm:product-catalog:first-use:register"
+          "perm:product-catalog:first-use:register",
+          "perm:payment-reference:global_payment_condition_types:read"
         ]
       }
     },
     {
+      "id": "13fb7acf-dac0-4fba-ae39-6759c77c3f97",
       "username": "admin.test",
       "enabled": true,
       "emailVerified": true,
@@ -1517,6 +1576,7 @@
       ]
     },
     {
+      "id": "c623059e-c281-4bfb-b8ad-e648f6daa104",
       "username": "supervisor.test",
       "enabled": true,
       "emailVerified": true,
@@ -1542,6 +1602,7 @@
       ]
     },
     {
+      "id": "3c29aee6-a22f-44ae-808e-ba86b908e84b",
       "username": "compras.test",
       "enabled": true,
       "emailVerified": true,
@@ -1567,6 +1628,7 @@
       ]
     },
     {
+      "id": "7a34c410-ce85-47d9-b897-8acb56e31449",
       "username": "ventas.test",
       "enabled": true,
       "emailVerified": true,
@@ -1592,6 +1654,7 @@
       ]
     },
     {
+      "id": "e3fb3ca8-1e0c-4b1c-86d3-30672762dc03",
       "username": "inventario.test",
       "enabled": true,
       "emailVerified": true,
@@ -1617,6 +1680,7 @@
       ]
     },
     {
+      "id": "5f8ce181-f01a-4ff2-a0cf-952b240e0008",
       "username": "reportes.test",
       "enabled": true,
       "emailVerified": true,
@@ -1642,6 +1706,7 @@
       ]
     },
     {
+      "id": "c30a0faf-cebc-4f6c-bc4f-031efb99ea4f",
       "username": "consulta.test",
       "enabled": true,
       "emailVerified": true,

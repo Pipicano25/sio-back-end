@@ -394,3 +394,208 @@ def test_company_summary_with_real_dependencies(client, company_id, organization
 
     default = client.get(f"{COMMERCIAL_RELATIONSHIP}/company-summaries").json()
     assert default["page_size"] == 1 and len(default["items"]) <= 1
+
+
+# --------------------------------------------------------------------------
+# Fase B (specs/010-commercial-relationship-commercial-product, T085)
+#
+# Además de lo anterior exige Payment Reference en `PAYMENT_REFERENCE_INTEGRATION_BASE_URL`
+# (por defecto `http://localhost:8105`, sin `/api/v1`), con su `seed` (`CASH`, `CREDIT`), y que el
+# cliente técnico `commercial-relationship-service` tenga en el realm importado
+# `perm:payment-reference:global_payment_condition_types:read` (plantilla del realm de la 010).
+# Caída de Payment Reference: `docker stop sio-payment-reference-service` y repetir el alta de una
+# condición; la respuesta es `503` con `dependency = payment-reference` (no se automatiza para no
+# detener servicios compartidos).
+# --------------------------------------------------------------------------
+
+PAYMENT_REFERENCE = os.environ.get("PAYMENT_REFERENCE_INTEGRATION_BASE_URL", "http://localhost:8105").rstrip("/")
+
+
+@pytest.fixture(scope="module")
+def adopted_product(client, company_id):
+    """Producto global nuevo y elegible (con su presentación base), adoptado en la empresa."""
+    unit = _first_id(client, f"{PRODUCT_CATALOG}/units-of-measure", status="ACTIVE")
+    category = client.post(f"{PRODUCT_CATALOG}/categories", json={
+        "code": f"VAL-CRB-{RUN_ID}", "name": f"Categoría ficticia de validación CR Fase B {RUN_ID}",
+    })
+    assert category.status_code == 201, category.text
+    product = client.post(f"{PRODUCT_CATALOG}/products", json={
+        "product_type": "GOOD", "canonical_name": f"Producto ficticio de validación CR Fase B {RUN_ID}",
+        "base_unit_id": unit,
+    })
+    assert product.status_code == 201, product.text
+    product_id = product.json()["id"]
+    assert client.post(f"{PRODUCT_CATALOG}/products/{product_id}/categories",
+                       json={"global_category_id": category.json()["id"]}).status_code == 201
+    presentation = client.post(f"{PRODUCT_CATALOG}/products/{product_id}/presentations", json={
+        "code": f"CJ-{RUN_ID}", "name": "Caja (dato ficticio)", "is_base": True,
+    })
+    assert presentation.status_code == 201, presentation.text
+
+    adopted = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/company-products", json={
+        "global_product_id": product_id, "internal_code": f"VALB-{RUN_ID}",
+        "display_name": f"Producto ficticio Fase B {RUN_ID}", "currency_code": "COP", "sale_price": "1200.00",
+    })
+    assert adopted.status_code == 201, adopted.text
+    return {"global_product_id": product_id, "base_unit_id": unit,
+            "global_presentation_id": presentation.json()["id"], "company_product": adopted.json()}
+
+
+@pytest.fixture(scope="module")
+def adopted_presentation(client, company_id, adopted_product):
+    response = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/company-product-presentations", json={
+        "company_product_id": adopted_product["company_product"]["id"],
+        "global_product_presentation_id": adopted_product["global_presentation_id"],
+        "sku": f"SKU-{RUN_ID}", "is_default_purchase": True,
+    })
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+@pytest.fixture(scope="module")
+def phase_b_supplier(client, company_id, colombia):
+    organization = _organization(client, colombia, "proveedor Fase B")
+    response = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/company-suppliers", json={
+        "organization_identity_id": organization, "internal_code": f"PRVB-{RUN_ID}",
+        "display_name": f"Proveedor ficticio Fase B {RUN_ID}",
+    })
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def test_presentation_adoption_registers_first_use(client, adopted_product, adopted_presentation):
+    assert adopted_presentation["is_default_purchase"] is True
+    presentations = client.get(f"{PRODUCT_CATALOG}/products/{adopted_product['global_product_id']}/presentations").json()
+    presentation = next(item for item in presentations if item["id"] == adopted_product["global_presentation_id"])
+    assert presentation["first_used_at"] is not None
+
+
+def test_supplier_product_with_real_base_unit(client, company_id, adopted_product, adopted_presentation, phase_b_supplier):
+    url = f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/supplier-products"
+    body = {"company_supplier_id": phase_b_supplier["id"], "company_product_id": adopted_product["company_product"]["id"],
+            "company_product_presentation_id": adopted_presentation["id"], "currency_code": "COP"}
+
+    wrong = client.post(url, json={**body, "purchase_unit_id": str(uuid4())})
+    assert wrong.status_code == 422, wrong.text
+    assert wrong.json()["code"] == "COMMERCIAL_RELATIONSHIP.PURCHASE_UNIT_NOT_BASE_UNIT"
+
+    created = client.post(url, json={**body, "purchase_unit_id": adopted_product["base_unit_id"]})
+    assert created.status_code == 201, created.text
+
+
+def test_payment_conditions_with_real_payment_reference(client, company_id, phase_b_supplier):
+    types = client.get(f"{PAYMENT_REFERENCE}/global-payment-condition-types", params={"page_size": 100})
+    if types.status_code != 200:
+        pytest.skip(f"Payment Reference no disponible para integración: {types.status_code}")
+    by_code = {item["code"]: item["id"] for item in types.json()["items"] if item["status"] == "ACTIVE"}
+    url = f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/supplier-payment-conditions"
+    common = {"company_supplier_id": phase_b_supplier["id"], "currency_code": "COP"}
+
+    cash_with_terms = client.post(url, json={**common, "payment_condition_type_id": by_code["CASH"], "payment_terms_days": 15})
+    assert cash_with_terms.status_code == 422, cash_with_terms.text
+    assert cash_with_terms.json()["code"] == "COMMERCIAL_RELATIONSHIP.PAYMENT_TERMS_INCONSISTENT"
+
+    credit = client.post(url, json={**common, "payment_condition_type_id": by_code["CREDIT"], "payment_terms_days": 30,
+                                    "credit_limit": "5000000.00", "is_default": True})
+    assert credit.status_code == 201, credit.text
+    assert "code" not in credit.json()
+
+
+def test_price_list_change_price_and_applicable_price(client, company_id, adopted_product):
+    price_list = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-lists", json={
+        "code": f"LB-{RUN_ID}", "name": f"Lista ficticia {RUN_ID}", "currency_code": "COP", "is_default": True,
+    })
+    assert price_list.status_code == 201, price_list.text
+    price = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-list-items", json={
+        "price_list_id": price_list.json()["id"], "company_product_id": adopted_product["company_product"]["id"],
+        "unit_price": "1500", "valid_from": "2026-01-01T00:00:00Z",
+    })
+    assert price.status_code == 201, price.text
+
+    changed = client.post(f"{COMMERCIAL_RELATIONSHIP}/price-list-items/{price.json()['id']}/change-price",
+                          json={"unit_price": "1600", "effective_from": "2099-01-01T00:00:00Z", "version": 1})
+    assert changed.status_code == 201, changed.text
+
+    resolved = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/applicable-prices/resolve", json={
+        "at": "2027-01-01T00:00:00Z", "lines": [{"company_product_id": adopted_product["company_product"]["id"]}],
+    })
+    assert resolved.status_code == 200, resolved.text
+    line = resolved.json()["items"][0]
+    assert (line["resolution"], line["unit_price"]) == ("PRICE_LIST_ITEM", "1500.00")
+
+
+def test_service_account_reads_phase_b_with_lookup(service_token, adopted_presentation):
+    response = httpx.get(
+        f"{COMMERCIAL_RELATIONSHIP}/company-product-presentations/{adopted_presentation['id']}",
+        headers={"Authorization": f"Bearer {service_token}"}, timeout=15,
+    )
+    # El cliente técnico de Commercial Relationship no tiene lectura de sus propios recursos: `403` sin
+    # revelar el permiso (D3). Un consumidor (Purchase, Sales) recibirá lectura y `platform:lookup` en su Spec.
+    assert response.status_code == 403
+    assert "perm:" not in response.text
+
+
+# ---- Escenarios de quickstart.md de la 010 con servicios reales (T093) ----
+
+
+def _password_token(username: str) -> str:
+    return httpx.post(TOKEN_URL, data={
+        "grant_type": "password", "client_id": "sio-web", "scope": "openid",
+        "username": username, "password": _secret(PASSWORD_VARIABLE),
+    }, timeout=15).raise_for_status().json()["access_token"]
+
+
+def test_quickstart_presentations_default_swap_and_rejections(client, company_id, adopted_product, adopted_presentation):
+    """Escenarios 2 y 3: cambio atómico de predeterminada y presentación de otro producto."""
+    product = adopted_product["company_product"]
+    global_product = adopted_product["global_product_id"]
+    second = client.post(f"{PRODUCT_CATALOG}/products/{global_product}/presentations", json={
+        "code": f"SB-{RUN_ID}", "name": "Sobre (dato ficticio)", "base_quantity": "10", "is_base": False,
+    })
+    assert second.status_code == 201, second.text
+
+    adopted = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/company-product-presentations", json={
+        "company_product_id": product["id"], "global_product_presentation_id": second.json()["id"],
+        "is_default_purchase": True,
+    })
+    assert adopted.status_code == 201, adopted.text
+    previous = client.get(f"{COMMERCIAL_RELATIONSHIP}/company-product-presentations/{adopted_presentation['id']}").json()
+    assert previous["is_default_purchase"] is False and previous["version"] == adopted_presentation["version"] + 1
+
+    duplicate = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/company-product-presentations", json={
+        "company_product_id": product["id"], "global_product_presentation_id": second.json()["id"],
+    })
+    assert duplicate.json()["code"] == "COMMERCIAL_RELATIONSHIP.DUPLICATE_PRESENTATION_ADOPTION"
+
+
+def test_quickstart_prices_in_effect_explicit_list_history_and_access(client, company_id, foreign_company_id, adopted_product):
+    """Escenarios 12, 14, 15, 16 y 17 con servicios reales."""
+    product = adopted_product["company_product"]
+    price_list = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-lists", json={
+        "code": f"QS-{RUN_ID}", "name": "Lista quickstart (dato ficticio)", "currency_code": "COP",
+    }).json()
+    price = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-list-items", json={
+        "price_list_id": price_list["id"], "company_product_id": product["id"], "unit_price": "2000",
+        "valid_from": "2026-01-01T00:00:00Z", "valid_to": "2026-02-01T00:00:00Z",
+    }).json()
+
+    in_effect = client.put(f"{COMMERCIAL_RELATIONSHIP}/price-list-items/{price['id']}", json={
+        "unit_price": "2100", "valid_from": price["valid_from"], "valid_to": price["valid_to"], "version": 1,
+    })
+    assert in_effect.json()["code"] == "COMMERCIAL_RELATIONSHIP.PRICE_IN_EFFECT_NOT_MODIFIABLE"
+
+    resolve = f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/applicable-prices/resolve"
+    history = client.post(resolve, json={"at": "2026-01-15T00:00:00Z", "lines": [
+        {"company_product_id": product["id"], "price_list_id": price_list["id"]}]}).json()["items"][0]
+    assert (history["resolution"], history["unit_price"]) == ("PRICE_LIST_ITEM", "2000.00")
+    no_price = client.post(resolve, json={"at": "2027-01-01T00:00:00Z", "lines": [
+        {"company_product_id": product["id"], "price_list_id": price_list["id"]}]}).json()["items"][0]
+    assert no_price["resolution"] == "NO_PRICE_IN_LIST" and no_price["unit_price"] is None
+
+    inventory = {"Authorization": f"Bearer {_password_token('inventario.test')}"}
+    assert httpx.get(f"{COMMERCIAL_RELATIONSHIP}/price-lists/{price_list['id']}", headers=inventory, timeout=15).status_code == 403
+    sales = {"Authorization": f"Bearer {_password_token('ventas.test')}"}
+    write = httpx.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-lists", headers=sales,
+                       json={"code": "X", "name": "X", "currency_code": "COP"}, timeout=15)
+    assert write.status_code == 403 and "perm:" not in write.text
+    assert client.get(f"{COMMERCIAL_RELATIONSHIP}/companies/{foreign_company_id}/price-lists").status_code == 404

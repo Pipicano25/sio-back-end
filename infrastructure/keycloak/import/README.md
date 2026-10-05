@@ -13,14 +13,15 @@ realm de desarrollo para SIO con:
 - Roles de cliente y grupos predefinidos.
 - Usuarios de prueba asociados a grupos y credenciales.
 
-> Keycloak **no sustituye de forma confiable variables de entorno custom**
-> dentro del JSON de import nativo (`--import-realm`). Por eso la plantilla
-> con `${VAR}` NO es el archivo que Keycloak lee directamente: primero se
-> renderiza a `sio-realm.json` (sin placeholders) usando
-> `../scripts/render-realm.sh`, y ese archivo generado es el que se monta
-> en el contenedor. `sio-realm.json` no se versiona en git (está en
-> `.gitignore`) porque contiene el valor real de
-> `KEYCLOAK_TEST_USER_PASSWORD`.
+> `compose.yaml` monta la **plantilla** como `/opt/keycloak/data/import/sio-realm.json` y Keycloak
+> (`--import-realm`) sustituye los `${VAR}` con las variables de entorno del contenedor (verificado al
+> reconstruir Keycloak el 2026-10-05). `../scripts/render-realm.sh` genera aparte una copia resuelta
+> en `sio-realm.json` solo para validarla; ese archivo no se versiona (está en `.gitignore`) porque
+> contiene contraseñas y secretos reales.
+>
+> Los usuarios de prueba y las cuentas de servicio tienen `id` fijo en la plantilla: su `sub` no
+> cambia al reconstruir Keycloak, de modo que siguen siendo válidas las referencias que guardan otros
+> servicios (membresías de Operational Context, auditoría `created_by`/`first_used_by`).
 
 ## Variables de entorno usadas
 
@@ -28,6 +29,8 @@ realm de desarrollo para SIO con:
 - `${SIO_WEB_ORIGIN}`: URL base del frontend.
 - `${SIO_WEB_REDIRECT_URI}`: URI de redirección para el cliente web.
 - `${KEYCLOAK_TEST_USER_PASSWORD}`: contraseña común para los usuarios de prueba.
+- `${PARTY_IDENTITY_CLIENT_SECRET}`, `${OPERATIONAL_CONTEXT_CLIENT_SECRET}`,
+  `${COMMERCIAL_RELATIONSHIP_CLIENT_SECRET}`: secretos de los clientes técnicos (solo en `.env`).
 
 ## Secciones principales
 

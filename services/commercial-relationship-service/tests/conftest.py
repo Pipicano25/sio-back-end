@@ -6,8 +6,9 @@
   clave RSA temporal (sin Keycloak, Principio IV). Los usuarios llevan los roles
   de sus grupos en la plantilla del realm; la cuenta de servicio lleva
   `client_id` y `preferred_username = service-account-{client_id}` (R-11).
-- Operational Context, Product Catalog y Party Identity se sustituyen por dobles
-  de sus puertos (`tests/fakes.py`) inyectados en `create_app` (FR-050).
+- Operational Context, Product Catalog, Party Identity y Payment Reference se
+  sustituyen por dobles de sus puertos (`tests/fakes.py`) inyectados en
+  `create_app` (FR-050; FR-070 de la 010).
 """
 
 from __future__ import annotations
@@ -48,19 +49,39 @@ from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
 
 from commercial_relationship_service.config import Settings  # noqa: E402
 from commercial_relationship_service.main import create_app  # noqa: E402
-from tests.fakes import FakeOperationalContext, FakePartyIdentity, FakeProductCatalog  # noqa: E402
+from tests.fakes import (  # noqa: E402
+    FakeOperationalContext,
+    FakePartyIdentity,
+    FakePaymentReference,
+    FakeProductCatalog,
+)
 
 TEST_ISSUER = "https://keycloak.test/realms/sio"
 TEST_AUDIENCE = "sio-api"
 TEST_KID = "test-key"
 
-FUNCTIONAL_TABLES = ("company_products", "company_customers", "company_suppliers")
+FUNCTIONAL_TABLES = (
+    "price_list_items",
+    "price_lists",
+    "supplier_payment_conditions",
+    "supplier_products",
+    "company_product_presentations",
+    "company_products",
+    "company_customers",
+    "company_suppliers",
+)
 
 LOOKUP = "perm:commercial-relationship:platform:lookup"
 CR_READ = (
     "perm:commercial-relationship:company_products:read",
     "perm:commercial-relationship:company_customers:read",
     "perm:commercial-relationship:company_suppliers:read",
+    # Fase B (R-12 de la 010): lectura de las cinco entidades nuevas.
+    "perm:commercial-relationship:company_product_presentations:read",
+    "perm:commercial-relationship:supplier_products:read",
+    "perm:commercial-relationship:supplier_payment_conditions:read",
+    "perm:commercial-relationship:price_lists:read",
+    "perm:commercial-relationship:price_list_items:read",
 )
 
 # Roles de cada usuario de prueba según su grupo en la plantilla del realm.
@@ -292,6 +313,11 @@ def fake_party() -> FakePartyIdentity:
 
 
 @pytest.fixture
+def fake_payment() -> FakePaymentReference:
+    return FakePaymentReference()
+
+
+@pytest.fixture
 def test_settings(test_database_url: str) -> Settings:
     return Settings(
         docs_enabled=True,
@@ -299,18 +325,20 @@ def test_settings(test_database_url: str) -> Settings:
         operational_context_base_url="http://operational-context.test/api/v1",
         product_catalog_base_url="http://product-catalog.test/api/v1",
         party_identity_base_url="http://party-identity.test/api/v1",
+        payment_reference_base_url="http://payment-reference.test",
         keycloak_base_url="http://keycloak.test",
         keycloak_client_id="commercial-relationship-service",
         keycloak_client_secret="test-only-secret",
         operational_context_timeout_seconds=1.0,
         product_catalog_timeout_seconds=1.0,
         party_identity_timeout_seconds=1.0,
+        payment_reference_timeout_seconds=1.0,
         keycloak_timeout_seconds=1.0,
     )
 
 
 @pytest.fixture
-def app(test_settings, clean_database, test_auth, fake_oc, fake_catalog, fake_party):
+def app(test_settings, clean_database, test_auth, fake_oc, fake_catalog, fake_party, fake_payment):
     return create_app(
         test_settings,
         auth=test_auth,
@@ -318,6 +346,7 @@ def app(test_settings, clean_database, test_auth, fake_oc, fake_catalog, fake_pa
         company_directory_factory=fake_oc.companies_for,
         product_directory_factory=lambda request: fake_catalog,
         party_directory_factory=lambda request: fake_party,
+        payment_directory_factory=lambda request: fake_payment,
     )
 
 

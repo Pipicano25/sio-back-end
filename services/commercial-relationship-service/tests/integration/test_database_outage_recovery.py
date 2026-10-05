@@ -104,6 +104,12 @@ def item_url(client):
     return f"{ITEM_PREFIX}/{items[0]['company_id']}/company-products"
 
 
+@pytest.fixture
+def phase_b_url(item_url):
+    """Ruta de la Fase B (feature 010, T086) de la misma empresa: listas de precios."""
+    return item_url.removesuffix("/company-products") + "/price-lists"
+
+
 def _health(path: str) -> str:
     return f"{BASE}/health/{path}"
 
@@ -116,16 +122,18 @@ def _assert_controlled_503(response: httpx.Response) -> None:
     assert body["dependency"] == "database"
 
 
-def _assert_ready_again(client, item_url, app_started_at) -> float:
+def _assert_ready_again(client, item_url, app_started_at, phase_b_url=None) -> float:
     elapsed = _wait(lambda: _status(client, _health("ready")) == 200, RECOVERY_SECONDS,
                     "El servicio no volvió a ready.")
     assert _status(client, item_url) == 200
+    if phase_b_url is not None:
+        assert _status(client, phase_b_url) == 200
     assert _status(client, COLLECTION) == 200
     assert _inspect(APP_CONTAINER, "{{.State.StartedAt}}") == app_started_at, "La aplicación se reinició"
     return elapsed
 
 
-def test_prolonged_outage_returns_controlled_503_and_recovers(client, item_url):
+def test_prolonged_outage_returns_controlled_503_and_recovers(client, item_url, phase_b_url):
     app_started_at = _inspect(APP_CONTAINER, "{{.State.StartedAt}}")
     _docker("stop", DB_CONTAINER)
     try:
@@ -134,17 +142,18 @@ def test_prolonged_outage_returns_controlled_503_and_recovers(client, item_url):
         assert client.get(_health("ready"), timeout=30).status_code == 503
         _assert_controlled_503(client.get(item_url, timeout=30))
         _assert_controlled_503(client.get(COLLECTION, timeout=30))
+        _assert_controlled_503(client.get(phase_b_url, timeout=30))
         outage_seconds = time.monotonic() - started
         assert outage_seconds < DEADLINE_SECONDS
     finally:
         _docker("start", DB_CONTAINER)
 
     _wait(lambda: _inspect(DB_CONTAINER, "{{.State.Health.Status}}") == "healthy", 120, "La base no volvió a healthy.")
-    recovery = _assert_ready_again(client, item_url, app_started_at)
+    recovery = _assert_ready_again(client, item_url, app_started_at, phase_b_url)
     print(f"caida_prolongada respuestas_con_base_caida={outage_seconds:.2f}s recuperacion_ready={recovery:.2f}s")
 
 
-def test_unexpected_crash_is_restarted_by_docker(client, item_url):
+def test_unexpected_crash_is_restarted_by_docker(client, item_url, phase_b_url):
     app_started_at = _inspect(APP_CONTAINER, "{{.State.StartedAt}}")
     assert _inspect(DB_CONTAINER, "{{.HostConfig.RestartPolicy.Name}}") in {"unless-stopped", "always"}
     assert _inspect(APP_CONTAINER, "{{.HostConfig.RestartPolicy.Name}}") in {"unless-stopped", "always"}
@@ -158,5 +167,5 @@ def test_unexpected_crash_is_restarted_by_docker(client, item_url):
     _wait(lambda: int(_inspect(DB_CONTAINER, "{{.RestartCount}}")) > restarts_before, 60,
           "Docker no reinició la base tras la caída inesperada.")
     _wait(lambda: _inspect(DB_CONTAINER, "{{.State.Health.Status}}") == "healthy", 120, "La base no volvió a healthy.")
-    recovery = _assert_ready_again(client, item_url, app_started_at)
+    recovery = _assert_ready_again(client, item_url, app_started_at, phase_b_url)
     print(f"caida_inesperada recuperacion_ready={recovery:.2f}s")

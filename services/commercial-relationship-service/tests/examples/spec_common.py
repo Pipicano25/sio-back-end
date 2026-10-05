@@ -3,7 +3,7 @@
 Cada ejercicio es una lista de pasos y cada paso una lista de llamadas. La prueba
 `test_examples.py` las ejecuta contra la API y `render.py` genera la documentación.
 
-Las llamadas a Operational Context, Product Catalog y Party Identity (clase C) no se
+Las llamadas a Operational Context, Product Catalog, Party Identity y Payment Reference (clase C) no se
 ejecutan: son **externas** y sus resultados se simulan con los UUID ficticios de este
 módulo, que la prueba registra en los dobles de los puertos (Principio IV).
 """
@@ -218,4 +218,106 @@ def get_contact(variable, contact_id, organization_variable, description):
         sample={"items": [{"id": f"<{variable}>", "organization_identity_id": f"<{organization_variable}>",
                            "is_active": True, "position": "<cargo ficticio>"}],
                 "page": 1, "page_size": 20, "total_records": 1, "total_pages": 1},
+    )
+
+
+# --------------------------------------------------------------------------
+# Fase B (specs/010-commercial-relationship-commercial-product): ejercicios 4–6
+# --------------------------------------------------------------------------
+
+PAYMENT_REFERENCE = "http://localhost:8105"
+
+EMPRESA_EJ4 = "c0a1c0a1-0000-4000-8000-000000000e04"
+EMPRESA_EJ5 = "c0a1c0a1-0000-4000-8000-000000000e05"
+EMPRESA_EJ6 = "c0a1c0a1-0000-4000-8000-000000000e06"
+ORG_EMPRESA_EJ4 = "7a1c0f10-0000-4000-8000-0000000c0e04"
+ORG_EMPRESA_EJ5 = "7a1c0f10-0000-4000-8000-0000000c0e05"
+ORG_EMPRESA_EJ6 = "7a1c0f10-0000-4000-8000-0000000c0e06"
+COMPANIES.update({EMPRESA_EJ4: ORG_EMPRESA_EJ4, EMPRESA_EJ5: ORG_EMPRESA_EJ5, EMPRESA_EJ6: ORG_EMPRESA_EJ6})
+COMPANY_NAMES.update({
+    ORG_EMPRESA_EJ4: "DROGUERÍA PRESENTACIONES FICTICIA S.A.S.",
+    ORG_EMPRESA_EJ5: "DROGUERÍA COMPRAS FICTICIA S.A.S.",
+    ORG_EMPRESA_EJ6: "DROGUERÍA PRECIOS FICTICIA S.A.S.",
+})
+
+# Producto real de la fila 16577 (único con `Precio Lista` en la fuente).
+GP_IRBESARTAN = "9a9a9a9a-0000-4000-8000-000000022315"     # Código 022315, fila 16577
+GLOBAL_PRODUCTS[GP_IRBESARTAN] = ("ACTIVE", True)
+
+# Presentaciones globales (Product Catalog). Sus nombres viven en Product Catalog; aquí son **ficticias**.
+GPRES_ACETA_CAJA = "8b8b8b8b-0000-4000-8000-000000000451"   # Caja x100 (presentación base del producto)
+GPRES_ACETA_SOBRE = "8b8b8b8b-0000-4000-8000-000000000452"  # Sobre x10
+GPRES_AGUJA_CAJA = "8b8b8b8b-0000-4000-8000-000000005371"   # Caja x100 de la aguja (otro producto)
+GPRES_IRBE_CAJA = "8b8b8b8b-0000-4000-8000-000000223151"    # Caja x30 del irbesartán
+# presentación -> (producto global, estado, elegible)
+GLOBAL_PRESENTATIONS = {
+    GPRES_ACETA_CAJA: (GP_ACETAMINOFEN, "ACTIVE", True),
+    GPRES_ACETA_SOBRE: (GP_ACETAMINOFEN, "ACTIVE", True),
+    GPRES_AGUJA_CAJA: (GP_AGUJA, "ACTIVE", True),
+    GPRES_IRBE_CAJA: (GP_IRBESARTAN, "ACTIVE", True),
+}
+
+# Unidad base de cada producto global (Product Catalog, `base_unit_id`).
+UNIDAD_CAJA = "7c7c7c7c-0000-4000-8000-00000000ca1a"
+UNIDAD_OTRA = "7c7c7c7c-0000-4000-8000-00000000ffff"
+BASE_UNITS = {GP_ACETAMINOFEN: UNIDAD_CAJA, GP_AGUJA: UNIDAD_CAJA, GP_IRBESARTAN: UNIDAD_CAJA}
+
+# Proveedor ficticio de los ejercicios 5–6 y tipos de condición de pago (Payment Reference, `seed`).
+ORG_PROVEEDOR_EJ5 = "6f6f6f6f-0000-4000-8000-000000000005"
+ORGANIZATIONS[ORG_PROVEEDOR_EJ5] = "ACTIVE"
+TIPO_CASH = "3c3c3c3c-0000-4000-8000-00000000ca5e"
+TIPO_CREDIT = "3c3c3c3c-0000-4000-8000-00000000c2ed"
+# tipo -> (código, estado)
+CONDITION_TYPES = {TIPO_CASH: ("CASH", "ACTIVE"), TIPO_CREDIT: ("CREDIT", "ACTIVE")}
+
+
+def get_global_presentation(variable, presentation_id, product_variable, description):
+    return call(
+        f"Consultar la presentación global {description} en Product Catalog",
+        "GET",
+        f"{PRODUCT_CATALOG}/products/<{product_variable}>/presentations",
+        external="Product Catalog Service",
+        perm="perm:product-catalog:products:read",
+        why=[
+            "Commercial Relationship **no copia** el nombre, la cantidad base ni el empaque de la presentación global: "
+            "solo guarda su `id` (`global_product_presentation_id`, FR-017).",
+            "Al adoptar, el servicio vuelve a comprobar en Product Catalog que esté `ACTIVE`, sea elegible y "
+            "pertenezca al mismo producto global, y registra su **primer uso** con su identidad técnica.",
+        ],
+        save={variable: "[0].id"},
+        fake={variable: presentation_id},
+        sample=[{"id": f"<{variable}>", "global_product_id": f"<{product_variable}>",
+                 "name": f"{description} (nombre en Product Catalog)", "status": "ACTIVE",
+                 "eligible_for_adoption": True}],
+    )
+
+
+def get_base_unit(variable, unit_id, product_variable):
+    return call(
+        "Consultar la unidad base del producto global en Product Catalog",
+        "GET",
+        f"{PRODUCT_CATALOG}/products/<{product_variable}>",
+        external="Product Catalog Service",
+        perm="perm:product-catalog:products:read",
+        why=["En el MVP no hay conversión de unidades (OP-01): la unidad de compra de un producto de proveedor es "
+             "siempre la **unidad base** del producto global (DS-07). El servicio la verifica con su identidad técnica."],
+        save={variable: "base_unit_id"},
+        fake={variable: unit_id},
+        sample={"id": f"<{product_variable}>", "base_unit_id": f"<{variable}>", "status": "ACTIVE"},
+    )
+
+
+def get_condition_type(variable, type_id, code):
+    return call(
+        f"Consultar el tipo de condición de pago {code} en Payment Reference",
+        "GET",
+        f"{PAYMENT_REFERENCE}/global-payment-condition-types?code={code}",
+        external="Payment Reference Service",
+        perm="perm:payment-reference:global_payment_condition_types:read",
+        why=["Commercial Relationship **no guarda** el código ni el nombre del tipo: solo su `id`. Lo consulta con "
+             "su identidad técnica para validar que esté `ACTIVE` y que el plazo corresponda (`CASH` → 0 días; "
+             "`CREDIT` y `FINANCING` → más de 0, FR-033)."],
+        save={variable: "items[0].id"},
+        fake={variable: type_id},
+        sample={"items": [{"id": f"<{variable}>", "code": code, "name": "<nombre del tipo>", "status": "ACTIVE"}]},
     )

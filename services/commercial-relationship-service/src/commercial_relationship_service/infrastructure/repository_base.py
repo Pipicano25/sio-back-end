@@ -9,6 +9,7 @@ restricción (R-08).
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any, Generic, TypeVar
 from uuid import UUID
 
@@ -41,6 +42,7 @@ class SQLAlchemyRepositoryBase(Generic[ModelT]):
 
     model: type[ModelT]
     search_columns: tuple[str, ...] = ()
+    order_columns: tuple[str, ...] = ("display_name", "id")
     duplicates: dict[str, Callable[[], CommercialRelationshipError]] = {}
 
     def __init__(self, session: Session) -> None:
@@ -85,8 +87,9 @@ class SQLAlchemyRepositoryBase(Generic[ModelT]):
         filters: dict[str, Any],
         page: int,
         page_size: int,
+        conditions: tuple[Any, ...] = (),
     ) -> PageResult[ModelT]:
-        statement: Select = select(self.model).where(self.model.company_id == company_id)
+        statement: Select = select(self.model).where(self.model.company_id == company_id, *conditions)
 
         effective_status = status or DEFAULT_STATUS
 
@@ -111,7 +114,7 @@ class SQLAlchemyRepositoryBase(Generic[ModelT]):
         total = self.session.scalar(select(func.count()).select_from(statement.subquery())) or 0
         rows = list(
             self.session.scalars(
-                statement.order_by(self.model.display_name, self.model.id)
+                statement.order_by(*(getattr(self.model, column) for column in self.order_columns))
                 .offset((page - 1) * page_size)
                 .limit(page_size)
             )
@@ -164,3 +167,45 @@ class SQLAlchemyRepositoryBase(Generic[ModelT]):
     def release(self) -> None:
         """Libera la fila bloqueada sin cambios (`PUT` idéntico)."""
         end_read(self.session)
+
+    # ------------------------------------------- Fase B: bloqueos y marcas (R-04)
+
+    def database_now(self) -> datetime:
+        """Instante `now()` de la transacción en curso (R-06: "en vigencia" según la base).
+
+        No cierra la transacción: se usa dentro de una escritura en curso.
+        """
+        return self.session.scalar(select(func.now()))
+
+    def lock_scope_row(self, model: type, entity_id: UUID) -> None:
+        """Bloquea la fila "ámbito" (`SELECT … FOR UPDATE`) antes de cambiar marcas (R-04)."""
+        self.session.execute(select(model.id).where(model.id == entity_id).with_for_update())
+
+    def lock_advisory(self, key: str) -> None:
+        """Bloqueo consultivo de transacción para ámbitos sin fila propia (R-04)."""
+        self.session.execute(
+            select(func.pg_advisory_xact_lock(func.hashtextextended(key, 0)))
+        )
+
+    def clear_marks(self, flag: str, *conditions: Any, exclude_id: UUID | None, actor: str) -> None:
+        """Retira la marca `flag` de los registros `ACTIVE` del ámbito (cambio atómico, DS-04).
+
+        Cada registro desmarcado incrementa su `version` y registra `updated_by` y
+        `updated_at` (FR-092, Principio VII). Se envía a la base antes de marcar el
+        nuevo registro para que el índice único parcial nunca vea dos marcas.
+        """
+        statement = select(self.model).where(
+            *conditions,
+            getattr(self.model, flag).is_(True),
+            self.model.status == "ACTIVE",
+        )
+
+        if exclude_id is not None:
+            statement = statement.where(self.model.id != exclude_id)
+
+        for row in self.session.scalars(statement.with_for_update()):
+            setattr(row, flag, False)
+            row.updated_by = actor
+            row.updated_at = datetime.now(UTC)
+
+        self.session.flush()

@@ -35,12 +35,18 @@ def load_for_update(
         NotFoundError: Si la fila no existe.
         VersionConflictError: Si la versión no coincide.
     """
-    model = session.get(
-        model_class,
-        entity_id,
-        with_for_update=True,
-        populate_existing=True,
-    )
+    try:
+        model = session.get(
+            model_class,
+            entity_id,
+            with_for_update=True,
+            populate_existing=True,
+        )
+    except StaleDataError:
+        # La fila ya estaba en la sesión con otra versión (leída antes de que otra
+        # transacción la confirmara): es un conflicto de versión, no un error interno.
+        session.rollback()
+        raise VersionConflictError from None
 
     if model is None:
         session.rollback()

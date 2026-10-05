@@ -60,3 +60,25 @@ def validate_price_scale(price: Decimal, currency_code: str, *, field: str = "sa
             f"El precio admite como máximo {allowed} decimales en {currency_code}.",
             field=field,
         )
+
+
+def currency_places(currency_code: str) -> int:
+    """Decimales oficiales de la moneda (para validar y presentar importes, R-11)."""
+    return CURRENCY_DECIMALS[currency_code]
+
+
+def validate_amount_scale(amount: Decimal, currency_code: str, *, field: str) -> None:
+    """`unit_price` y `credit_limit`: a lo sumo los decimales de su moneda (DS-10).
+
+    Misma regla que `sale_price` (FR-014a de la 007), sin redondeo silencioso.
+
+    Raises:
+        PriceScaleNotAllowedError: Si el importe excede los decimales de la moneda.
+    """
+    validate_price_scale(amount, currency_code, field=field)
+
+
+def format_amount(amount: Decimal, places: int) -> str:
+    """Importe como cadena decimal con la escala indicada (R-11; nunca número JSON)."""
+    quantum = Decimal(1).scaleb(-places)
+    return format(Decimal(amount).quantize(quantum), "f")

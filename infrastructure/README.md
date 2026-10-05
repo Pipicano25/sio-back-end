@@ -103,12 +103,9 @@ cp .env.example .env
 
 > No se incluye la base de datos de producción ni usuarios reales. Esta infraestructura es para desarrollo/local.
 
-Después de crear `.env`, renderiza el realm de Keycloak (obligatorio, ver
-sección siguiente):
-
-```bash
-./scripts/render-realm.sh
-```
+Después de crear `.env`, Keycloak importa el realm desde la plantilla versionada al iniciar con una
+base vacía (ver sección siguiente). `./scripts/render-realm.sh` es opcional: solo comprueba que la
+plantilla se resuelve con los valores de `.env`.
 
 ## Configuración de Keycloak
 
@@ -116,11 +113,16 @@ El realm inicial de Keycloak se define en una **plantilla**:
 
 - `keycloak/realm-template/sio-realm.template.json`
 
-Keycloak no sustituye variables de entorno custom de forma confiable en su
-import nativo, así que esta plantilla se renderiza a
-`keycloak/import/sio-realm.json` (sin placeholders, no versionado) con
-`./scripts/render-realm.sh` — ese es el archivo que Keycloak realmente
-importa. Ver `keycloak/import/README.md` para el detalle completo.
+`compose.yaml` monta esta plantilla como `/opt/keycloak/data/import/sio-realm.json` y Keycloak
+(`--import-realm`) sustituye los `${VAR}` con las variables de entorno del contenedor, que vienen de
+`.env` (realm, URL de `sio-web`, contraseña de los usuarios de prueba y secretos de los clientes
+técnicos). Ningún secreto se versiona: la plantilla solo contiene sus referencias `${…}`.
+
+**El repositorio es la fuente de verdad** del realm: usuarios de prueba (con `id` fijo, para que su
+`sub` sea el mismo en cada reconstrucción y sigan siendo válidas las referencias que otros servicios
+guardan, p. ej. las membresías de Operational Context), grupos, roles y permisos, clientes, cuentas de
+servicio y sus roles, scopes y mappers. No se configura nada a mano en la consola: un cambio se hace
+en la plantilla y se aplica reconstruyendo Keycloak. Ver `keycloak/import/README.md`.
 
 El realm incluye:
 
@@ -131,6 +133,10 @@ El realm incluye:
 - Grupos generales
 - Audience mapper
 - Configuración PKCE S256
+- Clientes técnicos con cuenta de servicio (`party-identity-service`, `operational-context-service`,
+  `commercial-relationship-service`) y sus roles
+- Usuarios de prueba (`admin.test`, `supervisor.test`, `compras.test`, `ventas.test`,
+  `reportes.test`, `consulta.test`, `inventario.test`) con `id` fijo
 
 No contiene datos de empresas, sucursales ni usuarios productivos.
 
@@ -150,7 +156,6 @@ bash scripts/rebuild-all.sh --status    # estado por proyecto
 
 ```bash
 cp .env.example .env   # si aún no existe
-./scripts/render-realm.sh
 docker compose --file compose.yaml --env-file .env up --build -d
 ```
 
@@ -201,6 +206,21 @@ docker compose --file compose.yaml --env-file .env down
 ```bash
 docker compose --file compose.yaml --env-file .env up -d --force-recreate keycloak-db
 ```
+
+### Reconstruir Keycloak desde la plantilla
+
+`--import-realm` no sobrescribe un realm que ya existe: para aplicar un cambio de la plantilla se
+reconstruye Keycloak desde cero (se pierden solo sesiones y datos que no estén en la plantilla):
+
+```bash
+docker compose --file compose.yaml --env-file .env stop keycloak keycloak-db
+docker compose --file compose.yaml --env-file .env rm -f keycloak keycloak-db
+docker volume rm sio-keycloak-db-data
+docker compose --file compose.yaml --env-file .env up -d keycloak-db keycloak
+```
+
+Después, verificar que los usuarios de prueba y las cuentas de servicio obtienen token y ejecutar las
+pruebas `-m integration` de los microservicios.
 
 ## Validación de configuración
 

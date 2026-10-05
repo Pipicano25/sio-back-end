@@ -2,14 +2,14 @@
 
 Verifica, contra la API y la base de pruebas:
 
-- cada ejercicio en una base nueva y los tres seguidos en la misma base (en ambos órdenes);
+- cada ejercicio en una base nueva y todos seguidos en la misma base (en ambos órdenes);
 - el código de estado de cada llamada, incluidos los errores esperados;
 - el permiso que exige cada URL, que ese permiso exista en la plantilla del realm, que cada
   usuario de prueba sin él reciba `403` y que los usuarios con lectura obtengan la respuesta;
 - que la documentación versionada sea exactamente la que generan esas ejecuciones;
 - que no haya secretos y que los tokens se pidan con `KEYCLOAK_TEST_USER_PASSWORD`.
 
-Operational Context, Product Catalog y Party Identity no se ejecutan (Principio IV): los
+Operational Context, Product Catalog, Party Identity y Payment Reference no se ejecutan (Principio IV): los
 sustituyen los dobles de sus puertos, cargados con los identificadores de `spec_common.py`.
 Todos los usuarios de prueba son miembros de las empresas de los ejercicios.
 
@@ -27,6 +27,7 @@ from uuid import UUID
 
 import pytest
 
+from commercial_relationship_service.application.ports import PaymentConditionTypeRef
 from tests.conftest import ApiClient, truncate_all
 from tests.examples import spec_common
 from tests.examples.exercises import EXERCISES
@@ -47,7 +48,7 @@ _RESULTS: dict[int, tuple[dict, list]] = {}
 # --------------------------------------------------------------------------- utilidades
 
 @pytest.fixture(autouse=True)
-def external_data(fake_oc, fake_catalog, fake_party):
+def external_data(fake_oc, fake_catalog, fake_party, fake_payment):
     """Carga en los dobles los identificadores de los ejercicios (llamadas externas simuladas)."""
     for company_id, organization_id in spec_common.COMPANIES.items():
         fake_oc.organizations[UUID(company_id)] = UUID(organization_id)
@@ -63,6 +64,13 @@ def external_data(fake_oc, fake_catalog, fake_party):
         fake_party.add_contact(UUID(contact_id), UUID(organization_id), is_active=active)
     for organization_id, name in spec_common.COMPANY_NAMES.items():
         fake_party.names[UUID(organization_id)] = name
+    # Fase B: presentaciones globales, unidades base y tipos de condición de pago.
+    for presentation_id, (product_id, status, eligible) in spec_common.GLOBAL_PRESENTATIONS.items():
+        fake_catalog.add_presentation(UUID(presentation_id), UUID(product_id), status=status, eligible=eligible)
+    for product_id, unit_id in spec_common.BASE_UNITS.items():
+        fake_catalog.base_units[UUID(product_id)] = UUID(unit_id)
+    for type_id, (code, status) in spec_common.CONDITION_TYPES.items():
+        fake_payment.types[UUID(type_id)] = PaymentConditionTypeRef(id=UUID(type_id), code=code, status=status)
 
 
 def _token(make_token, user):

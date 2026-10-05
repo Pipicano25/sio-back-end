@@ -1,4 +1,4 @@
-"""Reglas de dominio de las tres entidades (RN-03, RN-05, FR-020, FR-022)."""
+"""Reglas de dominio (Fase A: RN-03, RN-05, FR-020, FR-022; Fase B: FR-013, DS-05)."""
 
 from __future__ import annotations
 
@@ -7,6 +7,8 @@ from uuid import UUID
 from commercial_relationship_service.domain.errors import (
     ContactPersonNotAllowedError,
     CustomerIdentityMismatchError,
+    DefaultFlagInvalidError,
+    DefaultRequiresActiveError,
     InventoryFlagsInvalidError,
 )
 
@@ -65,3 +67,32 @@ def validate_customer_identity(
 def code_key(internal_code: str) -> str:
     """Clave de comparación de códigos internos: recortado y sin distinguir mayúsculas (DS-07)."""
     return internal_code.strip().lower()
+
+
+def validate_presentation_flags(
+    *,
+    is_purchasable: bool,
+    is_sellable: bool,
+    is_default_purchase: bool,
+    is_default_sale: bool,
+) -> None:
+    """Una predeterminada de compra debe ser comprable y una de venta, vendible (FR-013).
+
+    Raises:
+        DefaultFlagInvalidError: Con el campo de la marca que rompe la regla.
+    """
+    if is_default_purchase and not is_purchasable:
+        raise DefaultFlagInvalidError(field="is_default_purchase")
+
+    if is_default_sale and not is_sellable:
+        raise DefaultFlagInvalidError(field="is_default_sale")
+
+
+def require_active_for_mark(status: str, *, marked: bool, field: str) -> None:
+    """Solo un registro `ACTIVE` puede quedar marcado como predeterminado o preferido (DS-05).
+
+    Raises:
+        DefaultRequiresActiveError: Si se marca un registro inactivo.
+    """
+    if marked and status != "ACTIVE":
+        raise DefaultRequiresActiveError(field=field)

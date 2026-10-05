@@ -37,8 +37,11 @@ Administrar la definición global y reutilizable de productos y sus clasificacio
   identidad técnica `commercial-relationship-service` (`client_credentials`, roles
   `perm:product-catalog:products:read` y `perm:product-catalog:first-use:register`) invoca
   `POST /api/v1/products/batch-lookup` al adoptar (estado y elegibilidad) y al reactivar (solo
-  estado), y `POST /api/v1/products/{id}/first-use` al adoptar. `presentations/batch-lookup` y
-  `units-of-measure/batch-lookup` quedan para su Fase B.
+  estado), y `POST /api/v1/products/{id}/first-use` al adoptar. Desde su Fase B
+  (`specs/010-commercial-relationship-commercial-product`) usa además `POST /api/v1/presentations/batch-lookup`
+  (elegibilidad de presentaciones, atendida), `POST /api/v1/products/{id}/first-use` con presentación y
+  `GET /api/v1/products/{id}` (unidad base del producto de proveedor). `units-of-measure/batch-lookup` no
+  fue necesario.
 
 ## Eventos
 Ninguno: no publica ni consume eventos en esta versión (DS-11).

@@ -145,3 +145,55 @@ def test_provider_unavailable_keeps_its_own_dependency(admin, company, fake_cata
 
     assert response.status_code == 503
     assert response.json()["dependency"] == "product-catalog"
+
+
+# --------------------------------------------------------------------------
+# Fase B (T074; FR-100, Principio X): una lectura y una escritura por recurso nuevo
+# --------------------------------------------------------------------------
+
+
+def test_phase_b_routes_respond_controlled_503_and_recover(app, admin, company, product, fake_catalog, fake_party, fake_payment) -> None:
+    from tests.api.helpers import (
+        adopt_presentation,
+        create_condition,
+        create_price,
+        create_price_list,
+        create_supplier_product,
+        supplier,
+    )
+
+    provider = supplier(admin, company, fake_party)
+    presentation = adopt_presentation(admin, company, fake_catalog, product)
+    supplier_product = create_supplier_product(admin, company, provider, product, fake_catalog)
+    condition = create_condition(admin, company, provider, fake_payment)
+    price_list = create_price_list(admin, company)
+    price = create_price(admin, company, price_list, product)
+    calls = [
+        ("GET", f"/api/v1/company-product-presentations/{presentation['id']}", None),
+        ("POST", f"/api/v1/company-product-presentations/{presentation['id']}/deactivate", {"version": 1}),
+        ("GET", f"/api/v1/companies/{company}/supplier-products", None),
+        ("POST", f"/api/v1/supplier-products/{supplier_product['id']}/deactivate", {"version": 1}),
+        ("GET", f"/api/v1/supplier-payment-conditions/{condition['id']}", None),
+        ("POST", f"/api/v1/supplier-payment-conditions/{condition['id']}/deactivate", {"version": 1}),
+        ("GET", f"/api/v1/companies/{company}/price-lists", None),
+        ("POST", f"/api/v1/price-lists/{price_list['id']}/deactivate", {"version": 1}),
+        ("GET", f"/api/v1/price-list-items/{price['id']}", None),
+        ("POST", f"/api/v1/price-list-items/{price['id']}/change-price", {"unit_price": "1", "version": 1}),
+        ("POST", f"/api/v1/companies/{company}/applicable-prices/resolve", {"lines": [{"company_product_id": product["id"]}]}),
+    ]
+
+    with database_down(app):
+        results = [_timed(admin.request, method, url, json=body) for method, url, body in calls]
+
+    for response, elapsed in results:
+        _assert_controlled_503(response)
+        assert elapsed < 15
+
+    # Recupera sin reinicio y sin escrituras parciales.
+    assert admin.get(f"/api/v1/price-list-items/{price['id']}").json()["version"] == 1
+    assert admin.get(f"/api/v1/company-product-presentations/{presentation['id']}").json()["status"] == "ACTIVE"
+    resolved = admin.post(
+        f"/api/v1/companies/{company}/applicable-prices/resolve",
+        json={"lines": [{"company_product_id": product["id"], "price_list_id": price_list["id"]}]},
+    )
+    assert resolved.status_code == 200 and resolved.json()["items"][0]["resolution"] == "PRICE_LIST_ITEM"

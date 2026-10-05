@@ -14,6 +14,9 @@ import pytest
 from commercial_relationship_service.application.exceptions import (
     PRODUCT_CATALOG_ACCESS_DENIED,
     DependencyUnavailableError,
+    GlobalPresentationNotEligibleError,
+    GlobalPresentationNotFoundError,
+    GlobalPresentationOfOtherProductError,
     GlobalProductNotEligibleError,
     GlobalProductNotFoundError,
 )
@@ -160,3 +163,126 @@ def test_network_errors(exception):
 def test_unexpected_lookup_body():
     with pytest.raises(DependencyUnavailableError):
         _directory(lambda request: httpx.Response(200, json={"x": 1})).lookup_product(uuid4())
+
+
+# --------------------------------------------------------------------------
+# Fase B (T007; R-07; contracts/product-catalog-dependency.md de la 010)
+# --------------------------------------------------------------------------
+
+
+def test_lookup_presentation_found_with_owner_product():
+    presentation, product = uuid4(), uuid4()
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["body"] = json.loads(request.content)
+        seen["auth"] = request.headers["authorization"]
+        return httpx.Response(
+            200,
+            json={"items": [{"id": str(presentation), "found": True, "global_product_id": str(product),
+                             "status": "ACTIVE", "eligible_for_adoption": True}]},
+        )
+
+    ref = _directory(handler).lookup_presentation(presentation)
+
+    assert seen == {
+        "path": "/api/v1/presentations/batch-lookup",
+        "body": {"ids": [str(presentation)]},
+        "auth": "Bearer tech-1",
+    }
+    assert ref.found and ref.global_product_id == product
+    assert ref.status == "ACTIVE" and ref.eligible_for_adoption
+
+
+def test_lookup_presentation_not_found_inactive_not_eligible():
+    presentation, product = uuid4(), uuid4()
+
+    def respond(item):
+        return lambda request: httpx.Response(200, json={"items": [item]})
+
+    assert not _directory(respond({"id": str(presentation), "found": False})).lookup_presentation(presentation).found
+
+    ref = _directory(respond({"id": str(presentation), "found": True, "global_product_id": str(product),
+                              "status": "INACTIVE", "eligible_for_adoption": False})).lookup_presentation(presentation)
+    assert ref.status == "INACTIVE" and ref.eligible_for_adoption is False
+
+
+def test_lookup_presentation_unexpected_body_is_unavailable():
+    presentation = uuid4()
+
+    for response in (
+        httpx.Response(200, json={"x": 1}),
+        httpx.Response(200, json={"items": [{"id": str(presentation), "found": True, "global_product_id": "no-uuid"}]}),
+        httpx.Response(500),
+    ):
+        with pytest.raises(DependencyUnavailableError) as error:
+            _directory(lambda request, r=response: r).lookup_presentation(presentation)
+        assert error.value.provider == "product-catalog"
+
+
+def test_get_product_base_unit():
+    product, unit = uuid4(), uuid4()
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["method"], seen["path"] = request.method, request.url.path
+        return httpx.Response(200, json={"id": str(product), "base_unit_id": str(unit)})
+
+    assert _directory(handler).get_product_base_unit(product) == unit
+    assert seen == {"method": "GET", "path": f"/api/v1/products/{product}"}
+    assert _directory(lambda request: httpx.Response(404)).get_product_base_unit(product) is None
+
+    for response in (httpx.Response(200, json={"id": str(product)}), httpx.Response(503)):
+        with pytest.raises(DependencyUnavailableError):
+            _directory(lambda request, r=response: r).get_product_base_unit(product)
+
+
+def test_first_use_with_presentation_sends_its_uuid():
+    product, presentation = uuid4(), uuid4()
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={})
+
+    _directory(handler).register_first_use(product, presentation)
+    assert seen["body"] == {"global_product_presentation_id": str(presentation)}
+
+
+def test_first_use_with_presentation_error_mapping():
+    product, presentation = uuid4(), uuid4()
+
+    with pytest.raises(GlobalPresentationNotFoundError):
+        _directory(lambda request: httpx.Response(404)).register_first_use(product, presentation)
+
+    with pytest.raises(GlobalPresentationNotEligibleError):
+        _directory(
+            lambda request: httpx.Response(422, json={"code": "PRODUCT_CATALOG.NOT_ELIGIBLE_FOR_FIRST_USE"})
+        ).register_first_use(product, presentation)
+
+    with pytest.raises(GlobalPresentationOfOtherProductError):
+        _directory(
+            lambda request: httpx.Response(422, json={"code": "PRODUCT_CATALOG.PRESENTATION_OF_OTHER_PRODUCT"})
+        ).register_first_use(product, presentation)
+
+    for response in (httpx.Response(500), httpx.Response(403), httpx.Response(422, json={"code": "X"})):
+        with pytest.raises(DependencyUnavailableError):
+            _directory(lambda request, r=response: r).register_first_use(product, presentation)
+
+
+@pytest.mark.parametrize("operation", ["lookup_presentation", "get_product_base_unit"])
+def test_new_operations_renew_token_once(operation):
+    tokens, seen = FakeTokens(), []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.headers["authorization"])
+        if len(seen) == 1:
+            return httpx.Response(401)
+        if request.method == "GET":
+            return httpx.Response(200, json={"base_unit_id": str(uuid4())})
+        return httpx.Response(200, json={"items": []})
+
+    getattr(_directory(handler, tokens), operation)(uuid4())
+    assert seen == ["Bearer tech-1", "Bearer tech-2"]
+    assert tokens.invalidated == 1

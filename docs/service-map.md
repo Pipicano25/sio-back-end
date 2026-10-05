@@ -33,7 +33,7 @@ El modelo actual también documenta un `Finance Service`, pero no se incluyó po
 | Puerto | `8103` (proyecto `infrastructure/services/`); interno `8000` |
 | Base de datos | PostgreSQL propia `product_catalog` (`5444`); pruebas `55438` (perfil `test`) |
 | Depende de | Keycloak (clase B); Party Identity Service (clase C, `GET /api/v1/organization-identities/{id}`; su URL base incluye `/api/v1`) |
-| Es consumido por | Commercial Relationship Service (en uso: `products/batch-lookup` y `products/{id}/first-use` con su `client_credentials`; `presentations/batch-lookup` en su Fase B) |
+| Es consumido por | Commercial Relationship Service (en uso, con su `client_credentials`: `products/batch-lookup`, `products/{id}/first-use` —también con presentación—, `presentations/batch-lookup` y `GET products/{id}` para la unidad base) |
 | Referencias externas | `manufacturer_organization_id` → Party Identity Service |
 | Eventos | Ninguno |
 | Autenticación | Token del usuario propagado a Party Identity; los consumidores usan `client_credentials` |
@@ -79,7 +79,7 @@ El modelo actual también documenta un `Finance Service`, pero no se incluyó po
 | Puerto | `8105` (proyecto `infrastructure/services/`); interno `8000` |
 | Base de datos | PostgreSQL propia `payment_reference` (`5443`); pruebas `55441` (perfil `test`) |
 | Depende de | Keycloak (clase B: validación de tokens) |
-| Es consumido por | Commercial Relationship Fase B (previsto: `GET global-payment-condition-types/{id}`); Purchase y Sales (futuros) — `payment-condition-type-provider.md` (008) |
+| Es consumido por | Commercial Relationship (en uso: `GET global-payment-condition-types/{id}` con su `client_credentials`, feature 010); Purchase y Sales (futuros) — `payment-condition-type-provider.md` (008) |
 | Referencias externas | Ninguna |
 | Eventos | Ninguno |
 | Autenticación | Bearer token; permisos `perm:payment-reference:{recurso}:{accion}`; los consumidores usan su propio tiempo de espera finito |
@@ -89,13 +89,13 @@ El modelo actual también documenta un `Finance Service`, pero no se incluyó po
 
 | Campo | Valor |
 | --- | --- |
-| Responsabilidad | Relación comercial privada de cada empresa: productos adoptados, clientes y proveedores (3 entidades en la Fase A; ver su `domain-map.md`) |
+| Responsabilidad | Relación comercial privada de cada empresa: productos adoptados y sus presentaciones, clientes, proveedores, productos de proveedor, condiciones de pago y listas de precios (8 entidades: 3 de la Fase A y 5 de la Fase B; ver su `domain-map.md`) |
 | Ruta | `services/commercial-relationship-service/` |
 | Puerto | `8106` (proyecto `infrastructure/services/`); interno `8000` |
 | Base de datos | PostgreSQL propia `commercial_relationship` (`5445`); pruebas `55443` (perfil `test`) |
-| Depende de | Keycloak (B: tokens y `client_credentials` propio); Operational Context (C: `operational-access` vía propia, `me/operational-context`, `companies/{id}`); Product Catalog (C: `products/batch-lookup`, `products/{id}/first-use`); Party Identity (C: `person-identities/{id}`, `organization-identities/{id}`, `organization-contact-persons/{id}`) |
-| Es consumido por | Inventory, Purchase, Sales (futuros) — `commercial-relationship-provider.md` (007) |
-| Referencias externas | `company_id` → Operational Context; `global_product_id` → Product Catalog; `person_identity_id`, `organization_identity_id`, `preferred_contact_person_id` → Party Identity |
+| Depende de | Keycloak (B: tokens y `client_credentials` propio); Operational Context (C: `operational-access` vía propia, `me/operational-context`, `companies/{id}`); Product Catalog (C: `products/batch-lookup`, `products/{id}/first-use`, `presentations/batch-lookup`, `products/{id}`); Party Identity (C: `person-identities/{id}`, `organization-identities/{id}`, `organization-contact-persons/{id}`); Payment Reference (C: `global-payment-condition-types/{id}`, URL sin `/api/v1` por GAP-PR-14) |
+| Es consumido por | Inventory, Purchase, Sales (futuros) — `commercial-relationship-provider.md` (007 y su ampliación en la 010: presentaciones por lotes, productos de proveedor, condiciones de pago, listas, precios y precio aplicable) |
+| Referencias externas | `company_id` → Operational Context; `global_product_id`, `global_product_presentation_id`, `purchase_unit_id` → Product Catalog; `person_identity_id`, `organization_identity_id`, `preferred_contact_person_id` → Party Identity; `payment_condition_type_id` → Payment Reference |
 | Eventos | Ninguno |
-| Autenticación | Token del usuario propagado a Operational Context y Party Identity; `client_credentials` del cliente `commercial-relationship-service` hacia Product Catalog (`products:read`, `first-use:register`); consumidores con su `client_credentials` y `platform:lookup` |
-| Spec | `specs/007-commercial-relationship-core/` |
+| Autenticación | Token del usuario propagado a Operational Context y Party Identity; `client_credentials` del cliente `commercial-relationship-service` hacia Product Catalog (`products:read`, `first-use:register`) y Payment Reference (`global_payment_condition_types:read`); consumidores con su `client_credentials` y `platform:lookup` |
+| Spec | `specs/007-commercial-relationship-core/`, `specs/010-commercial-relationship-commercial-product/` |

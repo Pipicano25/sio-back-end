@@ -8,6 +8,9 @@ import pytest
 
 from commercial_relationship_service.domain.currency import (
     CURRENCY_DECIMALS,
+    currency_places,
+    format_amount,
+    validate_amount_scale,
     validate_currency,
     validate_price_scale,
 )
@@ -67,3 +70,32 @@ def test_rejects_price_scale(price, currency):
     with pytest.raises(PriceScaleNotAllowedError) as error:
         validate_price_scale(Decimal(price), currency)
     assert error.value.field == "sale_price"
+
+
+# --------------------------------------------------------------------------
+# Fase B (T006; DS-10, aclaración 5, R-11)
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("currency", sorted(ZERO_DECIMALS))
+def test_unit_price_and_credit_limit_use_currency_decimals_zero(currency):
+    validate_amount_scale(Decimal("1500"), currency, field="unit_price")
+
+    with pytest.raises(PriceScaleNotAllowedError) as error:
+        validate_amount_scale(Decimal("1500.5"), currency, field="unit_price")
+    assert error.value.field == "unit_price"
+
+
+def test_unit_price_two_decimals_without_rounding():
+    validate_amount_scale(Decimal("15000.50"), "COP", field="unit_price")
+    validate_amount_scale(Decimal("15000.500"), "COP", field="credit_limit")  # ceros finales no cuentan
+
+    with pytest.raises(PriceScaleNotAllowedError) as error:
+        validate_amount_scale(Decimal("10.555"), "COP", field="credit_limit")
+    assert error.value.field == "credit_limit"
+
+
+def test_format_amount_uses_scale():
+    assert format_amount(Decimal("15000"), currency_places("COP")) == "15000.00"
+    assert format_amount(Decimal("1500.0000"), currency_places("CLP")) == "1500"
+    assert format_amount(Decimal("3.1"), 4) == "3.1000"

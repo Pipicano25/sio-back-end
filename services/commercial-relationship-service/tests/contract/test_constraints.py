@@ -249,3 +249,72 @@ def test_supplier_status_check_and_valid_blocked(db_session):
         lambda: _insert_supplier(db_session, company_id=uuid4(), status="DELETED"),
     )
     _insert_supplier(db_session, company_id=uuid4(), status="BLOCKED", block_reason="Incumplimiento")
+
+
+# --------------------------------------------------------------------------
+# Fase B: traducción por nombre de restricción (T009, T022; R-04, R-05)
+# --------------------------------------------------------------------------
+
+
+def _phase_b_rows(session):
+    from commercial_relationship_service.infrastructure.repositories import (
+        CompanyProductPresentationRepository,
+        PriceListItemRepository,
+        PriceListRepository,
+    )
+
+    company = uuid4()
+    product_id = uuid4()
+    _insert_product(session, company_id=company, id=product_id)
+    lists = PriceListRepository(session)
+    price_list = lists.add(
+        lists.build(company_id=company, code="L1", name="Lista", currency_code="COP",
+                    created_by="sub", updated_by="sub"),
+        duplicates=lists.duplicates,
+    )
+    return company, product_id, price_list, CompanyProductPresentationRepository(session), PriceListItemRepository(session)
+
+
+def test_phase_b_translates_unique_exclusion_fk_and_default_violations(db_session):
+    from commercial_relationship_service.application.exceptions import (
+        CompanyProductNotFoundError,
+        DuplicateSkuError,
+        PricePeriodOverlapError,
+        VersionConflictError,
+    )
+
+    company, product_id, price_list, presentations, items = _phase_b_rows(db_session)
+    audit = {"created_by": "sub", "updated_by": "sub"}
+
+    presentations.add(
+        presentations.build(company_id=company, company_product_id=product_id, global_product_presentation_id=uuid4(),
+                            sku="CJ12", is_default_sale=True, **audit),
+        duplicates=presentations.duplicates,
+    )
+
+    with pytest.raises(DuplicateSkuError):  # 23505 por nombre
+        presentations.add(
+            presentations.build(company_id=company, company_product_id=product_id,
+                                global_product_presentation_id=uuid4(), sku="cj12", **audit),
+            duplicates=presentations.duplicates,
+        )
+
+    with pytest.raises(VersionConflictError):  # índice parcial de predeterminada (DEFAULT_SWAP_CONFLICT)
+        presentations.add(
+            presentations.build(company_id=company, company_product_id=product_id,
+                                global_product_presentation_id=uuid4(), is_default_sale=True, **audit),
+            duplicates=presentations.duplicates,
+        )
+
+    with pytest.raises(CompanyProductNotFoundError):  # 23503 de la FK compuesta
+        presentations.add(
+            presentations.build(company_id=uuid4(), company_product_id=product_id,
+                                global_product_presentation_id=uuid4(), **audit),
+            duplicates=presentations.duplicates,
+        )
+
+    common = {"company_id": company, "price_list_id": price_list.id, "company_product_id": product_id, **audit}
+    items.add(items.build(unit_price=1, **common), duplicates=items.duplicates)
+
+    with pytest.raises(PricePeriodOverlapError):  # 23P01 de la exclusión
+        items.add(items.build(unit_price=2, **common), duplicates=items.duplicates)

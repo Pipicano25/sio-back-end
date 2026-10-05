@@ -21,6 +21,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from uuid import UUID
 
+from fastapi import Depends
+
+from commercial_relationship_service.api.dependencies import get_identity, get_scope_service
 from commercial_relationship_service.application.company_scope import (
     CompanyScopeService,
     RequestIdentity,
@@ -42,6 +45,20 @@ def check_company(
         return
 
     scope.require_member(company_id, write=write, allow_inactive_company=allow_inactive_company)
+
+
+def company_dependency(*, write: bool, lookup: bool = False):
+    """Dependencia `company_id` de la ruta con el alcance aplicado (rutas de la Fase B)."""
+
+    def dependency(
+        company_id: UUID,
+        identity: RequestIdentity = Depends(get_identity),
+        scope: CompanyScopeService = Depends(get_scope_service),
+    ) -> UUID:
+        check_company(company_id, identity=identity, scope=scope, write=write, lookup=lookup)
+        return company_id
+
+    return dependency
 
 
 def load_scoped(

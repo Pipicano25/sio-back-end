@@ -7,14 +7,19 @@ from pathlib import Path
 
 from tests.api.routes import ROUTES
 
-CONTRACT = Path(__file__).resolve().parents[4] / "specs" / "007-commercial-relationship-core" / "contracts" / "rest-api.md"
+SPECS = Path(__file__).resolve().parents[4] / "specs"
+CONTRACTS = (
+    SPECS / "007-commercial-relationship-core" / "contracts" / "rest-api.md",
+    SPECS / "010-commercial-relationship-commercial-product" / "contracts" / "rest-api.md",
+)
 CONTRACT_ROUTE = re.compile(r"^\| `(GET|POST|PUT|DELETE|PATCH) (/api/v1/[^`]+)`", re.MULTILINE)
 
 
 def _contract_operations() -> set[tuple[str, str]]:
     operations = set()
-    for method, path in CONTRACT_ROUTE.findall(CONTRACT.read_text(encoding="utf-8")):
-        operations.add((method, path))
+    for contract in CONTRACTS:
+        for method, path in CONTRACT_ROUTE.findall(contract.read_text(encoding="utf-8")):
+            operations.add((method, path))
     return operations
 
 
@@ -31,7 +36,7 @@ def _openapi_operations(schema) -> set[tuple[str, str]]:
 def test_openapi_matches_contract_exactly(as_token):
     schema = as_token(None).get("/openapi.json").json()
     assert _openapi_operations(schema) == _contract_operations()
-    assert len(_contract_operations()) == len(ROUTES) == 22
+    assert len(_contract_operations()) == len(ROUTES) == 55
 
 
 def test_no_delete_routes(as_token):
@@ -59,3 +64,21 @@ def test_routes_require_bearer(as_token):
         if path.startswith("/api/v1"):
             for operation in item.values():
                 assert operation["security"] == [{"BearerAuth": []}], path
+
+
+def test_phase_b_amounts_are_documented_as_strings(as_token):
+    """R-11: los importes de la Fase B se exponen como cadena decimal, nunca como número JSON."""
+    schemas = as_token(None).get("/openapi.json").json()["components"]["schemas"]
+    amounts = {
+        "PriceListItemResponse": ("unit_price",),
+        "SupplierPaymentConditionResponse": ("credit_limit", "interest_rate_percentage", "cash_discount_percentage"),
+        "SupplierProductResponse": ("minimum_order_quantity", "pack_quantity", "negotiated_unit_cost"),
+        "ApplicablePriceItem": ("unit_price",),
+    }
+
+    for schema_name, fields in amounts.items():
+        schema = schemas.get(schema_name) or schemas[f"{schema_name}-Output"]
+        for field in fields:
+            definition = schema["properties"][field]
+            types = {option.get("type") for option in definition.get("anyOf", [definition])}
+            assert "number" not in types and "string" in types, (schema_name, field, definition)

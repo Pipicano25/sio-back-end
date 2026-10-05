@@ -61,6 +61,45 @@ def _money(places: int):
 SalePriceOut = Annotated[Decimal, _money(2)]
 ReferenceCostOut = Annotated[Decimal, _money(4)]
 
+# ---------------------------------------------------------------- Fase B (010)
+
+PresentationCode = Annotated[
+    Annotated[str, Field(max_length=80)] | None, BeforeValidator(_blank_to_none)
+]
+SupplierProductCode = Annotated[
+    Annotated[str, Field(max_length=100)] | None, BeforeValidator(_blank_to_none)
+]
+PriceListCode = Annotated[str, BeforeValidator(_strip), Field(min_length=1, max_length=50)]
+PriceListName = Annotated[str, BeforeValidator(_strip), Field(min_length=1, max_length=120)]
+Description = Annotated[str | None, BeforeValidator(_blank_to_none)]
+Quantity = Annotated[
+    Decimal, BeforeValidator(_reject_bool), Field(ge=0, max_digits=18, decimal_places=4)
+]
+PackQuantity = Annotated[
+    Decimal, BeforeValidator(_reject_bool), Field(gt=0, max_digits=18, decimal_places=4)
+]
+Cost = Annotated[
+    Decimal, BeforeValidator(_reject_bool), Field(ge=0, max_digits=18, decimal_places=4)
+]
+LeadTimeHours = Annotated[
+    Decimal, BeforeValidator(_reject_bool), Field(ge=0, max_digits=12, decimal_places=2)
+]
+Priority = Annotated[int, Field(ge=0, le=32767)]
+Percentage = Annotated[
+    Decimal, BeforeValidator(_reject_bool), Field(ge=0, le=100, max_digits=7, decimal_places=4)
+]
+CreditLimit = Annotated[
+    Decimal, BeforeValidator(_reject_bool), Field(ge=0, max_digits=18, decimal_places=2)
+]
+UnitPrice = Annotated[
+    Decimal, BeforeValidator(_reject_bool), Field(ge=0, max_digits=18, decimal_places=4)
+]
+PaymentTermsDays = Annotated[int, Field(ge=0, le=3650)]
+
+QuantityOut = Annotated[Decimal, _money(4)]
+LeadTimeHoursOut = Annotated[Decimal, _money(2)]
+PercentageOut = Annotated[Decimal, _money(4)]
+
 
 class StrictModel(BaseModel):
     """Modelo de entrada que rechaza campos desconocidos."""

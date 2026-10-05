@@ -1742,21 +1742,29 @@ La existencia de una condición `CREDIT` no significa que exista deuda, la deuda
 | `interest_rate_percentage`  | `NUMERIC(7,4)`  | nullable            | Tasa asociada a financiación cuando aplique.                                 |
 | `cash_discount_percentage`  | `NUMERIC(7,4)`  | nullable            | Descuento por pago de contado cuando aplique.                                |
 | `is_default`                | `BOOLEAN`       | NN, DEFAULT `FALSE` | Condición sugerida por defecto.                                              |
-| `is_active`                 | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Vigencia.                                                                    |
+| `status` | `VARCHAR(20)` | NN, CK, DEFAULT `'ACTIVE'` | Estado de la condición: `ACTIVE` o `INACTIVE`. |
 | `valid_from`                | `TIMESTAMPTZ`   | NN                  | Inicio de vigencia.                                                          |
 | `valid_to`                  | `TIMESTAMPTZ`   | nullable            | Fin de vigencia.                                                             |
-| `created_by_user_id`        | `UUID`          | REF, NN             | Usuario creador.                                                             |
+| `created_by` | `VARCHAR(255)` | NN | `sub` del token de quien crea el registro (Constitución D1); inmutable. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` del token de quien realizó la última modificación (Constitución D1). |
+| `version` | `INTEGER` | NN, DEFAULT `1` | Control de concurrencia. |
 | `created_at`                | `TIMESTAMPTZ`   | NN                  | Creación.                                                                    |
 | `updated_at`                | `TIMESTAMPTZ`   | NN                  | Modificación.                                                                |
 
 ### Reglas y restricciones
 
+- `status` admite `ACTIVE` e `INACTIVE` (`CHECK`); los cambios de estado se hacen con acciones explícitas de inactivar y reactivar, sin eliminar el registro.
 - Puede existir más de una condición activa por proveedor, pero como máximo una condición predeterminada por moneda.
 - `CASH` debe usar `payment_terms_days = 0`.
 - `CREDIT` y `FINANCING` deben utilizar un plazo mayor que cero.
 - Cupos, tasas y descuentos no pueden ser negativos.
 - Las versiones utilizadas en compras históricas no se eliminan físicamente.
 - `payment_condition_type_id` es una referencia externa a Payment Reference Service y no utiliza una llave foránea física.
+
+> **Reconciliación (2026-10-05):** sección alineada con `specs/010-commercial-relationship-commercial-product`
+> (Commercial Relationship Fase B): `status` con `CHECK` en lugar de `is_active` (BR-06); auditoría
+> `created_by`/`updated_by` con el `sub` en lugar de `created_by_user_id` y `version` para el control de
+> concurrencia (BR-07). Los nombres de restricciones e índices están en el `data-model.md` de esa feature.
 
 ## 5.7 SupplierProduct
 
@@ -1790,21 +1798,29 @@ El lead time esperado es una condición de planificación y no reemplaza el lead
 | `expected_supplier_lead_time_hours` | `NUMERIC(12,2)` | nullable            | Lead time comprometido o esperado del proveedor.                                  |
 | `priority`                          | `SMALLINT`      | nullable            | Prioridad manual para abastecimiento.                                             |
 | `is_preferred`                      | `BOOLEAN`       | NN, DEFAULT `FALSE` | Proveedor preferido para el producto.                                             |
-| `is_active`                         | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Relación vigente.                                                                 |
-| `created_by_user_id`                | `UUID`          | REF, NN             | Usuario creador.                                                                  |
+| `status` | `VARCHAR(20)` | NN, CK, DEFAULT `'ACTIVE'` | Estado de la relación: `ACTIVE` o `INACTIVE`. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` del token de quien crea el registro (Constitución D1); inmutable. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` del token de quien realizó la última modificación (Constitución D1). |
 | `version`                           | `INTEGER`       | NN, DEFAULT `1`     | Control concurrente.                                                              |
 | `created_at`                        | `TIMESTAMPTZ`   | NN                  | Creación.                                                                         |
 | `updated_at`                        | `TIMESTAMPTZ`   | NN                  | Modificación.                                                                     |
 
 ### Reglas y restricciones
 
-- La combinación `company_supplier_id` y `company_product_id` es única mientras la relación esté vigente.
+- Entre los registros `ACTIVE`, la combinación `company_supplier_id`, `company_product_id` y `company_product_presentation_id` es única; la ausencia de presentación cuenta como un valor. Los registros `INACTIVE` no cuentan y reactivar revalida la unicidad.
+- `status` admite `ACTIVE` e `INACTIVE` (`CHECK`); los cambios de estado se hacen con acciones explícitas de inactivar y reactivar, sin eliminar el registro.
 - Costos, cantidades y lead times esperados no pueden ser negativos.
 - `pack_quantity` debe ser mayor que cero.
 - Solo proveedores y productos activos pueden utilizarse para nuevas compras.
 - Puede existir un único proveedor marcado como preferido por producto y empresa cuando la política de negocio así lo exija.
 - Cuando exista `company_product_presentation_id`, la presentación debe pertenecer al mismo `company_product_id`.
 - Si `company_product_presentation_id` es nulo, la relación con el proveedor aplica al producto empresarial de forma general.
+
+> **Reconciliación (2026-10-05):** sección alineada con `specs/010-commercial-relationship-commercial-product`
+> (Commercial Relationship Fase B): `status` con `CHECK` en lugar de `is_active` (BR-06); auditoría
+> `created_by`/`updated_by` con el `sub` en lugar de `created_by_user_id` (BR-07); unicidad por
+> proveedor, producto y presentación entre los registros `ACTIVE` (BR-08). Los nombres de restricciones e
+> índices están en el `data-model.md` de esa feature.
 
 ### Relaciones
 
@@ -2491,8 +2507,9 @@ Permite que dos empresas adopten el mismo producto y la misma presentación util
 | `is_sellable`                    | `BOOLEAN`      | NN, DEFAULT `TRUE`  | Indica si puede utilizarse en ventas.         |
 | `is_default_purchase`            | `BOOLEAN`      | NN, DEFAULT `FALSE` | Presentación predeterminada para compras.     |
 | `is_default_sale`                | `BOOLEAN`      | NN, DEFAULT `FALSE` | Presentación predeterminada para ventas.      |
-| `is_active`                      | `BOOLEAN`      | NN, DEFAULT `TRUE`  | Estado dentro de la empresa.                  |
-| `created_by_user_id`             | `UUID`         | REF, NN             | Usuario que creó la configuración.            |
+| `status` | `VARCHAR(20)` | NN, CK, DEFAULT `'ACTIVE'` | Estado dentro de la empresa: `ACTIVE` o `INACTIVE`. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` del token de quien crea el registro (Constitución D1); inmutable. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` del token de quien realizó la última modificación (Constitución D1). |
 | `version`                        | `INTEGER`      | NN, DEFAULT `1`     | Control concurrente.                          |
 | `created_at`                     | `TIMESTAMPTZ`  | NN                  | Fecha de creación.                            |
 | `updated_at`                     | `TIMESTAMPTZ`  | NN                  | Última modificación.                          |
@@ -2503,10 +2520,16 @@ Permite que dos empresas adopten el mismo producto y la misma presentación util
 - La presentación global debe pertenecer al mismo `GlobalProduct` adoptado por `CompanyProduct`.
 - Debe existir como máximo una presentación de compra predeterminada activa por `CompanyProduct`.
 - Debe existir como máximo una presentación de venta predeterminada activa por `CompanyProduct`.
-- `internal_code`, cuando exista, debe respetar la política de unicidad empresarial definida para códigos operativos.
-- `sku`, cuando exista, debe ser único por empresa sin diferenciar mayúsculas y minúsculas.
+- `internal_code` y `sku`, cuando existan, se guardan sin espacios al inicio ni al final, no pueden quedar vacíos y son únicos por empresa sin diferenciar mayúsculas y minúsculas (índices únicos sobre `company_id` y `lower(...)`), en cualquier estado.
+- `status` admite `ACTIVE` e `INACTIVE` (`CHECK`); los cambios de estado se hacen con acciones explícitas de inactivar y reactivar, sin eliminar el registro.
 - Una presentación inactiva no puede utilizarse en nuevas compras o ventas.
 - Desactivar una presentación no modifica documentos históricos.
+
+> **Reconciliación (2026-10-05):** sección alineada con `specs/010-commercial-relationship-commercial-product`
+> (Commercial Relationship Fase B): `status` con `CHECK` en lugar de `is_active` (BR-06); auditoría
+> `created_by`/`updated_by` con el `sub` en lugar de `created_by_user_id` (BR-07); `internal_code` y `sku`
+> únicos por empresa sin diferenciar mayúsculas (BR-09). Los nombres de restricciones e índices están en el
+> `data-model.md` de esa feature.
 
 ### Relaciones
 
@@ -2555,8 +2578,9 @@ Las capacidades avanzadas de resolución de precios pueden incorporarse posterio
 | `is_default`         | `BOOLEAN`      | NN, DEFAULT `FALSE` | Indica si es la lista predeterminada.   |
 | `valid_from`         | `TIMESTAMPTZ`  | nullable            | Momento desde el cual puede utilizarse. |
 | `valid_to`           | `TIMESTAMPTZ`  | nullable            | Momento hasta el cual puede utilizarse. |
-| `is_active`          | `BOOLEAN`      | NN, DEFAULT `TRUE`  | Estado operativo.                       |
-| `created_by_user_id` | `UUID`         | REF, NN             | Usuario creador.                        |
+| `status` | `VARCHAR(20)` | NN, CK, DEFAULT `'ACTIVE'` | Estado operativo: `ACTIVE` o `INACTIVE`. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` del token de quien crea el registro (Constitución D1); inmutable. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` del token de quien realizó la última modificación (Constitución D1). |
 | `version`            | `INTEGER`      | NN, DEFAULT `1`     | Control concurrente.                    |
 | `created_at`         | `TIMESTAMPTZ`  | NN                  | Fecha de creación.                      |
 | `updated_at`         | `TIMESTAMPTZ`  | NN                  | Última modificación.                    |
@@ -2564,6 +2588,7 @@ Las capacidades avanzadas de resolución de precios pueden incorporarse posterio
 ### Reglas y restricciones
 
 - La combinación `company_id` y `code` debe ser única sin diferenciar mayúsculas y minúsculas.
+- `status` admite `ACTIVE` e `INACTIVE` (`CHECK`); los cambios de estado se hacen con acciones explícitas de inactivar y reactivar, sin eliminar el registro.
 - Cuando existan `valid_from` y `valid_to`, `valid_to` debe ser posterior a `valid_from`.
 - Debe existir como máximo una lista predeterminada activa por empresa y moneda.
 - Una lista inactiva no puede seleccionarse para nuevas ventas.
@@ -2571,6 +2596,11 @@ Las capacidades avanzadas de resolución de precios pueden incorporarse posterio
 - La lista no almacena directamente los precios de productos.
 - `PriceList` no reemplaza `ProductPricingPolicy`.
 - `ProductPricingPolicy` controla reglas de margen y `PriceList` controla precios comerciales.
+
+> **Reconciliación (2026-10-05):** sección alineada con `specs/010-commercial-relationship-commercial-product`
+> (Commercial Relationship Fase B): `status` con `CHECK` en lugar de `is_active` (BR-06) y auditoría
+> `created_by`/`updated_by` con el `sub` en lugar de `created_by_user_id` (BR-07). Los nombres de
+> restricciones e índices están en el `data-model.md` de esa feature.
 
 ### Relaciones
 
@@ -2610,26 +2640,36 @@ La vigencia permite conservar diferentes versiones históricas de un precio sin 
 | `unit_price`                      | `NUMERIC(18,4)` | NN                 | Precio unitario configurado.            |
 | `valid_from`                      | `TIMESTAMPTZ`   | NN                 | Inicio de vigencia.                     |
 | `valid_to`                        | `TIMESTAMPTZ`   | nullable           | Finalización de vigencia.               |
-| `is_active`                       | `BOOLEAN`       | NN, DEFAULT `TRUE` | Indica si puede utilizarse actualmente. |
-| `created_by_user_id`              | `UUID`          | REF, NN            | Usuario creador.                        |
+| `status` | `VARCHAR(20)` | NN, CK, DEFAULT `'ACTIVE'` | Estado del precio: `ACTIVE` o `INACTIVE`. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` del token de quien crea el registro (Constitución D1); inmutable. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` del token de quien realizó la última modificación (Constitución D1). |
 | `version`                         | `INTEGER`       | NN, DEFAULT `1`    | Control concurrente.                    |
 | `created_at`                      | `TIMESTAMPTZ`   | NN                 | Fecha de creación.                      |
 | `updated_at`                      | `TIMESTAMPTZ`   | NN                 | Última modificación.                    |
 
 ### Reglas y restricciones
 
-- `unit_price` no puede ser negativo.
+- `unit_price` no puede ser negativo y admite a lo sumo los decimales de la moneda de la lista; un valor con más decimales se rechaza sin redondear.
+- `status` admite `ACTIVE` e `INACTIVE` (`CHECK`); los cambios de estado se hacen con acciones explícitas de inactivar y reactivar, sin eliminar el registro.
 - `valid_to` debe ser posterior a `valid_from` cuando exista.
 - `price_list_id` debe pertenecer a la misma empresa indicada por `company_id`.
 - `company_product_id` debe pertenecer a la misma empresa.
 - Cuando exista `company_product_presentation_id`, debe pertenecer al mismo `CompanyProduct`.
-- No pueden existir periodos de vigencia solapados para la misma combinación de lista, producto y presentación.
+- No pueden existir periodos de vigencia solapados entre los precios `ACTIVE` de la misma combinación de lista, producto y presentación.
+- `price_list_id`, `company_product_id` y `company_product_presentation_id` son inmutables. `unit_price` y `valid_from` solo se modifican mientras `valid_from` esté en el futuro; un precio en vigencia solo admite fijar, adelantar o posponer `valid_to` a un instante futuro, o inactivarse.
+- Para cambiar un precio en vigencia se usa la acción "cambiar precio": en una sola transacción cierra el precio vigente en el instante de efecto y crea uno nuevo para la misma lista, producto y presentación desde ese instante y hasta el `valid_to` que tenía el anterior.
 - Si `company_product_presentation_id` es nulo, el precio aplica directamente al `CompanyProduct` de forma general.
 - Si `company_product_presentation_id` contiene un valor, el precio aplica exclusivamente a esa presentación empresarial.
 - Cuando no exista un `PriceListItem` aplicable, el MVP puede utilizar `CompanyProduct.sale_price` como precio simple o predeterminado según las reglas del proceso de venta.
 - La moneda se obtiene desde `PriceList.currency_code`.
 - Los precios históricos utilizados en ventas no deben eliminarse físicamente.
 - El valor `0` representa un precio real igual a cero; la ausencia de configuración debe representarse mediante la inexistencia de un `PriceListItem`, no mediante un valor cero artificial.
+
+> **Reconciliación (2026-10-05):** sección alineada con `specs/010-commercial-relationship-commercial-product`
+> (Commercial Relationship Fase B): `status` con `CHECK` en lugar de `is_active` (BR-06); auditoría
+> `created_by`/`updated_by` con el `sub` en lugar de `created_by_user_id` (BR-07); `unit_price` con los
+> decimales de la moneda de la lista, precio en vigencia inmutable y acción "cambiar precio" (BR-10). Los
+> nombres de restricciones e índices están en el `data-model.md` de esa feature.
 
 ### Relaciones
 

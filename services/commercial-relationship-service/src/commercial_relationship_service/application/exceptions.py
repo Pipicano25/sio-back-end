@@ -9,15 +9,22 @@ from commercial_relationship_service.domain.errors import (
     ContactPersonNotAllowedError,
     CurrencyNotSupportedError,
     CustomerIdentityMismatchError,
+    DefaultFlagInvalidError,
+    DefaultRequiresActiveError,
     InventoryFlagsInvalidError,
     InvalidStatusTransitionError,
+    PaymentTermsInconsistentError,
+    PriceChangeOutOfPeriodError,
+    PriceInEffectNotModifiableError,
     PriceScaleNotAllowedError,
+    ValidityInvalidError,
 )
 
 # Proveedores (extensión `dependency` del 503; catálogo cerrado).
 OPERATIONAL_CONTEXT = "operational-context"
 PRODUCT_CATALOG = "product-catalog"
 PARTY_IDENTITY = "party-identity"
+PAYMENT_REFERENCE = "payment-reference"
 
 # Causas internas: solo se registran en logs (contracts/errors.md).
 OPERATIONAL_CONTEXT_UNREACHABLE = "OPERATIONAL_CONTEXT_UNREACHABLE"
@@ -27,8 +34,16 @@ PRODUCT_CATALOG_ACCESS_DENIED = "PRODUCT_CATALOG_ACCESS_DENIED"
 PRODUCT_CATALOG_UNREACHABLE = "PRODUCT_CATALOG_UNREACHABLE"
 PARTY_IDENTITY_UNREACHABLE = "PARTY_IDENTITY_UNREACHABLE"
 PARTY_IDENTITY_FORBIDDEN = "PARTY_IDENTITY_FORBIDDEN"
+PAYMENT_REFERENCE_UNREACHABLE = "PAYMENT_REFERENCE_UNREACHABLE"
+PAYMENT_REFERENCE_ACCESS_DENIED = "PAYMENT_REFERENCE_ACCESS_DENIED"
 
 __all__ = [
+    "DefaultFlagInvalidError",
+    "DefaultRequiresActiveError",
+    "PaymentTermsInconsistentError",
+    "PriceChangeOutOfPeriodError",
+    "PriceInEffectNotModifiableError",
+    "ValidityInvalidError",
     "CommercialRelationshipError",
     "CompanyInactiveError",
     "ContactPersonInvalidError",
@@ -247,3 +262,211 @@ class DependencyUnavailableError(CommercialRelationshipError):
         self.provider = provider
         self.cause = cause
         self.operation = operation
+
+
+# --------------------------------------------------------------------------
+# Fase B (specs/010-commercial-relationship-commercial-product/contracts/errors.md)
+# --------------------------------------------------------------------------
+
+
+class CompanyProductNotFoundError(CommercialRelationshipError):
+    """`company_product_id` del cuerpo inexistente o de otra empresa (FR-011, H-01, FR-061)."""
+
+    code = "COMPANY_PRODUCT_NOT_FOUND"
+    title = "Producto empresarial inexistente"
+    default_message = "El producto empresarial indicado no existe en la empresa."
+
+
+class CompanyProductInactiveError(CommercialRelationshipError):
+    """Producto empresarial `INACTIVE` al registrar o reactivar (FR-011, FR-021, FR-051)."""
+
+    code = "COMPANY_PRODUCT_INACTIVE"
+    title = "Producto empresarial inactivo"
+    default_message = "El producto empresarial está inactivo; reactívelo antes."
+
+
+class CompanySupplierNotFoundError(CommercialRelationshipError):
+    """`company_supplier_id` inexistente o de otra empresa (FR-021, FR-031)."""
+
+    code = "COMPANY_SUPPLIER_NOT_FOUND"
+    title = "Proveedor inexistente"
+    default_message = "El proveedor indicado no existe en la empresa."
+
+
+class CompanySupplierInactiveError(CommercialRelationshipError):
+    """Proveedor `INACTIVE` al registrar o reactivar (FR-021, FR-031, I1)."""
+
+    code = "COMPANY_SUPPLIER_INACTIVE"
+    title = "Proveedor inactivo"
+    default_message = (
+        "El proveedor está inactivo: reactívelo antes de asociarle productos o condiciones de "
+        "pago."
+    )
+
+
+class CompanySupplierBlockedError(CommercialRelationshipError):
+    """Proveedor `BLOCKED` al registrar o reactivar (FR-021, FR-031, I1)."""
+
+    code = "COMPANY_SUPPLIER_BLOCKED"
+    title = "Proveedor bloqueado"
+    default_message = (
+        "El proveedor está bloqueado: desbloquéelo antes de asociarle productos o condiciones "
+        "de pago."
+    )
+
+
+class PresentationNotFoundError(CommercialRelationshipError):
+    """`company_product_presentation_id` inexistente o de otra empresa (FR-021, FR-051)."""
+
+    code = "PRESENTATION_NOT_FOUND"
+    title = "Presentación empresarial inexistente"
+    default_message = "La presentación empresarial indicada no existe en la empresa."
+
+
+class PresentationInactiveError(CommercialRelationshipError):
+    """Presentación empresarial `INACTIVE` (FR-021, FR-051)."""
+
+    code = "PRESENTATION_INACTIVE"
+    title = "Presentación empresarial inactiva"
+    default_message = "La presentación empresarial está inactiva."
+
+
+class PresentationOfOtherProductError(CommercialRelationshipError):
+    """La presentación no es del `company_product_id` indicado (FR-021, FR-051)."""
+
+    code = "PRESENTATION_OF_OTHER_PRODUCT"
+    title = "Presentación de otro producto"
+    default_message = "La presentación empresarial no pertenece al producto empresarial indicado."
+
+
+class PresentationNotPurchasableError(CommercialRelationshipError):
+    """Presentación con `is_purchasable = false` en un producto de proveedor (FR-021)."""
+
+    code = "PRESENTATION_NOT_PURCHASABLE"
+    title = "Presentación no comprable"
+    default_message = "La presentación empresarial no está habilitada para compras."
+
+
+class PresentationNotSellableError(CommercialRelationshipError):
+    """Presentación con `is_sellable = false` en un precio (FR-051)."""
+
+    code = "PRESENTATION_NOT_SELLABLE"
+    title = "Presentación no vendible"
+    default_message = "La presentación empresarial no está habilitada para ventas."
+
+
+class GlobalPresentationNotFoundError(CommercialRelationshipError):
+    """Product Catalog no encontró la presentación (FR-011, FR-015)."""
+
+    code = "GLOBAL_PRESENTATION_NOT_FOUND"
+    title = "Presentación global inexistente"
+    default_message = "La presentación global indicada no existe en Product Catalog."
+
+
+class GlobalPresentationInactiveError(CommercialRelationshipError):
+    """Presentación global `INACTIVE` al adoptar o reactivar (FR-011, FR-015)."""
+
+    code = "GLOBAL_PRESENTATION_INACTIVE"
+    title = "Presentación global inactiva"
+    default_message = "La presentación global indicada está inactiva en Product Catalog."
+
+
+class GlobalPresentationNotEligibleError(CommercialRelationshipError):
+    """No elegible (`batch-lookup` o `422 NOT_ELIGIBLE_FOR_FIRST_USE`) (FR-011)."""
+
+    code = "GLOBAL_PRESENTATION_NOT_ELIGIBLE"
+    title = "Presentación global no elegible"
+    default_message = "La presentación global no es elegible para adopción."
+
+
+class GlobalPresentationOfOtherProductError(CommercialRelationshipError):
+    """Su `global_product_id` difiere del producto empresarial (FR-011)."""
+
+    code = "GLOBAL_PRESENTATION_OF_OTHER_PRODUCT"
+    title = "Presentación global de otro producto"
+    default_message = "La presentación global no pertenece al producto global adoptado."
+
+
+class DuplicatePresentationAdoptionError(CommercialRelationshipError):
+    """Presentación ya adoptada para el producto empresarial, en cualquier estado (FR-012)."""
+
+    code = "DUPLICATE_PRESENTATION_ADOPTION"
+    title = "Presentación ya adoptada"
+    default_message = (
+        "La presentación ya está adoptada para este producto; si está inactiva, reactívela."
+    )
+
+
+class DuplicateSkuError(CommercialRelationshipError):
+    """SKU ya usado en la empresa (FR-012)."""
+
+    code = "DUPLICATE_SKU"
+    title = "SKU duplicado"
+    default_message = "Ya existe una presentación con ese SKU en la empresa."
+
+
+class PurchaseUnitNotBaseUnitError(CommercialRelationshipError):
+    """`purchase_unit_id` distinta de la unidad base o producto global inexistente (FR-022)."""
+
+    code = "PURCHASE_UNIT_NOT_BASE_UNIT"
+    title = "Unidad de compra inválida"
+    default_message = "La unidad de compra debe ser la unidad base del producto global."
+
+
+class DuplicateSupplierProductError(CommercialRelationshipError):
+    """Relación `ACTIVE` repetida para proveedor + producto + presentación (FR-023)."""
+
+    code = "DUPLICATE_SUPPLIER_PRODUCT"
+    title = "Producto de proveedor duplicado"
+    default_message = "Ya existe una relación activa para este proveedor, producto y presentación."
+
+
+class PaymentConditionTypeNotFoundError(CommercialRelationshipError):
+    """Payment Reference `404` (FR-032)."""
+
+    code = "PAYMENT_CONDITION_TYPE_NOT_FOUND"
+    title = "Tipo de condición inexistente"
+    default_message = "El tipo de condición de pago indicado no existe en Payment Reference."
+
+
+class PaymentConditionTypeInactiveError(CommercialRelationshipError):
+    """Tipo `INACTIVE` al registrar, cambiar o reactivar (FR-032)."""
+
+    code = "PAYMENT_CONDITION_TYPE_INACTIVE"
+    title = "Tipo de condición inactivo"
+    default_message = "El tipo de condición de pago indicado está inactivo en Payment Reference."
+
+
+class DuplicatePriceListCodeError(CommercialRelationshipError):
+    """Código de lista ya usado en la empresa (FR-041)."""
+
+    code = "DUPLICATE_PRICE_LIST_CODE"
+    title = "Código de lista duplicado"
+    default_message = "Ya existe una lista de precios con ese código en la empresa."
+
+
+class PriceListNotFoundError(CommercialRelationshipError):
+    """`price_list_id` del cuerpo inexistente o de otra empresa (FR-051)."""
+
+    code = "PRICE_LIST_NOT_FOUND"
+    title = "Lista de precios inexistente"
+    default_message = "La lista de precios indicada no existe en la empresa."
+
+
+class PriceListInactiveError(CommercialRelationshipError):
+    """Lista `INACTIVE` al registrar, cambiar o reactivar un precio (FR-045, FR-051)."""
+
+    code = "PRICE_LIST_INACTIVE"
+    title = "Lista de precios inactiva"
+    default_message = "La lista de precios está inactiva y no admite precios."
+
+
+class PricePeriodOverlapError(CommercialRelationshipError):
+    """Vigencia cruzada con otro precio `ACTIVE` (`ex_price_list_items_no_overlap`, FR-053)."""
+
+    code = "PRICE_PERIOD_OVERLAP"
+    title = "Vigencia solapada"
+    default_message = (
+        "La vigencia se cruza con otro precio activo de la misma lista, producto y "
+        "presentación."
+    )

@@ -35,6 +35,7 @@ def configure_bearer_openapi(
             version=app.version,
             description=app.description,
             routes=app.routes,
+            tags=app.openapi_tags,
         )
 
         components = schema.setdefault("components", {})
@@ -75,6 +76,49 @@ def configure_bearer_openapi(
         return schema
 
     app.openapi = custom_openapi
+
+
+TAG_PRICE_LISTS = "Listas de precios (definir las listas)"
+TAG_PRICE_LIST_ITEMS = "Precios por producto dentro de una lista"
+TAG_APPLICABLE_PRICES = "Consultar el precio que aplica a una venta"
+
+# Secciones de /docs en el orden de registro de los routers; las de precios llevan una descripción
+# que explica en qué se diferencian.
+OPENAPI_TAGS = [
+    {"name": "health"},
+    {"name": "Productos empresariales"},
+    {"name": "Clientes"},
+    {"name": "Proveedores"},
+    {"name": "Resumen de empresas"},
+    {"name": "Presentaciones empresariales"},
+    {"name": "Productos de proveedor"},
+    {"name": "Condiciones de pago del proveedor"},
+    {
+        "name": TAG_PRICE_LISTS,
+        "description": (
+            "Crea y administra las **listas** de la empresa (p. ej. *Minorista*, *Mayorista*), cada una con "
+            "su moneda, su vigencia y, si se desea, marcada como predeterminada. Aquí no se registran "
+            "precios: una lista es solo el contenedor (`price_lists`)."
+        ),
+    },
+    {
+        "name": TAG_PRICE_LIST_ITEMS,
+        "description": (
+            "Registra **cuánto vale** un producto (o una presentación) dentro de una lista y desde cuándo "
+            "hasta cuándo rige ese valor. Guarda el historial: un precio en vigencia no se edita, se "
+            "cambia con `change-price` (`price_list_items`)."
+        ),
+    },
+    {
+        "name": TAG_APPLICABLE_PRICES,
+        "description": (
+            "**Solo consulta, no guarda nada.** Dadas hasta 100 líneas (producto, presentación opcional y "
+            "lista opcional) y un instante, responde qué precio usar: el de la lista indicada o la "
+            "predeterminada; si no hay lista aplicable, el `sale_price` del producto empresarial. Lo "
+            "usarán Ventas y Compras al armar un documento."
+        ),
+    },
+]
 
 
 _PROBLEM = {"application/problem+json": {"schema": {"type": "object"}}}

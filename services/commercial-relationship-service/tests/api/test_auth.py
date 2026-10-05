@@ -1,4 +1,4 @@
-"""`401` y `403` en las 22 rutas (RC-01, SC-001; contracts/rest-api.md "Resumen de permisos").
+"""`401` y `403` en las 55 rutas de la Fase A y la Fase B (RC-01, SC-001; contracts/rest-api.md de la 007 y la 010).
 
 El permiso se evalúa antes de cualquier llamada a Operational Context.
 """
@@ -9,12 +9,20 @@ from uuid import uuid4
 
 import pytest
 
-from tests.api.routes import ROUTES, route_id
+from tests.api.routes import RESOURCES, ROUTES, route_id
 
 
 def _url(route):
     return route.path.format(
-        company_id=uuid4(), company_product_id=uuid4(), company_customer_id=uuid4(), company_supplier_id=uuid4()
+        company_id=uuid4(),
+        company_product_id=uuid4(),
+        company_customer_id=uuid4(),
+        company_supplier_id=uuid4(),
+        presentation_id=uuid4(),
+        supplier_product_id=uuid4(),
+        condition_id=uuid4(),
+        price_list_id=uuid4(),
+        price_list_item_id=uuid4(),
     )
 
 
@@ -37,13 +45,15 @@ def test_without_exact_permission_is_403(make_token, as_token, fake_oc, route):
     # Todos los permisos del servicio salvo el que exige la ruta.
     others = [
         f"perm:commercial-relationship:{resource}:{action}"
-        for resource in ("company_products", "company_customers", "company_suppliers")
+        for resource in RESOURCES
         for action in ("read", "create", "update", "delete")
         if (resource, action) != (route.resource, route.action)
     ]
     response = _call(as_token(make_token(*others, sub="sub-sin-permiso")), route)
     assert response.status_code == 403
     assert response.json()["code"] == "COMMERCIAL_RELATIONSHIP.FORBIDDEN"
+    # D3: el 403 no revela el permiso, el recurso ni la acción exigidos.
+    assert route.resource not in response.text and "perm:" not in response.text
     assert fake_oc.access_calls == []
 
 

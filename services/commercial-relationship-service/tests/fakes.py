@@ -8,15 +8,19 @@ pruebas verifiquen el orden y la ausencia de llamadas (FR-011, R-02).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import jwt
 
 from commercial_relationship_service.application.exceptions import (
     OPERATIONAL_CONTEXT,
     PARTY_IDENTITY,
+    PAYMENT_REFERENCE,
     PRODUCT_CATALOG,
     DependencyUnavailableError,
+    GlobalPresentationNotEligibleError,
+    GlobalPresentationNotFoundError,
+    GlobalPresentationOfOtherProductError,
     GlobalProductNotEligibleError,
     GlobalProductNotFoundError,
     NotFoundError,
@@ -26,9 +30,11 @@ from commercial_relationship_service.application.exceptions import (
 from commercial_relationship_service.application.ports import (
     CompanyAccess,
     ContactPersonRef,
+    GlobalPresentationRef,
     GlobalProductRef,
     IdentityRef,
     MemberCompany,
+    PaymentConditionTypeRef,
 )
 
 
@@ -160,19 +166,40 @@ class FakeCompanyDirectory:
 
 @dataclass
 class FakeProductCatalog:
-    """Productos globales por UUID y registro de primer uso."""
+    """Productos y presentaciones globales por UUID, unidad base y registro de primer uso."""
 
     products: dict[UUID, GlobalProductRef] = field(default_factory=dict)
+    presentations: dict[UUID, GlobalPresentationRef] = field(default_factory=dict)
+    base_units: dict[UUID, UUID] = field(default_factory=dict)
     lookup_unavailable: bool = False
-    first_use_error: str | None = None  # "not_found" | "not_eligible" | "unavailable"
+    presentation_lookup_unavailable: bool = False
+    base_unit_unavailable: bool = False
+    first_use_error: str | None = None  # "not_found" | "not_eligible" | "other_product" | "unavailable"
     lookup_calls: list[UUID] = field(default_factory=list)
+    presentation_lookup_calls: list[UUID] = field(default_factory=list)
+    base_unit_calls: list[UUID] = field(default_factory=list)
     first_use_calls: list[UUID] = field(default_factory=list)
+    presentation_first_use_calls: list[tuple[UUID, UUID]] = field(default_factory=list)
 
     def add(self, product_id: UUID, *, status: str = "ACTIVE", eligible: bool = True) -> UUID:
         self.products[product_id] = GlobalProductRef(
             found=True, status=status, eligible_for_adoption=eligible
         )
+        self.base_units.setdefault(product_id, uuid4())
         return product_id
+
+    def add_presentation(
+        self,
+        presentation_id: UUID,
+        global_product_id: UUID,
+        *,
+        status: str = "ACTIVE",
+        eligible: bool = True,
+    ) -> UUID:
+        self.presentations[presentation_id] = GlobalPresentationRef(
+            found=True, global_product_id=global_product_id, status=status, eligible_for_adoption=eligible
+        )
+        return presentation_id
 
     def lookup_product(self, global_product_id: UUID) -> GlobalProductRef:
         self.lookup_calls.append(global_product_id)
@@ -182,17 +209,87 @@ class FakeProductCatalog:
 
         return self.products.get(global_product_id, GlobalProductRef(found=False))
 
-    def register_first_use(self, global_product_id: UUID) -> None:
-        self.first_use_calls.append(global_product_id)
+    def lookup_presentation(self, global_product_presentation_id: UUID) -> GlobalPresentationRef:
+        self.presentation_lookup_calls.append(global_product_presentation_id)
 
-        if self.first_use_error == "not_found":
-            raise GlobalProductNotFoundError(field="global_product_id")
+        if self.presentation_lookup_unavailable:
+            raise _unavailable(PRODUCT_CATALOG, "presentations_batch_lookup")
 
-        if self.first_use_error == "not_eligible":
-            raise GlobalProductNotEligibleError(field="global_product_id")
+        return self.presentations.get(global_product_presentation_id, GlobalPresentationRef(found=False))
+
+    def get_product_base_unit(self, global_product_id: UUID) -> UUID | None:
+        self.base_unit_calls.append(global_product_id)
+
+        if self.base_unit_unavailable:
+            raise _unavailable(PRODUCT_CATALOG, "products_get")
+
+        return self.base_units.get(global_product_id)
+
+    def register_first_use(
+        self, global_product_id: UUID, global_product_presentation_id: UUID | None = None
+    ) -> None:
+        if global_product_presentation_id is None:
+            self.first_use_calls.append(global_product_id)
+
+            if self.first_use_error == "not_found":
+                raise GlobalProductNotFoundError(field="global_product_id")
+
+            if self.first_use_error == "not_eligible":
+                raise GlobalProductNotEligibleError(field="global_product_id")
+
+        else:
+            self.presentation_first_use_calls.append((global_product_id, global_product_presentation_id))
+            field_name = "global_product_presentation_id"
+
+            if self.first_use_error == "not_found":
+                raise GlobalPresentationNotFoundError(field=field_name)
+
+            if self.first_use_error == "not_eligible":
+                raise GlobalPresentationNotEligibleError(field=field_name)
+
+            if self.first_use_error == "other_product":
+                raise GlobalPresentationOfOtherProductError(field=field_name)
 
         if self.first_use_error == "unavailable":
             raise _unavailable(PRODUCT_CATALOG, "products_first_use")
+
+
+# --------------------------------------------------------------------------
+# Payment Reference
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class FakePaymentReference:
+    """Tipos de condición de pago por UUID; por defecto `CASH`, `CREDIT` y `FINANCING` activos."""
+
+    types: dict[UUID, PaymentConditionTypeRef] = field(default_factory=dict)
+    unavailable: bool = False
+    calls: list[UUID] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        for code in ("CASH", "CREDIT", "FINANCING"):
+            self.add(code)
+
+    def add(self, code: str, *, status: str = "ACTIVE") -> UUID:
+        type_id = uuid4()
+        self.types[type_id] = PaymentConditionTypeRef(id=type_id, code=code, status=status)
+        return type_id
+
+    def id_of(self, code: str) -> UUID:
+        return next(ref.id for ref in self.types.values() if ref.code == code and ref.status == "ACTIVE")
+
+    def deactivate(self, type_id: UUID) -> None:
+        ref = self.types[type_id]
+        self.types[type_id] = PaymentConditionTypeRef(id=ref.id, code=ref.code, status="INACTIVE")
+
+    def get_condition_type(self, condition_type_id: UUID) -> PaymentConditionTypeRef | None:
+        self.calls.append(condition_type_id)
+
+        if self.unavailable:
+            raise _unavailable(PAYMENT_REFERENCE, "global_payment_condition_types_get")
+
+        return self.types.get(condition_type_id)
 
 
 # --------------------------------------------------------------------------

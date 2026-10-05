@@ -16,8 +16,9 @@ Administrar catálogos globales relacionados con condiciones y medios de pago.
 - `GlobalPaymentMethod`: sin contrato documentado todavía (GAP-PR-29).
 
 ## Consumidores principales
-- Commercial Relationship Service — previsto en su Fase B (`SupplierPaymentCondition`), sobre el
-  contrato de `GlobalPaymentConditionType`
+- Commercial Relationship Service — **en uso** desde su Fase B (`SupplierPaymentCondition`,
+  `specs/010-commercial-relationship-commercial-product`), con su identidad técnica, sobre el contrato de
+  `GlobalPaymentConditionType`
 - Purchase Service
 - Sales Service
 - futuros procesos financieros
