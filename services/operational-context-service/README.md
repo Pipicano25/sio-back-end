@@ -126,20 +126,18 @@ Copie `.env.example` a `.env`. Variables:
 | Variable | Uso | Ejemplo |
 | --- | --- | --- |
 | `SIO_DOCS_ENABLED` | Publica `/docs` y `/openapi.json` | `true` |
-| `OPERATIONAL_CONTEXT_SERVICE_PORT` | Puerto local del servicio | `8004` |
-| `DATABASE_URL` | Base de desarrollo | `postgresql+psycopg://…@127.0.0.1:55439/sio_operational_context` |
-| `OPERATIONAL_CONTEXT_DB_*` | Contenedor de la base de desarrollo | puerto `55439` |
-| `OPERATIONAL_CONTEXT_TEST_DB_*`, `OPERATIONAL_CONTEXT_TEST_DATABASE_URL` | Base de pruebas (perfil `test`) | puerto `55440` |
+| `DATABASE_URL` | Base del proyecto compose (credenciales en `infrastructure/.env`) | `postgresql+psycopg://…@127.0.0.1:5440/operational_context` |
+| `OPERATIONAL_CONTEXT_TEST_DATABASE_URL` | Base de pruebas (perfil `test`) | puerto `55440` |
 | `SIO_AUTH_ISSUER`, `SIO_AUTH_JWKS_URL`, `SIO_AUTH_AUDIENCE` | `sio-auth` | `http://localhost:8081/realms/sio`, …, `sio-api` |
-| `PARTY_IDENTITY_SERVICE_BASE_URL`, `PARTY_IDENTITY_TIMEOUT_SECONDS` | Party Identity **con** `/api/v1` | `http://localhost:8002/api/v1`, `5` |
-| `GEOGRAPHY_SERVICE_BASE_URL`, `GEOGRAPHY_TIMEOUT_SECONDS` | Geography con su prefijo vigente (hoy sin `/api/v1`) | `http://localhost:8000`, `5` |
+| `PARTY_IDENTITY_SERVICE_BASE_URL`, `PARTY_IDENTITY_TIMEOUT_SECONDS` | Party Identity **con** `/api/v1` | `http://localhost:8101/api/v1`, `5` |
+| `GEOGRAPHY_SERVICE_BASE_URL`, `GEOGRAPHY_TIMEOUT_SECONDS` | Geography con su prefijo vigente (hoy sin `/api/v1`) | `http://localhost:8102`, `5` |
 | `KEYCLOAK_BASE_URL` (obligatoria) | Keycloak para el token técnico y la Admin API | `http://localhost:8081` (integrado `http://keycloak:8080`) |
 | `KEYCLOAK_REALM` | Realm | `sio` |
 | `OPERATIONAL_CONTEXT_CLIENT_ID` (obligatoria) | Cliente técnico propio | `operational-context-service` |
 | `OPERATIONAL_CONTEXT_CLIENT_SECRET` (obligatoria) | Secreto del cliente técnico; **solo** en `.env`, igual al de `infrastructure/.env` | — |
 | `KEYCLOAK_TIMEOUT_SECONDS` | Tiempo de espera por llamada a Keycloak | `5` |
 | `SIO_API_CLIENT_ID` | Cliente cuyos roles son los permisos SIO | `sio-api` |
-| `OPERATIONAL_CONTEXT_INTEGRATION_BASE_URL`, `KEYCLOAK_TOKEN_URL` | Solo `pytest -m integration` | `http://localhost:8004`, `…/openid-connect/token` |
+| `OPERATIONAL_CONTEXT_INTEGRATION_BASE_URL`, `KEYCLOAK_TOKEN_URL` | Solo `pytest -m integration` | `http://localhost:8104`, `…/openid-connect/token` |
 
 El servicio no llama a Keycloak Admin al arrancar: arranque, salud y consultas funcionan sin él.
 
@@ -155,16 +153,18 @@ servicio: `pip install ../../libs/sio-auth`.
 
 ```bash
 cd services/operational-context-service
-docker compose up -d operational-context-dev-db               # sio-operational-context-dev-db
+docker compose --file ../../infrastructure/services/operational-context-service.yaml --env-file ../../infrastructure/.env up -d operational-context-db               # sio-operational-context-db
 python -m venv .venv && .venv/Scripts/pip install -e ".[test]"
 alembic upgrade head
 uvicorn operational_context_service.main:app --port 8004 --env-file .env
 ```
 
-O con Docker: `docker compose up -d --build` (contenedor `sio-operational-context-service-dev`,
-puerto `8004`). En el entorno integrado de `infrastructure/` el servicio es
-`sio-operational-context-service` en el puerto `8104`; aplique las migraciones con
-`docker exec sio-operational-context-service alembic upgrade head`.
+Con contenedor: `docker compose --file ../../infrastructure/services/operational-context-service.yaml --env-file ../../infrastructure/.env up -d --build`
+(aplicación `sio-operational-context-service` en `http://localhost:8104`). Es el mismo proyecto compose
+`operational-context-service` que levanta `infrastructure/scripts/rebuild-all.sh`: requiere el proyecto `sio`
+arriba (red `sio-network` y Keycloak). `uvicorn` fuera de Docker usa el puerto local `8004` y la
+misma base del proyecto (`DATABASE_URL` del `.env`).
+Aplique las migraciones del contenedor con `docker exec sio-operational-context-service alembic upgrade head`.
 
 Para la Fase B, el realm debe incluir el cliente técnico `operational-context-service` y los permisos
 `platform:*`: defina `OPERATIONAL_CONTEXT_CLIENT_SECRET` en `infrastructure/.env`, vuelva a
@@ -188,7 +188,7 @@ No hay: el dominio no requiere datos base (Principio XIV).
 ## Pruebas
 
 ```bash
-docker compose --profile test up -d operational-context-test-db
+docker compose --file ../../infrastructure/services/operational-context-service.yaml --env-file ../../infrastructure/.env --profile test up -d operational-context-test-db
 pytest                                   # toda la suite, sin Party Identity, Geography ni Keycloak reales
 pytest tests/examples                    # ejercicios de docs/ejemplo/
 OPERATIONAL_CONTEXT_EXAMPLES_WRITE=1 pytest tests/examples   # regenerar docs/ejemplo/
@@ -214,6 +214,34 @@ Cada ejecución crea datos **ficticios de validación** que permanecen en el ent
 (`PRUEBA SIO OC <id>`), una empresa, una sucursal, una persona (`PRUEBA<id>`) y la membresía de
 `compras.test` en esa empresa. Para comprobar un `503`, detenga el contenedor del proveedor y repita
 la operación.
+
+## Disponibilidad de la base
+
+Regla de la Constitución 2.4.0 (Principio X), feature 009:
+
+- La conexión a PostgreSQL tiene un tiempo de espera de 5 s y el pool descarta las conexiones rotas
+  antes de usarlas (`pool_pre_ping`).
+- Si la base no está disponible: `/health/live` sigue en `200`, `/health/ready` responde `503` y los
+  endpoints que usan la base responden `503` `OPERATIONAL_CONTEXT.DEPENDENCY_UNAVAILABLE` con `dependency:
+  "database"`, `trace_id` y sin detalles internos (la causa queda en el log).
+- Solo la pérdida o indisponibilidad de la conexión produce ese `503` (conexión rechazada o perdida,
+  tiempo agotado, SQLSTATE `08xxx`, `57P01`, `57P02`, `57P03`). Un *deadlock*, un fallo de
+  serialización, una sentencia cancelada o un bloqueo no disponible conservan su respuesta
+  (`500 OPERATIONAL_CONTEXT.INTERNAL_ERROR`); integridad, validación y versión conservan `409`/`422`.
+- Cuando la base vuelve, el servicio se recupera solo, sin reiniciarse.
+- En Docker la base `sio-operational-context-db` tiene `healthcheck` y `restart: unless-stopped`, y la aplicación
+  arranca cuando la base está sana (`infrastructure/services/operational-context-service.yaml`).
+
+Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.test` y
+`KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
+
+```bash
+pytest -m integration -o addopts="" tests/integration/test_database_outage_recovery.py
+```
+
+Cubre una caída prolongada (`docker stop`) y una caída inesperada de PostgreSQL (reinicio por Docker),
+contra `http://localhost:8104` (`OPERATIONAL_CONTEXT_INTEGRATION_BASE_URL`). Si se interrumpe con la
+base detenida: `docker start sio-operational-context-db`.
 
 ## Consumo de la API
 

@@ -6,7 +6,7 @@ from uuid import UUID
 from sqlalchemy import CheckConstraint, DateTime, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Boolean, CheckConstraint, DateTime, String, Text, UniqueConstraint, false
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Integer, String, Text, UniqueConstraint, false, text
 from payment_reference_service.infrastructure.database import Base
 
 
@@ -71,6 +71,16 @@ class GlobalPaymentConditionTypeModel(Base):
         DateTime(timezone=True),
         nullable=False,
     )
+
+    # Concurrencia optimista (Principio VII, feature 008): SQLAlchemy añade
+    # `WHERE version = :vigente` a cada UPDATE y la incrementa.
+    version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("1"),
+    )
+
+    __mapper_args__ = {"version_id_col": version}
 
 
 class GlobalPaymentMethodModel(Base):

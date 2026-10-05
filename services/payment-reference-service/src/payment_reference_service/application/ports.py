@@ -70,22 +70,23 @@ class GlobalPaymentConditionTypeRepository(Protocol):
     def update(
         self,
         entity: GlobalPaymentConditionType,
+        *,
+        expected_version: int,
     ) -> GlobalPaymentConditionType:
-        """Persiste los cambios de una condición existente.
+        """Persiste los cambios de una condición existente con concurrencia optimista.
+
+        No existe operación de borrado: los tipos se inactivan (D7, feature 008).
 
         Args:
             entity: Estado completo actualizado.
+            expected_version: Versión que el cliente leyó.
 
         Returns:
-            Entidad actualizada.
-        """
-        ...
+            Entidad actualizada, con la versión incrementada.
 
-    def delete(self, condition_type_id: UUID) -> None:
-        """Elimina físicamente una condición.
-
-        Args:
-            condition_type_id: Identificador del registro.
+        Raises:
+            GlobalPaymentConditionTypeVersionConflictError: Si la versión no
+                coincide o otra operación la modificó primero.
         """
         ...
 

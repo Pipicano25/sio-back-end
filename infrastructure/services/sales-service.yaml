@@ -1,6 +1,6 @@
-name: sio-sales-service
+name: sales-service
 
-# Proyecto compose "sio-sales-service": por ahora solo su base de datos propia;
+# Proyecto compose "sales-service": por ahora solo su base de datos propia;
 # el contenedor de aplicación se agregará aquí cuando exista. Se une a
 # "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
 

@@ -2,8 +2,8 @@ name: sio
 
 # Proyecto compose "sio": solo la infraestructura compartida (Keycloak, su
 # base y RabbitMQ). Cada microservicio vive en su propio proyecto compose
-# (services/<microservicio>.yaml, proyecto "sio-<microservicio>") con su base
-# y su contenedor de aplicación; todos se unen a la red "sio-network" que crea
+# (services/<microservicio>.yaml, proyecto "<microservicio>") con su base, su base
+# de pruebas y su contenedor de aplicación; todos se unen a la red "sio-network" que crea
 # este proyecto, por lo que este debe levantarse primero.
 
 x-postgres-base: &postgres-base

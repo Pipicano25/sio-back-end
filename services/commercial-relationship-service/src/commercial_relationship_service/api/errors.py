@@ -9,6 +9,12 @@ Regla D11 provisional: `400` solo si el cuerpo JSON no se puede interpretar;
 externas inexistentes, inactivas o inválidas; `409` unicidad, versión y
 transición; `404` recurso inexistente o fuera del alcance; `503` dependencia no
 disponible, con la extensión `dependency`.
+
+Base de datos propia no disponible (Constitución 2.4.0, Principio X; feature 009):
+solo la pérdida o indisponibilidad de la conexión con PostgreSQL
+(`is_database_unavailable`) se traduce a `503 DEPENDENCY_UNAVAILABLE` con
+`dependency: database`; cualquier otro error de PostgreSQL (deadlock,
+serialización, cancelación, bloqueo) conserva su respuesta `500`.
 """
 
 from __future__ import annotations
@@ -19,6 +25,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import InterfaceError, OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from commercial_relationship_service.application.exceptions import (
@@ -32,6 +39,11 @@ ERROR_TYPE_BASE = "https://sio/errors/commercial-relationship"
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 
 logger = logging.getLogger(SERVICE_LOGGER)
+
+DATABASE_UNAVAILABLE_DETAIL = (
+    "La base de datos del servicio no está disponible temporalmente. Intente de nuevo más tarde."
+)
+_DISCONNECT_SQLSTATES = frozenset({"57P01", "57P02", "57P03"})
 
 _STATUS_BY_CODE: dict[str, int] = {
     "FORBIDDEN": 403,
@@ -72,6 +84,29 @@ _HTTP_CODES = {
     404: ("NOT_FOUND", "Recurso no encontrado"),
     405: ("METHOD_NOT_ALLOWED", "Método no permitido"),
 }
+
+
+def is_database_unavailable(exc: Exception) -> bool:
+    """Indica si el error es la pérdida o indisponibilidad de la conexión con PostgreSQL.
+
+    `True` para `InterfaceError` (conexión cerrada) y para `OperationalError`
+    con la conexión invalidada por SQLAlchemy, sin SQLSTATE (el servidor no
+    respondió: conexión rechazada, host sin resolver, tiempo agotado,
+    conexión perdida), con SQLSTATE de clase `08` o `57P01`/`57P02`/`57P03`.
+    `False` para todo lo demás (p. ej. deadlock `40P01`, serialización
+    `40001`, cancelación `57014`, bloqueo `55P03`).
+    """
+    if isinstance(exc, InterfaceError):
+        return True
+
+    if not isinstance(exc, OperationalError):
+        return False
+
+    if exc.connection_invalidated:
+        return True
+
+    sqlstate = getattr(exc.orig, "sqlstate", None)
+    return sqlstate is None or sqlstate.startswith("08") or sqlstate in _DISCONNECT_SQLSTATES
 
 
 def status_for_code(code: str) -> int | None:
@@ -237,8 +272,33 @@ async def _handle_http_exception(
     )
 
 
+async def _handle_database_unavailable(request: Request, exc: Exception) -> JSONResponse:
+    if not is_database_unavailable(exc):
+        # Otro error de PostgreSQL: conserva su respuesta (500 en `tracing.py`).
+        raise exc
+
+    orig = getattr(exc, "orig", exc)
+    logger.warning(
+        "PostgreSQL no disponible metodo=%s ruta=%s causa=%s sqlstate=%s",
+        request.method,
+        request.url.path,
+        type(orig).__name__,
+        getattr(orig, "sqlstate", None),
+    )
+    return problem_response(
+        request,
+        status=503,
+        code="DEPENDENCY_UNAVAILABLE",
+        title="Dependencia no disponible",
+        detail=DATABASE_UNAVAILABLE_DETAIL,
+        extra={"dependency": "database"},
+    )
+
+
 def register_error_handlers(app: FastAPI) -> None:
     """Registra los manejadores de errores en la aplicación."""
     app.add_exception_handler(CommercialRelationshipError, _handle_application_error)
     app.add_exception_handler(RequestValidationError, _handle_validation_error)
     app.add_exception_handler(StarletteHTTPException, _handle_http_exception)
+    app.add_exception_handler(OperationalError, _handle_database_unavailable)
+    app.add_exception_handler(InterfaceError, _handle_database_unavailable)

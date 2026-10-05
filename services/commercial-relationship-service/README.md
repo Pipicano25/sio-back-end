@@ -64,13 +64,12 @@ Copie `.env.example` a `.env` (el `.env` no se versiona).
 | Variable                                                                   | Uso                                                              | Ejemplo                                       |
 | -------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------- |
 | `SIO_DOCS_ENABLED`                                                         | Publica `/docs` y `/openapi.json`                                | `true`                                        |
-| `COMMERCIAL_RELATIONSHIP_SERVICE_PORT`                                     | Puerto del contenedor de la aplicación del entorno independiente | `8005`                                        |
-| `DATABASE_URL`, `COMMERCIAL_RELATIONSHIP_DB_*`                             | PostgreSQL de desarrollo                                         | puerto `55442`                                |
-| `COMMERCIAL_RELATIONSHIP_TEST_DB_*`, `COMMERCIAL_RELATIONSHIP_TEST_DATABASE_URL` | Base aislada de pruebas                                    | puerto `55443`                                |
+| `DATABASE_URL`                             | Base del proyecto compose (credenciales en `infrastructure/.env`)                                         | puerto `5445`                                |
+| `COMMERCIAL_RELATIONSHIP_TEST_DATABASE_URL` | Base aislada de pruebas                                    | puerto `55443`                                |
 | `SIO_AUTH_ISSUER`, `SIO_AUTH_JWKS_URL`, `SIO_AUTH_AUDIENCE`                | Configuración de `sio-auth`                                      | `http://localhost:8081/realms/sio`, `sio-api` |
-| `OPERATIONAL_CONTEXT_SERVICE_BASE_URL`, `OPERATIONAL_CONTEXT_TIMEOUT_SECONDS` | Operational Context (con `/api/v1`)                           | `http://localhost:8004/api/v1`, `5`           |
-| `PRODUCT_CATALOG_SERVICE_BASE_URL`, `PRODUCT_CATALOG_TIMEOUT_SECONDS`      | Product Catalog (con `/api/v1`)                                  | `http://localhost:8003/api/v1`, `5`           |
-| `PARTY_IDENTITY_SERVICE_BASE_URL`, `PARTY_IDENTITY_TIMEOUT_SECONDS`        | Party Identity (con `/api/v1`)                                   | `http://localhost:8002/api/v1`, `5`           |
+| `OPERATIONAL_CONTEXT_SERVICE_BASE_URL`, `OPERATIONAL_CONTEXT_TIMEOUT_SECONDS` | Operational Context (con `/api/v1`)                           | `http://localhost:8104/api/v1`, `5`           |
+| `PRODUCT_CATALOG_SERVICE_BASE_URL`, `PRODUCT_CATALOG_TIMEOUT_SECONDS`      | Product Catalog (con `/api/v1`)                                  | `http://localhost:8103/api/v1`, `5`           |
+| `PARTY_IDENTITY_SERVICE_BASE_URL`, `PARTY_IDENTITY_TIMEOUT_SECONDS`        | Party Identity (con `/api/v1`)                                   | `http://localhost:8101/api/v1`, `5`           |
 | `KEYCLOAK_BASE_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_TIMEOUT_SECONDS`          | Emisión del token técnico                                        | `http://localhost:8081`, `sio`                |
 | `COMMERCIAL_RELATIONSHIP_CLIENT_ID`, `COMMERCIAL_RELATIONSHIP_CLIENT_SECRET` | Cliente técnico; el secreto solo en `.env` y debe coincidir con el realm | `commercial-relationship-service`   |
 
@@ -87,14 +86,16 @@ cp .env.example .env
 python -m venv .venv
 .venv/Scripts/activate            # Linux/macOS: source .venv/bin/activate
 pip install -e ".[test]"
-docker compose up -d commercial-relationship-dev-db
+docker compose --file ../../infrastructure/services/commercial-relationship-service.yaml --env-file ../../infrastructure/.env up -d commercial-relationship-db
 alembic upgrade head
 uvicorn commercial_relationship_service.main:app --port 8005
 ```
 
-Con contenedor: `docker compose up -d --build` (aplicación `sio-commercial-relationship-service-dev`
-en `http://localhost:8005`). En el entorno integrado (`infrastructure/scripts/rebuild-all.sh`) el
-contenedor es `sio-commercial-relationship-service` en `http://localhost:8106`.
+Con contenedor: `docker compose --file ../../infrastructure/services/commercial-relationship-service.yaml --env-file ../../infrastructure/.env up -d --build`
+(aplicación `sio-commercial-relationship-service` en `http://localhost:8106`). Es el mismo proyecto compose
+`commercial-relationship-service` que levanta `infrastructure/scripts/rebuild-all.sh`: requiere el proyecto `sio`
+arriba (red `sio-network` y Keycloak). `uvicorn` fuera de Docker usa el puerto local `8005` y la
+misma base del proyecto (`DATABASE_URL` del `.env`).
 `GET /health/live` y `GET /health/ready` son públicos; `ready` solo comprueba la base de datos.
 
 ## Migraciones
@@ -111,7 +112,7 @@ No hay `seed`: los productos, clientes y proveedores los registra cada empresa.
 ## Pruebas
 
 ```bash
-docker compose --profile test up -d commercial-relationship-test-db
+docker compose --file ../../infrastructure/services/commercial-relationship-service.yaml --env-file ../../infrastructure/.env --profile test up -d commercial-relationship-test-db
 pytest                                     # unitarias, contrato, API, salud y ejemplos
 pytest -m performance -o addopts=""        # 50 000 productos por empresa, p95 < 1 s (SC-009)
 pytest -m integration -o addopts=""        # proveedores y Keycloak reales (entorno integrado)
@@ -138,6 +139,34 @@ pytest -m integration -o addopts=""        # proveedores y Keycloak reales (ento
   contraseña de `admin.test` y el secreto del cliente técnico se leen del entorno o de
   `infrastructure/.env`. Es repetible: cada ejecución crea datos ficticios de validación. La caída
   de un proveedor (`503`) se verifica a mano deteniendo su contenedor.
+
+## Disponibilidad de la base
+
+Regla de la Constitución 2.4.0 (Principio X), feature 009:
+
+- La conexión a PostgreSQL tiene un tiempo de espera de 5 s y el pool descarta las conexiones rotas
+  antes de usarlas (`pool_pre_ping`).
+- Si la base no está disponible: `/health/live` sigue en `200`, `/health/ready` responde `503` y los
+  endpoints que usan la base responden `503` `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` con `dependency:
+  "database"`, `trace_id` y sin detalles internos (la causa queda en el log).
+- Solo la pérdida o indisponibilidad de la conexión produce ese `503` (conexión rechazada o perdida,
+  tiempo agotado, SQLSTATE `08xxx`, `57P01`, `57P02`, `57P03`). Un *deadlock*, un fallo de
+  serialización, una sentencia cancelada o un bloqueo no disponible conservan su respuesta
+  (`500 COMMERCIAL_RELATIONSHIP.INTERNAL_ERROR`); integridad, validación y versión conservan `409`/`422`.
+- Cuando la base vuelve, el servicio se recupera solo, sin reiniciarse.
+- En Docker la base `sio-commercial-relationship-db` tiene `healthcheck` y `restart: unless-stopped`, y la aplicación
+  arranca cuando la base está sana (`infrastructure/services/commercial-relationship-service.yaml`).
+
+Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.test` y
+`KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
+
+```bash
+pytest -m integration -o addopts="" tests/integration/test_database_outage_recovery.py
+```
+
+Cubre una caída prolongada (`docker stop`) y una caída inesperada de PostgreSQL (reinicio por Docker),
+contra `http://localhost:8106` (`COMMERCIAL_RELATIONSHIP_INTEGRATION_BASE_URL`). Si se interrumpe con la
+base detenida: `docker start sio-commercial-relationship-db`.
 
 ## Consumo de la API
 

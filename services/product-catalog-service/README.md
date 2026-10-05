@@ -54,12 +54,10 @@ Copie `.env.example` a `.env` (el `.env` no se versiona).
 | Variable                                                         | Uso                                                         | Ejemplo                                                      |
 | ---------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ |
 | `SIO_DOCS_ENABLED`                                               | Publica `/docs` y `/openapi.json`                           | `true`                                                       |
-| `PRODUCT_CATALOG_SERVICE_PORT`                                   | Puerto del contenedor de la aplicación                      | `8003`                                                       |
-| `DATABASE_URL`                                                   | PostgreSQL de desarrollo                                    | `postgresql+psycopg://…@127.0.0.1:55437/sio_product_catalog` |
-| `PRODUCT_CATALOG_DB_*`                                           | Credenciales y puerto de la base de desarrollo              | puerto `55437`                                               |
-| `PRODUCT_CATALOG_TEST_DB_*`, `PRODUCT_CATALOG_TEST_DATABASE_URL` | Base aislada de pruebas                                     | puerto `55438`                                               |
+| `DATABASE_URL`                                                   | Base del proyecto compose (credenciales en `infrastructure/.env`)                                    | `postgresql+psycopg://…@127.0.0.1:5444/product_catalog` |
+| `PRODUCT_CATALOG_TEST_DATABASE_URL` | Base aislada de pruebas                                     | puerto `55438`                                               |
 | `SIO_AUTH_ISSUER`, `SIO_AUTH_JWKS_URL`, `SIO_AUTH_AUDIENCE`      | Configuración de `sio-auth`                                 | `http://localhost:8081/realms/sio`, `sio-api`                |
-| `PARTY_IDENTITY_SERVICE_BASE_URL`                                | URL base de Party Identity, **incluido su prefijo de ruta** | `http://localhost:8002/api/v1`                                   |
+| `PARTY_IDENTITY_SERVICE_BASE_URL`                                | URL base de Party Identity, **incluido su prefijo de ruta** | `http://localhost:8101/api/v1`                                   |
 | `PARTY_IDENTITY_TIMEOUT_SECONDS`                                 | Tiempo de espera de la validación del fabricante            | `3`                                                          |
 
 ## Arranque local
@@ -71,13 +69,17 @@ cp .env.example .env
 python -m venv .venv
 .venv/Scripts/activate            # Linux/macOS: source .venv/bin/activate
 pip install -e ".[test]"
-docker compose up -d product-catalog-dev-db
+docker compose --file ../../infrastructure/services/product-catalog-service.yaml --env-file ../../infrastructure/.env up -d product-catalog-db
 alembic upgrade head
 python -m product_catalog_service.seed load
 uvicorn product_catalog_service.main:app --port 8003
 ```
 
-Con contenedor: `docker compose up -d --build` (aplicación en `http://localhost:8003`).
+Con contenedor: `docker compose --file ../../infrastructure/services/product-catalog-service.yaml --env-file ../../infrastructure/.env up -d --build`
+(aplicación `sio-product-catalog-service` en `http://localhost:8103`). Es el mismo proyecto compose
+`product-catalog-service` que levanta `infrastructure/scripts/rebuild-all.sh`: requiere el proyecto `sio`
+arriba (red `sio-network` y Keycloak). `uvicorn` fuera de Docker usa el puerto local `8003` y la
+misma base del proyecto (`DATABASE_URL` del `.env`).
 `GET /health/live` y `GET /health/ready` son públicos.
 
 ## Migraciones
@@ -101,7 +103,7 @@ modificados por un administrador. Audita con la identidad técnica
 ## Pruebas
 
 ```bash
-docker compose --profile test up -d product-catalog-test-db
+docker compose --file ../../infrastructure/services/product-catalog-service.yaml --env-file ../../infrastructure/.env --profile test up -d product-catalog-test-db
 pytest                                  # unitarias, contrato, API y salud
 pytest -m performance -o addopts=""     # volumen: 500 000 productos (SC-002, SC-003)
 ```
@@ -128,6 +130,34 @@ pytest -m performance -o addopts=""     # volumen: 500 000 productos (SC-002, SC
   `infrastructure/.env`. Es repetible: cada ejecución crea organizaciones y un producto ficticios
   de validación. La caída del proveedor (`503 DEPENDENCY_UNAVAILABLE`) se verifica a mano
   deteniendo `sio-party-identity-service`.
+
+## Disponibilidad de la base
+
+Regla de la Constitución 2.4.0 (Principio X), feature 009:
+
+- La conexión a PostgreSQL tiene un tiempo de espera de 5 s y el pool descarta las conexiones rotas
+  antes de usarlas (`pool_pre_ping`).
+- Si la base no está disponible: `/health/live` sigue en `200`, `/health/ready` responde `503` y los
+  endpoints que usan la base responden `503` `PRODUCT_CATALOG.DEPENDENCY_UNAVAILABLE` con `dependency:
+  "database"`, `trace_id` y sin detalles internos (la causa queda en el log).
+- Solo la pérdida o indisponibilidad de la conexión produce ese `503` (conexión rechazada o perdida,
+  tiempo agotado, SQLSTATE `08xxx`, `57P01`, `57P02`, `57P03`). Un *deadlock*, un fallo de
+  serialización, una sentencia cancelada o un bloqueo no disponible conservan su respuesta
+  (`500 PRODUCT_CATALOG.INTERNAL_ERROR`); integridad, validación y versión conservan `409`/`422`.
+- Cuando la base vuelve, el servicio se recupera solo, sin reiniciarse.
+- En Docker la base `sio-product-catalog-db` tiene `healthcheck` y `restart: unless-stopped`, y la aplicación
+  arranca cuando la base está sana (`infrastructure/services/product-catalog-service.yaml`).
+
+Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.test` y
+`KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
+
+```bash
+pytest -m integration -o addopts="" tests/integration/test_database_outage_recovery.py
+```
+
+Cubre una caída prolongada (`docker stop`) y una caída inesperada de PostgreSQL (reinicio por Docker),
+contra `http://localhost:8103` (`PRODUCT_CATALOG_INTEGRATION_BASE_URL`). Si se interrumpe con la
+base detenida: `docker start sio-product-catalog-db`.
 
 ## Consumo de la API
 

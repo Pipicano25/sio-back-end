@@ -14,24 +14,40 @@ Reglas:
    PostgreSQL `5432`, Keycloak `8080`/`9000`, RabbitMQ `5672`/`15672`.
    Entre contenedores de `sio-network` se usa siempre el interno
    (`http://party-identity-service:8000`, `geography-db:5432`).
-3. Cada entorno tiene su propio rango, de modo que el entorno integrado y los
-   entornos independientes de cada servicio pueden estar levantados a la vez.
-4. Los nombres de contenedor son únicos por entorno: el integrado usa
-   `sio-<servicio>` / `sio-<servicio>-db`; el independiente usa
-   `sio-<servicio>-service-dev` / `sio-<servicio>-dev-db` /
-   `sio-<servicio>-test-db`. Así `rebuild-all.sh` nunca encuentra un
-   contenedor ajeno con su mismo nombre.
+3. Cada microservicio tiene **una sola definición Compose**:
+   `infrastructure/services/<servicio>.yaml`, proyecto compose `<servicio>`
+   (sin prefijo). Ahí viven su API, su base y su base de pruebas (perfil
+   `test`). No existe un `docker-compose.yml` dentro de `services/<servicio>/`:
+   un segundo archivo crearía un segundo proyecto (otro grupo en Docker
+   Desktop) con contenedores y volúmenes propios.
+4. Los nombres de contenedor son únicos: `sio-<nombre>-service` (API),
+   `sio-<nombre>-db` (base) y `sio-<nombre>-test-db` (base de pruebas), donde
+   `<nombre>` es el servicio sin el sufijo `-service` (p. ej. `sio-geography-db`).
 5. Las bases se publican solo en `127.0.0.1`.
 
-## Entornos
+## Proyectos compose
 
-| Entorno | Archivo compose | Archivo de variables | Rango API | Rango BD | Rango BD pruebas |
-|---|---|---|---|---|---|
-| Integrado | `infrastructure/compose.yaml` (proyecto `sio`: Keycloak, RabbitMQ) + `infrastructure/services/<servicio>.yaml` (proyecto `sio-<servicio>`: su base y su API) — `rebuild-all.sh` | `infrastructure/.env` | `8101–8111` | `5440–5450` | — (no tiene) |
-| Independiente por servicio | `services/<servicio>/docker-compose.yml` | `services/<servicio>/.env` | `8000–8010` | `55432–55452` (pares con su prueba) | idem |
+| Proyecto | Archivo compose | Archivo de variables | Contenido |
+|---|---|---|---|
+| `sio` | `infrastructure/compose.yaml` | `infrastructure/.env` | Keycloak, su base, RabbitMQ y la red `sio-network` |
+| `<servicio>` | `infrastructure/services/<servicio>.yaml` | `infrastructure/.env` | API (`8101–8111`), base (`5440–5450`) y base de pruebas (perfil `test`, `55433–55453`) |
 
-El entorno independiente no levanta Keycloak: usa el del entorno integrado a
-través del host (`host.docker.internal:${KEYCLOAK_HTTP_PORT}`).
+`infrastructure/scripts/rebuild-all.sh` levanta todos los proyectos (sin el
+perfil `test`). La base de pruebas se levanta a pedido, desde la raíz:
+
+```bash
+docker compose --file infrastructure/services/<servicio>.yaml --env-file infrastructure/.env --profile test up -d <servicio-sin-sufijo>-test-db
+```
+
+Antes (hasta 2026-10-05) cada servicio tenía además un entorno independiente
+(`services/<servicio>/docker-compose.yml`, API `8000–8010`, base `554xx`,
+contenedores `*-service-dev` / `*-dev-db`). Se retiró porque generaba un
+segundo proyecto por microservicio (`geography-service` junto a
+`sio-geography-service`). Las bases `554xx` de desarrollo quedan libres; los
+puertos `8000–8010` se conservan solo para ejecutar la aplicación con `uvicorn`
+fuera de Docker (mismo número por servicio que antes: geography `8000`,
+payment-reference `8001`, party-identity `8002`, product-catalog `8003`,
+operational-context `8004`, commercial-relationship `8005`), sin compose.
 
 ## Infraestructura compartida (entorno integrado)
 
@@ -47,74 +63,28 @@ través del host (`host.docker.internal:${KEYCLOAK_HTTP_PORT}`).
 `KEYCLOAK_PUBLIC_URL` debe usar el mismo puerto que `KEYCLOAK_HTTP_PORT`: es el
 `iss` de todos los tokens.
 
-## Microservicios — entorno integrado (`infrastructure/.env`)
+## Microservicios (`infrastructure/.env`)
 
-| Servicio | Contenedor API | Variable API | API | Contenedor BD | Variable BD | BD |
-|---|---|---|---|---|---|---|
-| party-identity-service | `sio-party-identity-service` | `PARTY_IDENTITY_SERVICE_PORT` | `8101` | `sio-party-identity-db` | `PARTY_IDENTITY_DB_PORT` | `5441` |
-| geography-service | `sio-geography-service` | `GEOGRAPHY_SERVICE_PORT` | `8102` | `sio-geography-db` | `GEOGRAPHY_DB_PORT` | `5442` |
-| product-catalog-service | `sio-product-catalog-service` | `PRODUCT_CATALOG_SERVICE_PORT` | `8103` | `sio-product-catalog-db` | `PRODUCT_CATALOG_DB_PORT` | `5444` |
-| operational-context-service | `sio-operational-context-service` | `OPERATIONAL_CONTEXT_SERVICE_PORT` | `8104` | `sio-operational-context-db` | `OPERATIONAL_CONTEXT_DB_PORT` | `5440` |
-| payment-reference-service | `sio-payment-reference-service` *(reservado)* | `PAYMENT_REFERENCE_SERVICE_PORT` | `8105` | `sio-payment-reference-db` | `PAYMENT_REFERENCE_DB_PORT` | `5443` |
-| commercial-relationship-service | `sio-commercial-relationship-service` | `COMMERCIAL_RELATIONSHIP_SERVICE_PORT` | `8106` | `sio-commercial-relationship-db` | `COMMERCIAL_RELATIONSHIP_DB_PORT` | `5445` |
-| purchase-service | *(reservado)* | `PURCHASE_SERVICE_PORT` | `8107` | `sio-purchase-db` | `PURCHASE_DB_PORT` | `5446` |
-| sales-service | *(reservado)* | `SALES_SERVICE_PORT` | `8108` | `sio-sales-db` | `SALES_DB_PORT` | `5447` |
-| inventory-service | *(reservado)* | `INVENTORY_SERVICE_PORT` | `8109` | `sio-inventory-db` | `INVENTORY_DB_PORT` | `5448` |
-| audit-service | *(reservado)* | `AUDIT_SERVICE_PORT` | `8110` | `sio-audit-db` | `AUDIT_DB_PORT` | `5449` |
-| workflow-service | *(reservado)* | `WORKFLOW_SERVICE_PORT` | `8111` | `sio-workflow-db` | `WORKFLOW_DB_PORT` | `5450` |
+| Servicio | Contenedor API | Variable API | API | Contenedor BD | Variable BD | BD | Variable BD pruebas | BD pruebas |
+|---|---|---|---|---|---|---|---|---|
+| party-identity-service | `sio-party-identity-service` | `PARTY_IDENTITY_SERVICE_PORT` | `8101` | `sio-party-identity-db` | `PARTY_IDENTITY_DB_PORT` | `5441` | `PARTY_IDENTITY_TEST_DB_PORT` | `55436` |
+| geography-service | `sio-geography-service` | `GEOGRAPHY_SERVICE_PORT` | `8102` | `sio-geography-db` | `GEOGRAPHY_DB_PORT` | `5442` | `GEOGRAPHY_TEST_DB_PORT` | `55433` |
+| product-catalog-service | `sio-product-catalog-service` | `PRODUCT_CATALOG_SERVICE_PORT` | `8103` | `sio-product-catalog-db` | `PRODUCT_CATALOG_DB_PORT` | `5444` | `PRODUCT_CATALOG_TEST_DB_PORT` | `55438` |
+| operational-context-service | `sio-operational-context-service` | `OPERATIONAL_CONTEXT_SERVICE_PORT` | `8104` | `sio-operational-context-db` | `OPERATIONAL_CONTEXT_DB_PORT` | `5440` | `OPERATIONAL_CONTEXT_TEST_DB_PORT` | `55440` |
+| payment-reference-service | `sio-payment-reference-service` | `PAYMENT_REFERENCE_SERVICE_PORT` | `8105` | `sio-payment-reference-db` | `PAYMENT_REFERENCE_DB_PORT` | `5443` | `PAYMENT_REFERENCE_TEST_DB_PORT` | `55441` |
+| commercial-relationship-service | `sio-commercial-relationship-service` | `COMMERCIAL_RELATIONSHIP_SERVICE_PORT` | `8106` | `sio-commercial-relationship-db` | `COMMERCIAL_RELATIONSHIP_DB_PORT` | `5445` | `COMMERCIAL_RELATIONSHIP_TEST_DB_PORT` | `55443` |
+| purchase-service | *(reservado)* | `PURCHASE_SERVICE_PORT` | `8107` | `sio-purchase-db` | `PURCHASE_DB_PORT` | `5446` | `PURCHASE_TEST_DB_PORT` | `55445` |
+| sales-service | *(reservado)* | `SALES_SERVICE_PORT` | `8108` | `sio-sales-db` | `SALES_DB_PORT` | `5447` | `SALES_TEST_DB_PORT` | `55447` |
+| inventory-service | *(reservado)* | `INVENTORY_SERVICE_PORT` | `8109` | `sio-inventory-db` | `INVENTORY_DB_PORT` | `5448` | `INVENTORY_TEST_DB_PORT` | `55449` |
+| audit-service | *(reservado)* | `AUDIT_SERVICE_PORT` | `8110` | `sio-audit-db` | `AUDIT_DB_PORT` | `5449` | `AUDIT_TEST_DB_PORT` | `55451` |
+| workflow-service | *(reservado)* | `WORKFLOW_SERVICE_PORT` | `8111` | `sio-workflow-db` | `WORKFLOW_DB_PORT` | `5450` | `WORKFLOW_TEST_DB_PORT` | `55453` |
 
 *(reservado)*: el servicio aún no tiene contenedor de aplicación en
 `infrastructure/services/<servicio>.yaml`; el puerto queda apartado para cuando se agregue.
+Lo mismo aplica a la base de pruebas de esos servicios.
 
-## Microservicios — entorno independiente (`services/<servicio>/.env`)
-
-| Servicio | Variable API | API | Variable BD | BD | Variable BD pruebas | BD pruebas |
-|---|---|---|---|---|---|---|
-| geography-service | `GEOGRAPHY_SERVICE_PORT` | `8000` | `GEOGRAPHY_DB_PORT` | `55432` | `GEOGRAPHY_TEST_DB_PORT` | `55433` |
-| payment-reference-service | `PAYMENT_REFERENCE_SERVICE_PORT` | `8001` | `PAYMENT_REFERENCE_DB_PORT` | `55434` | `PAYMENT_REFERENCE_TEST_DB_PORT` | `55441` *(reservado)* |
-| party-identity-service | `PARTY_IDENTITY_SERVICE_PORT` | `8002` | `PARTY_IDENTITY_DB_PORT` | `55435` | `PARTY_IDENTITY_TEST_DB_PORT` | `55436` |
-| product-catalog-service | `PRODUCT_CATALOG_SERVICE_PORT` | `8003` | `PRODUCT_CATALOG_DB_PORT` | `55437` | `PRODUCT_CATALOG_TEST_DB_PORT` | `55438` |
-| operational-context-service | `OPERATIONAL_CONTEXT_SERVICE_PORT` | `8004` | `OPERATIONAL_CONTEXT_DB_PORT` | `55439` | `OPERATIONAL_CONTEXT_TEST_DB_PORT` | `55440` |
-| commercial-relationship-service | `COMMERCIAL_RELATIONSHIP_SERVICE_PORT` | `8005` | `COMMERCIAL_RELATIONSHIP_DB_PORT` | `55442` | `COMMERCIAL_RELATIONSHIP_TEST_DB_PORT` | `55443` |
-| purchase-service | `PURCHASE_SERVICE_PORT` | `8006` | `PURCHASE_DB_PORT` | `55444` | `PURCHASE_TEST_DB_PORT` | `55445` |
-| sales-service | `SALES_SERVICE_PORT` | `8007` | `SALES_DB_PORT` | `55446` | `SALES_TEST_DB_PORT` | `55447` |
-| inventory-service | `INVENTORY_SERVICE_PORT` | `8008` | `INVENTORY_DB_PORT` | `55448` | `INVENTORY_TEST_DB_PORT` | `55449` |
-| audit-service | `AUDIT_SERVICE_PORT` | `8009` | `AUDIT_DB_PORT` | `55450` | `AUDIT_TEST_DB_PORT` | `55451` |
-| workflow-service | `WORKFLOW_SERVICE_PORT` | `8010` | `WORKFLOW_DB_PORT` | `55452` | `WORKFLOW_TEST_DB_PORT` | `55453` |
-
-Los valores de geography a operational-context son los que ya usaban el código,
-las pruebas y los ejemplos (`docs/ejemplo/`); no se renumeraron para no romper
-esas referencias. Los demás son asignaciones nuevas.
-
-Nombres de contenedor del entorno independiente:
-
-| Servicio | API | BD | BD pruebas (perfil `test`) |
-|---|---|---|---|
-| geography-service | `sio-geography-service-dev` | `sio-geography-dev-db` | `sio-geography-test-db` |
-| payment-reference-service | `sio-payment-reference-service-dev` | `sio-payment-reference-dev-db` | — |
-| party-identity-service | `sio-party-identity-service-dev` | `sio-party-identity-dev-db` | `sio-party-identity-test-db` |
-| product-catalog-service | `sio-product-catalog-service-dev` | `sio-product-catalog-dev-db` | `sio-product-catalog-test-db` |
-| operational-context-service | `sio-operational-context-service-dev` | `sio-operational-context-dev-db` | `sio-operational-context-test-db` |
-| commercial-relationship-service | `sio-commercial-relationship-service-dev` | `sio-commercial-relationship-dev-db` | `sio-commercial-relationship-test-db` |
-
-### Dependencias entre servicios en el entorno independiente
-
-Un servicio independiente alcanza a sus proveedores por el host, con el puerto
-**independiente** del proveedor. Para que no quede fijo en el compose, el
-`.env` del consumidor declara la variable de puerto del proveedor con el mismo
-nombre que usa el proveedor en su propio `.env`:
-
-| Consumidor | Variables de proveedor en su `.env` |
-|---|---|
-| todos | `KEYCLOAK_HTTP_PORT=8081` |
-| party-identity-service | `GEOGRAPHY_SERVICE_PORT=8000`, `OPERATIONAL_CONTEXT_SERVICE_PORT=8004` |
-| product-catalog-service | `PARTY_IDENTITY_SERVICE_PORT=8002` |
-| operational-context-service | `GEOGRAPHY_SERVICE_PORT=8000`, `PARTY_IDENTITY_SERVICE_PORT=8002` |
-| commercial-relationship-service | `OPERATIONAL_CONTEXT_SERVICE_PORT=8004`, `PRODUCT_CATALOG_SERVICE_PORT=8003`, `PARTY_IDENTITY_SERVICE_PORT=8002` |
-
-Si se cambia el puerto de un proveedor, se cambia en su `.env` y en el `.env`
-de cada consumidor de esta tabla (y en las `*_BASE_URL` con `localhost` que se
-usan al correr el servicio fuera de Docker).
+Contenedores de la base de pruebas: `sio-<servicio-sin-sufijo>-test-db`
+(p. ej. `sio-geography-test-db`), con datos en `tmpfs`.
 
 ## Puertos que no se deben usar
 
@@ -123,6 +93,7 @@ usan al correr el servicio fuera de Docker).
 | `5432` | PostgreSQL instalado localmente |
 | `8080` | Servidores de desarrollo genéricos; Keycloak lo usa solo dentro del contenedor |
 | `3000` | Frontend |
+| `55363–55462` (variable) | En algunos equipos Windows, Hyper-V/WinNAT excluye rangos dinámicos (`netsh interface ipv4 show excludedportrange protocol=tcp`). Si un puerto `554xx` de pruebas cae en uno, se sobrescribe su variable `*_TEST_DB_PORT` en `infrastructure/.env` local y en `*_TEST_DATABASE_URL` del `.env` del servicio |
 
 ## Diagnóstico de conflictos
 

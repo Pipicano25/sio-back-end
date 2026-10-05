@@ -1,7 +1,8 @@
-name: sio-party-identity-service
+name: party-identity-service
 
-# Proyecto compose "sio-party-identity-service": base de datos propia y contenedor de
-# aplicación de party-identity-service. Se une a "sio-network", creada por el proyecto
+# Proyecto compose "party-identity-service" (única definición Compose del microservicio):
+# base de datos propia, base de pruebas (perfil test) y contenedor de aplicación.
+# La base y la aplicación se unen a "sio-network", creada por el proyecto
 # "sio" (infrastructure/compose.yaml), que debe estar levantado antes: ahí
 # viven Keycloak y RabbitMQ (depends_on no cruza proyectos; el orden lo
 # garantiza infrastructure/scripts/rebuild-all.sh).
@@ -27,6 +28,31 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  # Base de pruebas (perfil "test"): solo se levanta a pedido, desde la raíz:
+  #   docker compose --file infrastructure/services/party-identity-service.yaml --env-file infrastructure/.env --profile test up -d party-identity-test-db
+  # Datos en tmpfs (se pierden al detenerla). No usa sio-network: las pruebas
+  # la alcanzan por el host (PARTY_IDENTITY_TEST_DATABASE_URL del .env del servicio).
+  party-identity-test-db:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: sio-party-identity-test-db
+    profiles:
+      - test
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${PARTY_IDENTITY_TEST_DB_NAME:-sio_party_identity_test}
+      POSTGRES_USER: ${PARTY_IDENTITY_TEST_DB_USER:-sio_party_identity_test}
+      POSTGRES_PASSWORD: ${PARTY_IDENTITY_TEST_DB_PASSWORD:-sio_party_identity_test_dev_change_me}
+    ports:
+      - "127.0.0.1:${PARTY_IDENTITY_TEST_DB_PORT:-55436}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   party-identity-service:
     build:

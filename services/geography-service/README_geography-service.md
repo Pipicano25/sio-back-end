@@ -84,14 +84,9 @@ Ejemplo:
 
 ```env
 SIO_DOCS_ENABLED=true
-GEOGRAPHY_SERVICE_PORT=8000
 
-GEOGRAPHY_DB_NAME=sio_geography
-GEOGRAPHY_DB_USER=sio_geography
-GEOGRAPHY_DB_PASSWORD=sio_geography_dev_change_me
-GEOGRAPHY_DB_PORT=55432
-
-DATABASE_URL=postgresql+psycopg://sio_geography:sio_geography_dev_change_me@localhost:55432/sio_geography
+# Base del proyecto compose geography-service; credenciales en infrastructure/.env
+DATABASE_URL=postgresql+psycopg://geography_user:change-this-geography-database-password@localhost:5442/geography
 
 SIO_AUTH_ISSUER=http://localhost:8081/realms/sio
 SIO_AUTH_JWKS_URL=http://localhost:8081/realms/sio/protocol/openid-connect/certs
@@ -185,35 +180,35 @@ http://localhost:8000/docs
 Validar Compose:
 
 ```powershell
-docker compose config
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env config
 ```
 
-Construir y levantar:
+Construir y levantar (requiere el proyecto `sio` levantado; aplicación en `http://localhost:8102`):
 
 ```powershell
-docker compose up --build -d
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env up --build -d
 ```
 
 Estado:
 
 ```powershell
-docker compose ps
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env ps
 ```
 
 Logs:
 
 ```powershell
-docker compose logs -f geography-service
-docker compose logs -f geography-db
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env logs -f geography-service
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env logs -f geography-db
 ```
 
 Detener sin borrar datos:
 
 ```powershell
-docker compose down
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env down
 ```
 
-No usar `docker compose down -v` salvo que realmente se quiera eliminar el volumen y los datos.
+No usar `docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env down -v` salvo que realmente se quiera eliminar el volumen y los datos.
 
 ## PostgreSQL desde fuera de Docker
 
@@ -221,10 +216,10 @@ Desde el host:
 
 ```text
 Host:       localhost
-Port:       55432
-Database:   sio_geography
-Username:   sio_geography
-Password:   valor de GEOGRAPHY_DB_PASSWORD
+Port:       5442
+Database:   geography
+Username:   geography_user
+Password:   GEOGRAPHY_DB_PASSWORD de infrastructure/.env
 ```
 
 Puede utilizarse con DBeaver, DataGrip, pgAdmin o psql.
@@ -236,7 +231,7 @@ Host: geography-db
 Port: 5432
 ```
 
-No usa `localhost:55432`.
+No usa `localhost:5442`.
 
 En producción PostgreSQL no debe exponerse directamente a Internet; usar red privada, VPN, bastion o túnel seguro.
 
@@ -267,6 +262,10 @@ Comprueba PostgreSQL mediante `SELECT 1`.
 Con BD disponible: `200 OK`.
 
 Con BD no disponible: `503 Service Unavailable`.
+
+Con la base no disponible por pérdida de conexión, los endpoints de negocio responden
+`503 {"detail": …}` en lugar de `500`, y el servicio se recupera solo cuando la base vuelve (feature 009;
+ver "Base de datos no disponible" en `README.md`).
 
 ## Swagger y Access Token
 
@@ -440,7 +439,6 @@ geography-service/
 ├── .env
 ├── .env.example
 ├── Dockerfile
-├── docker-compose.yml
 ├── pyproject.toml
 ├── alembic.ini
 ├── alembic/
@@ -472,9 +470,11 @@ geography-service/
 
 | Componente | URL / Puerto |
 |---|---|
-| Geography Service | `http://localhost:8000` |
-| Swagger | `http://localhost:8000/docs` |
-| PostgreSQL desde host | `localhost:55432` |
+| Geography Service (contenedor `sio-geography-service`) | `http://localhost:8102` |
+| Geography Service con `uvicorn` local | `http://localhost:8000` |
+| Swagger (`uvicorn` local) | `http://localhost:8000/docs` |
+| PostgreSQL desde host | `localhost:5442` |
+| PostgreSQL de pruebas (perfil `test`) | `localhost:55433` |
 | Keycloak | `http://localhost:8081` |
 | Realm SIO | `http://localhost:8081/realms/sio` |
 
@@ -492,7 +492,7 @@ geography-service/
 
 Alembic indica que `DATABASE_URL` es obligatoria: comprobar `.env` y `load_dotenv(override=False)` en `alembic/env.py`.
 
-DBeaver no conecta: comprobar `docker compose ps` y usar `localhost:55432`, no `geography-db:5432`.
+DBeaver no conecta: comprobar `docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env ps` y usar `localhost:5442`, no `geography-db:5432`.
 
 ## Producción
 

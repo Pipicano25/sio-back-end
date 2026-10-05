@@ -106,28 +106,26 @@ Copie `.env.example` a `.env`. Variables:
 | Variable | Uso | Ejemplo |
 | --- | --- | --- |
 | `SIO_DOCS_ENABLED` | Publica `/docs` y `/openapi.json` | `true` |
-| `PARTY_IDENTITY_SERVICE_PORT` | Puerto local del servicio | `8002` |
-| `DATABASE_URL` | Base de desarrollo | `postgresql+psycopg://…@127.0.0.1:55435/sio_party_identity` |
-| `PARTY_IDENTITY_DB_*` | Contenedor de la base de desarrollo | puerto `55435` |
-| `PARTY_IDENTITY_TEST_DB_*`, `PARTY_IDENTITY_TEST_DATABASE_URL` | Base de pruebas (perfil `test`) | puerto `55436` |
+| `DATABASE_URL` | Base del proyecto compose (credenciales en `infrastructure/.env`) | `postgresql+psycopg://…@127.0.0.1:5441/party_identity` |
+| `PARTY_IDENTITY_TEST_DATABASE_URL` | Base de pruebas (perfil `test`) | puerto `55436` |
 | `SIO_AUTH_ISSUER`, `SIO_AUTH_JWKS_URL`, `SIO_AUTH_AUDIENCE` | `sio-auth` | `http://localhost:8081/realms/sio`, …, `sio-api` |
-| `GEOGRAPHY_SERVICE_BASE_URL` | URL de Geography **incluido su prefijo de ruta** (hoy sin `/api/v1`) | `http://localhost:8000` |
+| `GEOGRAPHY_SERVICE_BASE_URL` | URL de Geography **incluido su prefijo de ruta** (hoy sin `/api/v1`) | `http://localhost:8102` |
 | `GEOGRAPHY_TIMEOUT_SECONDS` | Tiempo de espera de Geography | `5` |
-| `OPERATIONAL_CONTEXT_SERVICE_BASE_URL` | URL de Operational Context **con** `/api/v1` | `http://localhost:8004/api/v1` |
+| `OPERATIONAL_CONTEXT_SERVICE_BASE_URL` | URL de Operational Context **con** `/api/v1` | `http://localhost:8104/api/v1` |
 | `OPERATIONAL_CONTEXT_TIMEOUT_SECONDS` | Tiempo de espera de Operational Context | `5` |
 | `PARTY_IDENTITY_SEED_COUNTRY_ID` | País explícito del `seed` de reglas (vacío = modo Geography) | UUID de Colombia en su Geography |
 | `KEYCLOAK_TOKEN_URL`, `KEYCLOAK_TIMEOUT_SECONDS` | Token técnico (`seed` y Operational Context) | `…/protocol/openid-connect/token`, `5` |
 | `PARTY_IDENTITY_CLIENT_ID`, `PARTY_IDENTITY_CLIENT_SECRET` | Cliente técnico `party-identity-service` (`client_credentials`) | secreto real solo en `.env`, nunca en el repositorio |
 
-Si los puertos `55435`/`55436` no están disponibles en Windows (rango reservado por Hyper-V/WinNAT),
-levante las bases con otros puertos mediante variables de entorno, por ejemplo
-`PARTY_IDENTITY_TEST_DB_PORT=56436`, y ajuste `PARTY_IDENTITY_TEST_DATABASE_URL`.
+Si el puerto `55436` de la base de pruebas no está disponible en Windows (rango reservado por
+Hyper-V/WinNAT), defina otro en su `infrastructure/.env` local, por ejemplo
+`PARTY_IDENTITY_TEST_DB_PORT=56436`, y ajuste `PARTY_IDENTITY_TEST_DATABASE_URL` (ver `docs/port-map.md`).
 
 ## Arranque local
 
 ```bash
 cd services/party-identity-service
-docker compose up -d party-identity-db                       # sio-party-identity-dev-db
+docker compose --file ../../infrastructure/services/party-identity-service.yaml --env-file ../../infrastructure/.env up -d party-identity-db                       # sio-party-identity-db
 python -m venv .venv && .venv/Scripts/pip install -e ".[test]"
 alembic upgrade head
 python -m party_identity_service.seed load --country-id <uuid>   # ver "Datos iniciales"
@@ -135,9 +133,11 @@ python -m party_identity_service.seed load-business-sectors      # catálogo CII
 uvicorn party_identity_service.main:app --port 8002
 ```
 
-O con Docker: `docker compose up -d --build` (contenedor `sio-party-identity-service-dev`). Los
-nombres de contenedor no chocan con el entorno integrado de `infrastructure/`, donde el servicio es
-`sio-party-identity-service` en el puerto `8101`.
+Con contenedor: `docker compose --file ../../infrastructure/services/party-identity-service.yaml --env-file ../../infrastructure/.env up -d --build`
+(aplicación `sio-party-identity-service` en `http://localhost:8101`). Es el mismo proyecto compose
+`party-identity-service` que levanta `infrastructure/scripts/rebuild-all.sh`: requiere el proyecto `sio`
+arriba (red `sio-network` y Keycloak). `uvicorn` fuera de Docker usa el puerto local `8002` y la
+misma base del proyecto (`DATABASE_URL` del `.env`).
 
 ## Migraciones
 
@@ -166,7 +166,7 @@ El `id` de Colombia **no está fijo en el código** (no es el mismo en todos los
 
 Si falla (Geography caído, `COL` inexistente o ambiguo, credenciales ausentes) termina con código
 distinto de cero y **no escribe nada**. En el entorno integrado:
-`docker compose exec party-identity-service python -m party_identity_service.seed load`.
+`docker compose --file ../../infrastructure/services/party-identity-service.yaml --env-file ../../infrastructure/.env exec party-identity-service python -m party_identity_service.seed load`.
 
 Las migraciones históricas `0003`–`0010` también insertan reglas con un `id` de Colombia fijo; si en
 su entorno Colombia tiene otro `id`, el `seed` crea las reglas correctas y lista las anteriores como
@@ -180,7 +180,7 @@ Keycloak, es idempotente (conserva los UUID; solo actualiza nombre o padre si ca
 sola transacción. En el entorno integrado:
 
 ```bash
-docker compose --file infrastructure/services/party-identity-service.yaml --env-file infrastructure/.env   exec party-identity-service python -m party_identity_service.seed load-business-sectors
+docker compose --file ../../infrastructure/services/party-identity-service.yaml --env-file ../../infrastructure/.env   exec party-identity-service python -m party_identity_service.seed load-business-sectors
 ```
 
 Para actualizar el snapshot cuando el DANE publique otra versión: `pip install -e ".[tools]"` y
@@ -189,7 +189,7 @@ Para actualizar el snapshot cuando el DANE publique otra versión: `pip install 
 ## Pruebas
 
 ```bash
-docker compose --profile test up -d party-identity-test-db
+docker compose --file ../../infrastructure/services/party-identity-service.yaml --env-file ../../infrastructure/.env --profile test up -d party-identity-test-db
 pytest                                   # toda la suite, sin Geography, Operational Context ni Keycloak reales
 pytest tests/examples                    # ejercicios de docs/ejemplo/
 PARTY_IDENTITY_EXAMPLES_WRITE=1 pytest tests/examples   # regenerar docs/ejemplo/
@@ -211,6 +211,34 @@ usa un JWKS local con tokens RS256 firmados en la prueba.
 **Pruebas de integración (`-m integration`):** `tests/integration/test_phase_b_integration.py` usa
 Keycloak, Geography y Operational Context reales. Requiere el realm regenerado desde la plantilla, las
 variables del cliente técnico y los datos que indica su docstring.
+
+## Disponibilidad de la base
+
+Regla de la Constitución 2.4.0 (Principio X), feature 009:
+
+- La conexión a PostgreSQL tiene un tiempo de espera de 5 s y el pool descarta las conexiones rotas
+  antes de usarlas (`pool_pre_ping`).
+- Si la base no está disponible: `/health/live` sigue en `200`, `/health/ready` responde `503` y los
+  endpoints que usan la base responden `503` `PARTY_IDENTITY.DEPENDENCY_UNAVAILABLE` con `dependency:
+  "database"`, `trace_id` y sin detalles internos (la causa queda en el log).
+- Solo la pérdida o indisponibilidad de la conexión produce ese `503` (conexión rechazada o perdida,
+  tiempo agotado, SQLSTATE `08xxx`, `57P01`, `57P02`, `57P03`). Un *deadlock*, un fallo de
+  serialización, una sentencia cancelada o un bloqueo no disponible conservan su respuesta
+  (`500 PARTY_IDENTITY.INTERNAL_ERROR`); integridad, validación y versión conservan `409`/`422`.
+- Cuando la base vuelve, el servicio se recupera solo, sin reiniciarse.
+- En Docker la base `sio-party-identity-db` tiene `healthcheck` y `restart: unless-stopped`, y la aplicación
+  arranca cuando la base está sana (`infrastructure/services/party-identity-service.yaml`).
+
+Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.test` y
+`KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
+
+```bash
+pytest -m integration -o addopts="" tests/integration/test_database_outage_recovery.py
+```
+
+Cubre una caída prolongada (`docker stop`) y una caída inesperada de PostgreSQL (reinicio por Docker),
+contra `http://localhost:8101` (`PARTY_IDENTITY_INTEGRATION_BASE_URL`). Si se interrumpe con la
+base detenida: `docker start sio-party-identity-db`.
 
 ## Consumo de la API
 

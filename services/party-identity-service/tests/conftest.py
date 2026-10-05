@@ -110,7 +110,7 @@ def _check_database_connection(database_url: str) -> None:
         raise RuntimeError(
             "No fue posible conectar con PostgreSQL de pruebas. Verifique "
             "que party-identity-test-db esté iniciado "
-            "(docker compose --profile test up -d party-identity-test-db)."
+            "(docker compose --file ../../infrastructure/services/party-identity-service.yaml --env-file ../../infrastructure/.env --profile test up -d party-identity-test-db)."
         ) from exc
     finally:
         engine.dispose()

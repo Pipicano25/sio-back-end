@@ -27,6 +27,7 @@ class GlobalPaymentConditionType:
         updated_by: Subject OIDC del último usuario que lo modificó.
         created_at: Fecha y hora de creación.
         updated_at: Fecha y hora de última actualización.
+        version: Versión para concurrencia optimista (inicia en 1).
     """
 
     id: UUID
@@ -38,3 +39,30 @@ class GlobalPaymentConditionType:
     updated_by: str
     created_at: datetime
     updated_at: datetime
+    version: int = 1
+
+
+class InvalidStatusTransitionError(Exception):
+    """La acción no aplica al estado actual del tipo de condición de pago (FR-014)."""
+
+
+def deactivated_status(current: PaymentConditionStatus) -> PaymentConditionStatus:
+    """Estado tras inactivar: solo `ACTIVE` → `INACTIVE` (FR-012).
+
+    Raises:
+        InvalidStatusTransitionError: Si el tipo ya está inactivo.
+    """
+    if current is not PaymentConditionStatus.ACTIVE:
+        raise InvalidStatusTransitionError("El tipo de condición de pago ya está inactivo.")
+    return PaymentConditionStatus.INACTIVE
+
+
+def reactivated_status(current: PaymentConditionStatus) -> PaymentConditionStatus:
+    """Estado tras reactivar: solo `INACTIVE` → `ACTIVE` (FR-013).
+
+    Raises:
+        InvalidStatusTransitionError: Si el tipo ya está activo.
+    """
+    if current is not PaymentConditionStatus.INACTIVE:
+        raise InvalidStatusTransitionError("El tipo de condición de pago ya está activo.")
+    return PaymentConditionStatus.ACTIVE

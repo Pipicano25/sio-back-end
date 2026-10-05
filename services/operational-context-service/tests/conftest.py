@@ -124,7 +124,7 @@ def _check_database_connection(database_url: str) -> None:
     except SQLAlchemyError as exc:
         raise RuntimeError(
             "No fue posible conectar con PostgreSQL de pruebas. Inícielo con "
-            "`docker compose --profile test up -d operational-context-test-db`."
+            "`docker compose --file ../../infrastructure/services/operational-context-service.yaml --env-file ../../infrastructure/.env --profile test up -d operational-context-test-db`."
         ) from exc
     finally:
         engine.dispose()

@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sio_auth import CurrentSubject
 
@@ -15,6 +15,7 @@ from payment_reference_service.api.schemas.global_payment_condition_types import
     GlobalPaymentConditionTypeCreate,
     GlobalPaymentConditionTypeResponse,
     GlobalPaymentConditionTypeUpdate,
+    VersionRequest,
 )
 from payment_reference_service.api.schemas.pagination import PaginatedResponse
 from payment_reference_service.api.security import auth
@@ -34,7 +35,7 @@ from payment_reference_service.infrastructure.global_payment_condition_types_rep
 )
 
 
-SERVICE_PERMISSION = "payment_reference"
+SERVICE_PERMISSION = "payment-reference"
 RESOURCE_PERMISSION = "global_payment_condition_types"
 
 
@@ -200,7 +201,6 @@ def create_global_payment_condition_type(
             code=payload.code,
             name=payload.name,
             description=payload.description,
-            status=payload.status,
             actor_id=actor_id,
         )
     except GlobalPaymentConditionTypeConflictError as exc:
@@ -233,9 +233,11 @@ def update_global_payment_condition_type(
 ) -> GlobalPaymentConditionTypeResponse:
     """Actualiza completamente una condición global de pago.
 
-    `created_by` y `created_at` permanecen intactos. `updated_by` se
-    obtiene del usuario autenticado y `updated_at` se actualiza en el
-    caso de uso.
+    Reemplazo completo (`code`, `name`, `description`) con la versión que
+    el cliente leyó; no cambia `status` (feature 008, FR-016). `created_by`
+    y `created_at` permanecen intactos. `updated_by` se obtiene del
+    usuario autenticado y `updated_at` se actualiza en el caso de uso.
+    Una versión desactualizada responde `409 PAYMENT_REFERENCE.VERSION_CONFLICT`.
 
     Args:
         condition_type_id: Identificador del registro.
@@ -252,10 +254,10 @@ def update_global_payment_condition_type(
     try:
         entity = service.update(
             condition_type_id=condition_type_id,
+            version=payload.version,
             code=payload.code,
             name=payload.name,
             description=payload.description,
-            status=payload.status,
             actor_id=actor_id,
         )
     except GlobalPaymentConditionTypeNotFoundError as exc:
@@ -272,10 +274,11 @@ def update_global_payment_condition_type(
     return _to_response(entity)
 
 
-@router.delete(
-    "/{condition_type_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Eliminar un tipo global de condición de pago",
+@router.post(
+    "/{condition_type_id}/deactivate",
+    response_model=GlobalPaymentConditionTypeResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Inactivar un tipo global de condición de pago (sin borrarlo)",
     dependencies=[
         auth.permission(
             SERVICE_PERMISSION,
@@ -284,28 +287,68 @@ def update_global_payment_condition_type(
         )
     ],
 )
-def delete_global_payment_condition_type(
+def deactivate_global_payment_condition_type(
     condition_type_id: UUID,
+    payload: VersionRequest,
+    actor_id: CurrentSubject,
     service: Annotated[GlobalPaymentConditionTypeService, Depends(_get_service)],
-) -> Response:
-    """Elimina físicamente una condición global de pago.
-
-    Args:
-        condition_type_id: Identificador del registro.
-        service: Servicio de aplicación.
-
-    Returns:
-        Respuesta HTTP sin contenido.
+) -> GlobalPaymentConditionTypeResponse:
+    """Inactiva un tipo `ACTIVE` (D7: no existe borrado físico).
 
     Raises:
-        HTTPException: Si el registro no existe.
+        HTTPException: `404` si no existe. Los `409` de versión y de
+            transición los traduce `api/errors.py`.
     """
     try:
-        service.delete(condition_type_id)
+        entity = service.deactivate(
+            condition_type_id,
+            version=payload.version,
+            actor_id=actor_id,
+        )
     except GlobalPaymentConditionTypeNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
 
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return _to_response(entity)
+
+
+@router.post(
+    "/{condition_type_id}/reactivate",
+    response_model=GlobalPaymentConditionTypeResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Reactivar un tipo global de condición de pago",
+    dependencies=[
+        auth.permission(
+            SERVICE_PERMISSION,
+            RESOURCE_PERMISSION,
+            "update",
+        )
+    ],
+)
+def reactivate_global_payment_condition_type(
+    condition_type_id: UUID,
+    payload: VersionRequest,
+    actor_id: CurrentSubject,
+    service: Annotated[GlobalPaymentConditionTypeService, Depends(_get_service)],
+) -> GlobalPaymentConditionTypeResponse:
+    """Reactiva un tipo `INACTIVE`.
+
+    Raises:
+        HTTPException: `404` si no existe. Los `409` de versión y de
+            transición los traduce `api/errors.py`.
+    """
+    try:
+        entity = service.reactivate(
+            condition_type_id,
+            version=payload.version,
+            actor_id=actor_id,
+        )
+    except GlobalPaymentConditionTypeNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+    return _to_response(entity)

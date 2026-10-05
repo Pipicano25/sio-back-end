@@ -6,6 +6,9 @@ from fastapi import Request
 from sqlalchemy import MetaData, create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
+DB_CONNECT_TIMEOUT_SECONDS = 5
+"""Tiempo de espera de conexión a PostgreSQL (Principio X, feature 009)."""
+
 NAMING_CONVENTION = {
     "ix": "ix_%(table_name)s_%(column_0_name)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
@@ -33,6 +36,7 @@ class Database:
         self.engine = create_engine(
             database_url,
             pool_pre_ping=True,
+            connect_args={"connect_timeout": DB_CONNECT_TIMEOUT_SECONDS},
         )
 
         self.session_factory = sessionmaker(

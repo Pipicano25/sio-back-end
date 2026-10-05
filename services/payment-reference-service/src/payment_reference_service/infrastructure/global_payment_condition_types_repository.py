@@ -5,10 +5,13 @@ from uuid import UUID
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 
 from payment_reference_service.application.exceptions import (
     GlobalPaymentConditionTypeConflictError,
     GlobalPaymentConditionTypeNotFoundError,
+    GlobalPaymentConditionTypeVersionConflictError,
+    VERSION_CONFLICT_MESSAGE,
 )
 from payment_reference_service.application.pagination import PageResult
 from payment_reference_service.domain.global_payment_condition_types import (
@@ -153,19 +156,28 @@ class SqlAlchemyGlobalPaymentConditionTypeRepository:
     def update(
         self,
         entity: GlobalPaymentConditionType,
+        *,
+        expected_version: int,
     ) -> GlobalPaymentConditionType:
-        """Persiste la actualización completa de una condición.
+        """Persiste la actualización completa con concurrencia optimista.
+
+        La fila vigente debe tener `expected_version`; el `UPDATE … WHERE
+        version = :vigente` que genera `version_id_col` resuelve además la
+        carrera entre dos solicitudes que leyeron la misma versión.
 
         Args:
             entity: Entidad actualizada.
+            expected_version: Versión que el cliente leyó.
 
         Returns:
-            Entidad persistida.
+            Entidad persistida, con la versión incrementada.
 
         Raises:
-            GlobalPaymentConditionTypeNotFoundError: Si fue eliminada.
+            GlobalPaymentConditionTypeNotFoundError: Si no existe.
+            GlobalPaymentConditionTypeVersionConflictError: Si la versión no
+                coincide o la fila cambió entre la lectura y la escritura.
             GlobalPaymentConditionTypeConflictError: Si existe conflicto
-                de integridad.
+                de integridad (código duplicado).
         """
         model = self._session.get(
             GlobalPaymentConditionTypeModel,
@@ -177,6 +189,9 @@ class SqlAlchemyGlobalPaymentConditionTypeRepository:
                 "El tipo de condición de pago solicitado no existe."
             )
 
+        if model.version != expected_version:
+            raise GlobalPaymentConditionTypeVersionConflictError(VERSION_CONFLICT_MESSAGE)
+
         model.code = entity.code
         model.name = entity.name
         model.description = entity.description
@@ -187,6 +202,12 @@ class SqlAlchemyGlobalPaymentConditionTypeRepository:
         try:
             self._session.commit()
             self._session.refresh(model)
+        except StaleDataError as exc:
+            self._session.rollback()
+
+            raise GlobalPaymentConditionTypeVersionConflictError(
+                VERSION_CONFLICT_MESSAGE
+            ) from exc
         except IntegrityError as exc:
             self._session.rollback()
 
@@ -195,29 +216,6 @@ class SqlAlchemyGlobalPaymentConditionTypeRepository:
             ) from exc
 
         return self._to_domain(model)
-
-    def delete(self, condition_type_id: UUID) -> None:
-        """Elimina físicamente una condición.
-
-        Args:
-            condition_type_id: Identificador del registro.
-
-        Raises:
-            GlobalPaymentConditionTypeNotFoundError: Si el registro ya
-                no existe.
-        """
-        model = self._session.get(
-            GlobalPaymentConditionTypeModel,
-            condition_type_id,
-        )
-
-        if model is None:
-            raise GlobalPaymentConditionTypeNotFoundError(
-                "El tipo de condición de pago solicitado no existe."
-            )
-
-        self._session.delete(model)
-        self._session.commit()
 
     @staticmethod
     def _to_domain(
@@ -241,6 +239,7 @@ class SqlAlchemyGlobalPaymentConditionTypeRepository:
             updated_by=model.updated_by,
             created_at=model.created_at,
             updated_at=model.updated_at,
+            version=model.version,
         )
 
     @staticmethod

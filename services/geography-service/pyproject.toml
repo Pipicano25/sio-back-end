@@ -30,7 +30,10 @@ test = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "-ra"
+addopts = "-ra -m 'not integration'"
+markers = [
+    "integration: validación contra el entorno integrado (Docker y Keycloak)",
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true

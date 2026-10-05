@@ -1,6 +1,6 @@
-name: sio-workflow-service
+name: workflow-service
 
-# Proyecto compose "sio-workflow-service": por ahora solo su base de datos propia;
+# Proyecto compose "workflow-service": por ahora solo su base de datos propia;
 # el contenedor de aplicación se agregará aquí cuando exista. Se une a
 # "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
 

@@ -15,9 +15,16 @@ class Base(DeclarativeBase):
 
 settings = load_settings()
 
+# Si PostgreSQL no responde, la conexión falla en un tiempo acotado (no queda
+# esperando): la solicitud responde 503 y /health/ready no se bloquea. Con
+# `pool_pre_ping` las conexiones rotas se descartan y el pool se recupera solo
+# cuando la base vuelve (GAP-PR-19).
+DB_CONNECT_TIMEOUT_SECONDS = 5
+
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
+    connect_args={"connect_timeout": DB_CONNECT_TIMEOUT_SECONDS},
 )
 
 SessionLocal = sessionmaker(

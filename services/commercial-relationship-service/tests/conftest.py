@@ -136,7 +136,7 @@ def migrated_database(test_database_url: str) -> None:
     except SQLAlchemyError as exc:
         raise RuntimeError(
             "No fue posible conectar con PostgreSQL de pruebas. Inícielo con "
-            "`docker compose --profile test up -d commercial-relationship-test-db`."
+            "`docker compose --file ../../infrastructure/services/commercial-relationship-service.yaml --env-file ../../infrastructure/.env --profile test up -d commercial-relationship-test-db`."
         ) from exc
     finally:
         engine.dispose()

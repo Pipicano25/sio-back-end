@@ -1,7 +1,8 @@
-name: sio-commercial-relationship-service
+name: commercial-relationship-service
 
-# Proyecto compose "sio-commercial-relationship-service": base de datos propia y contenedor de
-# aplicación de commercial-relationship-service. Se une a "sio-network", creada por el proyecto
+# Proyecto compose "commercial-relationship-service" (única definición Compose del microservicio):
+# base de datos propia, base de pruebas (perfil test) y contenedor de aplicación.
+# La base y la aplicación se unen a "sio-network", creada por el proyecto
 # "sio" (infrastructure/compose.yaml), que debe estar levantado antes: ahí vive Keycloak
 # (depends_on no cruza proyectos; el orden lo garantiza infrastructure/scripts/rebuild-all.sh).
 
@@ -26,6 +27,31 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  # Base de pruebas (perfil "test"): solo se levanta a pedido, desde la raíz:
+  #   docker compose --file infrastructure/services/commercial-relationship-service.yaml --env-file infrastructure/.env --profile test up -d commercial-relationship-test-db
+  # Datos en tmpfs (se pierden al detenerla). No usa sio-network: las pruebas
+  # la alcanzan por el host (COMMERCIAL_RELATIONSHIP_TEST_DATABASE_URL del .env del servicio).
+  commercial-relationship-test-db:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: sio-commercial-relationship-test-db
+    profiles:
+      - test
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${COMMERCIAL_RELATIONSHIP_TEST_DB_NAME:-sio_commercial_relationship_test}
+      POSTGRES_USER: ${COMMERCIAL_RELATIONSHIP_TEST_DB_USER:-sio_commercial_relationship_test}
+      POSTGRES_PASSWORD: ${COMMERCIAL_RELATIONSHIP_TEST_DB_PASSWORD:-sio_commercial_relationship_test_dev_change_me}
+    ports:
+      - "127.0.0.1:${COMMERCIAL_RELATIONSHIP_TEST_DB_PORT:-55443}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   commercial-relationship-service:
     build:

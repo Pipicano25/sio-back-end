@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sio_auth import SIOAuth
 
+from geography_service.api.errors import register_database_unavailable_handler
 from geography_service.api.global_countries import (
     build_router as build_global_countries_router,
 )
@@ -69,6 +70,8 @@ def create_app() -> FastAPI:
         ),
         lifespan=lifespan,
     )
+
+    register_database_unavailable_handler(app)
 
     app.include_router(
         build_health_router(

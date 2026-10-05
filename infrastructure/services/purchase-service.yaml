@@ -1,6 +1,6 @@
-name: sio-purchase-service
+name: purchase-service
 
-# Proyecto compose "sio-purchase-service": por ahora solo su base de datos propia;
+# Proyecto compose "purchase-service": por ahora solo su base de datos propia;
 # el contenedor de aplicación se agregará aquí cuando exista. Se une a
 # "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
 

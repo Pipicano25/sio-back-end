@@ -1,7 +1,8 @@
-name: sio-product-catalog-service
+name: product-catalog-service
 
-# Proyecto compose "sio-product-catalog-service": base de datos propia y contenedor de
-# aplicación de product-catalog-service. Se une a "sio-network", creada por el proyecto
+# Proyecto compose "product-catalog-service" (única definición Compose del microservicio):
+# base de datos propia, base de pruebas (perfil test) y contenedor de aplicación.
+# La base y la aplicación se unen a "sio-network", creada por el proyecto
 # "sio" (infrastructure/compose.yaml), que debe estar levantado antes: ahí
 # viven Keycloak y RabbitMQ (depends_on no cruza proyectos; el orden lo
 # garantiza infrastructure/scripts/rebuild-all.sh).
@@ -27,6 +28,31 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  # Base de pruebas (perfil "test"): solo se levanta a pedido, desde la raíz:
+  #   docker compose --file infrastructure/services/product-catalog-service.yaml --env-file infrastructure/.env --profile test up -d product-catalog-test-db
+  # Datos en tmpfs (se pierden al detenerla). No usa sio-network: las pruebas
+  # la alcanzan por el host (PRODUCT_CATALOG_TEST_DATABASE_URL del .env del servicio).
+  product-catalog-test-db:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: sio-product-catalog-test-db
+    profiles:
+      - test
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${PRODUCT_CATALOG_TEST_DB_NAME:-sio_product_catalog_test}
+      POSTGRES_USER: ${PRODUCT_CATALOG_TEST_DB_USER:-sio_product_catalog_test}
+      POSTGRES_PASSWORD: ${PRODUCT_CATALOG_TEST_DB_PASSWORD:-sio_product_catalog_test_dev_change_me}
+    ports:
+      - "127.0.0.1:${PRODUCT_CATALOG_TEST_DB_PORT:-55438}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   product-catalog-service:
     build:

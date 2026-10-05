@@ -3,9 +3,12 @@
 Se ejecuta solo con `pytest -m integration` y exige los servicios en ejecución:
 
 - Operational Context en `OPERATIONAL_CONTEXT_INTEGRATION_BASE_URL` (por defecto
-  `http://localhost:8004`), configurado contra los mismos Party Identity y Geography;
-- Party Identity en `PARTY_IDENTITY_SERVICE_BASE_URL` (con `/api/v1`) y Geography en
-  `GEOGRAPHY_SERVICE_BASE_URL`, con las reglas y los datos de Colombia cargados;
+  `http://localhost:8104`, entorno integrado), configurado contra los mismos Party Identity y
+  Geography;
+- Party Identity en `PARTY_IDENTITY_SERVICE_BASE_URL` (con `/api/v1`; por defecto
+  `http://localhost:8101/api/v1`) y Geography en `GEOGRAPHY_SERVICE_BASE_URL` (por defecto
+  `http://localhost:8102`), con las reglas y los datos de Colombia cargados (puertos del entorno
+  integrado según `docs/port-map.md`, como en `.env.example`);
 - Keycloak en `KEYCLOAK_TOKEN_URL`, con la contraseña de los usuarios de prueba en
   `KEYCLOAK_TEST_USER_PASSWORD` o en `infrastructure/.env` (nunca en el código).
 
@@ -38,9 +41,9 @@ pytestmark = pytest.mark.integration
 REPO_ROOT = Path(__file__).resolve().parents[4]
 PASSWORD_VARIABLE = "KEYCLOAK_TEST_USER_PASSWORD"
 
-OPERATIONAL_CONTEXT = os.environ.get("OPERATIONAL_CONTEXT_INTEGRATION_BASE_URL", "http://localhost:8004").rstrip("/")
-PARTY_IDENTITY = os.environ.get("PARTY_IDENTITY_SERVICE_BASE_URL", "http://localhost:8002/api/v1").rstrip("/")
-GEOGRAPHY = os.environ.get("GEOGRAPHY_SERVICE_BASE_URL", "http://localhost:8000").rstrip("/")
+OPERATIONAL_CONTEXT = os.environ.get("OPERATIONAL_CONTEXT_INTEGRATION_BASE_URL", "http://localhost:8104").rstrip("/")
+PARTY_IDENTITY = os.environ.get("PARTY_IDENTITY_SERVICE_BASE_URL", "http://localhost:8101/api/v1").rstrip("/")
+GEOGRAPHY = os.environ.get("GEOGRAPHY_SERVICE_BASE_URL", "http://localhost:8102").rstrip("/")
 TOKEN_URL = os.environ.get(
     "KEYCLOAK_TOKEN_URL",
     "http://localhost:8081/realms/sio/protocol/openid-connect/token",

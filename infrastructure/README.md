@@ -7,8 +7,9 @@ Esta carpeta contiene los recursos y la configuración necesarios para levantar 
 - `compose.yaml`: proyecto compose `sio`, solo infraestructura compartida
   (Keycloak, su base, RabbitMQ) y la red `sio-network`.
 - `services/<microservicio>.yaml`: un proyecto compose por microservicio
-  (`sio-<microservicio>`) con su base propia y, si ya existe, su contenedor
-  de aplicación. Se une a `sio-network` (externa), por eso `sio` se levanta
+  (`<microservicio>`, sin prefijo) con su base propia, su base de pruebas
+  (perfil `test`) y, si ya existe, su contenedor de aplicación. Es la única
+  definición Compose del microservicio. Se une a `sio-network` (externa), por eso `sio` se levanta
   primero.
 - `.env.example`: plantilla de variables de entorno (una sola para todos los
   proyectos; no define `COMPOSE_PROJECT_NAME`, cada archivo declara su `name:`).
@@ -23,8 +24,8 @@ Esta carpeta contiene los recursos y la configuración necesarios para levantar 
 infrastructure/
 ├── compose.yaml                      (proyecto "sio")
 ├── services/
-│   ├── geography-service.yaml        (proyecto "sio-geography-service")
-│   ├── party-identity-service.yaml   (proyecto "sio-party-identity-service")
+│   ├── geography-service.yaml        (proyecto "geography-service")
+│   ├── party-identity-service.yaml   (proyecto "party-identity-service")
 │   └── ...                           (uno por microservicio)
 ├── .env.example
 ├── scripts/
@@ -53,27 +54,36 @@ Proyecto `sio` (`compose.yaml`):
 - `rabbitmq`: broker de mensajería para eventos de dominio entre
   microservicios (patrón outbox/inbox).
 
-Un proyecto `sio-<microservicio>` por microservicio (`services/`), con su
-base de datos PostgreSQL **independiente** (ver `docs/port-map.md` para los
-puertos) y, cuando existe, su contenedor de aplicación:
+Un proyecto `<microservicio>` por microservicio (`services/<microservicio>.yaml`).
+Es la **única definición Compose** del microservicio: su base de datos
+PostgreSQL **independiente**, su base de pruebas (perfil `test`, solo a
+pedido) y, cuando existe, su contenedor de aplicación (puertos en
+`docs/port-map.md`):
 
 | Proyecto | Contenedores |
 |---|---|
-| `sio-geography-service` | `geography-db`, `geography-service` |
-| `sio-party-identity-service` | `party-identity-db`, `party-identity-service` |
-| `sio-product-catalog-service` | `product-catalog-db`, `product-catalog-service` |
-| `sio-operational-context-service` | `operational-context-db`, `operational-context-service` |
-| `sio-payment-reference-service` | `payment-reference-db` |
-| `sio-commercial-relationship-service` | `commercial-relationship-db` |
-| `sio-purchase-service` | `purchase-db` |
-| `sio-sales-service` | `sales-db` |
-| `sio-inventory-service` | `inventory-db` |
-| `sio-audit-service` | `audit-db` |
-| `sio-workflow-service` | `workflow-db` |
+| `geography-service` | `geography-db`, `geography-service`, `geography-test-db` (perfil `test`) |
+| `party-identity-service` | `party-identity-db`, `party-identity-service`, `party-identity-test-db` (perfil `test`) |
+| `product-catalog-service` | `product-catalog-db`, `product-catalog-service`, `product-catalog-test-db` (perfil `test`) |
+| `operational-context-service` | `operational-context-db`, `operational-context-service`, `operational-context-test-db` (perfil `test`) |
+| `payment-reference-service` | `payment-reference-db`, `payment-reference-service`, `payment-reference-test-db` (perfil `test`) |
+| `commercial-relationship-service` | `commercial-relationship-db`, `commercial-relationship-service`, `commercial-relationship-test-db` (perfil `test`) |
+| `purchase-service` | `purchase-db` |
+| `sales-service` | `sales-db` |
+| `inventory-service` | `inventory-db` |
+| `audit-service` | `audit-db` |
+| `workflow-service` | `workflow-db` |
 
-Los proyectos llevan el prefijo `sio-` para no chocar con el entorno
-independiente de cada servicio (`services/<microservicio>/docker-compose.yml`),
-cuyo proyecto toma el nombre de su carpeta (`geography-service`, ...).
+No hay `docker-compose.yml` dentro de `services/<microservicio>/`: antes
+existía un entorno independiente por servicio cuyo proyecto tomaba el nombre de
+la carpeta, y Docker Desktop mostraba dos grupos por microservicio
+(`geography-service` y `sio-geography-service`). Se retiró el 2026-10-05.
+
+Base de pruebas de un microservicio (desde la raíz del repositorio):
+
+```bash
+docker compose --file infrastructure/services/geography-service.yaml --env-file infrastructure/.env --profile test up -d geography-test-db
+```
 
 Todos comparten la red `sio-network`, así que entre contenedores se siguen
 usando los nombres de servicio (`http://keycloak:8080`,

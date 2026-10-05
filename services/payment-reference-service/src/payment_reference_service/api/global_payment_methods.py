@@ -34,7 +34,7 @@ from payment_reference_service.infrastructure.global_payment_methods_repository 
 )
 
 
-SERVICE_PERMISSION = "payment_reference"
+SERVICE_PERMISSION = "payment-reference"
 RESOURCE_PERMISSION = "global_payment_methods"
 
 

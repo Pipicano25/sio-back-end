@@ -1020,6 +1020,9 @@ No representa el medio por el cual se mueve el dinero por ejemplo una venta pued
 | `name`        | `VARCHAR(100)` | NN       | Nombre visible.                                              |
 | `description` | `TEXT`         | nullable | Significado funcional.                                       |
 | `status`      | `VARCHAR(20)`  | NN, CK   | `ACTIVE` o `INACTIVE`.                                       |
+| `created_by`  | `VARCHAR(255)` | NN       | `sub` del token de quien crea el registro (Constitución D1); inmutable. |
+| `updated_by`  | `VARCHAR(255)` | NN       | `sub` del token de quien realizó la última modificación (Constitución D1). |
+| `version`     | `INTEGER`      | NN, DEFAULT `1` | Control de concurrencia.                              |
 | `created_at`  | `TIMESTAMPTZ`  | NN       | Creación.                                                    |
 | `updated_at`  | `TIMESTAMPTZ`  | NN       | Modificación.                                                |
 
@@ -1029,6 +1032,15 @@ No representa el medio por el cual se mueve el dinero por ejemplo una venta pued
 - `CASH` significa pago exigible de forma inmediata o en la misma fecha de negocio.
 - `CREDIT` representa un plazo comercial.
 - `FINANCING` representa financiación vinculada a la operación comercial; un préstamo independiente requiere un modelo contractual distinto.
+- `status` admite `ACTIVE` e `INACTIVE` (`CHECK`) y solo cambia mediante las acciones explícitas de inactivar y reactivar.
+- No existe borrado físico: un tipo de condición que deja de usarse se inactiva (Constitución D7).
+
+> **Reconciliación (2026-10-05):** sección alineada con `specs/008-payment-reference-condition-type-contract`
+> (corrección acotada de Payment Reference): se agregan `created_by`/`updated_by` con el `sub` del token
+> (Constitución VI y D1) y `version` para la concurrencia optimista (Constitución VII), que la
+> implementación ya tenía; el estado cambia solo con acciones explícitas y no hay borrado físico (D7).
+> Cierra C-02 / GAP-PR-28 de la feature 008. `GlobalPaymentMethod` (§4.9) no cambia: su corrección
+> queda diferida en GAP-PR-18.
 
 ## 4.9 GlobalPaymentMethod
 

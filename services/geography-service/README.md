@@ -69,7 +69,6 @@ services/geography-service/
 │   └── health/
 ├── .env.example
 ├── alembic.ini
-├── docker-compose.yml
 ├── Dockerfile
 └── pyproject.toml
 ```
@@ -159,23 +158,13 @@ Ejemplo de `.env` local:
 
 ```env
 SIO_DOCS_ENABLED=true
-GEOGRAPHY_SERVICE_PORT=8000
 
-GEOGRAPHY_DB_NAME=sio_geography
-GEOGRAPHY_DB_USER=sio_geography
-GEOGRAPHY_DB_PASSWORD=sio_geography_dev_change_me
-GEOGRAPHY_DB_PORT=55432
-
-DATABASE_URL=postgresql+psycopg://sio_geography:sio_geography_dev_change_me@localhost:55432/sio_geography
+# Base del proyecto compose geography-service; credenciales en infrastructure/.env
+DATABASE_URL=postgresql+psycopg://geography_user:change-this-geography-database-password@localhost:5442/geography
 
 SIO_AUTH_ISSUER=http://localhost:8081/realms/sio
 SIO_AUTH_JWKS_URL=http://localhost:8081/realms/sio/protocol/openid-connect/certs
 SIO_AUTH_AUDIENCE=sio-api
-
-GEOGRAPHY_TEST_DB_NAME=sio_geography_test
-GEOGRAPHY_TEST_DB_USER=sio_geography_test
-GEOGRAPHY_TEST_DB_PASSWORD=sio_geography_test_dev_change_me
-GEOGRAPHY_TEST_DB_PORT=55433
 
 GEOGRAPHY_TEST_DATABASE_URL=postgresql+psycopg://sio_geography_test:sio_geography_test_dev_change_me@localhost:55433/sio_geography_test
 ```
@@ -334,14 +323,14 @@ system:geography-seed
 
 # PostgreSQL local
 
-El contenedor de desarrollo expone PostgreSQL únicamente por loopback:
+El contenedor `sio-geography-db` (proyecto compose `geography-service`) expone PostgreSQL únicamente por loopback:
 
 ```text
 Host: localhost
-Port: 55432
-Database: sio_geography
-User: sio_geography
-Password: valor configurado en .env
+Port: 5442
+Database: geography
+User: geography_user
+Password: GEOGRAPHY_DB_PASSWORD de infrastructure/.env
 ```
 
 Esto permite conectarse desde:
@@ -375,16 +364,18 @@ COPY services/geography-service /app/services/geography-service
 
 ## Levantar todo
 
-Desde `services/geography-service`:
+Desde `services/geography-service` (requiere el proyecto `sio` levantado: red `sio-network` y Keycloak).
+El único proyecto compose del servicio es `geography-service`, definido en
+`infrastructure/services/geography-service.yaml`; la aplicación queda en `http://localhost:8102`:
 
 ```powershell
-docker compose up -d --build
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env up -d --build
 ```
 
 ## Reconstruir solo geography-service
 
 ```powershell
-docker compose up -d --build geography-service
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env up -d --build geography-service
 ```
 
 Este es el comando recomendado cuando solo cambias código Python del servicio.
@@ -392,25 +383,25 @@ Este es el comando recomendado cuando solo cambias código Python del servicio.
 ## Reiniciar sin reconstruir
 
 ```powershell
-docker compose restart
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env restart
 ```
 
 ## Estado
 
 ```powershell
-docker compose ps -a
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env ps -a
 ```
 
 ## Logs
 
 ```powershell
-docker compose logs -f geography-service
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env logs -f geography-service
 ```
 
 Últimas 200 líneas:
 
 ```powershell
-docker compose logs geography-service --tail 200
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env logs geography-service --tail 200
 ```
 
 ---
@@ -474,6 +465,28 @@ Si no está disponible:
 ```text
 503 Service Unavailable
 ```
+
+## Base de datos no disponible
+
+Cambio transversal 2026-10-05 (feature 009, Constitución 2.4.0, Principio X):
+
+- La conexión a PostgreSQL tiene un tiempo de espera de 5 s y el pool descarta las conexiones rotas
+  antes de usarlas (`pool_pre_ping`).
+- Si la base no está disponible, `/health/live` sigue en `200`, `/health/ready` responde `503` y los
+  endpoints que usan la base responden `503` con el formato actual del servicio:
+
+```json
+{"detail": "La base de datos del servicio no está disponible temporalmente. Intente de nuevo más tarde."}
+```
+
+- Solo la pérdida o indisponibilidad de la conexión produce ese `503` (conexión rechazada o perdida,
+  tiempo agotado, SQLSTATE `08xxx`, `57P01`, `57P02`, `57P03`). Un *deadlock*, un fallo de
+  serialización, una sentencia cancelada o un bloqueo no disponible siguen respondiendo `500`.
+- Cuando la base vuelve, el servicio se recupera solo, sin reiniciarse.
+- En Docker, `sio-geography-db` tiene `healthcheck` y `restart: unless-stopped`, y la aplicación arranca
+  cuando la base está sana (`infrastructure/services/geography-service.yaml`).
+
+El resto de la línea base AS-IS no cambia (sin `code`, `trace_id` ni RFC 9457).
 
 ---
 
@@ -970,7 +983,7 @@ system:geography-seed
 Si el código de seed ya está dentro de la imagen:
 
 ```powershell
-docker compose exec geography-service python -m geography_service.seed load
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env exec geography-service python -m geography_service.seed load
 ```
 
 ---
@@ -1030,7 +1043,7 @@ Database: sio_geography_test
 Levantarla:
 
 ```powershell
-docker compose --profile test up -d geography-test-db
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env --profile test up -d geography-test-db
 ```
 
 Ejecutar pruebas de persistencia:
@@ -1044,6 +1057,22 @@ Ejecutar todo:
 ```powershell
 python -m pytest -v
 ```
+
+## Base de datos no disponible
+
+`tests/unit/test_database_unavailable_classification.py` (sin base) y `tests/api/test_database_unavailable.py`
+(base de pruebas) verifican el `503`, la salud y la recuperación sin reiniciar.
+
+Validación contra el entorno integrado (detiene `sio-geography-db` temporalmente; solo lecturas con
+`admin.test` y `KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
+
+```powershell
+python -m pytest -m integration -o addopts="" tests/integration/test_database_outage_recovery.py
+```
+
+Cubre una caída prolongada (`docker stop`) y una caída inesperada de PostgreSQL (reinicio por Docker),
+contra `http://localhost:8102` (`GEOGRAPHY_INTEGRATION_BASE_URL`). Si se interrumpe con la base
+detenida: `docker start sio-geography-db`.
 
 ## Protección de la base de testing
 
@@ -1130,7 +1159,7 @@ Para desarrollo diario:
 cd services/geography-service
 .\.venv\Scripts\Activate.ps1
 
-docker compose up -d geography-db
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env up -d geography-db
 python -m alembic upgrade head
 python -m uvicorn geography_service.main:app --reload --port 8000 --env-file .env
 ```
@@ -1138,19 +1167,19 @@ python -m uvicorn geography_service.main:app --reload --port 8000 --env-file .en
 Para trabajar completamente con Docker:
 
 ```powershell
-docker compose up -d --build
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env up -d --build
 ```
 
 Después de cambiar solo código del servicio:
 
 ```powershell
-docker compose up -d --build geography-service
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env up -d --build geography-service
 ```
 
 Para testing:
 
 ```powershell
-docker compose --profile test up -d geography-test-db
+docker compose --file ../../infrastructure/services/geography-service.yaml --env-file ../../infrastructure/.env --profile test up -d geography-test-db
 python -m pytest -v
 ```
 

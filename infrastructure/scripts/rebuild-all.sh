@@ -5,13 +5,15 @@
 # El entorno se reparte en varios proyectos compose:
 #   - "sio" (infrastructure/compose.yaml): solo infraestructura compartida
 #     (Keycloak + su base, RabbitMQ) y la red sio-network;
-#   - "sio-<microservicio>" (infrastructure/services/<microservicio>.yaml): la
-#     base propia del microservicio y, si ya existe, su contenedor de
-#     aplicación. Se unen a sio-network, así que "sio" se levanta primero.
+#   - "<microservicio>" (infrastructure/services/<microservicio>.yaml): única
+#     definición Compose del microservicio: su base propia, su base de pruebas
+#     (perfil "test", este script no la levanta) y, si ya existe, su contenedor
+#     de aplicación. Se unen a sio-network, así que "sio" se levanta primero.
 #
-# Si encuentra contenedores de microservicios aún dentro del proyecto "sio"
-# (versión anterior del entorno), los elimina como huérfanos al bajar "sio";
-# los volúmenes conservan su nombre, así que la información no se pierde.
+# Si encuentra contenedores de microservicios aún dentro del proyecto "sio" o
+# de un proyecto "sio-<microservicio>" (versiones anteriores del entorno), los
+# elimina antes de levantar el proyecto vigente; los volúmenes conservan su
+# nombre, así que la información no se pierde.
 #
 # Dos modos:
 #
@@ -97,20 +99,21 @@ for arg in "$@"; do
 done
 
 # Microservicios con imagen propia (todos usan Alembic). Cada uno vive en el
-# proyecto compose "sio-<microservicio>" (infrastructure/services/).
+# proyecto compose "<microservicio>" (infrastructure/services/).
 SERVICES=(
     geography-service
     product-catalog-service
     party-identity-service
     operational-context-service
     commercial-relationship-service
+    payment-reference-service
 )
 
 # Proyectos compose del entorno: primero la infraestructura, luego uno por
 # cada archivo de infrastructure/services/ (incluye los que aún solo tienen base).
 PROJECTS=("$INFRA_PROJECT")
 for file in "$STACKS_DIR"/*.yaml; do
-    [ -f "$file" ] && PROJECTS+=("sio-$(basename "$file" .yaml)")
+    [ -f "$file" ] && PROJECTS+=("$(basename "$file" .yaml)")
 done
 
 # --- Registro de lo realizado (para el resumen final) -----------------------
@@ -175,14 +178,14 @@ compose() {
     if [ "$project" = "$INFRA_PROJECT" ]; then
         file="$COMPOSE_FILE"
     else
-        file="$STACKS_DIR/${project#sio-}.yaml"
+        file="$STACKS_DIR/$project.yaml"
     fi
     docker compose --project-name "$project" --file "$file" --env-file "$ENV_FILE" "$@"
 }
 
 # Proyecto compose de un microservicio.
 project_of() {
-    echo "sio-$1"
+    echo "$1"
 }
 
 # Indica si un proyecto compose pertenece a este entorno.
@@ -391,12 +394,15 @@ while read -r name; do
     owner="$(docker inspect "$name" --format '{{index .Config.Labels "com.docker.compose.project"}}' 2>/dev/null)" || continue
     if [ "$owner" = "$INFRA_PROJECT" ] && [[ "$INFRA_CONTAINERS" != *" $name "* ]]; then
         LEGACY+=("$name")
+    elif [[ "$owner" == sio-* ]] && is_own_project "${owner#sio-}"; then
+        # Proyecto "sio-<microservicio>" de la versión anterior del entorno.
+        LEGACY+=("$name")
     elif ! is_own_project "$owner"; then
         CONFLICTS+=("$name|${owner:-sin proyecto compose}")
     fi
 done < <(all_configs | container_names)
 if [ "${#LEGACY[@]}" -gt 0 ]; then
-    echo "Contenedores de microservicios aún dentro del proyecto '$INFRA_PROJECT' (se moverán a su propio proyecto):"
+    echo "Contenedores de microservicios en proyectos anteriores ('$INFRA_PROJECT' o 'sio-<microservicio>'; se moverán a su proyecto vigente):"
     for name in "${LEGACY[@]}"; do echo "  - $name"; done
 fi
 
@@ -469,13 +475,13 @@ port_in_use() {
 }
 
 # --- Bajar ------------------------------------------------------------------
-# Orden: primero los contenedores heredados de "sio" (si no, retienen los
+# Orden: primero los contenedores heredados de "sio" o "sio-<microservicio>" (si no, retienen los
 # volúmenes que el modo completo debe borrar), luego cada microservicio y al
 # final "sio", que es dueño de sio-network.
 if [ "${#LEGACY[@]}" -gt 0 ]; then
-    step "Sacando los microservicios del proyecto '$INFRA_PROJECT'"
+    step "Sacando los microservicios de proyectos anteriores"
     docker rm -f "${LEGACY[@]}" >/dev/null
-    note "Contenedores retirados de '$INFRA_PROJECT' (pasan a su propio proyecto; volúmenes intactos): ${LEGACY[*]}"
+    note "Contenedores retirados de proyectos anteriores (pasan a su proyecto vigente; volúmenes intactos): ${LEGACY[*]}"
 fi
 
 DOWN_ARGS=(--remove-orphans)
@@ -582,6 +588,10 @@ if [ "$MODE" = full ]; then
     step "Datos iniciales: product-catalog-service"
     run_seed product-catalog-service product-catalog-service \
         python -m product_catalog_service.seed load
+
+    step "Datos iniciales: payment-reference-service"
+    run_seed payment-reference-service payment-reference-service \
+        python -m payment_reference_service.seed load
 
     step "Datos iniciales: party-identity-service (modo país explícito)"
     # El id de Colombia lo genera Geography; se lee de su base para no depender

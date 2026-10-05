@@ -1,6 +1,6 @@
-name: sio-inventory-service
+name: inventory-service
 
-# Proyecto compose "sio-inventory-service": por ahora solo su base de datos propia;
+# Proyecto compose "inventory-service": por ahora solo su base de datos propia;
 # el contenedor de aplicación se agregará aquí cuando exista. Se une a
 # "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
 

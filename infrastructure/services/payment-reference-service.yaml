@@ -1,8 +1,9 @@
-name: sio-payment-reference-service
+name: payment-reference-service
 
-# Proyecto compose "sio-payment-reference-service": por ahora solo su base de datos propia;
-# el contenedor de aplicación se agregará aquí cuando exista. Se une a
-# "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
+# Proyecto compose "payment-reference-service" (única definición Compose del microservicio,
+# feature 008): base de datos propia, base de pruebas (perfil test) y contenedor de aplicación.
+# La base y la aplicación se unen a "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml), que debe estar levantado antes: ahí vive Keycloak
+# (depends_on no cruza proyectos; el orden lo garantiza infrastructure/scripts/rebuild-all.sh).
 
 services:
   payment-reference-db:
@@ -25,6 +26,65 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  # Base de pruebas (perfil "test"): solo se levanta a pedido, desde la raíz:
+  #   docker compose --file infrastructure/services/payment-reference-service.yaml --env-file infrastructure/.env --profile test up -d payment-reference-test-db
+  # Datos en tmpfs (se pierden al detenerla). No usa sio-network: las pruebas
+  # la alcanzan por el host (PAYMENT_REFERENCE_TEST_DATABASE_URL del .env del servicio).
+  payment-reference-test-db:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: sio-payment-reference-test-db
+    profiles:
+      - test
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${PAYMENT_REFERENCE_TEST_DB_NAME:-sio_payment_reference_test}
+      POSTGRES_USER: ${PAYMENT_REFERENCE_TEST_DB_USER:-sio_payment_reference_test}
+      POSTGRES_PASSWORD: ${PAYMENT_REFERENCE_TEST_DB_PASSWORD:-sio_payment_reference_test_dev_change_me}
+    ports:
+      - "127.0.0.1:${PAYMENT_REFERENCE_TEST_DB_PORT:-55441}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  payment-reference-service:
+    build:
+      context: ../..
+      dockerfile: services/payment-reference-service/Dockerfile
+    image: sio/payment-reference-service:${SIO_SERVICES_VERSION}
+    container_name: sio-payment-reference-service
+    restart: unless-stopped
+
+    environment:
+      DATABASE_URL: postgresql+psycopg://${PAYMENT_REFERENCE_DB_USER}:${PAYMENT_REFERENCE_DB_PASSWORD}@payment-reference-db:5432/${PAYMENT_REFERENCE_DB_NAME}
+      # El issuer debe coincidir con KEYCLOAK_PUBLIC_URL; las llaves se
+      # obtienen dentro de sio-network.
+      SIO_AUTH_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+      SIO_AUTH_AUDIENCE: sio-api
+      SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
+
+    ports:
+      - "127.0.0.1:${PAYMENT_REFERENCE_SERVICE_PORT:-8105}:8000"
+
+    depends_on:
+      payment-reference-db:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+    networks:
+      - sio-network
 
 volumes:
   payment_reference_db_data:
