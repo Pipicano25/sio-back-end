@@ -3386,24 +3386,30 @@ No explica cómo se llegó al valor y la historia completa pertenece a `Inventor
 
 ### Atributos
 
-| Atributo             | Tipo            | Regla           | Descripción                                                                            |
-| -------------------- | --------------- | --------------- | -------------------------------------------------------------------------------------- |
-| `id`                 | `UUID`          | PK, NN          | Identificador.                                                                         |
-| `company_id`         | `UUID`          | REF, NN         | Empresa.                                                                               |
-| `branch_id`          | `UUID`          | REF, NN         | Sucursal.                                                                              |
-| `company_product_id` | `UUID`          | REF, NN         | Producto empresarial.                                                                  |
-| `quantity`           | `NUMERIC(18,4)` | NN              | Saldo actual.                                                                          |
-| `average_unit_cost`  | `NUMERIC(18,4)` | nullable        | Costo promedio vigente cuando aplica `WEIGHTED_AVERAGE`; informativo o nulo bajo FIFO. |
-| `inventory_value`    | `NUMERIC(18,2)` | nullable        | Valor monetario vigente del saldo según el método de valoración.                       |
-| `version`            | `INTEGER`       | NN, DEFAULT `1` | Control concurrente.                                                                   |
-| `updated_at`         | `TIMESTAMPTZ`   | NN              | Última actualización.                                                                  |
+| Atributo             | Tipo            | Regla               | Descripción                                                                 |
+| -------------------- | --------------- | ------------------- | --------------------------------------------------------------------------- |
+| `id`                 | `UUID`          | PK, NN              | Identificador.                                                              |
+| `company_id`         | `UUID`          | REF, NN             | Empresa.                                                                    |
+| `branch_id`          | `UUID`          | REF, NN             | Sucursal.                                                                   |
+| `company_product_id` | `UUID`          | REF, NN             | Producto empresarial.                                                       |
+| `quantity`           | `NUMERIC(18,4)` | NN, DEFAULT `0`, CK | Saldo actual en unidad base; nunca negativo.                                |
+| `version`            | `INTEGER`       | NN, DEFAULT `0`, CK | Número de movimientos aplicados; igual al `balance_sequence` del último.    |
+| `created_at`         | `TIMESTAMPTZ`   | NN                  | Creación (primera entrada).                                                 |
+| `created_by`         | `VARCHAR(255)`  | NN                  | `sub` de la cuenta de servicio que aplicó la primera entrada (D1).          |
+| `updated_at`         | `TIMESTAMPTZ`   | NN                  | Último movimiento.                                                          |
+| `updated_by`         | `VARCHAR(255)`  | NN                  | `sub` de la cuenta de servicio del último movimiento.                       |
 
 ### Reglas y restricciones
 
 - Solo existe un saldo por empresa, sucursal y producto.
-- Cantidad, costo promedio y valor se actualizan únicamente por Inventory Service.
-- Bajo `WEIGHTED_AVERAGE`, `average_unit_cost` forma parte del estado valorizado vigente.
-- Bajo `FIFO`, la trazabilidad primaria del costo permanece en `InventoryCostLayer`; `inventory_value` debe poder reconciliarse con las capas abiertas.
+- El saldo nunca es negativo (`CHECK quantity >= 0`); una operación que lo dejaría negativo se rechaza completa.
+- Cantidad y `version` se actualizan únicamente por Inventory Service, con la fila bloqueada (`SELECT … FOR UPDATE`) dentro de la transacción del movimiento.
+- El saldo nace con la primera entrada y nunca se elimina (la base rechaza `DELETE` y `TRUNCATE`); un saldo en 0 permanece.
+
+### Diferido al bloque 13 (no implementado en la Fase A)
+
+- Columnas `average_unit_cost NUMERIC(18,4)` (costo promedio vigente cuando aplica `WEIGHTED_AVERAGE`) e `inventory_value NUMERIC(18,2)` (valor monetario del saldo según el método de valoración).
+- Bajo `WEIGHTED_AVERAGE`, `average_unit_cost` formará parte del estado valorizado vigente; bajo `FIFO`, la trazabilidad primaria del costo permanecerá en `InventoryCostLayer` y `inventory_value` deberá reconciliarse con las capas abiertas.
 
 ## 9.2 InventoryMovement
 
@@ -3423,35 +3429,54 @@ Inventory Service es el único autorizado para crear movimientos y modificar sal
 
 ### Atributos
 
-| Atributo               | Tipo            | Regla        | Descripción                            |
-| ---------------------- | --------------- | ------------ | -------------------------------------- |
-| `id`                   | `UUID`          | PK, NN       | Identificador.                         |
-| `company_id`           | `UUID`          | REF, NN      | Empresa.                               |
-| `branch_id`            | `UUID`          | REF, NN      | Sucursal.                              |
-| `company_product_id`   | `UUID`          | REF, NN      | Producto.                              |
-| `movement_type`        | `VARCHAR(40)`   | NN, CK       | Tipo de movimiento.                    |
-| `quantity`             | `NUMERIC(18,4)` | NN           | Cantidad absoluta.                     |
-| `previous_balance`     | `NUMERIC(18,4)` | NN           | Saldo anterior.                        |
-| `new_balance`          | `NUMERIC(18,4)` | NN           | Saldo nuevo.                           |
-| `unit_cost`            | `NUMERIC(18,4)` | nullable     | Costo unitario aplicado al movimiento. |
-| `movement_value`       | `NUMERIC(18,2)` | nullable     | Valor monetario del movimiento.        |
-| `origin_type`          | `VARCHAR(30)`   | NN           | Tipo de origen.                        |
-| `origin_id`            | `UUID`          | NN           | Documento.                             |
-| `origin_detail_id`     | `UUID`          | nullable     | Línea.                                 |
-| `operation_id`         | `UUID`          | nullable     | Operación distribuida.                 |
-| `reason`               | `TEXT`          | nullable     | Motivo.                                |
-| `created_by_user_id`   | `UUID`          | REF, NN      | Usuario.                               |
-| `reversed_movement_id` | `UUID`          | FK, nullable | Movimiento revertido.                  |
-| `correlation_id`       | `UUID`          | NN           | Flujo distribuido.                     |
-| `created_at`           | `TIMESTAMPTZ`   | NN           | Fecha.                                 |
+| Atributo               | Tipo            | Regla               | Descripción                                                                 |
+| ---------------------- | --------------- | ------------------- | --------------------------------------------------------------------------- |
+| `id`                   | `UUID`          | PK, NN              | Identificador.                                                              |
+| `operation_id`         | `UUID`          | FK, NN              | Operación de inventario que lo creó (idempotencia por clave del consumidor). |
+| `company_id`           | `UUID`          | REF, NN             | Empresa.                                                                    |
+| `branch_id`            | `UUID`          | REF, NN             | Sucursal.                                                                   |
+| `company_product_id`   | `UUID`          | REF, NN             | Producto.                                                                   |
+| `movement_type`        | `VARCHAR(40)`   | NN, CK              | Tipo de movimiento.                                                         |
+| `quantity`             | `NUMERIC(18,4)` | NN, CK              | Cantidad absoluta en unidad base; mayor que cero.                           |
+| `previous_balance`     | `NUMERIC(18,4)` | NN, CK              | Saldo anterior.                                                             |
+| `new_balance`          | `NUMERIC(18,4)` | NN, CK              | Saldo nuevo.                                                                |
+| `balance_sequence`     | `BIGINT`        | NN, UQ              | Correlativo del movimiento dentro de su saldo, desde 1 y sin huecos.        |
+| `unit_cost`            | `NUMERIC(18,4)` | nullable, CK        | Costo unitario informado por la compra; solo en entradas y sus reversos.    |
+| `origin_type`          | `VARCHAR(30)`   | NN                  | Tipo de origen (`PURCHASE`, `SALE`).                                        |
+| `origin_id`            | `UUID`          | NN                  | Documento.                                                                  |
+| `origin_detail_id`     | `UUID`          | NN                  | Línea.                                                                      |
+| `line_index`           | `SMALLINT`      | NN, UQ              | Posición de la línea en la operación.                                       |
+| `application_user_id`  | `UUID`          | REF, NN             | Usuario operativo que confirmó o anuló el documento.                        |
+| `correlation_id`       | `UUID`          | NN                  | Flujo distribuido.                                                          |
+| `reason`               | `TEXT`          | nullable            | Motivo (obligatorio en reversos).                                           |
+| `reversed_movement_id` | `UUID`          | FK, nullable, UQ    | Movimiento revertido.                                                       |
+| `created_at`           | `TIMESTAMPTZ`   | NN                  | Fecha.                                                                      |
+| `created_by`           | `VARCHAR(255)`  | NN                  | `sub` de la cuenta de servicio que aplicó la operación (D1).                |
+| `updated_at`           | `TIMESTAMPTZ`   | NN, CK              | Igual a `created_at`.                                                       |
+| `updated_by`           | `VARCHAR(255)`  | NN, CK              | Igual a `created_by`.                                                       |
 
 ### Reglas y restricciones
 
-- Tipos permitidos: `PURCHASE_ENTRY`, `SALE_OUTPUT`, `ENTRY_REVERSAL`, `OUTPUT_REVERSAL`, `POSITIVE_ADJUSTMENT`, `NEGATIVE_ADJUSTMENT`.
-- La cantidad debe ser mayor que cero.
-- Los movimientos son inmutables.
-- Para movimientos valorizados, `movement_value` debe ser consistente con cantidad y costo según la política de redondeo.
-- Los movimientos de salida FIFO obtienen su costo desde `InventoryCostConsumption`.
+- Tipos de la Fase A: `PURCHASE_ENTRY`, `SALE_OUTPUT`, `ENTRY_REVERSAL`, `OUTPUT_REVERSAL`.
+- La cantidad debe ser mayor que cero; los saldos anterior y nuevo, no negativos; `new_balance = previous_balance + quantity` para entradas y reversos de salida, y `- quantity` para salidas y reversos de entrada.
+- `balance_sequence` es único por empresa, sucursal y producto; se asigna como `version + 1` con la fila del saldo bloqueada y en la misma transacción (no se usa una `SEQUENCE`), de modo que las operaciones confirmadas forman un kardex sin huecos y encadenado (`previous_balance` = `new_balance` del anterior).
+- Los movimientos son inmutables: la base rechaza `UPDATE`, `DELETE` y `TRUNCATE`; `updated_at`/`updated_by` son iguales a `created_at`/`created_by` por restricción.
+- Una anulación crea un movimiento inverso por cada movimiento de la operación original (`reversed_movement_id`), una sola vez; un reverso no se revierte.
+- `unit_cost` solo en `PURCHASE_ENTRY` y `ENTRY_REVERSAL` (el reverso copia el costo de la entrada); en la Fase A solo se guarda y no interviene en ningún cálculo.
+
+### Diferido al bloque 13 (no implementado en la Fase A)
+
+- Columna `movement_value NUMERIC(18,2)` (valor monetario del movimiento) y los tipos `POSITIVE_ADJUSTMENT` / `NEGATIVE_ADJUSTMENT` (con `InventoryAdjustment`).
+- Para movimientos valorizados, `movement_value` deberá ser consistente con cantidad y costo según la política de redondeo, y los movimientos de salida FIFO obtendrán su costo desde `InventoryCostConsumption`.
+
+> **Reconciliación (2026-10-06):** secciones alineadas con `specs/012-inventory-core` (Inventory Service
+> Fase A, BR-12): columnas de auditoría `created_at`/`created_by`/`updated_at`/`updated_by` con el `sub`
+> (D1) en ambas tablas e iguales por restricción en los movimientos; `application_user_id` en lugar de
+> `created_by_user_id`; `operation_id` obligatorio (FK a la operación de inventario) y `balance_sequence`;
+> `origin_detail_id` obligatorio; `version` como contador desde 0; `unit_cost` solo en entradas y sus
+> reversos, sin uso en la Fase A; columnas de valoración diferidas al bloque 13; inmutabilidad en la base
+> y saldo nunca negativo. Los nombres de restricciones e índices, y la tabla técnica
+> `inventory_operations`, están en el `data-model.md` de esa feature.
 
 ## 9.3 InventoryAdjustment
 

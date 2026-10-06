@@ -204,6 +204,84 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "inventory-service",
+      "name": "Inventory Service",
+      "description": "Identidad técnica de inventory-service (client_credentials): lectura técnica en Operational Context y Commercial Relationship (platform:lookup) y registro de auditoría (feature 012, R-12).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${INVENTORY_SERVICE_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "acr",
+        "basic",
+        "email",
+        "profile",
+        "roles",
+        "web-origins",
+        "service_account"
+      ],
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "inventory-test-operator",
+      "name": "Inventory Test Operator",
+      "description": "Identidad técnica de pruebas que aplica y consulta operaciones de inventario (client_credentials, permisos perm:inventory:*; feature 012, DS-13).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${INVENTORY_TEST_OPERATOR_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "acr",
+        "basic",
+        "email",
+        "profile",
+        "roles",
+        "web-origins",
+        "service_account"
+      ],
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "roles": {
@@ -1356,6 +1434,26 @@
         {
           "name": "perm:audit:platform-events:read",
           "description": "Consultar los eventos de auditoría de plataforma (sin empresa) en audit"
+        },
+        {
+          "name": "perm:inventory:entries:create",
+          "description": "Aplicar entradas de compra y sus reversos en inventory (solo cuentas de servicio)"
+        },
+        {
+          "name": "perm:inventory:outputs:create",
+          "description": "Aplicar salidas de venta y sus reversos en inventory (solo cuentas de servicio)"
+        },
+        {
+          "name": "perm:inventory:balances:read",
+          "description": "Consultar saldos y stock de las empresas del usuario en inventory"
+        },
+        {
+          "name": "perm:inventory:movements:read",
+          "description": "Consultar el kardex y las operaciones de las empresas del usuario en inventory"
+        },
+        {
+          "name": "perm:inventory:platform:lookup",
+          "description": "Leer saldos y movimientos de cualquier empresa sin membresía (solo cuentas de servicio consumidoras)"
         }
       ]
     }
@@ -1432,7 +1530,10 @@
           "inventario",
           "perm:geography:all:read",
           "perm:product-catalog:all:read",
-          "perm:operational-context:all:read"
+          "perm:operational-context:all:read",
+          "perm:inventory:balances:read",
+          "perm:inventory:movements:read",
+          "perm:commercial-relationship:company_products:read"
         ]
       }
     },
@@ -1790,6 +1891,38 @@
       "clientRoles": {
         "sio-api": [
           "perm:audit:audit-events:create"
+        ]
+      }
+    },
+    {
+      "id": "6b8f2a1d-4c3e-4d9f-a072-1b22e3f4a5c6",
+      "username": "service-account-inventory-service",
+      "enabled": true,
+      "serviceAccountClientId": "inventory-service",
+      "clientRoles": {
+        "sio-api": [
+          "perm:operational-context:platform:lookup",
+          "perm:operational-context:branches:read",
+          "perm:operational-context:companies:read",
+          "perm:operational-context:application_users:read",
+          "perm:commercial-relationship:company_products:read",
+          "perm:commercial-relationship:platform:lookup",
+          "perm:audit:audit-events:create"
+        ]
+      }
+    },
+    {
+      "id": "7c9a3b2e-5d4f-4ea0-b183-2c33f4a5b6d7",
+      "username": "service-account-inventory-test-operator",
+      "enabled": true,
+      "serviceAccountClientId": "inventory-test-operator",
+      "clientRoles": {
+        "sio-api": [
+          "perm:inventory:entries:create",
+          "perm:inventory:outputs:create",
+          "perm:inventory:balances:read",
+          "perm:inventory:movements:read",
+          "perm:inventory:platform:lookup"
         ]
       }
     }

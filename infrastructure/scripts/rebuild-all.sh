@@ -108,6 +108,7 @@ SERVICES=(
     commercial-relationship-service
     payment-reference-service
     audit-service
+    inventory-service
 )
 
 # Proyectos compose del entorno: primero la infraestructura, luego uno por

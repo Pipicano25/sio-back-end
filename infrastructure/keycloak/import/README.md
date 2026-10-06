@@ -40,6 +40,19 @@ y `perm:audit:platform-events:read` en `sio-api`. Ningún grupo los recibe expl�
 `administradores` y `supervisores` los obtienen por comodín (DS-18); otro grupo se habilita
 asignándolos en la plantilla. Consultar auditoría de una empresa exige además
 `perm:operational-context:application_users:read` y membresía `ACTIVE`.
+- `${INVENTORY_SERVICE_CLIENT_SECRET}`: secreto del cliente técnico `inventory-service` (lectura
+  técnica en Operational Context y Commercial Relationship con `platform:lookup`, y
+  `perm:audit:audit-events:create` para su `audit-outbox-worker`). Solo en `.env`.
+- `${INVENTORY_TEST_OPERATOR_CLIENT_SECRET}`: secreto del cliente de pruebas `inventory-test-operator`
+  (los cinco permisos `perm:inventory:*`; lo usan las pruebas de integración de inventory-service).
+  Solo en `.env`.
+
+Permisos de inventario (feature 012): `perm:inventory:entries:create`, `perm:inventory:outputs:create`
+(solo cuentas de servicio: Purchase, Sales y el cliente de pruebas), `perm:inventory:balances:read`,
+`perm:inventory:movements:read` y `perm:inventory:platform:lookup` (lectura técnica sin membresía) en
+`sio-api`. El grupo `inventario` recibe `perm:inventory:balances:read`,
+`perm:inventory:movements:read` y `perm:commercial-relationship:company_products:read`;
+`administradores` y `supervisores` consultan por comodín. Ningún grupo puede aplicar operaciones.
 
 ## Secciones principales
 
