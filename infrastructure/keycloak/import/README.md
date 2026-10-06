@@ -31,6 +31,15 @@ realm de desarrollo para SIO con:
 - `${KEYCLOAK_TEST_USER_PASSWORD}`: contraseña común para los usuarios de prueba.
 - `${PARTY_IDENTITY_CLIENT_SECRET}`, `${OPERATIONAL_CONTEXT_CLIENT_SECRET}`,
   `${COMMERCIAL_RELATIONSHIP_CLIENT_SECRET}`: secretos de los clientes técnicos (solo en `.env`).
+- `${AUDIT_TEST_EMITTER_CLIENT_SECRET}`: secreto del cliente de pruebas `audit-test-emitter`
+  (solo `perm:audit:audit-events:create`; lo usan las pruebas de integración de audit-service y de
+  `libs/sio-audit`). Solo en `.env`.
+
+Permisos de auditoría (feature 011): `perm:audit:audit-events:create`, `perm:audit:audit-events:read`
+y `perm:audit:platform-events:read` en `sio-api`. Ningún grupo los recibe explícitamente:
+`administradores` y `supervisores` los obtienen por comodín (DS-18); otro grupo se habilita
+asignándolos en la plantilla. Consultar auditoría de una empresa exige además
+`perm:operational-context:application_users:read` y membresía `ACTIVE`.
 
 ## Secciones principales
 

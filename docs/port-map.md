@@ -76,7 +76,7 @@ operational-context `8004`, commercial-relationship `8005`), sin compose.
 | purchase-service | *(reservado)* | `PURCHASE_SERVICE_PORT` | `8107` | `sio-purchase-db` | `PURCHASE_DB_PORT` | `5446` | `PURCHASE_TEST_DB_PORT` | `55445` |
 | sales-service | *(reservado)* | `SALES_SERVICE_PORT` | `8108` | `sio-sales-db` | `SALES_DB_PORT` | `5447` | `SALES_TEST_DB_PORT` | `55447` |
 | inventory-service | *(reservado)* | `INVENTORY_SERVICE_PORT` | `8109` | `sio-inventory-db` | `INVENTORY_DB_PORT` | `5448` | `INVENTORY_TEST_DB_PORT` | `55449` |
-| audit-service | *(reservado)* | `AUDIT_SERVICE_PORT` | `8110` | `sio-audit-db` | `AUDIT_DB_PORT` | `5449` | `AUDIT_TEST_DB_PORT` | `55451` |
+| audit-service | `sio-audit-service` | `AUDIT_SERVICE_PORT` | `8110` | `sio-audit-db` | `AUDIT_DB_PORT` | `5449` | `AUDIT_TEST_DB_PORT` | `55451` |
 | workflow-service | *(reservado)* | `WORKFLOW_SERVICE_PORT` | `8111` | `sio-workflow-db` | `WORKFLOW_DB_PORT` | `5450` | `WORKFLOW_TEST_DB_PORT` | `55453` |
 
 *(reservado)*: el servicio aún no tiene contenedor de aplicación en

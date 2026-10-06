@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "audit-service"
+version = "0.1.0"
+description = "Microservicio de auditoría de SIO: registro inmutable de eventos de auditoría y su consulta por alcance."
+requires-python = ">=3.12"
+
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.30,<1.0",
+    "httpx>=0.27,<1.0",
+
+    "sqlalchemy>=2.0,<3.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "alembic>=1.14,<2.0",
+    "python-dotenv>=1.0,<2.0",
+
+    # sio-auth >= 0.4.0 (403 sin revelar el permiso; permiso solo en el log `sio_auth`).
+    # sio-audit >= 0.1.0 (contrato del evento y política única de redacción, FR-017a).
+    # Con referencias locales file: la versión mínima no se expresa en la cadena PEP 508;
+    # verificarla contra libs/sio-auth/pyproject.toml y libs/sio-audit/pyproject.toml.
+    "sio-auth @ file:../../libs/sio-auth",
+    "sio-audit @ file:../../libs/sio-audit",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.3,<9.0",
+    "httpx>=0.27,<1.0",
+    "PyJWT[crypto]>=2.8,<3.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+addopts = "-ra -m 'not integration and not performance'"
+markers = [
+    "integration: pruebas opcionales contra Keycloak, Operational Context y la base reales",
+    "performance: pruebas de volumen (SC-006)",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/audit_service"]

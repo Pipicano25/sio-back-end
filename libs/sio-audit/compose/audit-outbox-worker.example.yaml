@@ -1,0 +1,35 @@
+# Plantilla del contenedor audit-outbox-worker de un servicio emisor (feature 011, FR-077).
+# Copiar dentro de `services:` del archivo infrastructure/services/<servicio>.yaml y
+# reemplazar <servicio> / <SERVICIO>. Usa la MISMA imagen, configuración y base de datos
+# que la API del emisor; solo cambia el comando. Guía normativa:
+# services/audit-service/docs/integracion-emisores.md
+
+  <servicio>-audit-outbox-worker:
+    image: sio/<servicio>:${SIO_SERVICES_VERSION}
+    container_name: sio-<servicio>-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://${<SERVICIO>_DB_USER}:${<SERVICIO>_DB_PASSWORD}@<servicio>-db:5432/${<SERVICIO>_DB_NAME}
+      AUDIT_SERVICE_BASE_URL: http://audit-service:8000/api/v1
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      AUDIT_CLIENT_ID: <servicio>
+      AUDIT_CLIENT_SECRET: ${<SERVICIO>_CLIENT_SECRET}
+      AUDIT_OUTBOX_POLL_INTERVAL_SECONDS: ${AUDIT_OUTBOX_POLL_INTERVAL_SECONDS:-2}
+      AUDIT_OUTBOX_HTTP_TIMEOUT_SECONDS: ${AUDIT_OUTBOX_HTTP_TIMEOUT_SECONDS:-5}
+      AUDIT_OUTBOX_BACKOFF_INITIAL_SECONDS: ${AUDIT_OUTBOX_BACKOFF_INITIAL_SECONDS:-1}
+      AUDIT_OUTBOX_BACKOFF_FACTOR: ${AUDIT_OUTBOX_BACKOFF_FACTOR:-2}
+      AUDIT_OUTBOX_BACKOFF_MAX_SECONDS: ${AUDIT_OUTBOX_BACKOFF_MAX_SECONDS:-300}
+      AUDIT_OUTBOX_BATCH_SIZE: ${AUDIT_OUTBOX_BATCH_SIZE:-100}
+    depends_on:
+      <servicio>-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "sio_audit.worker", "--check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - sio-network

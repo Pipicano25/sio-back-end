@@ -3929,36 +3929,67 @@ No es un log técnico genérico.
 
 Permite conocer actor, entidad, empresa, sucursal, resultado, solicitud y flujo distribuido.
 
-No puede modificarse mediante endpoints operativos.
+No puede modificarse mediante endpoints operativos ni mediante sentencias directas sobre la base.
 
 ### Atributos
 
-| Atributo              | Tipo           | Regla         | Descripción            |
-| --------------------- | -------------- | ------------- | ---------------------- |
-| `id`                  | `UUID`         | PK, NN        | Identificador.         |
-| `event_id`            | `UUID`         | NN, UQ        | Evento recibido.       |
-| `company_id`          | `UUID`         | REF, nullable | Empresa.               |
-| `branch_id`           | `UUID`         | REF, nullable | Sucursal.              |
-| `application_user_id` | `UUID`         | REF, nullable | Usuario operativo.     |
-| `keycloak_user_id`    | `UUID`         | nullable      | Actor en Keycloak.     |
-| `username_snapshot`   | `VARCHAR(160)` | nullable      | Nombre histórico.      |
-| `action`              | `VARCHAR(50)`  | NN            | Acción.                |
-| `entity_type`         | `VARCHAR(60)`  | NN            | Tipo de entidad.       |
-| `entity_id`           | `UUID`         | nullable      | Entidad afectada.      |
-| `previous_values`     | `JSONB`        | nullable      | Valores anteriores.    |
-| `new_values`          | `JSONB`        | nullable      | Valores nuevos.        |
-| `result`              | `VARCHAR(20)`  | NN, CK        | `SUCCESS` o `FAILURE`. |
-| `reason`              | `TEXT`         | nullable      | Motivo.                |
-| `request_id`          | `UUID`         | nullable      | Solicitud HTTP.        |
-| `correlation_id`      | `UUID`         | nullable      | Flujo.                 |
-| `source_service`      | `VARCHAR(80)`  | NN            | Servicio emisor.       |
-| `occurred_at`         | `TIMESTAMPTZ`  | NN            | Momento de la acción.  |
-| `recorded_at`         | `TIMESTAMPTZ`  | NN            | Persistencia.          |
+| Atributo              | Tipo           | Regla                    | Descripción                                                        |
+| --------------------- | -------------- | ------------------------ | ------------------------------------------------------------------ |
+| `id`                  | `UUID`         | PK, NN                   | Identificador.                                                     |
+| `event_id`            | `UUID`         | NN, UQ                   | Evento recibido; clave de idempotencia generada por el emisor.     |
+| `company_id`          | `UUID`         | REF, nullable            | Empresa. Nulo = evento de plataforma.                              |
+| `branch_id`           | `UUID`         | REF, nullable, CK        | Sucursal; exige `company_id`.                                      |
+| `application_user_id` | `UUID`         | REF, nullable            | Usuario operativo.                                                 |
+| `keycloak_user_id`    | `UUID`         | nullable                 | Actor en Keycloak.                                                 |
+| `username_snapshot`   | `VARCHAR(160)` | nullable, CK             | Nombre histórico.                                                  |
+| `action`              | `VARCHAR(50)`  | NN, CK                   | Acción.                                                            |
+| `entity_type`         | `VARCHAR(60)`  | NN, CK                   | Tipo de entidad.                                                   |
+| `entity_id`           | `UUID`         | nullable                 | Entidad afectada.                                                  |
+| `previous_values`     | `JSONB`        | nullable, CK             | Valores anteriores (objeto JSON), ya redactados.                   |
+| `new_values`          | `JSONB`        | nullable, CK             | Valores nuevos (objeto JSON), ya redactados.                       |
+| `redacted_paths`      | `TEXT[]`       | NN, default `'{}'`       | Rutas de los valores ocultados por la política de redacción.       |
+| `result`              | `VARCHAR(20)`  | NN, CK                   | `SUCCESS` o `FAILURE`.                                             |
+| `reason`              | `TEXT`         | nullable, CK             | Motivo.                                                            |
+| `request_id`          | `UUID`         | nullable                 | Solicitud HTTP.                                                    |
+| `correlation_id`      | `UUID`         | nullable                 | Flujo.                                                             |
+| `source_service`      | `VARCHAR(80)`  | NN, CK                   | Servicio emisor (`client_id` del token técnico autenticado).       |
+| `occurred_at`         | `TIMESTAMPTZ`  | NN                       | Momento de la acción.                                              |
+| `content_hash`        | `CHAR(64)`     | NN, CK                   | SHA-256 de la forma canónica del evento y del emisor (idempotencia; no se expone por API). |
+| `created_at`          | `TIMESTAMPTZ`  | NN, default `now()`      | Persistencia; la API lo expone como `recorded_at`.                 |
+| `created_by`          | `VARCHAR(255)` | NN                       | `sub` de la identidad técnica que registró el evento (D1).         |
+| `updated_at`          | `TIMESTAMPTZ`  | NN, default `now()`, CK  | Igual a `created_at`.                                              |
+| `updated_by`          | `VARCHAR(255)` | NN, CK                   | Igual a `created_by`.                                              |
 
 ### Reglas y restricciones
 
-- La entidad es inmutable.
-- No deben registrarse secretos, contraseñas o tokens en los valores JSON.
+- La entidad es inmutable: los triggers `tr_audit_events_no_update`, `tr_audit_events_no_delete` y
+  `tr_audit_events_no_truncate` (función `audit_events_reject_change()`) rechazan `UPDATE`, `DELETE` y
+  `TRUNCATE` también en sesiones manuales. No existen rutas de modificación ni eliminación.
+- `updated_at = created_at` y `updated_by = created_by` (`ck_audit_events_audit_unchanged`): las
+  columnas de auditoría existen por el estándar, pero nunca divergen.
+- `action` cumple `^[A-Z][A-Z0-9_]{0,49}$` y `entity_type` cumple `^[A-Z][A-Za-z0-9]{0,59}$`.
+- `branch_id` solo puede informarse con `company_id` (`ck_audit_events_branch_requires_company`).
+- `previous_values` y `new_values`, cuando existen, son objetos JSON.
+- `username_snapshot` y `reason` (máximo 2000 caracteres) no pueden estar en blanco ni tener
+  espacios al inicio o al final; `source_service` no puede estar en blanco.
+- `content_hash` es hexadecimal en minúsculas de 64 caracteres. Un `event_id` repetido con el mismo
+  contenido canónico y el mismo emisor devuelve el registro existente; con contenido o emisor distinto
+  es un conflicto.
+- Redacción obligatoria: los valores cuyas claves pertenecen a la política v1 de `libs/sio-audit`
+  (`password`, `passwd`, `secret`, `clientsecret`, `token`, `accesstoken`, `refreshtoken`, `idtoken`,
+  `authorization`, `apikey`, `credential`, `credentials`, `privatekey`; coincidencia exacta de la
+  clave sin distinguir mayúsculas, `-` ni `_`) se reemplazan por `"***"` y su ruta se agrega a `redacted_paths`. El emisor redacta antes
+  de persistir en su outbox y Audit vuelve a aplicar la política antes de persistir (defensa en
+  profundidad).
+- `source_service` y `created_by` se derivan del token técnico autenticado; el emisor no puede
+  informarlos.
+
+> **Reconciliación (2026-10-05):** sección alineada con `specs/011-audit-core` (Audit Service núcleo,
+> BR-11): columnas de auditoría `created_at`/`created_by`/`updated_at`/`updated_by` con el `sub` (D1) e
+> iguales por restricción, `recorded_at` como nombre de API de `created_at`; columnas nuevas
+> `redacted_paths` y `content_hash`; formatos de `action` y `entity_type`; inmutabilidad garantizada en
+> la base; redacción obligatoria en lugar de la regla genérica sobre secretos. `keycloak_user_id` se
+> mantiene `UUID`. Los nombres de restricciones e índices están en el `data-model.md` de esa feature.
 
 # 12. Reporting DB (Seccion solo de ilustracion, se debe definir segun requerimientos)
 

@@ -107,6 +107,7 @@ SERVICES=(
     operational-context-service
     commercial-relationship-service
     payment-reference-service
+    audit-service
 )
 
 # Proyectos compose del entorno: primero la infraestructura, luego uno por

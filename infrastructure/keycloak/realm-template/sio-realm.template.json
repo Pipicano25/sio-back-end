@@ -165,6 +165,45 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "audit-test-emitter",
+      "name": "Audit Test Emitter",
+      "description": "Identidad técnica de pruebas que registra eventos en audit-service (client_credentials, solo perm:audit:audit-events:create; feature 011).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${AUDIT_TEST_EMITTER_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "acr",
+        "basic",
+        "email",
+        "profile",
+        "roles",
+        "web-origins",
+        "service_account"
+      ],
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "roles": {
@@ -1305,6 +1344,18 @@
         {
           "name": "perm:payment_reference:global_payment_methods:read",
           "description": "Lectura de global_payment_methods (nombre de servicio que declara payment-reference-service)"
+        },
+        {
+          "name": "perm:audit:audit-events:create",
+          "description": "Registrar eventos de auditoría en audit (solo cuentas de servicio emisoras)"
+        },
+        {
+          "name": "perm:audit:audit-events:read",
+          "description": "Consultar los eventos de auditoría de las empresas del usuario en audit"
+        },
+        {
+          "name": "perm:audit:platform-events:read",
+          "description": "Consultar los eventos de auditoría de plataforma (sin empresa) en audit"
         }
       ]
     }
@@ -1730,6 +1781,17 @@
           "temporary": false
         }
       ]
+    },
+    {
+      "id": "5a7e1f0c-3b2d-4c8e-9f61-0a11d2e3f4b5",
+      "username": "service-account-audit-test-emitter",
+      "enabled": true,
+      "serviceAccountClientId": "audit-test-emitter",
+      "clientRoles": {
+        "sio-api": [
+          "perm:audit:audit-events:create"
+        ]
+      }
     }
   ],
   "defaultGroups": []

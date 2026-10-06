@@ -64,7 +64,7 @@ El modelo actual también documenta un `Finance Service`, pero no se incluyó po
 | Puerto | `8104` (proyecto `infrastructure/services/`); interno `8000` |
 | Base de datos | PostgreSQL propia `operational_context` (`5440`); pruebas `55440` (perfil `test`) |
 | Depende de | Keycloak (clase B: validación de tokens; Admin API de solo lectura con cliente técnico propio para verificar cuentas y leer permisos efectivos); Party Identity Service (clase C, `GET /api/v1/organization-identities/{id}` y `GET /api/v1/person-identities/{id}`); Geography Service (clase C, `GET global-countries/{id}`, `GET global-administrative-divisions/{id}`, `GET global-cities/{id}`) |
-| Es consumido por | Party Identity (en uso: `operational-access` vía técnica para confirmar perfiles de contacto); Commercial Relationship (en uso: `operational-access` vía propia, `me/operational-context` y `companies/{id}` con el token del usuario); Inventory, Purchase, Sales y Audit (futuros) — contratos `operational-context-provider.md` (004) y `operational-access-provider.md` (005) |
+| Es consumido por | Party Identity (en uso: `operational-access` vía técnica para confirmar perfiles de contacto); Commercial Relationship (en uso: `operational-access` vía propia, `me/operational-context` y `companies/{id}` con el token del usuario); Audit (en uso: `operational-access` vía propia con el token del usuario, solo para la consulta de eventos de empresa); Inventory, Purchase y Sales (futuros) — contratos `operational-context-provider.md` (004) y `operational-access-provider.md` (005) |
 | Referencias externas | `organization_identity_id` → Party Identity; `person_identity_id` (usuarios operativos y asesores) → Party Identity; `keycloak_user_id` (`sub`) → Keycloak; `country_id`, `administrative_division_id`, `city_id` → Geography |
 | Eventos | Ninguno |
 | Autenticación | Token del usuario propagado a Party Identity y Geography; `client_credentials` del cliente `operational-context-service` (`view-users`, `query-clients`) hacia la Admin API de Keycloak; los consumidores propagan el token de su usuario o usan su propio `client_credentials` con `perm:operational-context:platform:lookup` |
@@ -99,3 +99,18 @@ El modelo actual también documenta un `Finance Service`, pero no se incluyó po
 | Eventos | Ninguno |
 | Autenticación | Token del usuario propagado a Operational Context y Party Identity; `client_credentials` del cliente `commercial-relationship-service` hacia Product Catalog (`products:read`, `first-use:register`) y Payment Reference (`global_payment_condition_types:read`); consumidores con su `client_credentials` y `platform:lookup` |
 | Spec | `specs/007-commercial-relationship-core/`, `specs/010-commercial-relationship-commercial-product/` |
+
+### audit-service
+
+| Campo | Valor |
+| --- | --- |
+| Responsabilidad | Registro oficial e inmutable de las acciones importantes de SIO (`AuditEvent`; ver su `domain-map.md`): registro por cuentas de servicio y consulta por empresa o de plataforma |
+| Ruta | `services/audit-service/`; librería compartida `libs/sio-audit/` (contrato del evento, redacción, outbox y `audit-outbox-worker`) |
+| Puerto | `8110` (proyecto `infrastructure/services/`); interno `8000` |
+| Base de datos | PostgreSQL propia `audit` (`5449`); pruebas `55451` (perfil `test`) |
+| Depende de | Keycloak (B: validación de tokens); Operational Context (C: `operational-access` vía propia, solo para consultar eventos de empresa). El registro de eventos no depende de ningún otro servicio |
+| Es consumido por | Servicios emisores mediante `POST /api/v1/audit-events` y `/audit-events/batch` con su `audit-outbox-worker` (en uso: ninguno; cliente de pruebas `audit-test-emitter`). Inventory, Purchase y Sales lo adoptan desde su Spec; Party Identity, Product Catalog, Operational Context y Commercial Relationship, en la feature transversal "Auditoría de servicios existentes" (aún **no auditados**) |
+| Referencias externas | `company_id`, `branch_id`, `application_user_id` → Operational Context; `keycloak_user_id` → Keycloak; `entity_id` → entidad del servicio emisor (todas `UUID REF` sin validar al registrar, DS-03) |
+| Eventos | Ninguno de mensajería (sin RabbitMQ): la entrega es HTTP con Transactional Outbox en cada emisor |
+| Autenticación | Emisores: `client_credentials` propio con `perm:audit:audit-events:create` (solo cuentas de servicio); consulta: token del usuario con `perm:audit:audit-events:read` (empresa, propagado a Operational Context) o `perm:audit:platform-events:read` (plataforma) |
+| Spec | `specs/011-audit-core/` |
