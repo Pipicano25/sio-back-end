@@ -282,6 +282,45 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "purchase-service",
+      "name": "Purchase Service",
+      "description": "Identidad técnica de purchase-service (client_credentials): lecturas técnicas de sus dependencias, entradas y reversos en Inventory y auditoría (feature 014, R-02). Nunca escribe compras.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${PURCHASE_SERVICE_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "acr",
+        "basic",
+        "email",
+        "profile",
+        "roles",
+        "web-origins",
+        "service_account"
+      ],
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "roles": {
@@ -1971,6 +2010,34 @@
           "perm:inventory:company-policies:read",
           "perm:inventory:product-policies:read",
           "perm:inventory:valuation:read"
+        ]
+      }
+    },
+    {
+      "id": "7c9e3b2f-5d4a-4e1b-b183-2c33f4a5b6d7",
+      "username": "service-account-purchase-service",
+      "enabled": true,
+      "serviceAccountClientId": "purchase-service",
+      "clientRoles": {
+        "sio-api": [
+          "perm:operational-context:platform:lookup",
+          "perm:operational-context:companies:read",
+          "perm:operational-context:branches:read",
+          "perm:operational-context:application_users:read",
+          "perm:commercial-relationship:platform:lookup",
+          "perm:commercial-relationship:company_suppliers:read",
+          "perm:commercial-relationship:supplier_payment_conditions:read",
+          "perm:commercial-relationship:company_products:read",
+          "perm:commercial-relationship:company_product_presentations:read",
+          "perm:commercial-relationship:supplier_products:read",
+          "perm:product-catalog:products:read",
+          "perm:product-catalog:units-of-measure:read",
+          "perm:party-identity:organization_identities:read",
+          "perm:payment-reference:global_payment_condition_types:read",
+          "perm:inventory:entries:create",
+          "perm:inventory:movements:read",
+          "perm:inventory:platform:lookup",
+          "perm:audit:audit-events:create"
         ]
       }
     }

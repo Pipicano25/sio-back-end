@@ -1,0 +1,142 @@
+# Paso 6. Consultar el borrador
+
+Ejercicio 2: Compra en borrador.
+
+## Llamada
+
+`GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>`
+
+Ejecuta: `compras.test`.
+
+### Por qué
+
+- Las lecturas exigen permiso y membresía; no exigen asignación a la sucursal.
+
+## Permiso
+
+La URL exige `perm:purchase:purchases:read`.
+
+Además, el usuario debe ser miembro `ACTIVE` de la empresa (Operational Context, con su token). No se exige asignación a la sucursal.
+
+| Usuario | ¿Puede? | Respuesta | Motivo |
+| --- | --- | --- | --- |
+| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
+| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` |
+| `compras.test` | Sí | `200` | tiene `perm:purchase:all:all` |
+| `ventas.test` | No | `403` | no tiene `perm:purchase:purchases:read` |
+| `inventario.test` | No | `403` | no tiene `perm:purchase:purchases:read` |
+| `reportes.test` | Sí | `200` | tiene `perm:purchase:purchases:read` |
+| `consulta.test` | Sí | `200` | tiene `perm:purchase:purchases:read` |
+
+Respuesta sin permiso (`403`), que no revela el permiso exigido:
+
+```json
+{
+  "type": "https://sio/errors/purchase/forbidden",
+  "title": "Acceso denegado",
+  "status": 403,
+  "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
+  "instance": "/api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>",
+  "code": "PURCHASE.FORBIDDEN",
+  "trace_id": "<asignado por el servicio>"
+}
+```
+
+## Respuesta esperada
+
+Estado `200`.
+
+```json
+{
+  "id": "<COMPRA>",
+  "company_id": "d14a0000-0000-4000-8000-000000000001",
+  "branch_id": "d14b0000-0000-4000-8000-000000000001",
+  "company_supplier_id": "d14c0000-0000-4000-8000-000000000001",
+  "supplier_payment_condition_id": "d14c0000-0000-4000-8000-000000000003",
+  "payment_condition_code_snapshot": "CREDIT",
+  "payment_terms_days_snapshot": 30,
+  "due_date": "2026-12-04",
+  "purchase_sequence_id": null,
+  "number": null,
+  "sequence_value": null,
+  "status": "DRAFT",
+  "operation_date": "2026-11-04",
+  "promised_delivery_at": null,
+  "supplier_document_number": "FV-1001",
+  "supplier_name_snapshot": "Distribuidora Ficticia S.A.S.",
+  "supplier_identification_snapshot": "NIT 900123456",
+  "currency_code": "COP",
+  "observations": null,
+  "subtotal": "298800.00",
+  "discount_total": "800.00",
+  "tax_total": "45600.00",
+  "total": "343600.00",
+  "inventory_operation_id": null,
+  "created_by_user_id": "d14f1000-0000-4000-8000-000000000003",
+  "cancelled_by_user_id": null,
+  "cancelled_at": null,
+  "cancellation_reason": null,
+  "pending_operation_id": null,
+  "version": 2,
+  "created_at": "<asignado por el servicio>",
+  "updated_at": "<asignado por el servicio>",
+  "created_by": "compras.test",
+  "updated_by": "compras.test",
+  "lines": [
+    {
+      "id": "<asignado por el servicio>",
+      "purchase_id": "<COMPRA>",
+      "line_number": 1,
+      "company_product_id": "d14d0000-0000-4000-8000-000000000001",
+      "company_product_presentation_id": "d14e0000-0000-4000-8000-000000000001",
+      "supplier_product_id": null,
+      "supplier_lead_time_snapshot_hours": null,
+      "product_code_snapshot": "000045",
+      "product_name_snapshot": "Arroz ficticio 500 g",
+      "presentation_code_snapshot": "CAJA12",
+      "presentation_name_snapshot": "Caja x12",
+      "base_quantity_factor_snapshot": "12.00000000",
+      "unit_code_snapshot": "UND",
+      "quantity": "2.0000",
+      "unit_cost": "120000.0000",
+      "discount_amount": "0.00",
+      "tax_amount": "45600.00",
+      "subtotal": "240000.00",
+      "total": "285600.00",
+      "base_quantity": "24.0000",
+      "inventory_unit_cost": "10000.0000",
+      "created_at": "<asignado por el servicio>",
+      "updated_at": "<asignado por el servicio>",
+      "created_by": "compras.test",
+      "updated_by": "compras.test"
+    },
+    {
+      "id": "<asignado por el servicio>",
+      "purchase_id": "<COMPRA>",
+      "line_number": 2,
+      "company_product_id": "d14d0000-0000-4000-8000-000000000002",
+      "company_product_presentation_id": null,
+      "supplier_product_id": null,
+      "supplier_lead_time_snapshot_hours": null,
+      "product_code_snapshot": "000046",
+      "product_name_snapshot": "Aceite ficticio 1 L",
+      "presentation_code_snapshot": null,
+      "presentation_name_snapshot": null,
+      "base_quantity_factor_snapshot": "1.00000000",
+      "unit_code_snapshot": "UND",
+      "quantity": "6.0000",
+      "unit_cost": "9800.0000",
+      "discount_amount": "800.00",
+      "tax_amount": "0.00",
+      "subtotal": "58800.00",
+      "total": "58000.00",
+      "base_quantity": "6.0000",
+      "inventory_unit_cost": "9666.6667",
+      "created_at": "<asignado por el servicio>",
+      "updated_at": "<asignado por el servicio>",
+      "created_by": "compras.test",
+      "updated_by": "compras.test"
+    }
+  ]
+}
+```

@@ -2970,53 +2970,56 @@ De esta manera se conserva el historial de asesores relacionados con la empresa.
 
 Representa la cabecera de una compra.
 
-Comienza en `DRAFT` y no afecta inventario.
-
-Al confirmar se validan proveedor y productos se coordina con Inventory Service, se aplican todas las entradas y se asigna el número oficial.
-
-Si algo falla la compra no queda confirmada parcialmente.
+Comienza en `DRAFT` y no afecta inventario. Al confirmar se revalidan proveedor, condición, productos y presentaciones, se congelan los snapshots, Inventory aplica una entrada con todas las líneas (cantidad en unidad base y costo por unidad base sin impuestos) y, en la misma transacción local que la confirma, se asigna el número del período. Si algo falla la compra no queda confirmada ni consume número.
 
 ### Atributos
 
-| Atributo                           | Tipo            | Regla                | Descripción                                                 |
-| ---------------------------------- | --------------- | -------------------- | ----------------------------------------------------------- |
-| `id`                               | `UUID`          | PK, NN               | Identificador.                                              |
-| `company_id`                       | `UUID`          | REF, NN              | Empresa.                                                    |
-| `branch_id`                        | `UUID`          | REF, NN              | Sucursal.                                                   |
-| `company_supplier_id`              | `UUID`          | REF, NN              | Proveedor privado.                                          |
-| `supplier_payment_condition_id`    | `UUID`          | REF, nullable        | Condición comercial seleccionada del proveedor.             |
-| `payment_condition_code_snapshot`  | `VARCHAR(30)`   | NN                   | Snapshot `CASH`, `CREDIT` o `FINANCING`.                    |
-| `payment_terms_days_snapshot`      | `INTEGER`       | NN, DEFAULT `0`      | Plazo pactado al confirmar la compra.                       |
-| `due_date`                         | `DATE`          | NN                   | Fecha de exigibilidad usada por Finance Service.            |
-| `purchase_sequence_id`             | `UUID`          | FK, nullable         | Secuencia usada.                                            |
-| `number`                           | `VARCHAR(80)`   | UQ parcial, nullable | Número oficial.                                             |
-| `sequence_value`                   | `BIGINT`        | nullable             | Parte numérica.                                             |
-| `status`                           | `VARCHAR(20)`   | NN, CK               | `DRAFT`, `CONFIRMED` o `CANCELLED`.                         |
-| `operation_date`                   | `DATE`          | NN                   | Fecha de negocio.                                           |
-| `promised_delivery_at`             | `TIMESTAMPTZ`   | nullable             | Fecha/hora de entrega comprometida al formalizar el pedido. |
-| `supplier_document_number`         | `VARCHAR(100)`  | nullable             | Documento del proveedor.                                    |
-| `supplier_name_snapshot`           | `VARCHAR(200)`  | NN                   | Nombre histórico.                                           |
-| `supplier_identification_snapshot` | `VARCHAR(100)`  | NN                   | Identificación histórica.                                   |
-| `currency_code`                    | `CHAR(3)`       | NN                   | Moneda.                                                     |
-| `observations`                     | `TEXT`          | nullable             | Observaciones.                                              |
-| `subtotal`                         | `NUMERIC(18,2)` | NN                   | Subtotal.                                                   |
-| `discount_total`                   | `NUMERIC(18,2)` | NN                   | Descuentos.                                                 |
-| `tax_total`                        | `NUMERIC(18,2)` | NN                   | Impuestos.                                                  |
-| `total`                            | `NUMERIC(18,2)` | NN                   | Total final.                                                |
-| `created_by_user_id`               | `UUID`          | REF, NN              | Usuario creador.                                            |
-| `cancelled_by_user_id`             | `UUID`          | REF, nullable        | Usuario que anuló.                                          |
-| `cancelled_at`                     | `TIMESTAMPTZ`   | nullable             | Anulación.                                                  |
-| `cancellation_reason`              | `TEXT`          | nullable             | Motivo.                                                     |
-| `version`                          | `INTEGER`       | NN, DEFAULT `1`      | Control concurrente.                                        |
-| `created_at`                       | `TIMESTAMPTZ`   | NN                   | Creación.                                                   |
-| `updated_at`                       | `TIMESTAMPTZ`   | NN                   | Modificación.                                               |
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `id` | `UUID` | PK, NN | Identificador. |
+| `company_id` | `UUID` | REF, NN | Empresa. |
+| `branch_id` | `UUID` | REF, NN | Sucursal. |
+| `company_supplier_id` | `UUID` | REF, NN | Proveedor privado. |
+| `supplier_payment_condition_id` | `UUID` | REF, nullable | Condición comercial seleccionada del proveedor. |
+| `payment_condition_code_snapshot` | `VARCHAR(30)` | CK, NN | Snapshot `CASH`, `CREDIT` o `FINANCING` (sin condición: `CASH`). |
+| `payment_terms_days_snapshot` | `INTEGER` | CK, NN, DEFAULT `0` | Plazo pactado; `0` para `CASH`. |
+| `due_date` | `DATE` | CK, NN | Fecha de exigibilidad: `operation_date` (+ plazo para `CREDIT`/`FINANCING`); se conserva para Finance (fuera de alcance). |
+| `purchase_sequence_id` | `UUID` | FK, CK, nullable | Secuencia usada; no nula si hay número. |
+| `number` | `VARCHAR(80)` | UQ parcial (con `company_id`), CK, nullable | Número oficial con el período (`CP-202610-000001`); único por empresa. |
+| `sequence_value` | `BIGINT` | CK, nullable | Parte numérica del contador del período. |
+| `status` | `VARCHAR(20)` | CK, NN | `DRAFT`, `CONFIRMED` o `CANCELLED`. |
+| `operation_date` | `DATE` | CK, NN | Fecha de negocio; determina el período de la numeración. |
+| `promised_delivery_at` | `TIMESTAMPTZ` | nullable | Fecha/hora de entrega comprometida. |
+| `supplier_document_number` | `VARCHAR(100)` | nullable | Documento del proveedor. |
+| `supplier_name_snapshot` | `VARCHAR(200)` | NN | Nombre histórico (`display_name` del proveedor). |
+| `supplier_identification_snapshot` | `VARCHAR(100)` | NN | Identificación histórica `<tipo> <número>` (Party Identity). |
+| `currency_code` | `CHAR(3)` | CK, NN | Moneda: la funcional de la empresa (`default_currency`). |
+| `observations` | `TEXT` | nullable | Observaciones. |
+| `subtotal` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Subtotal (suma de las líneas). |
+| `discount_total` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Descuentos. |
+| `tax_total` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Impuestos. |
+| `total` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Total final = subtotal − descuentos + impuestos. |
+| `inventory_operation_id` | `UUID` | REF, CK, nullable | Operación de entrada aplicada en Inventory al confirmar; se usa para su reverso exacto. Nula en `DRAFT`. |
+| `created_by_user_id` | `UUID` | REF, NN | Usuario operativo creador. |
+| `cancelled_by_user_id` | `UUID` | REF, CK, nullable | Usuario operativo que anuló. |
+| `cancelled_at` | `TIMESTAMPTZ` | CK, nullable | Anulación. |
+| `cancellation_reason` | `TEXT` | CK, nullable | Motivo. |
+| `version` | `INTEGER` | CK, NN, DEFAULT `1` | Control concurrente. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que creó el registro (D1). |
+| `updated_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Última modificación. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` de la identidad que hizo la última modificación (D1; el conciliador usa `system:purchase-reconciler`). |
 
-### Reglas financieras
+### Reglas y restricciones
 
-- La condición seleccionada debe pertenecer al mismo `CompanySupplier` y estar activa al confirmar la compra.
-- Para `CASH`, `payment_terms_days_snapshot = 0` y `due_date` corresponde a la fecha de negocio definida por la política operativa.
-- Para `CREDIT` o `FINANCING`, `due_date` se calcula a partir del plazo pactado y se conserva como snapshot histórico.
-- Al confirmar la compra `Purchase Service` publica el hecho necesario para que Finance Service cree o actualice la obligación correspondiente.
+- Ciclo de vida (`ck_purchases_lifecycle`): `DRAFT` sin número, secuencia, `inventory_operation_id` ni datos de anulación; `CONFIRMED` con todos ellos salvo la anulación; `CANCELLED` con datos de anulación y, si estuvo confirmada, su número e `inventory_operation_id`.
+- Transiciones: `DRAFT → CONFIRMED`, `DRAFT → CANCELLED`, `CONFIRMED → CANCELLED`. Una compra fuera de `DRAFT` solo admite su anulación; número, secuencia e `inventory_operation_id` no cambian una vez asignados (`tr_purchases_frozen`). Nunca se elimina (`tr_purchases_no_delete`, `tr_purchases_no_truncate`).
+- Número único por empresa (`uq_purchases_company_number`, índice parcial `WHERE number IS NOT NULL`).
+- `total = subtotal − discount_total + tax_total`; montos no negativos; `due_date ≥ operation_date`; `CASH` con plazo `0`.
+- La condición seleccionada pertenece al mismo `CompanySupplier`, está activa, vigente en `operation_date` y en la moneda de la compra.
+- Para `CASH`, `due_date = operation_date`; para `CREDIT` o `FINANCING`, `operation_date` + plazo, conservado como snapshot.
+- Un intento de confirmación refresca y congela los snapshots y puede incrementar `version` aunque la compra no llegue a `CONFIRMED`.
+- La publicación del hecho a Finance Service queda fuera del MVP de Purchase (Finance no existe); la compra conserva `due_date` y la condición para la integración futura.
 - `Purchase Service` no administra el saldo de cartera.
 
 ## 7.2 PurchaseDetail
@@ -3027,47 +3030,43 @@ Si algo falla la compra no queda confirmada parcialmente.
 
 ### Descripción
 
-Representa una línea de compra.
-
-Conserva producto, cantidad, costo, descuentos, impuestos y total.
-
-Los snapshots del producto garantizan que el documento histórico no cambie si el catálogo se modifica después.
+Representa una línea de compra con producto, cantidad, costo, descuento, impuesto y total. Los snapshots garantizan que el documento histórico no cambie si el catálogo se modifica después: son provisionales en el borrador y se congelan al confirmar.
 
 ### Atributos
 
-| Atributo                            | Tipo            | Regla           | Descripción                                                                                   |
-| ----------------------------------- | --------------- | --------------- | --------------------------------------------------------------------------------------------- |
-| `id`                                | `UUID`          | PK, NN          | Identificador.                                                                                |
-| `purchase_id`                       | `UUID`          | FK, NN          | Compra.                                                                                       |
-| `line_number`                       | `SMALLINT`      | NN              | Posición.                                                                                     |
-| `company_product_id`                | `UUID`          | REF, NN         | Producto empresarial.                                                                         |
-| `company_product_presentation_id`   | `UUID`          | REF, nullable   | Presentación empresarial utilizada en la compra.                                              |
-| `supplier_product_id`               | `UUID`          | REF, nullable   | Relación comercial proveedor-producto utilizada.                                              |
-| `supplier_lead_time_snapshot_hours` | `NUMERIC(12,2)` | nullable        | Lead time esperado del proveedor conservado al formalizar la línea.                           |
-| `product_code_snapshot`             | `VARCHAR(80)`   | NN              | Código histórico.                                                                             |
-| `product_name_snapshot`             | `VARCHAR(200)`  | NN              | Nombre histórico.                                                                             |
-| `presentation_code_snapshot`        | `VARCHAR(80)`   | nullable        | Código histórico de la presentación utilizada.                                                |
-| `presentation_name_snapshot`        | `VARCHAR(160)`  | nullable        | Nombre histórico de la presentación utilizada.                                                |
-| `base_quantity_factor_snapshot`     | `NUMERIC(18,8)` | NN, DEFAULT `1` | Factor histórico utilizado para convertir la cantidad comprada a la unidad base del producto. |
-| `unit_code_snapshot`                | `VARCHAR(20)`   | NN              | Unidad histórica.                                                                             |
-| `quantity`                          | `NUMERIC(18,4)` | NN              | Cantidad.                                                                                     |
-| `unit_cost`                         | `NUMERIC(18,4)` | NN              | Costo unitario.                                                                               |
-| `discount_amount`                   | `NUMERIC(18,2)` | NN, DEFAULT `0` | Descuento.                                                                                    |
-| `tax_amount`                        | `NUMERIC(18,2)` | NN, DEFAULT `0` | Impuesto.                                                                                     |
-| `subtotal`                          | `NUMERIC(18,2)` | NN              | Subtotal.                                                                                     |
-| `total`                             | `NUMERIC(18,2)` | NN              | Total.                                                                                        |
-| `created_at`                        | `TIMESTAMPTZ`   | NN              | Creación.                                                                                     |
-| `updated_at`                        | `TIMESTAMPTZ`   | NN              | Modificación.                                                                                 |
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `id` | `UUID` | PK, NN | Identificador. |
+| `purchase_id` | `UUID` | FK, NN | Compra. |
+| `line_number` | `SMALLINT` | UQ (con `purchase_id`), CK, NN | Posición (1–100); única en la compra. |
+| `company_product_id` | `UUID` | REF, NN | Producto empresarial (con control de inventario). |
+| `company_product_presentation_id` | `UUID` | REF, CK, nullable | Presentación empresarial utilizada en la compra. |
+| `supplier_product_id` | `UUID` | REF, nullable | Relación comercial proveedor-producto utilizada. |
+| `supplier_lead_time_snapshot_hours` | `NUMERIC(12,2)` | CK, nullable | Lead time esperado del proveedor al formalizar la línea. |
+| `product_code_snapshot` | `VARCHAR(80)` | NN | Código histórico. |
+| `product_name_snapshot` | `VARCHAR(200)` | NN | Nombre histórico. |
+| `presentation_code_snapshot` | `VARCHAR(80)` | CK, nullable | Código histórico de la presentación utilizada. |
+| `presentation_name_snapshot` | `VARCHAR(160)` | CK, nullable | Nombre histórico de la presentación utilizada. |
+| `base_quantity_factor_snapshot` | `NUMERIC(18,8)` | CK, NN, DEFAULT `1` | Factor histórico a la unidad base (`base_quantity` de la presentación global; `1` sin presentación). |
+| `unit_code_snapshot` | `VARCHAR(20)` | NN | Código histórico de la unidad base del producto. |
+| `quantity` | `NUMERIC(18,4)` | CK, NN | Cantidad en la unidad de compra. |
+| `unit_cost` | `NUMERIC(18,4)` | CK, NN | Costo unitario en la unidad de compra. |
+| `discount_amount` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Descuento (≤ subtotal). |
+| `tax_amount` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Impuesto. |
+| `subtotal` | `NUMERIC(18,2)` | CK, NN | Subtotal = cantidad × costo (2 decimales). |
+| `total` | `NUMERIC(18,2)` | CK, NN | Total = subtotal − descuento + impuesto. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que creó el registro (D1). |
+| `updated_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Última modificación. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` de la identidad que hizo la última modificación (D1; el conciliador usa `system:purchase-reconciler`). |
 
 ### Reglas y restricciones
 
-- El número de línea es único dentro de la compra.
-- Cantidad mayor que cero.
-- Valores monetarios no negativos.
-- Cuando exista `company_product_presentation_id`, debe pertenecer al mismo `CompanyProduct` indicado por `company_product_id`.
-- `base_quantity_factor_snapshot` debe ser mayor que cero.
-- La confirmación de la compra debe convertir la cantidad adquirida a la unidad base utilizando `base_quantity_factor_snapshot` antes de generar el movimiento de inventario.
-- Los snapshots de presentación no deben modificarse aunque posteriormente cambie la definición de la presentación empresarial o global.
+- Número de línea 1–100, único dentro de la compra; a lo sumo 100 líneas.
+- Cantidad mayor que cero; montos no negativos; `discount_amount ≤ subtotal`; `total = subtotal − discount_amount + tax_amount`.
+- Sin presentación, `base_quantity_factor_snapshot = 1` y sin snapshots de presentación; con presentación, sus snapshots son obligatorios. La presentación pertenece al mismo `CompanyProduct`.
+- La confirmación convierte la cantidad a unidad base con `base_quantity_factor_snapshot` (≤ 4 decimales) y envía a Inventory el costo por unidad base `ROUND_HALF_UP((subtotal − discount_amount) / cantidad_base, 4)`, sin impuestos.
+- Solo se modifican o eliminan mientras la compra está en `DRAFT` (`tr_purchase_details_draft_only`).
 
 ## 7.3 PurchaseSequence
 
@@ -3077,33 +3076,37 @@ Los snapshots del producto garantizan que el documento histórico no cambie si e
 
 ### Descripción
 
-Controla exclusivamente la numeración oficial de documentos de compras.
-
-La secuencia se actualiza atómicamente para evitar números duplicados.
-
-El frontend no decide el número ya que la configuración puede variar por empresa, sucursal, tipo documental y serie.
+Controla la numeración oficial de compras. El frontend no decide el número. El contador vive en `purchase_sequence_counters` (§7.6), uno por período.
 
 ### Atributos
 
-| Atributo         | Tipo          | Regla              | Descripción                    |
-| ---------------- | ------------- | ------------------ | ------------------------------ |
-| `id`             | `UUID`        | PK, NN             | Identificador.                 |
-| `company_id`     | `UUID`        | REF, NN            | Empresa.                       |
-| `branch_id`      | `UUID`        | REF, nullable      | Sucursal.                      |
-| `document_kind`  | `VARCHAR(40)` | NN                 | Tipo documental.               |
-| `series_code`    | `VARCHAR(40)` | NN                 | Serie.                         |
-| `prefix`         | `VARCHAR(20)` | NN                 | Prefijo.                       |
-| `separator`      | `VARCHAR(5)`  | NN                 | Separador.                     |
-| `current_number` | `BIGINT`      | NN                 | Último número usado.           |
-| `initial_number` | `BIGINT`      | NN                 | Número inicial.                |
-| `maximum_number` | `BIGINT`      | nullable           | Máximo.                        |
-| `number_length`  | `SMALLINT`    | NN                 | Cantidad de dígitos.           |
-| `reset_policy`   | `VARCHAR(20)` | NN, CK             | `NEVER`, `YEARLY` o `MONTHLY`. |
-| `last_reset_at`  | `TIMESTAMPTZ` | nullable           | Último reinicio.               |
-| `is_active`      | `BOOLEAN`     | NN, DEFAULT `TRUE` | Estado.                        |
-| `version`        | `INTEGER`     | NN, DEFAULT `1`    | Control concurrente.           |
-| `created_at`     | `TIMESTAMPTZ` | NN                 | Creación.                      |
-| `updated_at`     | `TIMESTAMPTZ` | NN                 | Modificación.                  |
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `id` | `UUID` | PK, NN | Identificador. |
+| `company_id` | `UUID` | REF, NN | Empresa. |
+| `branch_id` | `UUID` | REF, nullable | Sucursal; nula para la secuencia de la empresa. |
+| `document_kind` | `VARCHAR(40)` | CK, NN | Tipo documental (`PURCHASE`). |
+| `series_code` | `VARCHAR(40)` | UQ (con empresa, sucursal y tipo), CK, NN | Serie. |
+| `prefix` | `VARCHAR(20)` | CK, NN | Prefijo. |
+| `separator` | `VARCHAR(5)` | CK, NN | Separador. |
+| `initial_number` | `BIGINT` | CK, NN | Primer número de cada período. |
+| `maximum_number` | `BIGINT` | CK, nullable | Máximo por período. |
+| `number_length` | `SMALLINT` | CK, NN | Cantidad de dígitos. |
+| `reset_policy` | `VARCHAR(20)` | CK, NN | `NEVER`, `YEARLY` o `MONTHLY`: contador continuo, por año o por año-mes. |
+| `is_active` | `BOOLEAN` | UQ parcial (una activa por empresa, sucursal y tipo), NN, DEFAULT `true` | Estado. |
+| `version` | `INTEGER` | CK, NN, DEFAULT `1` | Control concurrente. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que creó el registro (D1). |
+| `updated_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Última modificación. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` de la identidad que hizo la última modificación (D1; el conciliador usa `system:purchase-reconciler`). |
+
+### Reglas y restricciones
+
+- A lo sumo una secuencia activa por empresa, sucursal (o ninguna) y tipo documental (`uq_purchase_sequences_active`); la serie no se repite en el mismo alcance (`uq_purchase_sequences_series`). La secuencia de la sucursal tiene prioridad sobre la de la empresa.
+- `document_kind = 'PURCHASE'`; `maximum_number ≥ initial_number`.
+- Tras el primer número asignado son inmutables `branch_id`, `series_code`, `prefix`, `separator`, `initial_number`, `number_length` y `reset_policy`.
+- La secuencia está agotada para un período cuando el siguiente número supera `maximum_number` o ya no puede representarse con `number_length` dígitos.
+- Nunca se elimina (`tr_purchase_sequences_no_delete`); se desactiva.
 
 ## 7.4 PurchaseOperation
 
@@ -3113,28 +3116,38 @@ El frontend no decide el número ya que la configuración puede variar por empre
 
 ### Descripción
 
-Sigue una confirmación o anulación distribuida.
-
-Compra e inventario están en bases diferentes por lo que no existe una sola transacción PostgreSQL.
-
-Esta entidad permite saber si la operación está pendiente, fue completada o falló y evita confirmaciones duplicadas.
+Sigue una confirmación o anulación distribuida (compra e inventario están en bases diferentes). Se registra `PENDING` antes de llamar a Inventory; su `id` es la clave de operación enviada y se reutiliza en todo reintento. La resuelven la solicitud, su reintento con la misma clave o el conciliador, que consulta Inventory por clave.
 
 ### Atributos
 
-| Atributo          | Tipo           | Regla    | Descripción                        |
-| ----------------- | -------------- | -------- | ---------------------------------- |
-| `id`              | `UUID`         | PK, NN   | Identificador de operación.        |
-| `company_id`      | `UUID`         | REF, NN  | Empresa.                           |
-| `purchase_id`     | `UUID`         | FK, NN   | Compra.                            |
-| `operation_type`  | `VARCHAR(20)`  | NN, CK   | `CONFIRM` o `CANCEL`.              |
-| `idempotency_key` | `VARCHAR(150)` | NN, UQ   | Clave idempotente.                 |
-| `status`          | `VARCHAR(20)`  | NN, CK   | `PENDING`, `SUCCEEDED` o `FAILED`. |
-| `correlation_id`  | `UUID`         | NN       | Flujo distribuido.                 |
-| `error_code`      | `VARCHAR(100)` | nullable | Código de error.                   |
-| `error_details`   | `JSONB`        | nullable | Detalle.                           |
-| `started_at`      | `TIMESTAMPTZ`  | NN       | Inicio.                            |
-| `updated_at`      | `TIMESTAMPTZ`  | NN       | Actualización.                     |
-| `completed_at`    | `TIMESTAMPTZ`  | nullable | Finalización.                      |
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `id` | `UUID` | PK, NN | Identificador; es la clave de operación enviada a Inventory. |
+| `company_id` | `UUID` | REF, NN | Empresa. |
+| `purchase_id` | `UUID` | FK, UQ parcial (una `PENDING`), NN | Compra. |
+| `operation_type` | `VARCHAR(20)` | CK, NN | `CONFIRM` o `CANCEL`. |
+| `idempotency_key` | `VARCHAR(150)` | UQ, CK, NN | Clave idempotente del cliente, ligada a compra, tipo y `created_by`. |
+| `status` | `VARCHAR(20)` | CK, NN | `PENDING`, `SUCCEEDED` o `FAILED`. |
+| `correlation_id` | `UUID` | NN | Flujo distribuido. |
+| `application_user_id` | `UUID` | REF, NN | Usuario operativo que inició la operación; se reenvía a Inventory en todo reintento, conciliación y reverso compensatorio. Inmutable. |
+| `reason` | `TEXT` | CK, nullable | Motivo de la anulación (obligatorio en `CANCEL`). Inmutable. |
+| `error_code` | `VARCHAR(100)` | CK, nullable | Código de error; obligatorio si `FAILED`. |
+| `error_details` | `JSONB` | nullable | Solo información de errores: el error original y, tras compensar, `compensation_operation_id`. |
+| `inventory_operation_id` | `UUID` | REF, CK, nullable | Operación aplicada en Inventory: entrada (`CONFIRM`) o reverso (`CANCEL`). |
+| `started_at` | `TIMESTAMPTZ` | NN | Inicio. |
+| `completed_at` | `TIMESTAMPTZ` | CK, nullable | Finalización; nula solo si `PENDING`. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que creó el registro (D1). |
+| `updated_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Última modificación. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` de la identidad que hizo la última modificación (D1; el conciliador usa `system:purchase-reconciler`). |
+
+### Reglas y restricciones
+
+- Clave idempotente única (`uq_purchase_operations_idempotency_key`); a lo sumo una operación `PENDING` por compra (`uq_purchase_operations_pending`).
+- `error_code` obligatorio si `FAILED`; `completed_at` nulo solo si `PENDING`; `SUCCEEDED` de `CONFIRM` exige `inventory_operation_id`.
+- `CANCEL` exige `reason` (`ck_purchase_operations_cancel_reason`).
+- Una operación terminal no cambia; su identidad, clave, `created_by`, `application_user_id` y `reason` nunca cambian; `inventory_operation_id` no se reemplaza (`tr_purchase_operations_terminal`). Nunca se elimina.
+- Compensación: si Inventory aplicó la entrada pero la numeración ya no es posible, la operación queda `PENDING` con `error_code = COMPENSATION_PENDING` hasta revertir la entrada (con el `application_user_id` de la operación) y luego `FAILED`.
 
 ## 7.5 PurchaseLifecycleEvent
 
@@ -3144,38 +3157,66 @@ Esta entidad permite saber si la operación está pendiente, fue completada o fa
 
 ### Descripción
 
-Representa cada hito importante que ocurre durante el ciclo de vida logístico de una compra especialmente los momentos que necesitamos registrar para calcular tiempos reales de abastecimiento, recepción y procesamiento
-
-Los hitos iniciales son:
-
-- `ORDERED`: pedido enviado o formalizado con el proveedor.
-- `SUPPLIER_DISPATCHED`: proveedor informa o registra despacho.
-- `ARRIVED`: mercancía llega al punto de recepción.
-- `RECEIVED`: mercancía es recibida y validada.
-- `AVAILABLE_FOR_SALE`: mercancía queda disponible para uso o venta.
+Representa cada hito del ciclo logístico de una compra: `ORDERED`, `SUPPLIER_DISPATCHED`, `ARRIVED`, `RECEIVED`, `AVAILABLE_FOR_SALE`.
 
 ### Atributos
 
-| Atributo              | Tipo          | Regla    | Descripción                                   |
-| --------------------- | ------------- | -------- | --------------------------------------------- |
-| `id`                  | `UUID`        | PK, NN   | Identificador.                                |
-| `company_id`          | `UUID`        | REF, NN  | Empresa.                                      |
-| `purchase_id`         | `UUID`        | FK, NN   | Compra.                                       |
-| `event_type`          | `VARCHAR(40)` | NN, CK   | Tipo de hito.                                 |
-| `occurred_at`         | `TIMESTAMPTZ` | NN       | Momento real del hito.                        |
-| `recorded_by_user_id` | `UUID`        | REF, NN  | Usuario que registró o confirmó el hito.      |
-| `source`              | `VARCHAR(30)` | NN, CK   | `USER`, `SUPPLIER`, `INTEGRATION` o `SYSTEM`. |
-| `notes`               | `TEXT`        | nullable | Observaciones.                                |
-| `created_at`          | `TIMESTAMPTZ` | NN       | Persistencia del evento.                      |
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `id` | `UUID` | PK, NN | Identificador. |
+| `company_id` | `UUID` | REF, NN | Empresa. |
+| `purchase_id` | `UUID` | FK, NN | Compra. |
+| `event_type` | `VARCHAR(40)` | CK, NN | Tipo de hito. |
+| `occurred_at` | `TIMESTAMPTZ` | NN | Momento real del hito. |
+| `recorded_by_user_id` | `UUID` | REF, NN | Usuario operativo que registró el hito. |
+| `source` | `VARCHAR(30)` | CK, NN | `USER`, `SUPPLIER`, `INTEGRATION` o `SYSTEM`. |
+| `notes` | `TEXT` | nullable | Observaciones. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Persistencia del evento. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que lo registró (D1). |
 
 ### Reglas y restricciones
 
-- Los eventos son inmutables.
-- Un error se corrige mediante un nuevo evento de corrección definido por la política funcional y no editando el histórico.
-- Debe impedirse una secuencia temporal imposible entre hitos válidos.
-- Para el cálculo estándar, el lead time total se obtiene entre `ORDERED` y `AVAILABLE_FOR_SALE`.
-- El lead time del proveedor para tiempo logístico, recepción y procesamiento interno se derivan de los intervalos entre hitos.
-- El lead time real nunca sobrescribe `SupplierProduct.expected_supplier_lead_time_hours`.
+- Los eventos son inmutables (`tr_purchase_lifecycle_events_no_update`, `…_no_delete`, `…_no_truncate`).
+- Un error se corrige registrando otro hito del mismo tipo: el vigente es el último registrado (`created_at`, `id`).
+- Orden temporal entre vigentes: `ORDERED ≤ SUPPLIER_DISPATCHED ≤ ARRIVED ≤ RECEIVED ≤ AVAILABLE_FOR_SALE`; `occurred_at` no futuro (tolerancia de 5 minutos). `RECEIVED` y `AVAILABLE_FOR_SALE` solo en compras `CONFIRMED`; ninguno en `CANCELLED`.
+- El lead time total se obtiene entre `ORDERED` y `AVAILABLE_FOR_SALE` al consultar; nunca sobrescribe `SupplierProduct.expected_supplier_lead_time_hours`.
+
+## 7.6 PurchaseSequenceCounter
+
+**Tabla:** `purchase_sequence_counters`  
+**Naturaleza:** infraestructura transaccional privada.  
+**Servicio propietario:** Purchase Service.
+
+### Descripción
+
+Contador independiente por secuencia y período. La asignación es una sola sentencia `INSERT … ON CONFLICT DO UPDATE … RETURNING` dentro de la transacción que confirma la compra: los concurrentes del mismo período se serializan y un `ROLLBACK` no consume número. Una compra de un período anterior continúa el contador de su período.
+
+### Atributos
+
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `purchase_sequence_id` | `UUID` | PK, FK, NN | Secuencia. |
+| `period_key` | `VARCHAR(6)` | PK, CK, NN | Período: `''` (`NEVER`), `YYYY` (`YEARLY`) o `YYYYMM` (`MONTHLY`). |
+| `current_number` | `BIGINT` | CK, NN | Último número asignado en el período; solo crece. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que creó el registro (D1). |
+| `updated_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Última modificación. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` de la identidad que hizo la última modificación (D1; el conciliador usa `system:purchase-reconciler`). |
+
+### Reglas y restricciones
+
+- Llave primaria `(purchase_sequence_id, period_key)`.
+- Solo crece y no se elimina (`tr_purchase_sequence_counters_monotonic`, `tr_purchase_sequence_counters_no_delete`).
+
+> **Reconciliación (2026-10-07):** sección 7 alineada con `specs/014-purchase-core` (Purchase Service,
+> BR-14): `inventory_operation_id` en compras y operaciones (C-03, P-05); usuario operativo y motivo
+> originales de cada operación en columnas propias e inmutables (D-02, D-07); columnas de auditoría
+> `created_*`/`updated_*` con el `sub` (D1) en todas las tablas; contador independiente por período en
+> `purchase_sequence_counters` (§7.6) en lugar de `current_number`/`last_reset_at` (C-06, P-04); una
+> secuencia activa por empresa, sucursal y tipo (P-02); `document_kind = PURCHASE`; número con el período
+> y único por empresa; ciclo de vida e inmutabilidad en la base; una operación `PENDING` por compra;
+> hitos con vigencia por tipo. La publicación a Finance queda fuera del MVP (C-02). Los nombres de
+> restricciones, índices y triggers están en el `data-model.md` de esa feature.
 
 # 8. Sales DB
 

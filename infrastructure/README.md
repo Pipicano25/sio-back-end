@@ -68,7 +68,7 @@ pedido) y, cuando existe, su contenedor de aplicación (puertos en
 | `operational-context-service` | `operational-context-db`, `operational-context-service`, `operational-context-test-db` (perfil `test`) |
 | `payment-reference-service` | `payment-reference-db`, `payment-reference-service`, `payment-reference-test-db` (perfil `test`) |
 | `commercial-relationship-service` | `commercial-relationship-db`, `commercial-relationship-service`, `commercial-relationship-test-db` (perfil `test`) |
-| `purchase-service` | `purchase-db` |
+| `purchase-service` | `purchase-db`, `purchase-service`, `purchase-audit-outbox-worker`, `purchase-reconciler`, `purchase-test-db` (perfil `test`) |
 | `sales-service` | `sales-db` |
 | `inventory-service` | `inventory-db`, `inventory-service`, `inventory-audit-outbox-worker`, `inventory-test-db` (perfil `test`) |
 | `audit-service` | `audit-db`, `audit-service`, `audit-test-db` (perfil `test`) |
@@ -134,8 +134,8 @@ El realm incluye:
 - Audience mapper
 - Configuración PKCE S256
 - Clientes técnicos con cuenta de servicio (`party-identity-service`, `operational-context-service`,
-  `commercial-relationship-service`, `inventory-service`, y los clientes de pruebas `audit-test-emitter` e
-  `inventory-test-operator`) y sus roles
+  `commercial-relationship-service`, `inventory-service`, `purchase-service`, y los clientes de pruebas
+  `audit-test-emitter` e `inventory-test-operator`) y sus roles
 - Usuarios de prueba (`admin.test`, `supervisor.test`, `compras.test`, `ventas.test`,
   `reportes.test`, `consulta.test`, `inventario.test`) con `id` fijo
 

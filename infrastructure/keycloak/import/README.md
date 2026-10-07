@@ -47,6 +47,16 @@ asignándolos en la plantilla. Consultar auditoría de una empresa exige además
   (los cinco permisos `perm:inventory:*` de la 012 y las cinco lecturas de la 013; lo usan las
   pruebas de integración de inventory-service).
   Solo en `.env`.
+- `${PURCHASE_SERVICE_CLIENT_SECRET}`: secreto del cliente técnico `purchase-service` (feature 014,
+  R-02): lectura técnica en Operational Context (`companies`, `branches`, `application_users`),
+  Commercial Relationship (proveedores, condiciones de pago, productos, presentaciones y productos de
+  proveedor), Product Catalog (`products`, `units-of-measure`), Party Identity
+  (`organization_identities`) y Payment Reference (`global_payment_condition_types`), con
+  `platform:lookup` en Operational Context y Commercial Relationship; `perm:inventory:entries:create`,
+  `perm:inventory:movements:read` y `perm:inventory:platform:lookup` en Inventory; y
+  `perm:audit:audit-events:create` para su `audit-outbox-worker`. Nunca escribe compras: las rutas de
+  purchase-service exigen usuarios humanos. Los grupos no cambian (`compras` ya tiene
+  `perm:purchase:all:all`). Solo en `.env`.
 
 Permisos de inventario (feature 012): `perm:inventory:entries:create`, `perm:inventory:outputs:create`
 (solo cuentas de servicio: Purchase, Sales y el cliente de pruebas), `perm:inventory:balances:read`,
