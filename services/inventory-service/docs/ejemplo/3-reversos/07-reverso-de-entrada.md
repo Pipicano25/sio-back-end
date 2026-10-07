@@ -22,7 +22,7 @@ Ejecuta: `inventory-test-operator` (cuenta de servicio).
 
 ### Por qué
 
-- Con el saldo de nuevo en 10, el reverso deja el saldo en 0 y copia el `unit_cost` original.
+- Con la venta revertida, la capa de la entrada vuelve a estar completa: el reverso la retira entera, deja el saldo en 0 e informa el costo de la entrada.
 
 ## Permiso
 
@@ -86,13 +86,18 @@ Estado `201`.
       "new_balance": "0.0000",
       "balance_sequence": 4,
       "unit_cost": "2500.5000",
+      "movement_value": "25005.00",
+      "cost_known": true,
       "reversed_movement_id": "<asignado por Inventory>"
     }
   ],
   "balances": [
     {
       "company_product_id": "d44d0000-0000-4000-8000-000000000001",
-      "quantity": "0.0000"
+      "quantity": "0.0000",
+      "inventory_value": "0.00",
+      "average_unit_cost": null,
+      "has_unknown_cost": false
     }
   ]
 }

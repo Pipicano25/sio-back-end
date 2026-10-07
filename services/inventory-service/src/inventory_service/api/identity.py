@@ -104,3 +104,30 @@ def require_service_account(request: Request) -> ServiceIdentity:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=FORBIDDEN_DETAIL)
 
     return ServiceIdentity(subject=identity.subject, client_id=identity.client_id)
+
+
+@dataclass(frozen=True, slots=True)
+class HumanIdentity:
+    """Usuario humano que registra ajustes, opera conteos o configura políticas (013 DS-04)."""
+
+    subject: str
+
+
+def require_human_user(request: Request) -> HumanIdentity:
+    """Dependencia de las rutas 11, 14–18, 22–23 y 26–28: una cuenta de servicio recibe `403`.
+
+    Se responde el mismo `403` que la falta de permiso, aunque la cuenta tenga el permiso
+    por comodín (RC-11); el motivo queda solo en el log.
+    """
+    identity = get_identity(request)
+
+    if identity.client_id is not None or not identity.subject:
+        logger.warning(
+            "Operación de usuario denegada: el token es de una cuenta de servicio sujeto=%s metodo=%s ruta=%s",
+            identity.subject,
+            request.method,
+            request.url.path,
+        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=FORBIDDEN_DETAIL)
+
+    return HumanIdentity(subject=identity.subject)

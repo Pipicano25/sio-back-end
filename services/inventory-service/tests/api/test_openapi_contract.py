@@ -20,6 +20,29 @@ EXPECTED_OPERATIONS = {
     ("/api/v1/companies/{company_id}/branches/{branch_id}/kardex/{company_product_id}", "get"),
     ("/api/v1/companies/{company_id}/inventory-operations/{operation_id}", "get"),
     ("/api/v1/companies/{company_id}/inventory-operations/by-key/{operation_key}", "get"),
+    # 013: ajustes (11–13), conteos (14–20), políticas (21–28).
+    ("/api/v1/companies/{company_id}/inventory-adjustments", "post"),
+    ("/api/v1/companies/{company_id}/inventory-adjustments", "get"),
+    ("/api/v1/companies/{company_id}/inventory-adjustments/{adjustment_id}", "get"),
+    ("/api/v1/companies/{company_id}/inventory-counts", "post"),
+    ("/api/v1/companies/{company_id}/inventory-counts/{count_id}/start", "post"),
+    ("/api/v1/companies/{company_id}/inventory-counts/{count_id}/details/{company_product_id}", "put"),
+    ("/api/v1/companies/{company_id}/inventory-counts/{count_id}/complete", "post"),
+    ("/api/v1/companies/{company_id}/inventory-counts/{count_id}/cancel", "post"),
+    ("/api/v1/companies/{company_id}/inventory-counts", "get"),
+    ("/api/v1/companies/{company_id}/inventory-counts/{count_id}", "get"),
+    ("/api/v1/companies/{company_id}/inventory-policy", "get"),
+    ("/api/v1/companies/{company_id}/inventory-policy", "post"),
+    ("/api/v1/companies/{company_id}/inventory-policy", "put"),
+    ("/api/v1/companies/{company_id}/inventory-policies", "get"),
+    ("/api/v1/companies/{company_id}/inventory-policies/{policy_id}", "get"),
+    ("/api/v1/companies/{company_id}/inventory-policies", "post"),
+    ("/api/v1/companies/{company_id}/inventory-policies/{policy_id}", "put"),
+    ("/api/v1/companies/{company_id}/inventory-policies/{policy_id}/deactivate", "post"),
+    # 013: valoración (rutas 29–31).
+    ("/api/v1/companies/{company_id}/branches/{branch_id}/valuation", "get"),
+    ("/api/v1/companies/{company_id}/branches/{branch_id}/valuation/{company_product_id}/layers", "get"),
+    ("/api/v1/companies/{company_id}/inventory-movements/{movement_id}/cost-consumptions", "get"),
     ("/health/live", "get"),
     ("/health/ready", "get"),
 }
@@ -27,6 +50,8 @@ EXPECTED_OPERATIONS = {
 OPERATION_STATUSES = {"200", "201", "400", "401", "403", "409", "422", "503"}
 REVERSAL_STATUSES = OPERATION_STATUSES | {"404"}
 QUERY_STATUSES = {"200", "401", "403", "404", "422", "503"}
+WRITE_013_STATUSES = {"401", "403", "404", "409", "422", "503"}
+"""Rutas de usuario humano de 013 (11, 14–18, 22–23, 26–28)."""
 
 
 @pytest.fixture
@@ -60,6 +85,8 @@ def test_each_operation_publishes_its_contract_statuses(schema, path, method) ->
         expected = REVERSAL_STATUSES
     elif path in ("/api/v1/inventory-entries", "/api/v1/inventory-outputs"):
         expected = OPERATION_STATUSES
+    elif method in ("post", "put") and not path.endswith("/balances/lookup"):
+        expected = WRITE_013_STATUSES
     else:
         expected = QUERY_STATUSES
     assert expected <= responses, (path, expected - responses)
@@ -113,6 +140,16 @@ def test_error_codes_match_errors_contract() -> None:
         "INVENTORY.ALREADY_REVERSED": 409,
         "INVENTORY.REVERSAL_NOT_ALLOWED": 409,
         "INVENTORY.DEPENDENCY_UNAVAILABLE": 503,
+        # 013 (`contracts/errors.md`).
+        "INVENTORY.BRANCH_ACCESS_DENIED": 403,
+        "INVENTORY.ENTRY_LAYER_CONSUMED": 409,
+        "INVENTORY.OUTPUT_NOT_VALUED": 409,
+        "INVENTORY.COUNT_ALREADY_IN_PROGRESS": 409,
+        "INVENTORY.COUNT_NOT_IN_PROGRESS": 409,
+        "INVENTORY.INVALID_COUNT_TRANSITION": 409,
+        "INVENTORY.VERSION_CONFLICT": 409,
+        "INVENTORY.POLICY_ALREADY_EXISTS": 409,
+        "INVENTORY.ACTIVE_POLICY_EXISTS": 409,
     }
     for code, status in contract.items():
         assert produced.get(code) == status, code

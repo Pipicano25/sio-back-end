@@ -53,6 +53,9 @@ Estado `200`.
   "company_product_id": "d44d0000-0000-4000-8000-000000000001",
   "quantity": "7.0000",
   "last_movement_at": "<asignado por Inventory>",
-  "balance_sequence": 2
+  "balance_sequence": 2,
+  "inventory_value": "17503.50",
+  "average_unit_cost": "2500.5000",
+  "has_unknown_cost": false
 }
 ```

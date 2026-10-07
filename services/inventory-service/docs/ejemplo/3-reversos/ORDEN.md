@@ -1,6 +1,6 @@
 # Ejercicio 3: Reversos
 
-Purchase y Sales anulan documentos confirmados revirtiendo la operación completa con `company_id` obligatorio: reverso de una entrada sin saldo suficiente, reverso de una salida, reverso repetido y reverso pedido desde otra empresa.
+Purchase y Sales anulan documentos confirmados revirtiendo la operación completa con `company_id` obligatorio: reverso de una entrada cuya capa ya se consumió, reverso de una salida, reverso repetido y reverso pedido desde otra empresa.
 
 Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente: se ejecuta en una base nueva.
 

@@ -9,7 +9,7 @@ from uuid import UUID
 from pydantic import AwareDatetime, BaseModel, ConfigDict, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
-from inventory_service.domain.quantities import format_decimal
+from inventory_service.domain.quantities import format_decimal, format_money, optional_decimal, optional_money
 
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
@@ -76,6 +76,9 @@ class BalanceResponse(BaseModel):
     quantity: str
     last_movement_at: datetime | None
     balance_sequence: int
+    inventory_value: str
+    average_unit_cost: str | None
+    has_unknown_cost: bool
 
     @classmethod
     def of(cls, company_id: UUID, branch_id: UUID, product_id: UUID, row: Any | None) -> BalanceResponse:
@@ -87,6 +90,9 @@ class BalanceResponse(BaseModel):
                 quantity="0.0000",
                 last_movement_at=None,
                 balance_sequence=0,
+                inventory_value="0.00",
+                average_unit_cost=None,
+                has_unknown_cost=False,
             )
         return cls(
             company_id=row.company_id,
@@ -95,6 +101,9 @@ class BalanceResponse(BaseModel):
             quantity=format_decimal(row.quantity),
             last_movement_at=row.updated_at if row.version > 0 else None,
             balance_sequence=row.version,
+            inventory_value=format_money(row.inventory_value),
+            average_unit_cost=optional_decimal(row.average_unit_cost),
+            has_unknown_cost=row.has_unknown_cost,
         )
 
 
@@ -122,6 +131,8 @@ class KardexMovement(BaseModel):
     new_balance: str
     balance_sequence: int
     unit_cost: str | None
+    movement_value: str | None
+    cost_known: bool | None
     reversed_movement_id: UUID | None
     origin_type: str
     origin_id: UUID
@@ -144,7 +155,9 @@ class KardexMovement(BaseModel):
             previous_balance=format_decimal(row.previous_balance),
             new_balance=format_decimal(row.new_balance),
             balance_sequence=row.balance_sequence,
-            unit_cost=format_decimal(row.unit_cost) if row.unit_cost is not None else None,
+            unit_cost=optional_decimal(row.unit_cost),
+            movement_value=optional_money(row.movement_value),
+            cost_known=row.cost_known,
             reversed_movement_id=row.reversed_movement_id,
             origin_type=row.origin_type,
             origin_id=row.origin_id,

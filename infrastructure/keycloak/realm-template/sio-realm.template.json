@@ -1454,6 +1454,42 @@
         {
           "name": "perm:inventory:platform:lookup",
           "description": "Leer saldos y movimientos de cualquier empresa sin membresía (solo cuentas de servicio consumidoras)"
+        },
+        {
+          "name": "perm:inventory:adjustments:create",
+          "description": "Registrar ajustes de inventario en las sucursales asignadas (solo usuarios humanos)"
+        },
+        {
+          "name": "perm:inventory:adjustments:read",
+          "description": "Consultar los ajustes de inventario de las empresas del usuario"
+        },
+        {
+          "name": "perm:inventory:counts:create",
+          "description": "Crear, iniciar, registrar, completar y cancelar conteos físicos en las sucursales asignadas (solo usuarios humanos)"
+        },
+        {
+          "name": "perm:inventory:counts:read",
+          "description": "Consultar los conteos físicos de las empresas del usuario"
+        },
+        {
+          "name": "perm:inventory:company-policies:update",
+          "description": "Registrar y actualizar la política de inventario de la empresa (solo usuarios humanos)"
+        },
+        {
+          "name": "perm:inventory:company-policies:read",
+          "description": "Consultar la política de inventario de las empresas del usuario"
+        },
+        {
+          "name": "perm:inventory:product-policies:update",
+          "description": "Crear, actualizar e inactivar políticas de reposición por producto y sucursal (solo usuarios humanos)"
+        },
+        {
+          "name": "perm:inventory:product-policies:read",
+          "description": "Consultar las políticas de reposición de las empresas del usuario"
+        },
+        {
+          "name": "perm:inventory:valuation:read",
+          "description": "Consultar la valoración FIFO (valor, capas y consumos) de las empresas del usuario"
         }
       ]
     }
@@ -1533,7 +1569,14 @@
           "perm:operational-context:all:read",
           "perm:inventory:balances:read",
           "perm:inventory:movements:read",
-          "perm:commercial-relationship:company_products:read"
+          "perm:commercial-relationship:company_products:read",
+          "perm:inventory:adjustments:create",
+          "perm:inventory:counts:create",
+          "perm:inventory:adjustments:read",
+          "perm:inventory:counts:read",
+          "perm:inventory:company-policies:read",
+          "perm:inventory:product-policies:read",
+          "perm:inventory:valuation:read"
         ]
       }
     },
@@ -1922,7 +1965,12 @@
           "perm:inventory:outputs:create",
           "perm:inventory:balances:read",
           "perm:inventory:movements:read",
-          "perm:inventory:platform:lookup"
+          "perm:inventory:platform:lookup",
+          "perm:inventory:adjustments:read",
+          "perm:inventory:counts:read",
+          "perm:inventory:company-policies:read",
+          "perm:inventory:product-policies:read",
+          "perm:inventory:valuation:read"
         ]
       }
     }

@@ -130,3 +130,99 @@ class DependencyUnavailableError(InventoryError):
         self.provider = provider
         self.operation = operation
         self.cause = cause
+
+
+# Fase B (013): `specs/013-inventory-complementary/contracts/errors.md` -------------
+
+
+class BranchAccessDeniedError(InventoryError):
+    """Miembro sin asignación `ACTIVE` a la sucursal, o sucursal/empresa inactiva (`403`; R-09, DS-14)."""
+
+    code = "BRANCH_ACCESS_DENIED"
+    title = "Acceso a la sucursal denegado"
+
+    def __init__(self) -> None:
+        super().__init__(
+            "No tiene una asignación activa a la sucursal, o la sucursal o la empresa no están activas. "
+            "Solicite la asignación al administrador de la empresa."
+        )
+
+
+class EntryLayerConsumedError(InventoryError):
+    """La capa FIFO de la entrada ya fue consumida total o parcialmente (`409`; DS-16)."""
+
+    code = "ENTRY_LAYER_CONSUMED"
+    title = "Capa de la entrada consumida"
+
+    def __init__(self) -> None:
+        super().__init__(
+            "La entrada no se puede revertir porque sus unidades ya fueron consumidas. Anule antes las ventas "
+            "que las consumieron o registre un ajuste."
+        )
+
+
+class OutputNotValuedError(InventoryError):
+    """Salida anterior a la valoración, sin consumos FIFO (`409`; DS-17)."""
+
+    code = "OUTPUT_NOT_VALUED"
+    title = "Salida sin valoración"
+
+    def __init__(self) -> None:
+        super().__init__(
+            "La salida se aplicó antes de la valoración FIFO y no se puede revertir. Corrija el inventario con "
+            "un ajuste positivo con costo."
+        )
+
+
+class CountAlreadyInProgressError(InventoryError):
+    code = "COUNT_ALREADY_IN_PROGRESS"
+    title = "Conteo en curso"
+
+    def __init__(self) -> None:
+        super().__init__("Ya hay un conteo en curso en la sucursal.")
+
+
+class CountNotInProgressError(InventoryError):
+    code = "COUNT_NOT_IN_PROGRESS"
+    title = "Conteo no en curso"
+
+    def __init__(self) -> None:
+        super().__init__("El conteo no está en curso.")
+
+
+class InvalidCountTransitionError(InventoryError):
+    code = "INVALID_COUNT_TRANSITION"
+    title = "Transición de conteo no permitida"
+
+    def __init__(self) -> None:
+        super().__init__("La transición no está permitida desde el estado actual del conteo.")
+
+
+class VersionConflictError(InventoryError):
+    """`version` desactualizada (`409`; Principio VII)."""
+
+    code = "VERSION_CONFLICT"
+    title = "Conflicto de versión"
+
+    def __init__(self) -> None:
+        super().__init__("El recurso cambió desde la última consulta. Vuelva a consultarlo e intente de nuevo.")
+
+
+class PolicyAlreadyExistsError(InventoryError):
+    code = "POLICY_ALREADY_EXISTS"
+    title = "Política ya registrada"
+
+    def __init__(self) -> None:
+        super().__init__("La empresa ya tiene una política de inventario; actualícela.")
+
+
+class ActivePolicyExistsError(InventoryError):
+    code = "ACTIVE_POLICY_EXISTS"
+    title = "Política activa existente"
+
+    def __init__(self) -> None:
+        super().__init__("Ya existe una política activa para el producto en la sucursal; inactívela primero.")
+
+
+class ValuationInvariantError(RuntimeError):
+    """Σ capas abiertas ≠ saldo antes del `COMMIT` (RC-15): error interno, la transacción se revierte."""

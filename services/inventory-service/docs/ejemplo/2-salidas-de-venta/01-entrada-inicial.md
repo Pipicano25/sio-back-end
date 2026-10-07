@@ -24,7 +24,8 @@ Ejecuta: `inventory-test-operator` (cuenta de servicio).
     {
       "origin_detail_id": "d44f0300-0000-4000-8000-000000000001",
       "company_product_id": "d44d0000-0000-4000-8000-000000000001",
-      "quantity": "10"
+      "quantity": "10",
+      "unit_cost": "2500.50"
     }
   ]
 }
@@ -32,7 +33,7 @@ Ejecuta: `inventory-test-operator` (cuenta de servicio).
 
 ### Por qué
 
-- Prepara el saldo de la sucursal para las salidas.
+- Prepara el saldo de la sucursal para las salidas (una capa de 10 a 2 500,50).
 
 ## Permiso
 
@@ -95,14 +96,19 @@ Estado `201`.
       "previous_balance": "0.0000",
       "new_balance": "10.0000",
       "balance_sequence": 1,
-      "unit_cost": null,
+      "unit_cost": "2500.5000",
+      "movement_value": "25005.00",
+      "cost_known": true,
       "reversed_movement_id": null
     }
   ],
   "balances": [
     {
       "company_product_id": "d44d0000-0000-4000-8000-000000000001",
-      "quantity": "10.0000"
+      "quantity": "10.0000",
+      "inventory_value": "25005.00",
+      "average_unit_cost": "2500.5000",
+      "has_unknown_cost": false
     }
   ]
 }

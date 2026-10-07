@@ -67,8 +67,9 @@ def test_entry_reversal_without_stock_is_rejected(operator, world, entry, test_e
     before = count_rows(test_engine, "inventory_movements")
     response = operator.post(f"{ENTRIES}/{entry['id']}/reversal", json=reversal_body(world))
     assert response.status_code == 409
-    assert response.json()["code"] == "INVENTORY.INSUFFICIENT_STOCK"
-    assert response.json()["shortages"][0]["available"] == "3.0000"
+    # 013 (FR-053, Historia 3 escenario 6): con valoración, una entrada sin saldo para retirarse es una
+    # entrada cuya capa ya se consumió; se rechaza con esa causa precisa en lugar de INSUFFICIENT_STOCK.
+    assert response.json()["code"] == "INVENTORY.ENTRY_LAYER_CONSUMED"
     assert count_rows(test_engine, "inventory_movements") == before
     assert stock(test_engine, world.products[0]) == "3.0000"
 

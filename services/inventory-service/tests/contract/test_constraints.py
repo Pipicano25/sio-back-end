@@ -7,7 +7,18 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from tests.contract.db_rows import insert_balance, insert_movement, insert_operation
+from tests.contract.db_rows import (
+    insert_adjustment,
+    insert_balance,
+    insert_company_policy,
+    insert_consumption,
+    insert_count,
+    insert_count_detail,
+    insert_layer,
+    insert_movement,
+    insert_operation,
+    insert_policy,
+)
 
 
 @pytest.fixture
@@ -95,13 +106,15 @@ def test_movement_quantities_and_math(conn) -> None:
     _rejects(conn, "ck_inventory_movements_balances_non_negative", lambda: insert_movement(conn, op, movement_type="SALE_OUTPUT", origin_type="SALE", quantity=5, previous_balance=2, new_balance=-3))
     _rejects(conn, "ck_inventory_movements_balance_math", lambda: insert_movement(conn, op, new_balance=9))
     _rejects(conn, "ck_inventory_movements_balance_math", lambda: insert_movement(conn, op, movement_type="SALE_OUTPUT", origin_type="SALE", previous_balance=20, new_balance=30))
-    _rejects(conn, ("ck_inventory_movements_type", "ck_inventory_movements_balance_math"), lambda: insert_movement(conn, op, movement_type="POSITIVE_ADJUSTMENT"))
+    # 013: `POSITIVE_ADJUSTMENT` y `NEGATIVE_ADJUSTMENT` pasan a ser tipos válidos; uno desconocido sigue rechazado.
+    _rejects(conn, ("ck_inventory_movements_type", "ck_inventory_movements_balance_math"), lambda: insert_movement(conn, op, movement_type="DESCONOCIDO"))
 
 
-def test_unit_cost_only_on_entries(conn) -> None:
+def test_unit_cost_is_non_negative_on_any_valued_movement(conn) -> None:
+    """013 (R-03, data-model): todo movimiento valorizado lleva costo, también salidas y ajustes."""
     op = insert_operation(conn)
-    _rejects(conn, "ck_inventory_movements_unit_cost", lambda: insert_movement(conn, op, movement_type="SALE_OUTPUT", origin_type="SALE", previous_balance=10, new_balance=0, unit_cost=5))
-    _rejects(conn, "ck_inventory_movements_unit_cost", lambda: insert_movement(conn, op, unit_cost=-1))
+    insert_movement(conn, op, movement_type="SALE_OUTPUT", origin_type="SALE", previous_balance=10, new_balance=0, unit_cost=5)
+    _rejects(conn, "ck_inventory_movements_unit_cost", lambda: insert_movement(conn, op, line_index=1, unit_cost=-1))
 
 
 def test_reversal_link_and_uniqueness(conn) -> None:

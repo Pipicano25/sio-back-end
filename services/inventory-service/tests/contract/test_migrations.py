@@ -132,3 +132,156 @@ def test_balance_sequence_is_not_backed_by_a_postgres_sequence(test_engine) -> N
         ).scalar_one()
     assert default is None
     assert owned == 0
+
+
+# Fase B (013): migración `0002` (T006) -------------------------------------------
+
+TABLES_013 = {
+    "company_inventory_policies",
+    "inventory_policies",
+    "inventory_adjustments",
+    "inventory_counts",
+    "inventory_count_details",
+    "inventory_cost_layers",
+    "inventory_cost_consumptions",
+}
+
+CONSTRAINTS_013 = {
+    "inventory_balances": {"ck_inventory_balances_inventory_value_non_negative"},
+    "inventory_movements": {"ck_inventory_movements_movement_value_non_negative", "ck_inventory_movements_valued"},
+    "company_inventory_policies": {
+        "pk_company_inventory_policies",
+        "uq_company_inventory_policies_company",
+        "ck_company_inventory_policies_system",
+        "ck_company_inventory_policies_valuation_fifo",
+        "ck_company_inventory_policies_replenishment",
+    },
+    "inventory_policies": {
+        "pk_inventory_policies",
+        "ck_inventory_policies_levels",
+        "ck_inventory_policies_service_level",
+        "ck_inventory_policies_window",
+        "ck_inventory_policies_safety_method",
+        "ck_inventory_policies_mode",
+    },
+    "inventory_adjustments": {
+        "pk_inventory_adjustments",
+        "fk_inventory_adjustments_operation",
+        "fk_inventory_adjustments_movement",
+        "uq_inventory_adjustments_movement",
+        "fk_inventory_adjustments_count",
+        "ck_inventory_adjustments_type",
+        "ck_inventory_adjustments_quantity_positive",
+        "ck_inventory_adjustments_reason",
+        "ck_inventory_adjustments_balance_math",
+        "ck_inventory_adjustments_values_non_negative",
+        "ck_inventory_adjustments_audit_unchanged",
+    },
+    "inventory_counts": {
+        "pk_inventory_counts",
+        "fk_inventory_counts_operation",
+        "ck_inventory_counts_status",
+        "ck_inventory_counts_lifecycle",
+    },
+    "inventory_count_details": {
+        "pk_inventory_count_details",
+        "fk_inventory_count_details_count",
+        "fk_inventory_count_details_adjustment",
+        "uq_inventory_count_details_product",
+        "ck_inventory_count_details_quantities",
+        "ck_inventory_count_details_difference",
+    },
+    "inventory_cost_layers": {
+        "pk_inventory_cost_layers",
+        "fk_inventory_cost_layers_origin_movement",
+        "uq_inventory_cost_layers_origin_movement",
+        "ck_inventory_cost_layers_kind",
+        "ck_inventory_cost_layers_origin",
+        "ck_inventory_cost_layers_quantities",
+        "ck_inventory_cost_layers_status_matches_remaining",
+        "ck_inventory_cost_layers_unit_cost",
+        "ck_inventory_cost_layers_currency",
+        "ck_inventory_cost_layers_cost_known",
+    },
+    "inventory_cost_consumptions": {
+        "pk_inventory_cost_consumptions",
+        "fk_inventory_cost_consumptions_movement",
+        "fk_inventory_cost_consumptions_layer",
+        "fk_inventory_cost_consumptions_restores",
+        "uq_inventory_cost_consumptions_restores",
+        "ck_inventory_cost_consumptions_type",
+        "ck_inventory_cost_consumptions_quantity_positive",
+        "ck_inventory_cost_consumptions_restore_link",
+    },
+}
+
+INDEXES_013 = {
+    "ix_inventory_cost_layers_open",
+    "uq_inventory_cost_layers_opening",
+    "uq_inventory_policies_active",
+    "uq_inventory_counts_in_progress",
+    "ix_inventory_cost_consumptions_movement",
+    "ix_inventory_cost_consumptions_layer",
+}
+
+TRIGGERS_013 = {
+    "tr_inventory_adjustments_no_update",
+    "tr_inventory_adjustments_no_delete",
+    "tr_inventory_adjustments_no_truncate",
+    "tr_inventory_cost_consumptions_no_update",
+    "tr_inventory_cost_consumptions_no_delete",
+    "tr_inventory_cost_consumptions_no_truncate",
+    "tr_inventory_cost_layers_no_delete",
+    "tr_inventory_cost_layers_no_truncate",
+    "tr_inventory_count_details_finalized",
+}
+
+
+def test_0002_round_trip_to_0001_and_back(scratch_url) -> None:
+    run_alembic(scratch_url, "upgrade", "head")
+    engine = create_engine(scratch_url)
+    try:
+        assert TABLES | TABLES_013 <= set(inspect(engine).get_table_names(schema="migration_check"))
+
+        run_alembic(scratch_url, "downgrade", "0001")
+        names = set(inspect(engine).get_table_names(schema="migration_check"))
+        assert TABLES <= names
+        assert not names & TABLES_013
+        with engine.connect() as connection:
+            columns = {
+                row[0]
+                for row in connection.execute(
+                    text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_schema = 'migration_check' AND table_name IN ('inventory_movements','inventory_balances')"
+                    )
+                )
+            }
+        assert not columns & {"movement_value", "cost_known", "inventory_value", "average_unit_cost", "has_unknown_cost"}
+
+        run_alembic(scratch_url, "upgrade", "head")
+        assert TABLES_013 <= set(inspect(engine).get_table_names(schema="migration_check"))
+    finally:
+        engine.dispose()
+
+
+def test_0002_named_constraints_indexes_and_triggers(test_engine) -> None:
+    with test_engine.connect() as connection:
+        assert TABLES_013 <= set(inspect(connection).get_table_names())
+        for table, expected in CONSTRAINTS_013.items():
+            assert expected <= _constraint_names(connection, table), table
+
+        indexes = {row[0] for row in connection.execute(text("SELECT indexname FROM pg_indexes"))}
+        assert INDEXES_013 <= indexes
+
+        triggers = {row[0] for row in connection.execute(text("SELECT tgname FROM pg_trigger WHERE NOT tgisinternal"))}
+        assert TRIGGERS_013 <= triggers
+
+
+def test_valued_movement_check_is_not_valid_only_for_history(test_engine) -> None:
+    """`NOT VALID`: no revalida el historial de la Fase A, pero aplica a toda fila nueva (punto 6)."""
+    with test_engine.connect() as connection:
+        convalidated = connection.execute(
+            text("SELECT convalidated FROM pg_constraint WHERE conname = 'ck_inventory_movements_valued'")
+        ).scalar_one()
+    assert convalidated is False

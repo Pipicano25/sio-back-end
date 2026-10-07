@@ -33,8 +33,16 @@ def new_operation(company, branch, lines, *, operation_type="ENTRY", key=None) -
         reason=None,
         reverses_operation_id=None,
         request_hash="b" * 64,
+        # 013 (DS-12): toda entrada lleva costo y la empresa su moneda.
+        currency_code="COP",
         lines=[
-            NewLine(index=i, origin_detail_id=uuid4(), company_product_id=p, quantity=Decimal(q), unit_cost=None)
+            NewLine(
+                index=i,
+                origin_detail_id=uuid4(),
+                company_product_id=p,
+                quantity=Decimal(q),
+                unit_cost=Decimal("10") if operation_type == "ENTRY" else None,
+            )
             for i, (p, q) in enumerate(lines)
         ],
     )

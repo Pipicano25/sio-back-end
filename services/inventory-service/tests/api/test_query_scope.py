@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import jwt
 import pytest
 
 from tests.conftest import BALANCES_READ, MOVEMENTS_READ, PLATFORM_LOOKUP, line, operation_body, user_sub
@@ -66,12 +67,19 @@ def test_operational_context_403_and_unavailable(as_user, world, fake_oc) -> Non
     assert response.json()["dependency"] == "operational-context"
 
 
-def test_user_authorization_is_propagated_never_the_technical_token(as_user, user_token, world, fake_oc) -> None:
+def test_user_authorization_is_propagated_never_the_technical_token(as_user, world, fake_oc) -> None:
     call(as_user("inventario.test"), "GET", read_urls(world)[1][1], world)
     sub, authorization, company = fake_oc.access_calls[-1]
     assert sub == user_sub("inventario.test")
-    assert authorization == f"Bearer {user_token('inventario.test')}"
     assert company == world.company
+    # Se valida la identidad del token propagado por claims estables (no el JWT completo, cuyo `iat`
+    # cambia entre segundos): es el token del usuario, nunca el técnico de Inventory.
+    scheme, token = authorization.split(" ", 1)
+    claims = jwt.decode(token, options={"verify_signature": False})
+    assert scheme == "Bearer"
+    assert claims["sub"] == user_sub("inventario.test")
+    assert claims["preferred_username"] == "inventario.test"
+    assert "client_id" not in claims  # el token técnico de Inventory es de una cuenta de servicio
 
 
 def test_technical_lookup_without_membership(as_token, service_token, world, fake_oc) -> None:

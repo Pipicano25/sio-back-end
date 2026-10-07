@@ -28,6 +28,8 @@ class ValidatedReferences:
     """Datos de las referencias que solo viajan al evento de auditoría (no se guardan)."""
 
     keycloak_user_id: UUID | None
+    currency_code: str | None = None
+    """`default_currency` de la empresa, solo si la operación crea capas (013 R-03b)."""
 
 
 class ReferenceValidator:
@@ -41,6 +43,8 @@ class ReferenceValidator:
         branch_id: UUID,
         application_user_id: UUID,
         line_products: Sequence[UUID],
+        *,
+        needs_currency: bool = False,
     ) -> ValidatedReferences:
         errors: list[dict[str, str]] = []
 
@@ -70,10 +74,47 @@ class ReferenceValidator:
                     field_error(field, "INVENTORY_CONTROL_DISABLED", "El producto no tiene control de inventario.")
                 )
 
+        currency_code = self.company_currency(company_id, errors) if needs_currency else None
+
         if errors:
             raise ValidationFailedError(errors)
 
-        return ValidatedReferences(keycloak_user_id=keycloak_user_id)
+        return ValidatedReferences(keycloak_user_id=keycloak_user_id, currency_code=currency_code)
+
+    def company_currency(self, company_id: UUID, errors: list[dict[str, str]]) -> str | None:
+        """Moneda de valoración (013 R-03b): `companies/{id}` con la identidad técnica, fuera de la transacción."""
+        currency = self._oc.get_company_currency(company_id)
+        if currency is None:
+            errors.append(field_error("company_id", "COMPANY_NOT_FOUND", "La empresa no existe."))
+        return currency
+
+    def validate_products(self, company_id: UUID, products: Sequence[tuple[str, UUID]]) -> list[dict[str, str]]:
+        """Productos aptos para movimientos de inventario (013: ajustes, conteos y políticas); errores por campo."""
+        errors: list[dict[str, str]] = []
+        found = self._products.lookup(dict.fromkeys(product for _, product in products))
+        for field, product_id in products:
+            product = found.get(product_id)
+            if product is None or product.company_id != company_id:
+                errors.append(field_error(field, "COMPANY_PRODUCT_NOT_FOUND", "El producto empresarial no existe en la empresa."))
+            elif product.status != ACTIVE:
+                errors.append(field_error(field, "COMPANY_PRODUCT_INACTIVE", "El producto empresarial no está activo."))
+            elif not product.inventory_control_enabled:
+                errors.append(
+                    field_error(field, "INVENTORY_CONTROL_DISABLED", "El producto no tiene control de inventario.")
+                )
+        return errors
+
+    def validate_branch(self, company_id: UUID, branch_id: UUID, errors: list[dict[str, str]]) -> None:
+        """Sucursal de la empresa y `ACTIVE` (políticas de producto, R-07)."""
+        branch = self._oc.get_branch(branch_id)
+        if branch is None:
+            errors.append(field_error("branch_id", "BRANCH_NOT_FOUND", "La sucursal no existe."))
+        elif branch.company_id != company_id:
+            errors.append(field_error("branch_id", "BRANCH_NOT_IN_COMPANY", "La sucursal no pertenece a la empresa."))
+        elif branch.company_status != ACTIVE:
+            errors.append(field_error("company_id", "COMPANY_INACTIVE", "La empresa no está activa."))
+        elif branch.status != ACTIVE:
+            errors.append(field_error("branch_id", "BRANCH_INACTIVE", "La sucursal no está activa."))
 
     def validate_reversal_user(self, company_id: UUID, application_user_id: UUID) -> UUID | None:
         keycloak_user_id, errors = self._check_user(company_id, application_user_id, require_active=False)

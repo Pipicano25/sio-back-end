@@ -47,7 +47,8 @@ def test_first_entry_creates_balances_and_kardex(operator, test_engine, world, f
         "PURCHASE_ENTRY", "10.0000", "0.0000", "10.0000"
     )
     assert first["unit_cost"] == "1500.2500" and first["balance_sequence"] == 1 and first["line_index"] == 0
-    assert (second["quantity"], second["new_balance"], second["unit_cost"]) == ("5.5000", "5.5000", None)
+    # 013 (DS-12): toda entrada lleva costo; `operation_body` asigna el costo ficticio por defecto.
+    assert (second["quantity"], second["new_balance"], second["unit_cost"]) == ("5.5000", "5.5000", "1000.0000")
     assert {b["company_product_id"]: b["quantity"] for b in data["balances"]} == {str(p1): "10.0000", str(p2): "5.5000"}
     assert balance(test_engine, world, p1) == "10.0000"
 
@@ -61,10 +62,14 @@ def test_second_entry_adds_to_the_balance(operator, test_engine, world) -> None:
     assert balance(test_engine, world, product) == "15.5000"
 
 
-def test_unit_cost_is_optional(operator, world) -> None:
-    response = operator.post(ENTRIES, json=operation_body(world, line(world.products[0], "1")))
-    assert response.status_code == 201
-    assert response.json()["movements"][0]["unit_cost"] is None
+def test_unit_cost_is_required(operator, world, test_engine) -> None:
+    """013 (DS-12, FR-061): cambio incompatible aprobado; antes era opcional (FR-018 (012))."""
+    body = operation_body(world, line(world.products[0], "1"))
+    body["lines"][0].pop("unit_cost")
+    response = operator.post(ENTRIES, json=body)
+    assert response.status_code == 422
+    assert errors_of(response) == {"lines[0].unit_cost": "UNIT_COST_REQUIRED"}
+    assert nothing_written(test_engine)
 
 
 def test_product_of_other_company_rejects_whole_operation(operator, world, test_engine) -> None:
@@ -151,8 +156,9 @@ def test_duplicate_origin_detail(operator, world, test_engine) -> None:
 
 def test_resulting_balance_out_of_range(operator, world, test_engine) -> None:
     product = world.products[0]
-    assert operator.post(ENTRIES, json=operation_body(world, line(product, "99999999999999"))).status_code == 201
-    response = operator.post(ENTRIES, json=operation_body(world, line(product, "1")))
+    # Costo 0: la prueba es sobre el rango del saldo, no del valor (013).
+    assert operator.post(ENTRIES, json=operation_body(world, line(product, "99999999999999", unit_cost="0"))).status_code == 201
+    response = operator.post(ENTRIES, json=operation_body(world, line(product, "1", unit_cost="0")))
     assert response.status_code == 422
     assert errors_of(response) == {"lines[0].quantity": "QUANTITY_OUT_OF_RANGE"}
     assert count_rows(test_engine, "inventory_movements") == 1
@@ -171,3 +177,11 @@ def test_never_touches_other_company_or_branch(operator, test_engine, world) -> 
     product = world.products[0]
     operator.post(ENTRIES, json=operation_body(world, line(product, "3")))
     assert balance(test_engine, world, product, branch=world.other_branch) == "0.0000"
+
+
+def test_resulting_value_out_of_range_is_422_not_500(operator, world, test_engine) -> None:
+    """013: el valor (`NUMERIC(18,2)`) fuera de rango se rechaza como el saldo fuera de rango."""
+    response = operator.post(ENTRIES, json=operation_body(world, line(world.products[0], "99999999999999", unit_cost="1000")))
+    assert response.status_code == 422
+    assert errors_of(response) == {"lines[0].quantity": "QUANTITY_OUT_OF_RANGE"}
+    assert nothing_written(test_engine)

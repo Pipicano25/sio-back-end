@@ -11,6 +11,10 @@ from fastapi.openapi.utils import get_openapi
 TAG_ENTRIES = "Entradas de compra (cuentas de servicio)"
 TAG_OUTPUTS = "Salidas de venta (cuentas de servicio)"
 TAG_QUERIES = "Consulta de stock y kardex"
+TAG_VALUATION = "Valoración FIFO"
+TAG_ADJUSTMENTS = "Ajustes de inventario (usuarios asignados a la sucursal)"
+TAG_COUNTS = "Conteos físicos (usuarios asignados a la sucursal)"
+TAG_POLICIES = "Políticas de inventario"
 
 OPENAPI_TAGS = [
     {"name": "health"},
@@ -38,6 +42,38 @@ OPENAPI_TAGS = [
             "cuentas de servicio con `perm:inventory:platform:lookup` consultan sin membresía."
         ),
     },
+    {
+        "name": TAG_VALUATION,
+        "description": (
+            "Valor del inventario por sucursal, capas FIFO y consumos de un movimiento. `cost_known = false` "
+            "marca unidades de apertura sin costo histórico (distinto de un costo real 0). Mismo alcance por "
+            "empresa que las consultas de stock."
+        ),
+    },
+    {
+        "name": TAG_ADJUSTMENTS,
+        "description": (
+            "Un **usuario humano** con el permiso, membresía `ACTIVE` y asignación `ACTIVE` a la sucursal "
+            "registra un ajuste que se aplica en el acto (sin aprobación). Las cuentas de servicio reciben "
+            "`403`. Idempotente por `adjustment_key` ligada al usuario."
+        ),
+    },
+    {
+        "name": TAG_COUNTS,
+        "description": (
+            "Ciclo `DRAFT → IN_PROGRESS → COMPLETED/CANCELLED` con `version`. Completar aplica todas las "
+            "diferencias registradas como ajustes sobre el saldo vigente, todo o nada. Un conteo en curso por "
+            "sucursal. Mismas reglas de acceso que los ajustes."
+        ),
+    },
+    {
+        "name": TAG_POLICIES,
+        "description": (
+            "Política de la empresa (una; solo `FIFO`; `is_active` solo de lectura) y niveles de reposición "
+            "por producto y sucursal (una activa). Solo configuración: no generan compras ni movimientos. "
+            "Escritura por usuarios humanos miembros con el permiso (comodín de administradores y supervisores)."
+        ),
+    },
 ]
 
 PROBLEM = {"application/problem+json": {"schema": {"type": "object"}}}
@@ -63,6 +99,52 @@ REVERSAL_RESPONSES = {
     409: problem(
         "`INVENTORY.ALREADY_REVERSED`, `INVENTORY.REVERSAL_NOT_ALLOWED`, `INVENTORY.INSUFFICIENT_STOCK` "
         "o `INVENTORY.OPERATION_KEY_CONFLICT`."
+    ),
+}
+
+ADJUSTMENT_RESPONSES = {
+    200: {"description": "La misma solicitud ya se había aplicado con esta clave (idempotente)."},
+    400: problem("`INVENTORY.MALFORMED_BODY`: el cuerpo no es JSON interpretable."),
+    403: problem(
+        "`INVENTORY.FORBIDDEN` (sin permiso o cuenta de servicio), `INVENTORY.BRANCH_ACCESS_DENIED` (sin "
+        "asignación activa a la sucursal, o sucursal o empresa inactiva) o `INVENTORY.OPERATIONAL_ACCESS_DENIED`."
+    ),
+    404: problem("`INVENTORY.NOT_FOUND`: la empresa o la sucursal están fuera del alcance del usuario."),
+    409: problem("`INVENTORY.INSUFFICIENT_STOCK` (extensión `shortages`) o `INVENTORY.OPERATION_KEY_CONFLICT`."),
+    422: problem(
+        "`INVENTORY.VALIDATION_ERROR`: `UNIT_COST_REQUIRED`, `UNIT_COST_NOT_ALLOWED`, `REASON_REQUIRED`, "
+        "producto no apto, `COMPANY_NOT_FOUND`."
+    ),
+}
+
+COUNT_RESPONSES = {
+    403: problem(
+        "`INVENTORY.FORBIDDEN`, `INVENTORY.BRANCH_ACCESS_DENIED` o `INVENTORY.OPERATIONAL_ACCESS_DENIED`."
+    ),
+    404: problem("`INVENTORY.NOT_FOUND`: conteo, empresa o sucursal fuera del alcance del usuario."),
+    409: problem(
+        "`INVENTORY.COUNT_ALREADY_IN_PROGRESS`, `INVENTORY.COUNT_NOT_IN_PROGRESS`, "
+        "`INVENTORY.INVALID_COUNT_TRANSITION`, `INVENTORY.VERSION_CONFLICT`, `INVENTORY.INSUFFICIENT_STOCK` "
+        "(extensión `shortages`) o `INVENTORY.OPERATION_KEY_CONFLICT`."
+    ),
+    422: problem(
+        "`INVENTORY.VALIDATION_ERROR`: `COUNT_WITHOUT_DETAILS`, `COUNT_DETAILS_LIMIT`, `UNIT_COST_REQUIRED` "
+        "(`details[<company_product_id>].unit_cost`), `REASON_REQUIRED`, producto no apto."
+    ),
+}
+
+POLICY_RESPONSES = {
+    403: problem(
+        "`INVENTORY.FORBIDDEN` (sin permiso, o cuenta de servicio al escribir) o "
+        "`INVENTORY.OPERATIONAL_ACCESS_DENIED`."
+    ),
+    404: problem("`INVENTORY.NOT_FOUND`: empresa fuera del alcance o política inexistente."),
+    409: problem(
+        "`INVENTORY.POLICY_ALREADY_EXISTS`, `INVENTORY.ACTIVE_POLICY_EXISTS` o `INVENTORY.VERSION_CONFLICT`."
+    ),
+    422: problem(
+        "`INVENTORY.VALIDATION_ERROR`: `VALUATION_METHOD_NOT_SUPPORTED`, `INVALID_LEVELS`, "
+        "`INVALID_SERVICE_LEVEL`, `INVALID_WINDOW`, `UNKNOWN_FIELD` (`is_active`), sucursal o producto no aptos."
     ),
 }
 

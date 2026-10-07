@@ -12,13 +12,14 @@ inesperado → `DependencyUnavailableError("operational-context")`.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 from uuid import UUID
 
 import httpx
 
 from inventory_service.application.exceptions import OPERATIONAL_CONTEXT, OperationalAccessDeniedError
-from inventory_service.application.ports import ApplicationUserInfo, BranchInfo, TokenProvider
+from inventory_service.application.ports import ApplicationUserInfo, BranchAccessResult, BranchInfo, TokenProvider
 from inventory_service.infrastructure.http_lookup import HTTPDependencyClient, json_object, logger
 from inventory_service.infrastructure.keycloak_token_client import (
     TokenUnavailableError,
@@ -26,6 +27,7 @@ from inventory_service.infrastructure.keycloak_token_client import (
 )
 
 _ALLOWED_REASONS_FOR_READS = {"COMPANY_INACTIVE"}
+_CURRENCY = re.compile(r"^[A-Z]{3}$")
 _NOT_MEMBER = {"USER_NOT_MEMBER", "USER_MEMBERSHIP_INACTIVE"}
 
 
@@ -131,6 +133,20 @@ class HTTPOperationalContextDirectory:
             keycloak_user_id=_uuid(body.get("keycloak_user_id")),
         )
 
+    def get_company_currency(self, company_id: UUID) -> str | None:
+        """`default_currency` de `companies/{id}` (013 R-03b): moneda de valoración de las capas."""
+        body = self._get("company", f"/companies/{company_id}")
+
+        if body is None:
+            return None
+
+        currency = body.get("default_currency")
+
+        if not isinstance(currency, str) or not _CURRENCY.match(currency):
+            raise self._client.unavailable("company", outcome="cuerpo_inesperado")
+
+        return currency
+
 
 class HTTPCompanyAccessDirectory:
     """Membresía del usuario en una empresa, con su propio token (R-08)."""
@@ -187,3 +203,42 @@ class HTTPCompanyAccessDirectory:
             return True
 
         raise self._client.unavailable(operation, outcome=f"causa_inesperada={reason}")
+
+    def _access(self, params: dict[str, str]) -> BranchAccessResult:
+        """`operational-access` con el token del usuario, sin interpretar la causa (013 R-09)."""
+        operation = "operational_access"
+        response = self._client.send(
+            operation, "GET", "/operational-access", authorization=self._authorization, params=params
+        )
+
+        if response.status_code == 403:
+            logger.warning("Operational Context negó la evaluación de acceso al usuario operacion=%s", operation)
+            raise OperationalAccessDeniedError()
+
+        if response.status_code != 200:
+            raise self._client.unavailable(operation, outcome=f"estado={response.status_code}")
+
+        body = json_object(response)
+
+        if body is None or not isinstance(body.get("allowed"), bool):
+            raise self._client.unavailable(operation, outcome="cuerpo_inesperado")
+
+        reason = body.get("reason")
+        company_id = _uuid(body["company_id"]) if body.get("company_id") is not None else None
+        user_id = _uuid(body["application_user_id"]) if body.get("application_user_id") is not None else None
+
+        if (body.get("company_id") is not None and company_id is None) or (
+            body.get("application_user_id") is not None and user_id is None
+        ):
+            raise self._client.unavailable(operation, outcome="cuerpo_inesperado")
+
+        if reason is not None and not isinstance(reason, str):
+            raise self._client.unavailable(operation, outcome="cuerpo_inesperado")
+
+        return BranchAccessResult(body["allowed"], reason, company_id, user_id)
+
+    def check_branch(self, branch_id: UUID) -> BranchAccessResult:
+        return self._access({"branch_id": str(branch_id)})
+
+    def check_company(self, company_id: UUID) -> BranchAccessResult:
+        return self._access({"company_id": str(company_id)})

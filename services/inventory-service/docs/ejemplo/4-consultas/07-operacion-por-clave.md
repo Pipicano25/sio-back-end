@@ -74,6 +74,8 @@ Estado `200`.
       "new_balance": "10.0000",
       "balance_sequence": 1,
       "unit_cost": "2500.5000",
+      "movement_value": "25005.00",
+      "cost_known": true,
       "reversed_movement_id": null
     },
     {
@@ -87,6 +89,8 @@ Estado `200`.
       "new_balance": "5.5000",
       "balance_sequence": 1,
       "unit_cost": "9800.0000",
+      "movement_value": "53900.00",
+      "cost_known": true,
       "reversed_movement_id": null
     }
   ]

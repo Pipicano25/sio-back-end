@@ -16,6 +16,7 @@ from fastapi import Request
 
 from inventory_service.api.dependencies import access_directory
 from inventory_service.api.identity import technical_lookup
+from inventory_service.application.branch_access import OperatorAccess, require_branch_access, require_membership
 from inventory_service.application.exceptions import NotFoundError
 
 
@@ -28,3 +29,13 @@ def company_scope(company_id: UUID, request: Request) -> UUID:
         raise NotFoundError()
 
     return company_id
+
+
+def branch_operator(request: Request, company_id: UUID, branch_id: UUID) -> OperatorAccess:
+    """Usuario humano con membresía y asignación `ACTIVE` a la sucursal (013 R-09, DS-14)."""
+    return require_branch_access(access_directory(request), company_id, branch_id)
+
+
+def company_operator(request: Request, company_id: UUID) -> OperatorAccess:
+    """Usuario humano miembro de la empresa (escritura de políticas)."""
+    return require_membership(access_directory(request), company_id)

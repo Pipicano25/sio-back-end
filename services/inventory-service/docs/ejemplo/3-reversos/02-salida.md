@@ -95,14 +95,19 @@ Estado `201`.
       "previous_balance": "10.0000",
       "new_balance": "6.0000",
       "balance_sequence": 2,
-      "unit_cost": null,
+      "unit_cost": "2500.5000",
+      "movement_value": "10002.00",
+      "cost_known": true,
       "reversed_movement_id": null
     }
   ],
   "balances": [
     {
       "company_product_id": "d44d0000-0000-4000-8000-000000000001",
-      "quantity": "6.0000"
+      "quantity": "6.0000",
+      "inventory_value": "15003.00",
+      "average_unit_cost": "2500.5000",
+      "has_unknown_cost": false
     }
   ]
 }

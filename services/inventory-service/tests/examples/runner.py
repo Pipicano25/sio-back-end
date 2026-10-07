@@ -8,7 +8,9 @@ Para cada llamada:
 3. operación: cada usuario de prueba recibe `403` (solo cuentas de servicio aplican operaciones,
    aunque tengan el permiso por comodín) y `inventory-test-operator` tiene el permiso en la
    plantilla; consulta: cada usuario sin el permiso recibe `403` y cada usuario con él obtiene el
-   mismo estado que el actor;
+   mismo estado que el actor; acción humana (013: ajustes, conteos, políticas): cada usuario sin el
+   permiso recibe `403`, una cuenta de servicio con el permiso por comodín recibe `403`, y los
+   usuarios con el permiso no la repiten (cambiaría el estado del ejercicio);
 4. la ejecuta con el actor y comprueba el estado documentado.
 
 Operational Context y Commercial Relationship (clase C) no se ejecutan: los sustituyen los dobles
@@ -22,13 +24,14 @@ import re
 
 from sio_auth import DENIED_PERMISSION_ATTRIBUTE, LOGGER_NAME
 
-from tests.examples.exercises import OPERACION
+from tests.examples.exercises import ACCION, OPERACION
 from tests.examples.users import OPERATOR_ROLES, REALM_ROLES, USERS, allowed, matching_grant
 
 PLACEHOLDER = re.compile(r"<([A-Z0-9_]+)>")
 OPERATOR = "operador"
 NO_PERMISSIONS_HUMAN = "__humano_sin_permisos__"
 NO_PERMISSIONS_SERVICE = "__cuenta_de_servicio_sin_permisos__"
+WILDCARD_SERVICE = "__cuenta_de_servicio_con_comodin__"
 
 
 class _DeniedPermissions(logging.Handler):
@@ -87,6 +90,7 @@ def run_exercise(exercise: dict, clients: dict) -> list[dict]:
         body = substitute(step.get("body"), ctx)
         title = f"{exercise['folder']} / {step['file']}"
         operation = step["kind"] == OPERACION
+        human_action = step["kind"] == ACCION
 
         probe_client = clients[NO_PERMISSIONS_SERVICE if operation else NO_PERMISSIONS_HUMAN]
         probe, denied = _probe(probe_client, step, path, body)
@@ -108,6 +112,15 @@ def run_exercise(exercise: dict, clients: dict) -> list[dict]:
                     else f"no tiene `{permission}` y no es una cuenta de servicio"
                 )
                 access[name] = {"allowed": False, "status": 403, "reason": reason}
+            elif human_action and allowed(user, permission):
+                if step["actor"] == name:
+                    access[name] = {"allowed": True, "status": step["expect"], "reason": f"tiene `{matching_grant(user['perms'], permission)}`"}
+                else:
+                    access[name] = {
+                        "allowed": True,
+                        "status": "—",
+                        "reason": f"tiene `{matching_grant(user['perms'], permission)}`; no se repite (cambiaría el estado)",
+                    }
             elif allowed(user, permission):
                 expected = step["expect"]
                 if step["actor"] != name:
@@ -125,6 +138,10 @@ def run_exercise(exercise: dict, clients: dict) -> list[dict]:
 
         if operation:
             assert matching_grant(OPERATOR_ROLES, permission), f"{title}: inventory-test-operator no tiene {permission}"
+
+        if human_action:
+            response = _request(clients[WILDCARD_SERVICE], step, path, body)
+            assert response.status_code == 403, f"{title}: una cuenta de servicio con comodín → {response.status_code}"
 
         actor = clients[OPERATOR if step["actor"] == OPERATOR else step["actor"]]
         response = _request(actor, step, path, body)

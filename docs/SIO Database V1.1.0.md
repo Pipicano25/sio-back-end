@@ -3376,40 +3376,39 @@ La idempotencia evita descontar dos veces por reintentos.
 
 ### Descripción
 
-Representa la cantidad actual disponible de un producto en una sucursal específica.
+Representa la cantidad actual disponible de un producto en una sucursal específica y su valor FIFO.
 
 Es la tabla que SIO consulta cuando necesita saber rápidamente cuánto inventario hay en este momento.
 
 Es una vista persistida del saldo vigente para consultas rápidas.
 
-No explica cómo se llegó al valor y la historia completa pertenece a `InventoryMovement`.
+No explica cómo se llegó al valor y la historia completa pertenece a `InventoryMovement`; el detalle del costo pertenece a `InventoryCostLayer`.
 
 ### Atributos
 
-| Atributo             | Tipo            | Regla               | Descripción                                                                 |
-| -------------------- | --------------- | ------------------- | --------------------------------------------------------------------------- |
-| `id`                 | `UUID`          | PK, NN              | Identificador.                                                              |
-| `company_id`         | `UUID`          | REF, NN             | Empresa.                                                                    |
-| `branch_id`          | `UUID`          | REF, NN             | Sucursal.                                                                   |
-| `company_product_id` | `UUID`          | REF, NN             | Producto empresarial.                                                       |
-| `quantity`           | `NUMERIC(18,4)` | NN, DEFAULT `0`, CK | Saldo actual en unidad base; nunca negativo.                                |
-| `version`            | `INTEGER`       | NN, DEFAULT `0`, CK | Número de movimientos aplicados; igual al `balance_sequence` del último.    |
-| `created_at`         | `TIMESTAMPTZ`   | NN                  | Creación (primera entrada).                                                 |
-| `created_by`         | `VARCHAR(255)`  | NN                  | `sub` de la cuenta de servicio que aplicó la primera entrada (D1).          |
-| `updated_at`         | `TIMESTAMPTZ`   | NN                  | Último movimiento.                                                          |
-| `updated_by`         | `VARCHAR(255)`  | NN                  | `sub` de la cuenta de servicio del último movimiento.                       |
+| Atributo             | Tipo            | Regla                    | Descripción                                                                 |
+| -------------------- | --------------- | ------------------------ | --------------------------------------------------------------------------- |
+| `id`                 | `UUID`          | PK, NN                   | Identificador.                                                              |
+| `company_id`         | `UUID`          | REF, NN                  | Empresa.                                                                    |
+| `branch_id`          | `UUID`          | REF, NN                  | Sucursal.                                                                   |
+| `company_product_id` | `UUID`          | REF, NN                  | Producto empresarial.                                                       |
+| `quantity`           | `NUMERIC(18,4)` | NN, DEFAULT `0`, CK      | Saldo actual en unidad base; nunca negativo.                                |
+| `version`            | `INTEGER`       | NN, DEFAULT `0`, CK      | Número de movimientos aplicados; igual al `balance_sequence` del último.    |
+| `created_at`         | `TIMESTAMPTZ`   | NN                       | Creación (primer movimiento).                                               |
+| `created_by`         | `VARCHAR(255)`  | NN                       | `sub` de quien aplicó el primer movimiento: cuenta de servicio en entradas, salidas y reversos; usuario en ajustes y conteos (D1). |
+| `updated_at`         | `TIMESTAMPTZ`   | NN                       | Último movimiento.                                                          |
+| `updated_by`         | `VARCHAR(255)`  | NN                       | `sub` de quien aplicó el último movimiento (D1).                            |
+| `average_unit_cost`  | `NUMERIC(18,4)` | nullable                 | `inventory_value / quantity` con 4 decimales; nulo con saldo 0. Informativo. |
+| `inventory_value`    | `NUMERIC(18,2)` | NN, DEFAULT `0`, CK      | Valor FIFO del saldo: Σ `round(remaining_quantity × unit_cost, 2)` de sus capas abiertas, recalculado (no acumulado) en cada movimiento; no negativo. |
+| `has_unknown_cost`   | `BOOLEAN`       | NN, DEFAULT `false`      | Alguna capa abierta del saldo no tiene costo histórico (`cost_known = false`). |
 
 ### Reglas y restricciones
 
 - Solo existe un saldo por empresa, sucursal y producto.
 - El saldo nunca es negativo (`CHECK quantity >= 0`); una operación que lo dejaría negativo se rechaza completa.
-- Cantidad y `version` se actualizan únicamente por Inventory Service, con la fila bloqueada (`SELECT … FOR UPDATE`) dentro de la transacción del movimiento.
-- El saldo nace con la primera entrada y nunca se elimina (la base rechaza `DELETE` y `TRUNCATE`); un saldo en 0 permanece.
-
-### Diferido al bloque 13 (no implementado en la Fase A)
-
-- Columnas `average_unit_cost NUMERIC(18,4)` (costo promedio vigente cuando aplica `WEIGHTED_AVERAGE`) e `inventory_value NUMERIC(18,2)` (valor monetario del saldo según el método de valoración).
-- Bajo `WEIGHTED_AVERAGE`, `average_unit_cost` formará parte del estado valorizado vigente; bajo `FIFO`, la trazabilidad primaria del costo permanecerá en `InventoryCostLayer` y `inventory_value` deberá reconciliarse con las capas abiertas.
+- Cantidad, `version` y valor se actualizan únicamente por Inventory Service, con la fila bloqueada (`SELECT … FOR UPDATE`) dentro de la transacción del movimiento.
+- La cantidad del saldo es siempre la suma de `remaining_quantity` de sus capas abiertas, y su valor la suma del valor de esas capas; se verifica antes de confirmar cada operación y, si no se cumple, la operación se revierte completa.
+- El saldo nace con el primer movimiento y nunca se elimina (la base rechaza `DELETE` y `TRUNCATE`); un saldo en 0 permanece.
 
 ## 9.2 InventoryMovement
 
@@ -3421,7 +3420,7 @@ No explica cómo se llegó al valor y la historia completa pertenece a `Inventor
 
 Representa cada cambio individual que ocurre en el inventario y conserva la historia completa del producto, es decir, el kardex.
 
-Registra saldo anterior, cantidad, saldo nuevo, documento de origen, operación y usuario.
+Registra saldo anterior, cantidad, saldo nuevo, costo y valor, documento de origen, operación y usuario.
 
 No se edita ni elimina y una anulación crea un movimiento inverso.
 
@@ -3432,7 +3431,7 @@ Inventory Service es el único autorizado para crear movimientos y modificar sal
 | Atributo               | Tipo            | Regla               | Descripción                                                                 |
 | ---------------------- | --------------- | ------------------- | --------------------------------------------------------------------------- |
 | `id`                   | `UUID`          | PK, NN              | Identificador.                                                              |
-| `operation_id`         | `UUID`          | FK, NN              | Operación de inventario que lo creó (idempotencia por clave del consumidor). |
+| `operation_id`         | `UUID`          | FK, NN              | Operación de inventario que lo creó (idempotencia por clave del consumidor o del usuario). |
 | `company_id`           | `UUID`          | REF, NN             | Empresa.                                                                    |
 | `branch_id`            | `UUID`          | REF, NN             | Sucursal.                                                                   |
 | `company_product_id`   | `UUID`          | REF, NN             | Producto.                                                                   |
@@ -3441,47 +3440,45 @@ Inventory Service es el único autorizado para crear movimientos y modificar sal
 | `previous_balance`     | `NUMERIC(18,4)` | NN, CK              | Saldo anterior.                                                             |
 | `new_balance`          | `NUMERIC(18,4)` | NN, CK              | Saldo nuevo.                                                                |
 | `balance_sequence`     | `BIGINT`        | NN, UQ              | Correlativo del movimiento dentro de su saldo, desde 1 y sin huecos.        |
-| `unit_cost`            | `NUMERIC(18,4)` | nullable, CK        | Costo unitario informado por la compra; solo en entradas y sus reversos.    |
-| `origin_type`          | `VARCHAR(30)`   | NN                  | Tipo de origen (`PURCHASE`, `SALE`).                                        |
-| `origin_id`            | `UUID`          | NN                  | Documento.                                                                  |
-| `origin_detail_id`     | `UUID`          | NN                  | Línea.                                                                      |
+| `unit_cost`            | `NUMERIC(18,4)` | nullable, CK        | Costo unitario: el informado en entradas y ajustes positivos; en salidas, ajustes negativos y reversos, el que resulta de sus consumos (`movement_value / quantity`, 4 decimales; el reverso de una entrada informa el costo de su capa). Nulo solo en movimientos anteriores a la valoración. |
+| `origin_type`          | `VARCHAR(30)`   | NN                  | Tipo de origen (`PURCHASE`, `SALE`, `ADJUSTMENT`, `COUNT`).                 |
+| `origin_id`            | `UUID`          | NN                  | Documento; en ajustes, el ajuste; en conteos, el conteo.                    |
+| `origin_detail_id`     | `UUID`          | NN                  | Línea; en ajustes, el ajuste; en conteos, el detalle del conteo.            |
 | `line_index`           | `SMALLINT`      | NN, UQ              | Posición de la línea en la operación.                                       |
-| `application_user_id`  | `UUID`          | REF, NN             | Usuario operativo que confirmó o anuló el documento.                        |
+| `application_user_id`  | `UUID`          | REF, NN             | Usuario operativo que confirmó o anuló el documento, o que registró el ajuste o el conteo. |
 | `correlation_id`       | `UUID`          | NN                  | Flujo distribuido.                                                          |
-| `reason`               | `TEXT`          | nullable            | Motivo (obligatorio en reversos).                                           |
-| `reversed_movement_id` | `UUID`          | FK, nullable, UQ    | Movimiento revertido.                                                       |
+| `reason`               | `TEXT`          | nullable            | Motivo (obligatorio en reversos y ajustes).                                 |
+| `reversed_movement_id` | `UUID`          | FK, nullable, UQ    | Movimiento revertido.                                                      |
 | `created_at`           | `TIMESTAMPTZ`   | NN                  | Fecha.                                                                      |
-| `created_by`           | `VARCHAR(255)`  | NN                  | `sub` de la cuenta de servicio que aplicó la operación (D1).                |
+| `created_by`           | `VARCHAR(255)`  | NN                  | `sub` de la cuenta de servicio o del usuario que aplicó la operación (D1).  |
 | `updated_at`           | `TIMESTAMPTZ`   | NN, CK              | Igual a `created_at`.                                                       |
 | `updated_by`           | `VARCHAR(255)`  | NN, CK              | Igual a `created_by`.                                                       |
+| `movement_value`       | `NUMERIC(18,2)` | nullable, CK        | Valor del movimiento; no negativo. En salidas y reversos, Σ `cost_amount` de sus consumos. Nulo solo antes de la valoración. |
+| `cost_known`           | `BOOLEAN`       | nullable, CK        | `false` si el movimiento consumió o retiró unidades de apertura sin costo histórico. Nulo solo antes de la valoración. |
 
 ### Reglas y restricciones
 
-- Tipos de la Fase A: `PURCHASE_ENTRY`, `SALE_OUTPUT`, `ENTRY_REVERSAL`, `OUTPUT_REVERSAL`.
-- La cantidad debe ser mayor que cero; los saldos anterior y nuevo, no negativos; `new_balance = previous_balance + quantity` para entradas y reversos de salida, y `- quantity` para salidas y reversos de entrada.
+- Tipos: `PURCHASE_ENTRY`, `SALE_OUTPUT`, `ENTRY_REVERSAL`, `OUTPUT_REVERSAL`, `POSITIVE_ADJUSTMENT` y `NEGATIVE_ADJUSTMENT`.
+- La cantidad debe ser mayor que cero; los saldos anterior y nuevo, no negativos; `new_balance = previous_balance + quantity` para entradas, reversos de salida y ajustes positivos, y `- quantity` para salidas, reversos de entrada y ajustes negativos.
 - `balance_sequence` es único por empresa, sucursal y producto; se asigna como `version + 1` con la fila del saldo bloqueada y en la misma transacción (no se usa una `SEQUENCE`), de modo que las operaciones confirmadas forman un kardex sin huecos y encadenado (`previous_balance` = `new_balance` del anterior).
 - Los movimientos son inmutables: la base rechaza `UPDATE`, `DELETE` y `TRUNCATE`; `updated_at`/`updated_by` son iguales a `created_at`/`created_by` por restricción.
 - Una anulación crea un movimiento inverso por cada movimiento de la operación original (`reversed_movement_id`), una sola vez; un reverso no se revierte.
-- `unit_cost` solo en `PURCHASE_ENTRY` y `ENTRY_REVERSAL` (el reverso copia el costo de la entrada); en la Fase A solo se guarda y no interviene en ningún cálculo.
-
-### Diferido al bloque 13 (no implementado en la Fase A)
-
-- Columna `movement_value NUMERIC(18,2)` (valor monetario del movimiento) y los tipos `POSITIVE_ADJUSTMENT` / `NEGATIVE_ADJUSTMENT` (con `InventoryAdjustment`).
-- Para movimientos valorizados, `movement_value` deberá ser consistente con cantidad y costo según la política de redondeo, y los movimientos de salida FIFO obtendrán su costo desde `InventoryCostConsumption`.
+- Todo movimiento nuevo es valorizado: `unit_cost`, `movement_value` y `cost_known` son obligatorios por la restricción `ck_inventory_movements_valued`, creada `NOT VALID` para no revalidar el historial de la Fase A (inmutable).
+- El costo de las salidas, los ajustes negativos y los reversos se obtiene de `InventoryCostConsumption`; ninguna operación crea cantidad nueva sin costo conocido, salvo las capas de apertura (§9.6).
 
 > **Reconciliación (2026-10-06):** secciones alineadas con `specs/012-inventory-core` (Inventory Service
 > Fase A, BR-12): columnas de auditoría `created_at`/`created_by`/`updated_at`/`updated_by` con el `sub`
 > (D1) en ambas tablas e iguales por restricción en los movimientos; `application_user_id` en lugar de
 > `created_by_user_id`; `operation_id` obligatorio (FK a la operación de inventario) y `balance_sequence`;
-> `origin_detail_id` obligatorio; `version` como contador desde 0; `unit_cost` solo en entradas y sus
-> reversos, sin uso en la Fase A; columnas de valoración diferidas al bloque 13; inmutabilidad en la base
-> y saldo nunca negativo. Los nombres de restricciones e índices, y la tabla técnica
-> `inventory_operations`, están en el `data-model.md` de esa feature.
+> `origin_detail_id` obligatorio; `version` como contador desde 0; inmutabilidad en la base y saldo
+> nunca negativo. Los nombres de restricciones e índices, y la tabla técnica `inventory_operations`,
+> están en el `data-model.md` de esa feature. Las columnas de valoración, diferidas entonces, quedaron
+> implementadas en la Fase B (BR-13, nota al final de §9.9).
 
 ## 9.3 InventoryAdjustment
 
 **Tabla:** `inventory_adjustments`  
-**Naturaleza:** transaccional, privada e histórica.  
+**Naturaleza:** transaccional, privada, histórica e inmutable.  
 **Servicio propietario:** Inventory Service.
 
 ### Descripción
@@ -3496,21 +3493,33 @@ Cada ajuste genera obligatoriamente un movimiento de inventario.
 
 ### Atributos
 
-| Atributo             | Tipo            | Regla   | Descripción              |
-| -------------------- | --------------- | ------- | ------------------------ |
-| `id`                 | `UUID`          | PK, NN  | Identificador.           |
-| `company_id`         | `UUID`          | REF, NN | Empresa.                 |
-| `branch_id`          | `UUID`          | REF, NN | Sucursal.                |
-| `company_product_id` | `UUID`          | REF, NN | Producto.                |
-| `adjustment_type`    | `VARCHAR(30)`   | NN, CK  | `POSITIVE` o `NEGATIVE`. |
-| `quantity`           | `NUMERIC(18,4)` | NN      | Cantidad.                |
-| `reason`             | `TEXT`          | NN      | Justificación.           |
-| `previous_balance`   | `NUMERIC(18,4)` | NN      | Saldo anterior.          |
-| `new_balance`        | `NUMERIC(18,4)` | NN      | Saldo nuevo.             |
-| `movement_id`        | `UUID`          | FK, NN  | Movimiento generado.     |
-| `status`             | `VARCHAR(20)`   | NN, CK  | `APPLIED` o `REJECTED`.  |
-| `created_by_user_id` | `UUID`          | REF, NN | Usuario.                 |
-| `created_at`         | `TIMESTAMPTZ`   | NN      | Fecha.                   |
+| Atributo              | Tipo            | Regla            | Descripción                                                              |
+| --------------------- | --------------- | ---------------- | ------------------------------------------------------------------------ |
+| `id`                  | `UUID`          | PK, NN           | Identificador.                                                           |
+| `operation_id`        | `UUID`          | FK, NN           | Operación de inventario (`ADJUSTMENT`) que lo aplicó.                    |
+| `movement_id`         | `UUID`          | FK, NN, UQ       | Movimiento generado.                                                     |
+| `company_id`          | `UUID`          | REF, NN          | Empresa.                                                                 |
+| `branch_id`           | `UUID`          | REF, NN          | Sucursal.                                                                |
+| `company_product_id`  | `UUID`          | REF, NN          | Producto.                                                                |
+| `adjustment_type`     | `VARCHAR(30)`   | NN, CK           | `POSITIVE` o `NEGATIVE`.                                                 |
+| `quantity`            | `NUMERIC(18,4)` | NN, CK           | Cantidad; mayor que cero.                                                |
+| `reason`              | `TEXT`          | NN, CK           | Justificación; no vacía, sin espacios externos, hasta 2 000 caracteres.  |
+| `previous_balance`    | `NUMERIC(18,4)` | NN, CK           | Saldo anterior.                                                          |
+| `new_balance`         | `NUMERIC(18,4)` | NN, CK           | Saldo nuevo, coherente con el tipo; no negativo.                         |
+| `unit_cost`           | `NUMERIC(18,4)` | NN, CK           | Costo aplicado: FIFO en negativos; informado o de la capa más reciente en positivos. |
+| `adjustment_value`    | `NUMERIC(18,2)` | NN, CK           | Valor del ajuste.                                                        |
+| `inventory_count_id`  | `UUID`          | FK, nullable     | Conteo que lo generó.                                                    |
+| `application_user_id` | `UUID`          | REF, NN          | Usuario operativo que lo registró.                                       |
+| `created_at`          | `TIMESTAMPTZ`   | NN, CK           | Creación.                                                                |
+| `created_by`          | `VARCHAR(255)`  | NN, CK           | `sub` del usuario (D1).                                                  |
+| `updated_at`          | `TIMESTAMPTZ`   | NN, CK           | Igual a `created_at`.                                                    |
+| `updated_by`          | `VARCHAR(255)`  | NN, CK           | Igual a `created_by`.                                                    |
+
+### Reglas y restricciones
+
+- El ajuste se aplica al registrarlo (sin estados de aprobación); un ajuste rechazado no se guarda. Es inmutable (la base rechaza `UPDATE`, `DELETE` y `TRUNCATE`) y se corrige con otro ajuste de sentido contrario.
+- Solo lo registra un usuario humano con el permiso, membresía `ACTIVE` y asignación `ACTIVE` a la sucursal.
+- Un ajuste negativo consume capas FIFO; uno positivo crea una capa con el costo informado o, si no se informa, con el de la capa más reciente; sin capas, o si la más reciente no tiene costo conocido, el costo es obligatorio.
 
 ## 9.4 CompanyInventoryPolicy
 
@@ -3526,23 +3535,25 @@ El método de valoración se configura por empresa para evitar que distintas suc
 
 ### Atributos
 
-| Atributo                 | Tipo          | Regla              | Descripción                  |
-| ------------------------ | ------------- | ------------------ | ---------------------------- |
-| `id`                     | `UUID`        | PK, NN             | Identificador.               |
-| `company_id`             | `UUID`        | REF, NN, UQ        | Empresa propietaria.         |
-| `inventory_system`       | `VARCHAR(20)` | NN, CK             | `PERPETUAL` o `PERIODIC`.    |
-| `valuation_method`       | `VARCHAR(30)` | NN, CK             | `FIFO` o `WEIGHTED_AVERAGE`. |
-| `replenishment_strategy` | `VARCHAR(20)` | NN, CK             | `STANDARD` o `JIT`.          |
-| `is_active`              | `BOOLEAN`     | NN, DEFAULT `TRUE` | Vigencia.                    |
-| `version`                | `INTEGER`     | NN, DEFAULT `1`    | Control concurrente.         |
-| `created_at`             | `TIMESTAMPTZ` | NN                 | Creación.                    |
-| `updated_at`             | `TIMESTAMPTZ` | NN                 | Modificación.                |
+| Atributo                 | Tipo           | Regla                    | Descripción                                              |
+| ------------------------ | -------------- | ------------------------ | -------------------------------------------------------- |
+| `id`                     | `UUID`         | PK, NN                   | Identificador.                                           |
+| `company_id`             | `UUID`         | REF, NN, UQ              | Empresa propietaria.                                     |
+| `inventory_system`       | `VARCHAR(20)`  | NN, CK                   | `PERPETUAL` o `PERIODIC`.                                |
+| `valuation_method`       | `VARCHAR(30)`  | NN, CK, DEFAULT `FIFO`   | Solo `FIFO`.                                             |
+| `replenishment_strategy` | `VARCHAR(20)`  | NN, CK                   | `STANDARD` o `JIT`.                                      |
+| `is_active`              | `BOOLEAN`      | NN, DEFAULT `true`       | Siempre `TRUE`: la política no se desactiva ni se elimina (solo lectura). |
+| `version`                | `INTEGER`      | NN, DEFAULT `1`          | Control concurrente.                                     |
+| `created_at`             | `TIMESTAMPTZ`  | NN                       | Creación.                                                |
+| `created_by`             | `VARCHAR(255)` | NN                       | `sub` del usuario (D1).                                  |
+| `updated_at`             | `TIMESTAMPTZ`  | NN                       | Modificación.                                            |
+| `updated_by`             | `VARCHAR(255)` | NN                       | `sub` del usuario (D1).                                  |
 
 ### Reglas y restricciones
 
-- La configuración inicial recomendada es `PERPETUAL` + `FIFO` + `STANDARD`.
-- Un cambio de método de valoración requiere un proceso controlado y no puede reinterpretar silenciosamente el historial ya valorizado.
-- `JIT` es una estrategia de reposición y no un método de valoración.
+- Una política por empresa; si la empresa no registró la suya se informa la política por defecto `PERPETUAL` + `FIFO` + `STANDARD`.
+- `PERIODIC` se guarda sin cambiar el motor perpetuo; `JIT` es una estrategia de reposición y no un método de valoración.
+- El cambio de método de valoración no está disponible: la valoración es FIFO para toda empresa y el historial valorizado no se reinterpreta.
 
 ## 9.5 InventoryPolicy
 
@@ -3558,30 +3569,32 @@ Reemplaza el concepto de `minimum_stock` general en `CompanyProduct`, porque los
 
 ### Atributos
 
-| Atributo                  | Tipo            | Regla               | Descripción                                        |
-| ------------------------- | --------------- | ------------------- | -------------------------------------------------- |
-| `id`                      | `UUID`          | PK, NN              | Identificador.                                     |
-| `company_id`              | `UUID`          | REF, NN             | Empresa.                                           |
-| `branch_id`               | `UUID`          | REF, NN             | Sucursal.                                          |
-| `company_product_id`      | `UUID`          | REF, NN             | Producto empresarial.                              |
-| `minimum_stock`           | `NUMERIC(18,4)` | NN, DEFAULT `0`     | Nivel mínimo operativo configurado.                |
-| `target_stock`            | `NUMERIC(18,4)` | nullable            | Nivel objetivo de inventario.                      |
-| `service_level`           | `NUMERIC(7,4)`  | nullable            | Nivel de servicio usado por fórmulas estadísticas. |
-| `safety_stock_method`     | `VARCHAR(20)`   | NN, CK              | `BASIC` o `STATISTICAL`.                           |
-| `calculation_window_days` | `INTEGER`       | NN, DEFAULT `90`    | Ventana histórica para cálculos.                   |
-| `replenishment_mode`      | `VARCHAR(20)`   | NN, CK              | `MANUAL` o `AUTO_DRAFT`.                           |
-| `auto_purchase_enabled`   | `BOOLEAN`       | NN, DEFAULT `FALSE` | Permite generar compra `DRAFT` automáticamente.    |
-| `is_active`               | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Vigencia.                                          |
-| `version`                 | `INTEGER`       | NN, DEFAULT `1`     | Control concurrente.                               |
-| `created_at`              | `TIMESTAMPTZ`   | NN                  | Creación.                                          |
-| `updated_at`              | `TIMESTAMPTZ`   | NN                  | Modificación.                                      |
+| Atributo                  | Tipo            | Regla                    | Descripción                                        |
+| ------------------------- | --------------- | ------------------------ | -------------------------------------------------- |
+| `id`                      | `UUID`          | PK, NN                   | Identificador.                                     |
+| `company_id`              | `UUID`          | REF, NN                  | Empresa.                                           |
+| `branch_id`               | `UUID`          | REF, NN                  | Sucursal.                                          |
+| `company_product_id`      | `UUID`          | REF, NN                  | Producto empresarial.                              |
+| `minimum_stock`           | `NUMERIC(18,4)` | NN, DEFAULT `0`, CK      | Nivel mínimo operativo configurado; no negativo.   |
+| `target_stock`            | `NUMERIC(18,4)` | nullable, CK             | Nivel objetivo; mayor o igual que el mínimo.       |
+| `service_level`           | `NUMERIC(7,4)`  | nullable, CK             | Nivel de servicio; mayor que 0 y menor que 1.      |
+| `safety_stock_method`     | `VARCHAR(20)`   | NN, CK                   | `BASIC` o `STATISTICAL`.                           |
+| `calculation_window_days` | `INTEGER`       | NN, DEFAULT `90`, CK     | Ventana histórica para cálculos; de 1 a 3 650 días. |
+| `replenishment_mode`      | `VARCHAR(20)`   | NN, CK                   | `MANUAL` o `AUTO_DRAFT`.                           |
+| `auto_purchase_enabled`   | `BOOLEAN`       | NN, DEFAULT `false`      | Solo configuración: no genera compras en esta fase. |
+| `is_active`               | `BOOLEAN`       | NN, DEFAULT `true`       | Vigencia.                                          |
+| `version`                 | `INTEGER`       | NN, DEFAULT `1`          | Control concurrente.                               |
+| `created_at`              | `TIMESTAMPTZ`   | NN                       | Creación.                                          |
+| `created_by`              | `VARCHAR(255)`  | NN                       | `sub` del usuario (D1).                            |
+| `updated_at`              | `TIMESTAMPTZ`   | NN                       | Modificación.                                      |
+| `updated_by`              | `VARCHAR(255)`  | NN                       | `sub` del usuario (D1).                            |
 
 ### Reglas y restricciones
 
-- Solo existe una política activa por empresa, sucursal y producto.
-- Los niveles y ventanas deben ser no negativos y la ventana debe ser mayor que cero.
-- `AUTO_DRAFT` nunca confirma una compra automáticamente.
-- Los valores calculados de stock de seguridad y ROP no se almacenan como configuración fija en esta entidad; se publican como métricas de planificación.
+- Solo existe una política activa por empresa, sucursal y producto (índice único parcial).
+- Se inactiva con control de versión, sin eliminarse.
+- `AUTO_DRAFT` nunca confirma una compra automáticamente; la política es solo configuración y no genera compras ni métricas en esta fase.
+- Los valores calculados de stock de seguridad y ROP no se almacenan como configuración fija en esta entidad.
 
 ## 9.6 InventoryCostLayer
 
@@ -3593,35 +3606,40 @@ Reemplaza el concepto de `minimum_stock` general en `CompanyProduct`, porque los
 
 Representa una capa de costo utilizada por el método FIFO.
 
-Cada entrada valorizada crea una capa con cantidad recibida, cantidad restante y costo unitario.
+Cada entrada y cada ajuste positivo crean una capa con cantidad recibida, cantidad restante y costo unitario; los saldos anteriores a la valoración recibieron una capa de apertura.
 
-Las ventas consumen primero las capas abiertas más antiguas de la misma empresa, sucursal y producto.
+Las salidas y los ajustes negativos consumen primero las capas abiertas más antiguas de la misma empresa, sucursal y producto.
 
 ### Atributos
 
-| Atributo                    | Tipo            | Regla         | Descripción                             |
-| --------------------------- | --------------- | ------------- | --------------------------------------- |
-| `id`                        | `UUID`          | PK, NN        | Identificador.                          |
-| `company_id`                | `UUID`          | REF, NN       | Empresa.                                |
-| `branch_id`                 | `UUID`          | REF, NN       | Sucursal.                               |
-| `company_product_id`        | `UUID`          | REF, NN       | Producto.                               |
-| `origin_movement_id`        | `UUID`          | FK, NN        | Movimiento de entrada que creó la capa. |
-| `origin_purchase_id`        | `UUID`          | REF, nullable | Compra de origen.                       |
-| `origin_purchase_detail_id` | `UUID`          | REF, nullable | Detalle de compra de origen.            |
-| `original_quantity`         | `NUMERIC(18,4)` | NN            | Cantidad original.                      |
-| `remaining_quantity`        | `NUMERIC(18,4)` | NN            | Cantidad aún no consumida.              |
-| `unit_cost`                 | `NUMERIC(18,4)` | NN            | Costo unitario de la capa.              |
-| `currency_code`             | `CHAR(3)`       | NN            | Moneda de valoración.                   |
-| `received_at`               | `TIMESTAMPTZ`   | NN            | Momento de disponibilidad de la capa.   |
-| `status`                    | `VARCHAR(20)`   | NN, CK        | `OPEN` o `CLOSED`.                      |
-| `created_at`                | `TIMESTAMPTZ`   | NN            | Creación.                               |
-| `updated_at`                | `TIMESTAMPTZ`   | NN            | Actualización de cantidad restante.     |
+| Atributo                    | Tipo            | Regla                    | Descripción                                                         |
+| --------------------------- | --------------- | ------------------------ | ------------------------------------------------------------------- |
+| `id`                        | `UUID`          | PK, NN                   | Identificador.                                                      |
+| `company_id`                | `UUID`          | REF, NN                  | Empresa.                                                            |
+| `branch_id`                 | `UUID`          | REF, NN                  | Sucursal.                                                           |
+| `company_product_id`        | `UUID`          | REF, NN                  | Producto.                                                           |
+| `layer_kind`                | `VARCHAR(20)`   | NN, CK                   | `ENTRY`, `ADJUSTMENT` u `OPENING`.                                  |
+| `origin_movement_id`        | `UUID`          | FK, nullable, UQ, CK     | Movimiento que creó la capa; nulo solo en `OPENING`.                |
+| `origin_purchase_id`        | `UUID`          | REF, nullable            | Documento de la entrada (`origin_id` del movimiento).               |
+| `origin_purchase_detail_id` | `UUID`          | REF, nullable            | Línea de la entrada (`origin_detail_id` del movimiento).            |
+| `original_quantity`         | `NUMERIC(18,4)` | NN, CK                   | Cantidad original; mayor que cero.                                  |
+| `remaining_quantity`        | `NUMERIC(18,4)` | NN, CK                   | Cantidad aún no consumida; entre cero y la original.                |
+| `unit_cost`                 | `NUMERIC(18,4)` | NN, CK                   | Costo unitario de la capa; no negativo.                             |
+| `cost_known`                | `BOOLEAN`       | NN, CK                   | `false` solo en aperturas sin costo histórico (con `unit_cost = 0`). |
+| `currency_code`             | `CHAR(3)`       | nullable, CK             | `default_currency` de la empresa al crear la capa; nulo solo en las aperturas creadas por la migración. |
+| `received_at`               | `TIMESTAMPTZ`   | NN                       | Momento de disponibilidad de la capa (orden FIFO con `id`).         |
+| `status`                    | `VARCHAR(20)`   | NN, CK                   | `OPEN` si queda cantidad; `CLOSED` si llegó a cero.                 |
+| `created_at`                | `TIMESTAMPTZ`   | NN                       | Creación.                                                           |
+| `created_by`                | `VARCHAR(255)`  | NN                       | `sub` de quien aplicó el movimiento que la creó (D1).               |
+| `updated_at`                | `TIMESTAMPTZ`   | NN                       | Actualización de cantidad restante.                                 |
+| `updated_by`                | `VARCHAR(255)`  | NN                       | `sub` del último movimiento que la modificó.                        |
 
 ### Reglas y restricciones
 
-- `remaining_quantity` debe estar entre cero y `original_quantity`.
-- Una capa se cierra cuando su cantidad restante llega a cero.
-- La selección FIFO debe ser atómica junto con la creación de los movimientos de salida para impedir doble consumo concurrente.
+- `remaining_quantity` debe estar entre cero y `original_quantity`; `status = OPEN` si `remaining_quantity > 0` y `CLOSED` si es 0.
+- Orden FIFO por `received_at` e `id`; las capas solo cambian con su saldo bloqueado, en la misma transacción del movimiento, y no se eliminan (la base rechaza `DELETE` y `TRUNCATE`). La selección FIFO es atómica con el movimiento: ninguna capa se consume dos veces.
+- `cost_known = false` solo en aperturas, con `unit_cost = 0`; el costo desconocido se propaga a consumos, movimientos y saldos y nunca se deduce de `unit_cost = 0`. Ninguna otra capa se crea sin costo conocido.
+- Una sola apertura por saldo (índice único parcial), creada por la migración para los saldos anteriores a la valoración con el costo de su última entrada con costo no revertida, o "sin costo".
 
 ## 9.7 InventoryCostConsumption
 
@@ -3631,28 +3649,32 @@ Las ventas consumen primero las capas abiertas más antiguas de la misma empresa
 
 ### Descripción
 
-Registra qué capas de costo fueron consumidas por una salida de inventario.
+Registra qué capas de costo consumió, restituyó o retiró un movimiento de inventario.
 
 Permite reconstruir el costo de ventas exacto y conservar la trazabilidad FIFO.
 
 ### Atributos
 
-| Atributo             | Tipo            | Regla  | Descripción                 |
-| -------------------- | --------------- | ------ | --------------------------- |
-| `id`                 | `UUID`          | PK, NN | Identificador.              |
-| `output_movement_id` | `UUID`          | FK, NN | Movimiento de salida.       |
-| `cost_layer_id`      | `UUID`          | FK, NN | Capa consumida.             |
-| `quantity`           | `NUMERIC(18,4)` | NN     | Cantidad tomada de la capa. |
-| `unit_cost`          | `NUMERIC(18,4)` | NN     | Costo histórico de la capa. |
-| `cost_amount`        | `NUMERIC(18,2)` | NN     | Costo total consumido.      |
-| `created_at`         | `TIMESTAMPTZ`   | NN     | Creación.                   |
+| Atributo                  | Tipo            | Regla                | Descripción                                               |
+| ------------------------- | --------------- | -------------------- | --------------------------------------------------------- |
+| `id`                      | `UUID`          | PK, NN               | Identificador.                                            |
+| `movement_id`             | `UUID`          | FK, NN               | Movimiento que consume, restituye o retira.               |
+| `cost_layer_id`           | `UUID`          | FK, NN               | Capa afectada.                                            |
+| `consumption_type`        | `VARCHAR(20)`   | NN, CK               | `CONSUME`, `RESTORE` o `ENTRY_REVERSAL`.                  |
+| `restores_consumption_id` | `UUID`          | FK, nullable, UQ, CK | Consumo original que restituye; obligatorio en `RESTORE`. |
+| `quantity`                | `NUMERIC(18,4)` | NN, CK               | Cantidad; mayor que cero.                                 |
+| `unit_cost`               | `NUMERIC(18,4)` | NN                   | Costo histórico de la capa.                               |
+| `cost_known`              | `BOOLEAN`       | NN                   | Copia de `cost_known` de la capa.                         |
+| `cost_amount`             | `NUMERIC(18,2)` | NN                   | `round(quantity × unit_cost, 2)` con `ROUND_HALF_UP`.     |
+| `created_at`              | `TIMESTAMPTZ`   | NN                   | Creación.                                                 |
+| `created_by`              | `VARCHAR(255)`  | NN                   | `sub` de quien aplicó el movimiento (D1).                 |
 
 ### Reglas y restricciones
 
-- Los consumos son inmutables.
-- La cantidad debe ser mayor que cero.
-- La suma de consumos de un movimiento debe explicar su costo total valorizado.
-- Un reverso debe restaurar la trazabilidad mediante operaciones inversas controladas, no modificando consumos históricos.
+- Los consumos son inmutables (la base rechaza `UPDATE`, `DELETE` y `TRUNCATE`).
+- La suma de los consumos de un movimiento explica su valor (`movement_value`).
+- El reverso de una salida crea un `RESTORE` por cada consumo original, en la misma capa y con el mismo costo, sin modificar consumos históricos; una salida sin consumos (anterior a la valoración) no se revierte.
+- El reverso de una entrada crea un `ENTRY_REVERSAL` y exige su capa completa; una entrada anterior a la valoración se retira de la capa de apertura si conserva cantidad suficiente.
 
 ## 9.8 InventoryCount
 
@@ -3662,25 +3684,39 @@ Permite reconstruir el costo de ventas exacto y conservar la trazabilidad FIFO.
 
 ### Descripción
 
-Representa un conteo físico periódico de inventario en una sucursal.
+Representa un conteo físico de inventario en una sucursal.
 
-Permite soportar procesos de inventario periódico sin utilizar `InventoryAdjustment` como sustituto del proceso completo de conteo.
+Permite soportar procesos de conteo sin utilizar `InventoryAdjustment` como sustituto del proceso completo.
 
 ### Atributos
 
-| Atributo               | Tipo          | Regla         | Descripción                                        |
-| ---------------------- | ------------- | ------------- | -------------------------------------------------- |
-| `id`                   | `UUID`        | PK, NN        | Identificador.                                     |
-| `company_id`           | `UUID`        | REF, NN       | Empresa.                                           |
-| `branch_id`            | `UUID`        | REF, NN       | Sucursal.                                          |
-| `status`               | `VARCHAR(20)` | NN, CK        | `DRAFT`, `IN_PROGRESS`, `COMPLETED` o `CANCELLED`. |
-| `started_by_user_id`   | `UUID`        | REF, NN       | Usuario responsable.                               |
-| `started_at`           | `TIMESTAMPTZ` | nullable      | Inicio real.                                       |
-| `completed_by_user_id` | `UUID`        | REF, nullable | Usuario que completa.                              |
-| `completed_at`         | `TIMESTAMPTZ` | nullable      | Finalización.                                      |
-| `observations`         | `TEXT`        | nullable      | Observaciones generales.                           |
-| `created_at`           | `TIMESTAMPTZ` | NN            | Creación.                                          |
-| `updated_at`           | `TIMESTAMPTZ` | NN            | Modificación.                                      |
+| Atributo               | Tipo           | Regla             | Descripción                                                     |
+| ---------------------- | -------------- | ----------------- | --------------------------------------------------------------- |
+| `id`                   | `UUID`         | PK, NN            | Identificador.                                                  |
+| `company_id`           | `UUID`         | REF, NN           | Empresa.                                                        |
+| `branch_id`            | `UUID`         | REF, NN           | Sucursal.                                                       |
+| `status`               | `VARCHAR(20)`  | NN, CK            | `DRAFT`, `IN_PROGRESS`, `COMPLETED` o `CANCELLED`.              |
+| `started_by_user_id`   | `UUID`         | REF, NN           | Usuario operativo responsable (quien lo crea).                  |
+| `started_at`           | `TIMESTAMPTZ`  | nullable, CK      | Inicio real.                                                    |
+| `completed_by_user_id` | `UUID`         | REF, nullable, CK | Usuario que completa.                                           |
+| `completed_at`         | `TIMESTAMPTZ`  | nullable, CK      | Finalización.                                                   |
+| `cancelled_by_user_id` | `UUID`         | REF, nullable, CK | Usuario que cancela.                                            |
+| `cancelled_at`         | `TIMESTAMPTZ`  | nullable, CK      | Cancelación.                                                    |
+| `cancel_reason`        | `TEXT`         | nullable, CK      | Motivo de la cancelación.                                       |
+| `operation_id`         | `UUID`         | FK, nullable, CK  | Operación de ajustes al completar; nula si no hubo diferencias. |
+| `observations`         | `TEXT`         | nullable          | Observaciones generales.                                        |
+| `version`              | `INTEGER`      | NN, DEFAULT `1`   | Control concurrente.                                            |
+| `created_at`           | `TIMESTAMPTZ`  | NN                | Creación.                                                       |
+| `created_by`           | `VARCHAR(255)` | NN                | `sub` del usuario (D1).                                         |
+| `updated_at`           | `TIMESTAMPTZ`  | NN                | Modificación.                                                   |
+| `updated_by`           | `VARCHAR(255)` | NN                | `sub` del usuario (D1).                                         |
+
+### Reglas y restricciones
+
+- Transiciones `DRAFT → IN_PROGRESS → COMPLETED` y `DRAFT | IN_PROGRESS → CANCELLED`, con control de versión; los campos de cada estado son coherentes por restricción.
+- Un solo conteo `IN_PROGRESS` por sucursal (índice único parcial).
+- Completar aplica todas las diferencias registradas como **una** operación de ajustes (origen `COUNT`) sobre el saldo vigente, todo o nada.
+- Solo lo operan usuarios humanos con el permiso, membresía `ACTIVE` y asignación `ACTIVE` a la sucursal.
 
 ## 9.9 InventoryCountDetail
 
@@ -3694,24 +3730,41 @@ Conserva el resultado del conteo físico por producto y la diferencia contra el 
 
 ### Atributos
 
-| Atributo                   | Tipo            | Regla        | Descripción                              |
-| -------------------------- | --------------- | ------------ | ---------------------------------------- |
-| `id`                       | `UUID`          | PK, NN       | Identificador.                           |
-| `inventory_count_id`       | `UUID`          | FK, NN       | Conteo físico.                           |
-| `company_product_id`       | `UUID`          | REF, NN      | Producto.                                |
-| `system_quantity_snapshot` | `NUMERIC(18,4)` | NN           | Saldo de sistema tomado como referencia. |
-| `counted_quantity`         | `NUMERIC(18,4)` | NN           | Cantidad física encontrada.              |
-| `difference_quantity`      | `NUMERIC(18,4)` | NN           | Diferencia física contra sistema.        |
-| `inventory_adjustment_id`  | `UUID`          | FK, nullable | Ajuste generado cuando corresponde.      |
-| `counted_by_user_id`       | `UUID`          | REF, NN      | Usuario que registra el conteo.          |
-| `counted_at`               | `TIMESTAMPTZ`   | NN           | Momento del conteo.                      |
-| `created_at`               | `TIMESTAMPTZ`   | NN           | Creación.                                |
+| Atributo                   | Tipo            | Regla         | Descripción                                                  |
+| -------------------------- | --------------- | ------------- | ------------------------------------------------------------ |
+| `id`                       | `UUID`          | PK, NN        | Identificador.                                               |
+| `inventory_count_id`       | `UUID`          | FK, NN, UQ    | Conteo físico.                                               |
+| `company_product_id`       | `UUID`          | REF, NN, UQ   | Producto.                                                    |
+| `system_quantity_snapshot` | `NUMERIC(18,4)` | NN, CK        | Saldo de sistema al registrar el producto.                   |
+| `counted_quantity`         | `NUMERIC(18,4)` | NN, CK        | Cantidad física encontrada.                                  |
+| `difference_quantity`      | `NUMERIC(18,4)` | NN, CK        | Diferencia física contra sistema.                            |
+| `unit_cost`                | `NUMERIC(18,4)` | nullable, CK  | Costo de un sobrante sin costo conocido.                     |
+| `inventory_adjustment_id`  | `UUID`          | FK, nullable  | Ajuste generado cuando corresponde.                          |
+| `counted_by_user_id`       | `UUID`          | REF, NN       | Usuario que registra el conteo.                              |
+| `counted_at`               | `TIMESTAMPTZ`   | NN            | Momento del conteo.                                          |
+| `created_at`               | `TIMESTAMPTZ`   | NN            | Creación.                                                    |
+| `created_by`               | `VARCHAR(255)`  | NN            | `sub` del usuario (D1).                                      |
+| `updated_at`               | `TIMESTAMPTZ`   | NN            | Último registro.                                             |
+| `updated_by`               | `VARCHAR(255)`  | NN            | `sub` del usuario (D1).                                      |
 
 ### Reglas y restricciones
 
-- Un producto aparece como máximo una vez dentro de un conteo, salvo que una futura política de reconteo lo modele explícitamente.
+- Un producto aparece como máximo una vez dentro de un conteo; un nuevo registro reemplaza el anterior y vuelve a tomar el saldo del sistema.
 - `difference_quantity = counted_quantity - system_quantity_snapshot`.
-- Si una diferencia aprobada modifica el saldo, debe existir un `InventoryAdjustment` trazable.
+- Un conteo admite hasta 1 000 productos.
+- Los detalles solo cambian mientras el conteo está `IN_PROGRESS`: la base rechaza cambios de detalles de conteos finalizados.
+
+> **Reconciliación (2026-10-06):** sección 9 alineada con `specs/013-inventory-complementary`
+> (Inventory Service Fase B, BR-13): valoración FIFO como único método; columnas de valoración en saldos
+> (`average_unit_cost`, `inventory_value`, `has_unknown_cost`) y movimientos (`unit_cost` en todo
+> movimiento valorizado, `movement_value`, `cost_known`, tipos de ajuste); ajustes aplicados al
+> registrarlos e inmutables, sin estado `REJECTED`, con operación, costo y valor; usuarios como
+> `application_user_id`; columnas de auditoría `created_*`/`updated_*` con el `sub` (D1); política única
+> de la empresa solo `FIFO` y siempre activa; capas `ENTRY`, `ADJUSTMENT` y `OPENING` con `cost_known` y
+> propagación del costo desconocido; consumos `CONSUME`, `RESTORE` y `ENTRY_REVERSAL`; conteos con
+> cancelación, operación y versión; `currency_code` nulo únicamente en las capas `OPENING` históricas. El
+> promedio ponderado (`WEIGHTED_AVERAGE`) no está implementado y queda fuera del MVP. Los nombres de
+> restricciones, índices y triggers están en el `data-model.md` de esa feature.
 
 # 10. Finance DB
 

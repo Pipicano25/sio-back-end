@@ -25,7 +25,7 @@ from inventory_service.application.exceptions import (
     field_error,
 )
 from inventory_service.application.reference_validation import ReferenceValidator, ValidatedReferences
-from inventory_service.domain.balance_math import OUTPUT, ORIGIN_TYPE_BY_OPERATION
+from inventory_service.domain.balance_math import ENTRY, OUTPUT, ORIGIN_TYPE_BY_OPERATION
 from inventory_service.domain.canonical import request_hash
 from inventory_service.infrastructure.repository import (
     KeyTakenError,
@@ -130,6 +130,7 @@ class OperationService:
             data.branch_id,
             data.application_user_id,
             [item.company_product_id for item in data.lines],
+            needs_currency=operation_type == ENTRY,
         )
 
         operation = NewOperation(
@@ -146,6 +147,7 @@ class OperationService:
             reason=data.reason,
             reverses_operation_id=None,
             request_hash=fingerprint,
+            currency_code=references.currency_code,
             lines=[
                 NewLine(
                     index=index,
@@ -203,6 +205,16 @@ class OperationService:
                     )
                 )
             seen.add(item.origin_detail_id)
+
+            if operation_type == ENTRY and item.unit_cost is None:
+                # Cambio incompatible aprobado (013 DS-12, FR-061): toda entrada valorizable trae costo.
+                errors.append(
+                    field_error(
+                        f"lines[{index}].unit_cost",
+                        "UNIT_COST_REQUIRED",
+                        "El costo unitario es obligatorio en las entradas (valoración FIFO).",
+                    )
+                )
 
             if operation_type == OUTPUT and item.unit_cost is not None:
                 errors.append(

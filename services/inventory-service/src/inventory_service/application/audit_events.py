@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from inventory_service.application.reference_validation import ValidatedReferences
 from inventory_service.domain.balance_math import ENTRY, ENTRY_REVERSAL, OUTPUT, OUTPUT_REVERSAL
-from inventory_service.domain.quantities import format_decimal
+from inventory_service.domain.quantities import format_decimal, optional_decimal, optional_money
 from inventory_service.infrastructure.repository import OnApplied, StoredOperation
 
 ENTITY_TYPE = "InventoryOperation"
@@ -56,7 +56,9 @@ def build_event(stored: StoredOperation, references: ValidatedReferences, reques
                     "origin_detail_id": str(movement.origin_detail_id),
                     "company_product_id": str(movement.company_product_id),
                     "quantity": format_decimal(movement.quantity),
-                    "unit_cost": format_decimal(movement.unit_cost) if movement.unit_cost is not None else None,
+                    "unit_cost": optional_decimal(movement.unit_cost),
+                    "movement_value": optional_money(movement.movement_value),
+                    "cost_known": movement.cost_known,
                     "movement_id": str(movement.id),
                     "previous_balance": format_decimal(movement.previous_balance),
                     "new_balance": format_decimal(movement.new_balance),

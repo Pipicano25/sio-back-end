@@ -27,9 +27,9 @@ from uuid import UUID
 import pytest
 
 from tests.conftest import truncate_all
-from tests.examples.exercises import ACEITE, ARROZ, BRANCH, COMPANY, EXERCISES, SERVICIO, USER
+from tests.examples.exercises import ACEITE, ARROZ, BRANCH, BRANCH_B, COMPANY, EXERCISES, SERVICIO, USER
 from tests.examples.render import render_exercise, render_general
-from tests.examples.runner import NO_PERMISSIONS_HUMAN, NO_PERMISSIONS_SERVICE, OPERATOR, run_exercise
+from tests.examples.runner import NO_PERMISSIONS_HUMAN, NO_PERMISSIONS_SERVICE, OPERATOR, WILDCARD_SERVICE, run_exercise
 from tests.examples.users import OPERATOR as OPERATOR_CLIENT
 from tests.examples.users import OPERATOR_ROLES, OPERATOR_SUB, USERS
 
@@ -52,15 +52,22 @@ class _Client:
 def clients(test_client, make_token, fake_oc, fake_cr):
     company = UUID(COMPANY)
     fake_oc.add_branch(company, branch_id=UUID(BRANCH))
+    fake_oc.add_branch(company, branch_id=UUID(BRANCH_B))  # 013: sin usuarios asignados
     fake_oc.add_user(company, user_id=UUID(USER))
     fake_cr.add_product(company, product_id=UUID(ARROZ))
     fake_cr.add_product(company, product_id=UUID(ACEITE))
     fake_cr.add_product(company, product_id=UUID(SERVICIO), inventory_control_enabled=False)
 
     result = {}
-    for user in USERS:
+    for index, user in enumerate(USERS, start=1):
         name = user["username"]
         fake_oc.add_member(name, company)
+        # 013: usuario operativo fijo de cada usuario de prueba (documentación estable) y asignación
+        # a la sucursal principal (ajustes y conteos la exigen).
+        operator_user = UUID(f"d44c0000-0000-4000-8000-{100 + index:012d}")
+        fake_oc.member_users[(name, company)] = operator_user
+        fake_oc.add_user(company, user_id=operator_user)
+        fake_oc.assign(name, UUID(BRANCH))
         result[name] = _Client(test_client, make_token(*user["roles"], sub=name, preferred_username=name))
     result[OPERATOR] = _Client(
         test_client,
@@ -70,6 +77,10 @@ def clients(test_client, make_token, fake_oc, fake_cr):
         test_client, make_token(sub="sin-permisos", preferred_username="service-account-sin-permisos", client_id="sin-permisos")
     )
     result[NO_PERMISSIONS_HUMAN] = _Client(test_client, make_token(sub="nadie", preferred_username="nadie"))
+    result[WILDCARD_SERVICE] = _Client(
+        test_client,
+        make_token("perm:all:all:all", sub="comodin", preferred_username="service-account-comodin", client_id="comodin"),
+    )
     return result
 
 

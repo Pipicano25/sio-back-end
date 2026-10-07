@@ -202,6 +202,10 @@ class RealWorld:
     products: tuple[str, str]
     no_control_product: str
     foreign_company: str
+    branch_b: str = ""
+    """013: segunda sucursal `ACTIVE` sin asignaciones (ajustes y conteos → `BRANCH_ACCESS_DENIED`)."""
+    inventario_user: str = ""
+    """013: usuario operativo de `inventario.test`, asignado solo a `branch`."""
 
 
 def build_world(admin: httpx.Client) -> RealWorld:
@@ -212,12 +216,22 @@ def build_world(admin: httpx.Client) -> RealWorld:
     company_id = company.json()["id"]
 
     user = _member(admin, company_id, "admin.test", _person(admin, colombia, "A"))
-    _member(admin, company_id, "inventario.test", _person(admin, colombia, "I"))
+    inventario = _member(admin, company_id, "inventario.test", _person(admin, colombia, "I"))
 
     branch = admin.post(f"{OPERATIONAL_CONTEXT}/companies/{company_id}/branches", json={
         "code": f"INV{RUN_ID}", "name": f"Bodega ficticia de validación INV {RUN_ID}",
     })
     assert branch.status_code == 201, branch.text
+    branch_b = admin.post(f"{OPERATIONAL_CONTEXT}/companies/{company_id}/branches", json={
+        "code": f"INVB{RUN_ID}", "name": f"Bodega B ficticia de validación INV {RUN_ID}",
+    })
+    assert branch_b.status_code == 201, branch_b.text
+    # 013 (DS-14): `inventario.test` y `admin.test` asignados a la sucursal principal, no a la B.
+    for member in (inventario, user):
+        assigned = admin.post(
+            f"{OPERATIONAL_CONTEXT}/application-users/{member}/user-branches", json={"branch_id": branch.json()["id"]}
+        )
+        assert assigned.status_code == 201, assigned.text
 
     foreign = admin.post(f"{OPERATIONAL_CONTEXT}/companies", json={"organization_identity_id": _organization(admin, colombia, "AJENA ")})
     assert foreign.status_code == 201, foreign.text
@@ -229,11 +243,19 @@ def build_world(admin: httpx.Client) -> RealWorld:
         products=(_adopt(admin, company_id, "A", inventory_control=True), _adopt(admin, company_id, "B", inventory_control=True)),
         no_control_product=_adopt(admin, company_id, "S", inventory_control=False),
         foreign_company=foreign.json()["id"],
+        branch_b=branch_b.json()["id"],
+        inventario_user=inventario,
     )
+
+
+DEFAULT_UNIT_COST = "1000"
+"""013 (DS-12, cambio incompatible aprobado): toda entrada lleva costo."""
 
 
 def operation(world: RealWorld, *lines: tuple[str, str], origin_type: str = "PURCHASE", unit_cost: str | None = None) -> dict:
     from uuid import uuid4
+
+    unit_cost = unit_cost or DEFAULT_UNIT_COST
 
     return {
         "operation_key": str(uuid4()),

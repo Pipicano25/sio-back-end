@@ -30,7 +30,8 @@ def test_output_reduces_the_balance(operator, world, test_engine) -> None:
     assert response.status_code == 201, response.text
     movement = response.json()["movements"][0]
     assert (movement["movement_type"], movement["previous_balance"], movement["new_balance"], movement["unit_cost"]) == (
-        "SALE_OUTPUT", "15.5000", "10.5000", None
+        # 013 (FR-060): la salida informa su costo FIFO (el ficticio por defecto de la entrada).
+        "SALE_OUTPUT", "15.5000", "10.5000", "1000.0000"
     )
     assert response.json()["operation_type"] == "OUTPUT"
     assert stock(test_engine, world, product) == "10.5000"

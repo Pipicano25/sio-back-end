@@ -103,7 +103,7 @@ EXERCISES = [
                 "why": [
                     "`operation_key` lo genera Purchase (su operación de confirmación) y lo conserva en los reintentos.",
                     "Las cantidades van en unidad base, como cadena decimal con a lo sumo 4 decimales.",
-                    "`unit_cost` es opcional y solo se guarda; esta fase no valora el inventario.",
+                    "`unit_cost` es obligatorio (valoración FIFO, 013): cada línea crea una capa de costo.",
                     "La primera entrada de un producto en la sucursal crea su saldo.",
                 ],
             },
@@ -142,7 +142,7 @@ EXERCISES = [
                 "kind": OPERACION,
                 "method": "POST",
                 "path": "/api/v1/inventory-entries",
-                "body": operation(2, "PURCHASE", PURCHASE_DOC, ln(3, SERVICIO, "1")),
+                "body": operation(2, "PURCHASE", PURCHASE_DOC, ln(3, SERVICIO, "1", "1200")),
                 "expect": 422,
                 "why": [
                     "Commercial Relationship informa `inventory_control_enabled = false`: el producto no admite movimientos.",
@@ -168,9 +168,9 @@ EXERCISES = [
                 "kind": OPERACION,
                 "method": "POST",
                 "path": "/api/v1/inventory-entries",
-                "body": operation(1, "PURCHASE", PURCHASE_DOC, ln(1, ARROZ, "10")),
+                "body": operation(1, "PURCHASE", PURCHASE_DOC, ln(1, ARROZ, "10", "2500.50")),
                 "expect": 201,
-                "why": ["Prepara el saldo de la sucursal para las salidas."],
+                "why": ["Prepara el saldo de la sucursal para las salidas (una capa de 10 a 2 500,50)."],
             },
             {
                 "file": "02-aplicar-una-salida.md",
@@ -220,7 +220,7 @@ EXERCISES = [
         "title": "Reversos",
         "purpose": (
             "Purchase y Sales anulan documentos confirmados revirtiendo la operación completa con "
-            "`company_id` obligatorio: reverso de una entrada sin saldo suficiente, reverso de una salida, "
+            "`company_id` obligatorio: reverso de una entrada cuya capa ya se consumió, reverso de una salida, "
             "reverso repetido y reverso pedido desde otra empresa."
         ),
         "data": COMMON_DATA + [("Compra", PURCHASE_DOC, "Documento ficticio de Purchase."), ("Venta", SALE_DOC, "Documento ficticio de Sales.")],
@@ -258,7 +258,11 @@ EXERCISES = [
                 "path": "/api/v1/inventory-entries/<OP_ENTRADA>/reversal",
                 "body": reversal(3, "Anulación de la compra ficticia"),
                 "expect": 409,
-                "why": ["Revertir 10 dejaría el saldo en -4: se rechaza con `INSUFFICIENT_STOCK` sin cambios."],
+                "why": [
+                    "La capa de la entrada ya entregó 4 unidades a la venta: se rechaza con "
+                    "`ENTRY_LAYER_CONSUMED` sin cambios (013, DS-16).",
+                    "La corrección es anular antes la venta (paso 4) o registrar un ajuste.",
+                ],
             },
             {
                 "file": "04-reverso-de-salida.md",
@@ -306,7 +310,10 @@ EXERCISES = [
                 "path": "/api/v1/inventory-entries/<OP_ENTRADA>/reversal",
                 "body": reversal(7, "Anulación de la compra ficticia"),
                 "expect": 201,
-                "why": ["Con el saldo de nuevo en 10, el reverso deja el saldo en 0 y copia el `unit_cost` original."],
+                "why": [
+                    "Con la venta revertida, la capa de la entrada vuelve a estar completa: el reverso la retira "
+                    "entera, deja el saldo en 0 e informa el costo de la entrada."
+                ],
             },
         ],
     },
@@ -402,6 +409,545 @@ EXERCISES = [
                 "path": f"/api/v1/companies/{OTHER_COMPANY}/branches/{BRANCH}/balances",
                 "expect": 404,
                 "why": ["Fuera del alcance del usuario: `404` sin revelar si la empresa existe."],
+            },
+        ],
+    },
+]
+
+
+# ==========================================================================================
+# Fase B (013): ajustes, conteos, valoración FIFO y políticas
+# ==========================================================================================
+
+ACCION = "accion"
+"""Escritura de un usuario humano (ajustes, conteos, políticas): permiso + membresía (+ asignación a
+la sucursal en ajustes y conteos); una cuenta de servicio recibe `403` aunque tenga el permiso."""
+
+BRANCH_B = "d44b0000-0000-4000-8000-000000000002"
+"""Segunda sucursal ficticia (`ACTIVE`) a la que **ningún** usuario de prueba está asignado."""
+
+COMPANY_BASE = f"/api/v1/companies/{COMPANY}"
+
+DATA_013 = COMMON_DATA + [
+    ("Sucursal sin asignar", BRANCH_B, "Sucursal ficticia `ACTIVE` sin usuarios asignados."),
+    ("Compra", PURCHASE_DOC, "Documento ficticio de Purchase."),
+    ("Venta", SALE_DOC, "Documento ficticio de Sales."),
+]
+
+
+def adjustment(key: int, product: str, kind: str, quantity: str, reason: str, *, unit_cost: str | None = None, branch: str = BRANCH) -> dict:
+    return {
+        "adjustment_key": uid("05", key),
+        "branch_id": branch,
+        "company_product_id": product,
+        "adjustment_type": kind,
+        "quantity": quantity,
+        "unit_cost": unit_cost,
+        "reason": reason,
+    }
+
+
+EXERCISES += [
+    {
+        "number": 5,
+        "folder": "5-ajustes",
+        "title": "Ajustes de inventario",
+        "purpose": (
+            "Un usuario de la bodega, asignado a la sucursal, corrige el inventario con ajustes que se "
+            "aplican al registrarlos: un ajuste negativo valorizado con FIFO, uno positivo con el costo de "
+            "la capa más reciente, uno positivo de un producto sin capas (costo obligatorio) y un ajuste en "
+            "una sucursal a la que el usuario no está asignado."
+        ),
+        "data": DATA_013,
+        "steps": [
+            {
+                "file": "01-entrada.md",
+                "title": "Entrada de 10 unidades de arroz a 2 500,50",
+                "actor": "operador",
+                "kind": OPERACION,
+                "method": "POST",
+                "path": "/api/v1/inventory-entries",
+                "body": operation(1, "PURCHASE", PURCHASE_DOC, ln(1, ARROZ, "10", "2500.50")),
+                "expect": 201,
+                "why": ["Crea el saldo y una capa FIFO de 10 a 2 500,50."],
+            },
+            {
+                "file": "02-ajuste-negativo.md",
+                "title": "Ajuste negativo de 3 unidades dañadas",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-adjustments",
+                "body": adjustment(1, ARROZ, "NEGATIVE", "3", "Producto dañado en bodega"),
+                "expect": 201,
+                "save": {"AJUSTE": "id"},
+                "why": [
+                    "Se aplica en el acto (sin aprobación) como un movimiento `NEGATIVE_ADJUSTMENT` del kardex.",
+                    "El costo sale de las capas FIFO (no se informa `unit_cost`); el motivo es obligatorio.",
+                    "El usuario operativo no viaja en el cuerpo: lo informa Operational Context para el usuario del token.",
+                ],
+            },
+            {
+                "file": "03-ajuste-positivo.md",
+                "title": "Ajuste positivo con el costo de la capa más reciente",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-adjustments",
+                "body": adjustment(2, ARROZ, "POSITIVE", "2", "Sobrante encontrado en estantería"),
+                "expect": 201,
+                "why": ["Sin `unit_cost`: la nueva capa toma el costo de la capa más reciente del producto (2 500,50)."],
+            },
+            {
+                "file": "04-ajuste-positivo-sin-capas.md",
+                "title": "Ajuste positivo de un producto sin capas, sin costo",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-adjustments",
+                "body": adjustment(3, ACEITE, "POSITIVE", "4", "Inventario inicial encontrado"),
+                "expect": 422,
+                "why": [
+                    "El aceite nunca tuvo capas en la sucursal: no hay costo conocido y `unit_cost` es obligatorio "
+                    "(`UNIT_COST_REQUIRED`). Ninguna cantidad entra sin costo."
+                ],
+            },
+            {
+                "file": "05-ajuste-positivo-con-costo.md",
+                "title": "El mismo ajuste con su costo",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-adjustments",
+                "body": adjustment(4, ACEITE, "POSITIVE", "4", "Inventario inicial encontrado", unit_cost="9800"),
+                "expect": 201,
+                "why": ["Con `unit_cost` la capa se crea con ese costo."],
+            },
+            {
+                "file": "06-sucursal-no-asignada.md",
+                "title": "Ajuste en una sucursal no asignada",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-adjustments",
+                "body": adjustment(5, ARROZ, "POSITIVE", "1", "Prueba de asignación", unit_cost="1", branch=BRANCH_B),
+                "expect": 403,
+                "why": [
+                    "El usuario es miembro de la empresa pero no está asignado a esa sucursal: "
+                    "`BRANCH_ACCESS_DENIED`. Las consultas no exigen asignación; los ajustes y conteos sí."
+                ],
+            },
+            {
+                "file": "07-consultar-el-ajuste.md",
+                "title": "Consultar el ajuste con su movimiento",
+                "actor": "inventario.test",
+                "kind": CONSULTA,
+                "method": "GET",
+                "path": f"{COMPANY_BASE}/inventory-adjustments/<AJUSTE>",
+                "expect": 200,
+                "why": ["El ajuste es inmutable: se corrige con otro ajuste de sentido contrario."],
+            },
+        ],
+    },
+    {
+        "number": 6,
+        "folder": "6-conteos",
+        "title": "Conteos físicos",
+        "purpose": (
+            "Un conteo completo con faltante y sobrante que se aplica como una sola operación de ajustes, "
+            "un conteo cuya finalización dejaría un saldo negativo (no aplica nada) y su cancelación."
+        ),
+        "data": DATA_013,
+        "steps": [
+            {
+                "file": "01-entrada.md",
+                "title": "Entrada de arroz y aceite",
+                "actor": "operador",
+                "kind": OPERACION,
+                "method": "POST",
+                "path": "/api/v1/inventory-entries",
+                "body": ENTRY_10_ARROZ_5_ACEITE,
+                "expect": 201,
+                "why": ["Saldo de 10 arroces y 5,5 aceites, cada uno con su capa de costo."],
+            },
+            {
+                "file": "02-crear-conteo.md",
+                "title": "Crear el conteo de la sucursal",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-counts",
+                "body": {"branch_id": BRANCH, "observations": "Conteo mensual ficticio"},
+                "expect": 201,
+                "save": {"CONTEO": "id"},
+                "why": ["Nace en `DRAFT` con `version` 1; el responsable es el usuario operativo del token."],
+            },
+            {
+                "file": "03-iniciar.md",
+                "title": "Iniciar el conteo",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO>/start",
+                "body": {"version": 1},
+                "expect": 200,
+                "why": ["Pasa a `IN_PROGRESS` (`version` 2). Solo un conteo en curso por sucursal."],
+            },
+            {
+                "file": "04-contar-arroz.md",
+                "title": "Registrar 8 arroces contados",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "PUT",
+                "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO>/details/{ARROZ}",
+                "body": {"counted_quantity": "8"},
+                "expect": 200,
+                "why": ["Se guarda el saldo del sistema en ese momento (10) y la diferencia (−2)."],
+            },
+            {
+                "file": "05-contar-aceite.md",
+                "title": "Registrar 6 aceites contados",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "PUT",
+                "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO>/details/{ACEITE}",
+                "body": {"counted_quantity": "6"},
+                "expect": 200,
+                "why": ["Diferencia +0,5: un sobrante que tomará el costo de la capa más reciente del aceite."],
+            },
+            {
+                "file": "06-completar.md",
+                "title": "Completar el conteo",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO>/complete",
+                "body": {"completion_key": uid("06", 1), "version": 2},
+                "expect": 200,
+                "why": [
+                    "Una sola operación `ADJUSTMENT` (origen `COUNT`) con una línea por diferencia distinta de 0, "
+                    "todo o nada; un ajuste por línea enlazado a su detalle.",
+                    "La misma `completion_key` repetida devuelve el mismo resultado.",
+                ],
+            },
+            {
+                "file": "07-consultar.md",
+                "title": "Consultar el conteo completado",
+                "actor": "inventario.test",
+                "kind": CONSULTA,
+                "method": "GET",
+                "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO>",
+                "expect": 200,
+                "why": ["Incluye los detalles y, por estar completado, sus ajustes."],
+            },
+            {
+                "file": "08-segundo-conteo.md",
+                "title": "Crear un segundo conteo",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-counts",
+                "body": {"branch_id": BRANCH},
+                "expect": 201,
+                "save": {"CONTEO_2": "id"},
+                "why": ["El conteo anterior ya terminó: se puede iniciar otro en la sucursal."],
+            },
+            {
+                "file": "09-iniciar-segundo.md",
+                "title": "Iniciar el segundo conteo",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO_2>/start",
+                "body": {"version": 1},
+                "expect": 200,
+                "why": ["`IN_PROGRESS` con `version` 2."],
+            },
+            {
+                "file": "10-contar-arroz-cero.md",
+                "title": "Registrar 0 arroces contados",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "PUT",
+                "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO_2>/details/{ARROZ}",
+                "body": {"counted_quantity": "0"},
+                "expect": 200,
+                "why": ["Diferencia −8 sobre el saldo de ese momento."],
+            },
+            {
+                "file": "11-venta-intermedia.md",
+                "title": "Una venta de 5 arroces antes de completar",
+                "actor": "operador",
+                "kind": OPERACION,
+                "method": "POST",
+                "path": "/api/v1/inventory-outputs",
+                "body": operation(2, "SALE", SALE_DOC, ln(5, ARROZ, "5")),
+                "expect": 201,
+                "why": ["El saldo vigente baja a 3."],
+            },
+            {
+                "file": "12-completar-con-saldo-insuficiente.md",
+                "title": "Completar el segundo conteo",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO_2>/complete",
+                "body": {"completion_key": uid("06", 2), "version": 2},
+                "expect": 409,
+                "why": [
+                    "La diferencia registrada (−8) se aplica sobre el saldo vigente (3): quedaría negativo. Se "
+                    "rechaza con `INSUFFICIENT_STOCK` y `shortages`; no se aplica nada y el conteo sigue en curso."
+                ],
+            },
+            {
+                "file": "13-cancelar.md",
+                "title": "Cancelar el segundo conteo",
+                "actor": "inventario.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO_2>/cancel",
+                "body": {"reason": "Conteo repetido por la venta intermedia", "version": 2},
+                "expect": 200,
+                "why": ["Queda `CANCELLED` sin ajustes; sus detalles ya no se pueden modificar."],
+            },
+        ],
+    },
+    {
+        "number": 7,
+        "folder": "7-valoracion",
+        "title": "Valoración FIFO",
+        "purpose": (
+            "Dos entradas con costos distintos, una salida que consume dos capas, el valor de la sucursal, "
+            "las capas y los consumos de la salida, y los reversos con valoración: una entrada cuya capa ya "
+            "se consumió no se revierte hasta revertir la venta."
+        ),
+        "data": DATA_013,
+        "steps": [
+            {
+                "file": "01-entrada-a-1000.md",
+                "title": "Entrada de 10 arroces a 1 000",
+                "actor": "operador",
+                "kind": OPERACION,
+                "method": "POST",
+                "path": "/api/v1/inventory-entries",
+                "body": operation(1, "PURCHASE", PURCHASE_DOC, ln(1, ARROZ, "10", "1000")),
+                "expect": 201,
+                "save": {"OP_ENTRADA": "id"},
+                "why": ["Primera capa: 10 a 1 000."],
+            },
+            {
+                "file": "02-entrada-a-1300.md",
+                "title": "Entrada de 5 arroces a 1 300",
+                "actor": "operador",
+                "kind": OPERACION,
+                "method": "POST",
+                "path": "/api/v1/inventory-entries",
+                "body": operation(2, "PURCHASE", PURCHASE_DOC, ln(2, ARROZ, "5", "1300")),
+                "expect": 201,
+                "why": ["Segunda capa: 5 a 1 300. Valor del saldo: 16 500."],
+            },
+            {
+                "file": "03-salida-de-12.md",
+                "title": "Salida de 12 arroces",
+                "actor": "operador",
+                "kind": OPERACION,
+                "method": "POST",
+                "path": "/api/v1/inventory-outputs",
+                "body": operation(3, "SALE", SALE_DOC, ln(3, ARROZ, "12")),
+                "expect": 201,
+                "save": {"OP_SALIDA": "id", "MOV_SALIDA": "movements[0].id"},
+                "why": [
+                    "Consume 10 a 1 000 y 2 a 1 300: `movement_value` 12 600 y `unit_cost` 1 050 (informativo).",
+                    "Sales guarda este costo; no lo calcula. `cost_known = true`: ninguna unidad sin costo histórico.",
+                ],
+            },
+            {
+                "file": "04-valor-de-la-sucursal.md",
+                "title": "Valor del inventario de la sucursal",
+                "actor": "inventario.test",
+                "kind": CONSULTA,
+                "method": "GET",
+                "path": f"{BASE}/valuation",
+                "expect": 200,
+                "why": ["Quedan 3 a 1 300: 3 900. El valor se recalcula siempre desde las capas abiertas."],
+            },
+            {
+                "file": "05-capas.md",
+                "title": "Capas del arroz, incluidas las cerradas",
+                "actor": "inventario.test",
+                "kind": CONSULTA,
+                "method": "GET",
+                "path": f"{BASE}/valuation/{ARROZ}/layers?include_closed=true",
+                "expect": 200,
+                "why": ["En orden FIFO; la primera quedó cerrada (`remaining_quantity` 0)."],
+            },
+            {
+                "file": "06-consumos-de-la-salida.md",
+                "title": "Consumos que explican el costo de la salida",
+                "actor": "inventario.test",
+                "kind": CONSULTA,
+                "method": "GET",
+                "path": f"{COMPANY_BASE}/inventory-movements/<MOV_SALIDA>/cost-consumptions",
+                "expect": 200,
+                "why": ["Un consumo `CONSUME` por capa tomada; la suma de `cost_amount` es el `movement_value`."],
+            },
+            {
+                "file": "07-reverso-de-entrada-consumida.md",
+                "title": "Revertir la primera entrada después de la venta",
+                "actor": "operador",
+                "kind": OPERACION,
+                "method": "POST",
+                "path": "/api/v1/inventory-entries/<OP_ENTRADA>/reversal",
+                "body": reversal(4, "Anulación de la compra ficticia"),
+                "expect": 409,
+                "why": ["Su capa ya entregó unidades a la venta: `ENTRY_LAYER_CONSUMED`, sin cambios."],
+            },
+            {
+                "file": "08-reverso-de-la-salida.md",
+                "title": "Revertir la venta",
+                "actor": "operador",
+                "kind": OPERACION,
+                "method": "POST",
+                "path": "/api/v1/inventory-outputs/<OP_SALIDA>/reversal",
+                "body": reversal(5, "Anulación de la venta ficticia"),
+                "expect": 201,
+                "why": [
+                    "Devuelve cada cantidad a la misma capa con el mismo costo (consumos `RESTORE`); el valor vuelve a 16 500.",
+                    "Una salida aplicada antes de la valoración (sin consumos FIFO) no se puede revertir: "
+                    "`409 OUTPUT_NOT_VALUED`; se corrige con un ajuste positivo con costo.",
+                ],
+            },
+            {
+                "file": "09-reverso-de-entrada-intacta.md",
+                "title": "Revertir ahora la primera entrada",
+                "actor": "operador",
+                "kind": OPERACION,
+                "method": "POST",
+                "path": "/api/v1/inventory-entries/<OP_ENTRADA>/reversal",
+                "body": reversal(6, "Anulación de la compra ficticia"),
+                "expect": 201,
+                "why": ["Su capa volvió a estar completa: se retira entera (`ENTRY_REVERSAL`) con su costo de 1 000."],
+            },
+        ],
+    },
+    {
+        "number": 8,
+        "folder": "8-politicas",
+        "title": "Políticas de inventario",
+        "purpose": (
+            "El administrador consulta la política por defecto, registra la de la empresa (solo FIFO), la "
+            "cambia con control de versión y configura los niveles de reposición de un producto en la "
+            "sucursal (una política activa por producto y sucursal)."
+        ),
+        "data": DATA_013,
+        "steps": [
+            {
+                "file": "01-politica-por-defecto.md",
+                "title": "Consultar la política sin registrarla",
+                "actor": "admin.test",
+                "kind": CONSULTA,
+                "method": "GET",
+                "path": f"{COMPANY_BASE}/inventory-policy",
+                "expect": 200,
+                "why": ["Se informa la política por defecto (`PERPETUAL`, `FIFO`, `STANDARD`) con `registered: false`."],
+            },
+            {
+                "file": "02-registrar-politica.md",
+                "title": "Registrar la política de la empresa",
+                "actor": "admin.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-policy",
+                "body": {"inventory_system": "PERPETUAL", "valuation_method": "FIFO", "replenishment_strategy": "STANDARD"},
+                "expect": 201,
+                "why": ["Una política por empresa; `is_active` es solo de lectura (no hay desactivación)."],
+            },
+            {
+                "file": "03-cambiar-a-jit.md",
+                "title": "Cambiar la estrategia de reposición",
+                "actor": "admin.test",
+                "kind": ACCION,
+                "method": "PUT",
+                "path": f"{COMPANY_BASE}/inventory-policy",
+                "body": {"inventory_system": "PERPETUAL", "valuation_method": "FIFO", "replenishment_strategy": "JIT", "version": 1},
+                "expect": 200,
+                "why": ["Exige la `version` vigente; una versión vieja responde `409 VERSION_CONFLICT`."],
+            },
+            {
+                "file": "04-otro-metodo-de-valoracion.md",
+                "title": "Pedir promedio ponderado",
+                "actor": "admin.test",
+                "kind": ACCION,
+                "method": "PUT",
+                "path": f"{COMPANY_BASE}/inventory-policy",
+                "body": {
+                    "inventory_system": "PERPETUAL",
+                    "valuation_method": "WEIGHTED_AVERAGE",
+                    "replenishment_strategy": "JIT",
+                    "version": 2,
+                },
+                "expect": 422,
+                "why": ["Esta fase solo valora con FIFO: `VALUATION_METHOD_NOT_SUPPORTED`."],
+            },
+            {
+                "file": "05-politica-de-producto.md",
+                "title": "Niveles de reposición del arroz en la sucursal",
+                "actor": "admin.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-policies",
+                "body": {
+                    "branch_id": BRANCH,
+                    "company_product_id": ARROZ,
+                    "minimum_stock": "5",
+                    "target_stock": "20",
+                    "service_level": "0.95",
+                    "safety_stock_method": "BASIC",
+                    "calculation_window_days": 90,
+                    "replenishment_mode": "MANUAL",
+                    "auto_purchase_enabled": False,
+                },
+                "expect": 201,
+                "save": {"POLITICA": "id"},
+                "why": ["Solo configuración: no genera compras ni movimientos."],
+            },
+            {
+                "file": "06-politica-duplicada.md",
+                "title": "Otra política activa para el mismo producto",
+                "actor": "admin.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-policies",
+                "body": {
+                    "branch_id": BRANCH,
+                    "company_product_id": ARROZ,
+                    "minimum_stock": "1",
+                    "safety_stock_method": "BASIC",
+                    "replenishment_mode": "MANUAL",
+                },
+                "expect": 409,
+                "why": ["Una sola política activa por producto y sucursal: `ACTIVE_POLICY_EXISTS`."],
+            },
+            {
+                "file": "07-inactivar.md",
+                "title": "Inactivar la política del arroz",
+                "actor": "admin.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{COMPANY_BASE}/inventory-policies/<POLITICA>/deactivate",
+                "body": {"version": 1},
+                "expect": 200,
+                "why": ["No se elimina: queda inactiva y se puede crear otra."],
+            },
+            {
+                "file": "08-consultar-politicas.md",
+                "title": "Consultar las políticas de la sucursal",
+                "actor": "inventario.test",
+                "kind": CONSULTA,
+                "method": "GET",
+                "path": f"{COMPANY_BASE}/inventory-policies?branch_id={BRANCH}",
+                "expect": 200,
+                "why": ["La bodega consulta las políticas pero no las configura (solo administradores y supervisores)."],
             },
         ],
     },

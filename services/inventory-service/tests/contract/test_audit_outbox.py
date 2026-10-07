@@ -23,7 +23,7 @@ def outbox(test_engine) -> list[dict]:
 
 def test_one_pending_event_per_applied_operation(operator, world, fake_oc, test_engine) -> None:
     p1, p2 = world.products[:2]
-    entry_body = operation_body(world, line(p1, "10", unit_cost="1500.25"), line(p2, "2"))
+    entry_body = operation_body(world, line(p1, "10", unit_cost="1500.25"), line(p2, "2", unit_cost="7"))
     entry = operator.post(ENTRIES, json=entry_body)
     output = operator.post(OUTPUTS, json=operation_body(world, line(p1, "3"), origin_type="SALE")).json()
     reversal = operator.post(f"{OUTPUTS}/{output['id']}/reversal", json=reversal_body(world)).json()
@@ -55,6 +55,8 @@ def test_one_pending_event_per_applied_operation(operator, world, fake_oc, test_
         "company_product_id": str(p1),
         "quantity": "10.0000",
         "unit_cost": "1500.2500",
+        "movement_value": "15002.50",
+        "cost_known": True,
         "movement_id": data["movements"][0]["id"],
         "previous_balance": "0.0000",
         "new_balance": "10.0000",
@@ -101,3 +103,17 @@ def test_hundred_lines_fit_in_the_event(operator, world, test_engine) -> None:
     event = outbox(test_engine)[0]
     assert len(event["new_values"]["lines"]) == 100
     assert len(json.dumps(event["new_values"]).encode()) < 64 * 1024
+
+
+def test_output_and_reversal_events_carry_the_fifo_cost(operator, world, test_engine) -> None:
+    """013 (R-11): las líneas de entradas, salidas y reversos llevan costo, valor y `cost_known`."""
+    product = world.products[0]
+    operator.post(ENTRIES, json=operation_body(world, line(product, "10", unit_cost="1000")))
+    operator.post(ENTRIES, json=operation_body(world, line(product, "5", unit_cost="1300")))
+    output = operator.post(OUTPUTS, json=operation_body(world, line(product, "12"), origin_type="SALE")).json()
+    operator.post(f"{OUTPUTS}/{output['id']}/reversal", json=reversal_body(world))
+
+    events = outbox(test_engine)
+    sale, reversal = events[2]["new_values"]["lines"][0], events[3]["new_values"]["lines"][0]
+    assert (sale["unit_cost"], sale["movement_value"], sale["cost_known"]) == ("1050.0000", "12600.00", True)
+    assert (reversal["unit_cost"], reversal["movement_value"], reversal["cost_known"]) == ("1050.0000", "12600.00", True)

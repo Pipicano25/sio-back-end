@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from tests.api.routes import ROUTES
+from tests.api.routes import ROUTES, declared_methods
 
 NOT_REVEALED = ("perm:", "inventory:entries", "inventory:outputs", "inventory:balances", "inventory:movements")
 
@@ -33,5 +33,6 @@ def test_without_permission_403_does_not_reveal_it(as_user, method: str, path: s
 
 @pytest.mark.parametrize(("method", "path", "permission"), ROUTES)
 def test_mutation_methods_are_not_published(operator, method: str, path: str, permission: str) -> None:
-    for verb in ("PUT", "PATCH", "DELETE"):
+    # 013 publica `PUT` en las rutas 16, 23 y 27; todo método no declarado sigue en `405`.
+    for verb in {"PUT", "PATCH", "DELETE"} - declared_methods(path):
         assert operator.request(verb, path, json={}).status_code == 405

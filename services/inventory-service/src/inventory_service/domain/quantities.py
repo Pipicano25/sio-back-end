@@ -100,3 +100,21 @@ def normalize_decimal(number: Decimal) -> str:
 def format_decimal(number: Decimal) -> str:
     """Representación de respuesta con exactamente 4 decimales (`"10.0000"`)."""
     return format(number.quantize(_QUANTUM), "f")
+
+
+def format_money(number: Decimal) -> str:
+    """Valor monetario de respuesta con exactamente 2 decimales (`"12600.00"`; 013 R-04)."""
+    return format(number.quantize(Decimal("0.01")), "f")
+
+
+def optional_decimal(number: Decimal | None) -> str | None:
+    return format_decimal(number) if number is not None else None
+
+
+def optional_money(number: Decimal | None) -> str | None:
+    return format_money(number) if number is not None else None
+
+
+def parse_decimal(value: Any) -> Decimal:
+    """Decimal con a lo sumo 4 decimales dentro de `NUMERIC(18,4)`, sin restricción de signo (niveles de políticas)."""
+    return _check_scale_and_range(_to_decimal(value))

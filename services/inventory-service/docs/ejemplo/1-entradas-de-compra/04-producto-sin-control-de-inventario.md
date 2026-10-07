@@ -24,7 +24,8 @@ Ejecuta: `inventory-test-operator` (cuenta de servicio).
     {
       "origin_detail_id": "d44f0300-0000-4000-8000-000000000003",
       "company_product_id": "d44d0000-0000-4000-8000-000000000003",
-      "quantity": "1"
+      "quantity": "1",
+      "unit_cost": "1200"
     }
   ]
 }

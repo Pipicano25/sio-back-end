@@ -22,7 +22,8 @@ Ejecuta: `inventory-test-operator` (cuenta de servicio).
 
 ### Por qué
 
-- Revertir 10 dejaría el saldo en -4: se rechaza con `INSUFFICIENT_STOCK` sin cambios.
+- La capa de la entrada ya entregó 4 unidades a la venta: se rechaza con `ENTRY_LAYER_CONSUMED` sin cambios (013, DS-16).
+- La corrección es anular antes la venta (paso 4) o registrar un ajuste.
 
 ## Permiso
 
@@ -60,20 +61,12 @@ Estado `409`.
 
 ```json
 {
-  "type": "https://sio/errors/inventory/insufficient-stock",
-  "title": "Saldo insuficiente",
+  "type": "https://sio/errors/inventory/entry-layer-consumed",
+  "title": "Capa de la entrada consumida",
   "status": 409,
-  "detail": "No hay saldo suficiente para aplicar la operación; no se aplicó ninguna línea.",
+  "detail": "La entrada no se puede revertir porque sus unidades ya fueron consumidas. Anule antes las ventas que las consumieron o registre un ajuste.",
   "instance": "/api/v1/inventory-entries/<OP_ENTRADA>/reversal",
-  "code": "INVENTORY.INSUFFICIENT_STOCK",
-  "trace_id": "<asignado por Inventory>",
-  "shortages": [
-    {
-      "index": 0,
-      "company_product_id": "d44d0000-0000-4000-8000-000000000001",
-      "available": "6.0000",
-      "requested": "10.0000"
-    }
-  ]
+  "code": "INVENTORY.ENTRY_LAYER_CONSUMED",
+  "trace_id": "<asignado por Inventory>"
 }
 ```

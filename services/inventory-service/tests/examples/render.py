@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from tests.examples.exercises import OPERACION
+from tests.examples.exercises import ACCION, OPERACION
 from tests.examples.users import OPERATOR, OC_PERMISSION, USERS, allowed
 
 ASSIGNED = "<asignado por Inventory>"
@@ -23,15 +23,45 @@ VOLATILE = {
     "created_at",
     "last_movement_at",
     "trace_id",
+    # 013: identificadores y momentos que asigna Inventory en ajustes, conteos y valoración.
+    "movement_id",
+    "updated_at",
+    "started_at",
+    "completed_at",
+    "cancelled_at",
+    "counted_at",
+    "received_at",
+    "cost_layer_id",
+    "restores_consumption_id",
+    "origin_movement_id",
+    "inventory_adjustment_id",
+    "inventory_count_id",
 }
+CONDITIONAL = {"origin_detail_id", "origin_id"}
+"""Se ocultan solo si no son datos fijos del ejercicio (en ajustes y conteos los asigna Inventory)."""
+
+
+def _fixed_ids() -> set[str]:
+    import re
+
+    from tests.examples.exercises import EXERCISES
+
+    return set(re.findall(r"d44[0-9a-f]{5}-0000-4000-8000-[0-9]{12}", json.dumps(EXERCISES)))
+
+
+FIXED_IDS = _fixed_ids()
+
+
+def _volatile(key: str, item: Any) -> bool:
+    if item is None:
+        return False
+    return key in VOLATILE or (key in CONDITIONAL and str(item) not in FIXED_IDS)
 
 
 def _mask(value: Any, reverse: dict[str, str]) -> Any:
     if isinstance(value, dict):
         return {
-            key: (
-                reverse.get(str(item), ASSIGNED) if key in VOLATILE and item is not None else _mask(item, reverse)
-            )
+            key: (reverse.get(str(item), ASSIGNED) if _volatile(key, item) else _mask(item, reverse))
             for key, item in value.items()
         }
     if isinstance(value, list):
@@ -49,6 +79,14 @@ def _json(value: Any) -> str:
 
 def _reverse(ctx: dict[str, str]) -> dict[str, str]:
     return {str(value): f"<{name}>" for name, value in ctx.items()}
+
+
+def _operator_cell(record: dict) -> str:
+    if record["step"]["kind"] == OPERACION:
+        return f"`{record['status']}`"
+    if record["step"]["kind"] == ACCION:
+        return "`403` (cuenta de servicio)"
+    return "— (no consulta)"
 
 
 def _actor_label(step: dict) -> str:
@@ -83,6 +121,14 @@ def render_step(exercise: dict, index: int, record: dict) -> str:
             "Además exige que el token sea de una **cuenta de servicio**: un usuario humano recibe `403` "
             "aunque tenga el permiso por comodín. Solo puede ejecutarla `inventory-test-operator` "
             "(o el cliente técnico de Purchase o Sales con el mismo permiso).",
+        ]
+    elif step["kind"] == ACCION:
+        lines += [
+            "",
+            "Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque tenga el permiso "
+            "por comodín), miembro `ACTIVE` de la empresa y, en ajustes y conteos, con asignación `ACTIVE` a "
+            "la sucursal (lo resuelve Operational Context con el token del usuario). Los usuarios con el "
+            "permiso no repiten la llamada en este ejercicio porque cambiaría su estado.",
         ]
     else:
         lines += [
@@ -191,7 +237,7 @@ def render_users(exercise: dict, records: list[dict]) -> str:
     ]
     lines.append(
         f"| `{OPERATOR}` | "
-        + " | ".join(f"`{r['status']}`" if r["step"]["kind"] == OPERACION else "— (no consulta)" for r in records)
+        + " | ".join(_operator_cell(r) for r in records)
         + " |"
     )
     for user in USERS:
@@ -207,11 +253,12 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `inventario.test`, `admin.test` y `supervisor.test` consultan stock y kardex de las "
-        "empresas donde son miembros.",
+        "- Puede: `inventario.test`, `admin.test` y `supervisor.test` consultan inventario de las "
+        "empresas donde son miembros; `inventario.test` registra ajustes y conteos en las sucursales "
+        "asignadas; `admin.test` y `supervisor.test` configuran políticas (comodín).",
         "- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.test`, que "
-        "tiene el permiso por comodín); `compras.test`, `ventas.test`, `reportes.test` y `consulta.test` "
-        "reciben `403` en las consultas.",
+        "tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; "
+        "`compras.test`, `ventas.test`, `reportes.test` y `consulta.test` reciben `403`.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -246,21 +293,38 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "resolver el acceso. No se exige asignación a la sucursal.",
         "- **Lectura técnica** (`perm:inventory:platform:lookup`): una cuenta de servicio con lectura y "
         "esta capacidad consulta sin membresía (Sales antes de confirmar una venta).",
-        "- El grupo `inventario` tiene las dos lecturas de inventario; `administradores` y `supervisores` "
-        "las obtienen por comodín. Ningún grupo puede aplicar operaciones.",
+        "- **Ajustes y conteos** (`perm:inventory:adjustments:create`, `perm:inventory:counts:create`, 013) "
+        "exigen un **usuario humano** miembro `ACTIVE` y con asignación `ACTIVE` a la sucursal; una "
+        "cuenta de servicio recibe `403` aunque tenga el permiso. Las **políticas** "
+        "(`perm:inventory:company-policies:update`, `perm:inventory:product-policies:update`) exigen un "
+        "usuario humano miembro de la empresa.",
+        "- **Lecturas de 013** (`adjustments:read`, `counts:read`, `company-policies:read`, "
+        "`product-policies:read`, `valuation:read`): mismo alcance por empresa que las consultas de stock.",
+        "- El grupo `inventario` tiene las lecturas de inventario y registra ajustes y conteos; "
+        "`administradores` y `supervisores` lo obtienen todo por comodín (las políticas solo ellos). "
+        "Ningún grupo puede aplicar operaciones.",
         "",
         "## Usuarios de prueba",
         "",
-        "| Usuario | Grupo | Stock (`balances:read`) | Kardex (`movements:read`) | Aplicar operaciones |",
-        "| --- | --- | --- | --- | --- |",
+        "| Usuario | Grupo | Stock y kardex | Ajustes y conteos | Políticas | Valoración | Aplicar operaciones |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
     ]
+
+    def yes(user, permission):
+        return "Sí" if allowed(user, permission) else "No"
+
     for user in USERS:
         lines.append(
             f"| `{user['username']}` | `{user['group']}` | "
-            f"{'Sí' if allowed(user, 'perm:inventory:balances:read') else 'No'} | "
-            f"{'Sí' if allowed(user, 'perm:inventory:movements:read') else 'No'} | No (no es cuenta de servicio) |"
+            f"{yes(user, 'perm:inventory:balances:read')} | "
+            f"{yes(user, 'perm:inventory:adjustments:create')} | "
+            f"{yes(user, 'perm:inventory:company-policies:update')} | "
+            f"{yes(user, 'perm:inventory:valuation:read')} | No (no es cuenta de servicio) |"
         )
-    lines.append(f"| `{OPERATOR}` | cuenta de servicio | Sí (`platform:lookup`) | Sí (`platform:lookup`) | Sí (entradas y salidas) |")
+    lines.append(
+        f"| `{OPERATOR}` | cuenta de servicio | Sí (`platform:lookup`) | No (no es usuario humano) | "
+        "No (no es usuario humano) | Sí (`platform:lookup`) | Sí (entradas y salidas) |"
+    )
 
     lines += [
         "",

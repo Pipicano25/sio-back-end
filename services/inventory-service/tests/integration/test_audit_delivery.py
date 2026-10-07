@@ -12,7 +12,9 @@ import time
 import httpx
 import pytest
 
-from tests.integration.support import AUDIT, INVENTORY, operation, require_services
+from uuid import uuid4
+
+from tests.integration.support import AUDIT, INVENTORY, operation, require_services, user_client
 
 pytestmark = pytest.mark.integration
 
@@ -25,17 +27,17 @@ def audit_running():
     require_services(f"{AUDIT.removesuffix('/api/v1')}/health/ready")
 
 
-def _events(admin, company: str, entity_id: str) -> list[dict]:
-    response = admin.get(f"{AUDIT}/companies/{company}/audit-events", params={"entity_type": "InventoryOperation"})
+def _events(admin, company: str, entity_id: str, entity_type: str = "InventoryOperation") -> list[dict]:
+    response = admin.get(f"{AUDIT}/companies/{company}/audit-events", params={"entity_type": entity_type})
     if response.status_code != 200:
         return []
     return [item for item in response.json()["items"] if item["entity_id"] == entity_id]
 
 
-def _wait_events(admin, company: str, entity_id: str, timeout: float = 90) -> list[dict]:
+def _wait_events(admin, company: str, entity_id: str, timeout: float = 90, entity_type: str = "InventoryOperation") -> list[dict]:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        found = _events(admin, company, entity_id)
+        found = _events(admin, company, entity_id, entity_type)
         if found:
             return found
         time.sleep(2)
@@ -79,3 +81,46 @@ def test_audit_down_does_not_block_and_event_arrives_once(admin, operator, real_
     time.sleep(5)
     assert len(_events(admin, real_world.company, output.json()["id"])) == 1
     assert events[0]["action"] == "APPLY_INVENTORY_OUTPUT"
+
+
+
+def test_adjustment_and_count_completion_reach_audit_once(admin, operator, real_world) -> None:
+    """013 (R-11; quickstart 21): `CREATE_INVENTORY_ADJUSTMENT` y `COMPLETE_INVENTORY_COUNT` llegan una vez."""
+    product = real_world.products[0]
+    assert operator.post(f"{INVENTORY}/inventory-entries", json=operation(real_world, (product, "6"), unit_cost="40")).status_code == 201
+    with user_client("inventario.test") as inventario:
+        adjustment = inventario.post(
+            f"{INVENTORY}/companies/{real_world.company}/inventory-adjustments",
+            json={
+                "adjustment_key": str(uuid4()),
+                "branch_id": real_world.branch,
+                "company_product_id": product,
+                "adjustment_type": "NEGATIVE",
+                "quantity": "1",
+                "reason": "Ajuste ficticio de validación INV",
+            },
+        )
+        assert adjustment.status_code == 201, adjustment.text
+        base = f"{INVENTORY}/companies/{real_world.company}/inventory-counts"
+        count = inventario.post(base, json={"branch_id": real_world.branch}).json()
+        started = inventario.post(f"{base}/{count['id']}/start", json={"version": 1}).json()
+        inventario.put(f"{base}/{count['id']}/details/{product}", json={"counted_quantity": "0"})
+        completed = inventario.post(
+            f"{base}/{count['id']}/complete", json={"completion_key": str(uuid4()), "version": started["version"]}
+        )
+        assert completed.status_code == 200, completed.text
+
+    adjustment_events = _wait_events(
+        admin, real_world.company, adjustment.json()["id"], entity_type="InventoryAdjustment"
+    )
+    count_events = _wait_events(admin, real_world.company, count["id"], entity_type="InventoryCount")
+    time.sleep(5)
+    assert [event["action"] for event in adjustment_events] == ["CREATE_INVENTORY_ADJUSTMENT"]
+    completions = [
+        event
+        for event in _events(admin, real_world.company, count["id"], "InventoryCount")
+        if event["action"] == "COMPLETE_INVENTORY_COUNT"
+    ]
+    assert len(completions) == 1
+    assert completions[0]["new_values"]["operation_id"] == completed.json()["operation_id"]
+    assert {event["action"] for event in count_events} <= {"START_INVENTORY_COUNT", "COMPLETE_INVENTORY_COUNT"}

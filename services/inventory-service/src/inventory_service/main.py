@@ -119,6 +119,7 @@ def create_app(
 
     app.state.access_directory_factory = access_directory_factory or default_access
     app.state.audit_hook = make_audit_hook(_request_id)
+    app.state.request_id = _request_id
 
     public_paths = set(HEALTH_PUBLIC_PATHS)
 

@@ -54,6 +54,20 @@ MOVEMENTS_READ = "perm:inventory:movements:read"
 PLATFORM_LOOKUP = "perm:inventory:platform:lookup"
 ALL_INVENTORY = (ENTRIES_CREATE, OUTPUTS_CREATE, BALANCES_READ, MOVEMENTS_READ, PLATFORM_LOOKUP)
 
+# 013 (R-13, DS-13): 9 permisos nuevos.
+ADJUSTMENTS_CREATE = "perm:inventory:adjustments:create"
+ADJUSTMENTS_READ = "perm:inventory:adjustments:read"
+COUNTS_CREATE = "perm:inventory:counts:create"
+COUNTS_READ = "perm:inventory:counts:read"
+COMPANY_POLICIES_UPDATE = "perm:inventory:company-policies:update"
+COMPANY_POLICIES_READ = "perm:inventory:company-policies:read"
+PRODUCT_POLICIES_UPDATE = "perm:inventory:product-policies:update"
+PRODUCT_POLICIES_READ = "perm:inventory:product-policies:read"
+VALUATION_READ = "perm:inventory:valuation:read"
+READS_013 = (ADJUSTMENTS_READ, COUNTS_READ, COMPANY_POLICIES_READ, PRODUCT_POLICIES_READ, VALUATION_READ)
+OPERATOR_ROLES = (*ALL_INVENTORY, *READS_013)
+"""Roles de `inventory-test-operator` en la plantilla: los cinco de la Fase A y las cinco lecturas (R-13)."""
+
 OPERATOR = "inventory-test-operator"
 PURCHASE_CLIENT = "purchase-service"
 SALES_CLIENT = "sales-service"
@@ -71,16 +85,38 @@ USER_ROLES: dict[str, tuple[str, ...]] = {
         BALANCES_READ,
         MOVEMENTS_READ,
         "perm:commercial-relationship:company_products:read",
+        # 013 (DS-14): ajustes, conteos y todas las lecturas; políticas solo por comodín.
+        ADJUSTMENTS_CREATE,
+        COUNTS_CREATE,
+        *READS_013,
     ),
     "reportes.test": ("perm:operational-context:application_users:read", "perm:commercial-relationship:company_products:read"),
     "consulta.test": ("perm:operational-context:application_users:read", "perm:commercial-relationship:company_products:read"),
 }
 
-TABLES = ("inventory_movements", "inventory_operations", "inventory_balances", "audit_outbox")
+TABLES = (
+    "inventory_count_details",
+    "inventory_adjustments",
+    "inventory_counts",
+    "inventory_cost_consumptions",
+    "inventory_cost_layers",
+    "inventory_policies",
+    "company_inventory_policies",
+    "inventory_movements",
+    "inventory_operations",
+    "inventory_balances",
+    "audit_outbox",
+)
 TRIGGERS = {
     "inventory_movements": ("tr_inventory_movements_no_truncate", "tr_inventory_movements_no_delete"),
     "inventory_operations": ("tr_inventory_operations_no_truncate", "tr_inventory_operations_no_delete"),
     "inventory_balances": ("tr_inventory_balances_no_truncate", "tr_inventory_balances_no_delete"),
+    "inventory_adjustments": ("tr_inventory_adjustments_no_truncate", "tr_inventory_adjustments_no_delete"),
+    "inventory_cost_consumptions": (
+        "tr_inventory_cost_consumptions_no_truncate",
+        "tr_inventory_cost_consumptions_no_delete",
+    ),
+    "inventory_cost_layers": ("tr_inventory_cost_layers_no_truncate", "tr_inventory_cost_layers_no_delete"),
 }
 
 
@@ -360,8 +396,8 @@ def as_token(test_client):
 
 @pytest.fixture
 def operator(test_client, service_token) -> ApiClient:
-    """Cliente técnico de pruebas con los cinco permisos `perm:inventory:*` (DS-13)."""
-    return ApiClient(test_client, service_token(*ALL_INVENTORY))
+    """Cliente técnico de pruebas con sus roles de la plantilla (DS-13 (012) y R-13 (013))."""
+    return ApiClient(test_client, service_token(*OPERATOR_ROLES))
 
 
 @pytest.fixture
@@ -395,6 +431,10 @@ class World:
     other_company_user: UUID
     other_company_product: UUID
 
+    def operator_user(self, fake_oc: FakeOperationalContext, username: str) -> UUID:
+        """Usuario operativo de un usuario de prueba en la empresa (lo devuelve `operational-access`)."""
+        return fake_oc.application_user_of(user_sub(username), self.company)
+
 
 @pytest.fixture
 def world(fake_oc: FakeOperationalContext, fake_cr: FakeCommercialRelationship) -> World:
@@ -413,11 +453,20 @@ def world(fake_oc: FakeOperationalContext, fake_cr: FakeCommercialRelationship) 
     )
     for username in USER_ROLES:
         fake_oc.add_member(user_sub(username), company)
+        # 013 (DS-14): todos asignados a la sucursal principal y a ninguna otra.
+        fake_oc.assign(user_sub(username), w.branch)
     return w
+
+
+DEFAULT_ENTRY_UNIT_COST = "1000"
+"""013 (DS-12, cambio incompatible aprobado): toda entrada lleva costo. Las pruebas que no lo
+fijan reciben este valor ficticio; las que verifican su ausencia lo retiran de forma explícita."""
 
 
 def operation_body(world: World, *lines: dict[str, Any], origin_type: str = "PURCHASE", **overrides: Any) -> dict[str, Any]:
     """Cuerpo de una operación con datos ficticios válidos."""
+    if origin_type == "PURCHASE":
+        lines = tuple({"unit_cost": DEFAULT_ENTRY_UNIT_COST, **item} for item in lines)
     body: dict[str, Any] = {
         "operation_key": str(uuid4()),
         "company_id": str(world.company),

@@ -44,7 +44,8 @@ asignándolos en la plantilla. Consultar auditoría de una empresa exige además
   técnica en Operational Context y Commercial Relationship con `platform:lookup`, y
   `perm:audit:audit-events:create` para su `audit-outbox-worker`). Solo en `.env`.
 - `${INVENTORY_TEST_OPERATOR_CLIENT_SECRET}`: secreto del cliente de pruebas `inventory-test-operator`
-  (los cinco permisos `perm:inventory:*`; lo usan las pruebas de integración de inventory-service).
+  (los cinco permisos `perm:inventory:*` de la 012 y las cinco lecturas de la 013; lo usan las
+  pruebas de integración de inventory-service).
   Solo en `.env`.
 
 Permisos de inventario (feature 012): `perm:inventory:entries:create`, `perm:inventory:outputs:create`
@@ -53,6 +54,16 @@ Permisos de inventario (feature 012): `perm:inventory:entries:create`, `perm:inv
 `sio-api`. El grupo `inventario` recibe `perm:inventory:balances:read`,
 `perm:inventory:movements:read` y `perm:commercial-relationship:company_products:read`;
 `administradores` y `supervisores` consultan por comodín. Ningún grupo puede aplicar operaciones.
+
+Permisos de inventario (feature 013): `perm:inventory:adjustments:create`,
+`perm:inventory:counts:create`, `perm:inventory:company-policies:update` y
+`perm:inventory:product-policies:update` (solo usuarios humanos; una cuenta de servicio recibe `403`
+aunque tenga el permiso; ajustes y conteos exigen además asignación `ACTIVE` a la sucursal) y las
+lecturas `perm:inventory:adjustments:read`, `perm:inventory:counts:read`,
+`perm:inventory:company-policies:read`, `perm:inventory:product-policies:read` y
+`perm:inventory:valuation:read`. El grupo `inventario` recibe ajustes, conteos y las cinco lecturas;
+las políticas solo las configuran `administradores` y `supervisores` por comodín.
+`inventory-test-operator` recibe las cinco lecturas.
 
 ## Secciones principales
 

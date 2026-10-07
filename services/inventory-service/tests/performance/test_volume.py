@@ -50,9 +50,11 @@ def _load(test_engine) -> list[tuple[str, str, str]]:
         connection.execute(
             text(
                 "INSERT INTO inventory_movements (operation_id, company_id, branch_id, company_product_id, movement_type, "
-                "quantity, previous_balance, new_balance, balance_sequence, origin_type, origin_id, origin_detail_id, "
+                "quantity, previous_balance, new_balance, balance_sequence, unit_cost, movement_value, cost_known, "
+                "origin_type, origin_id, origin_detail_id, "
                 "line_index, application_user_id, correlation_id, created_by, updated_by, created_at, updated_at) "
-                "SELECT o.id, k.company, k.branch, k.product, 'PURCHASE_ENTRY', 1, g - 1, g, g, 'PURCHASE', o.origin_id, "
+                # 013: todo movimiento nuevo es valorizado (`ck_inventory_movements_valued`).
+                "SELECT o.id, k.company, k.branch, k.product, 'PURCHASE_ENTRY', 1, g - 1, g, g, 1, 1, true, 'PURCHASE', o.origin_id, "
                 "gen_random_uuid(), g - 1, o.application_user_id, o.correlation_id, 'perf', 'perf', "
                 "now() - (interval '1 second' * (2000 - g)), now() - (interval '1 second' * (2000 - g)) "
                 f"FROM perf_keys k JOIN inventory_operations o ON o.company_id = k.company AND o.branch_id = k.branch "

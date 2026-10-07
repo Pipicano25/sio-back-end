@@ -26,5 +26,5 @@
 
 ## Ejemplos
 
-- Puede: `inventario.test`, `admin.test` y `supervisor.test` consultan stock y kardex de las empresas donde son miembros.
-- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.test`, que tiene el permiso por comodín); `compras.test`, `ventas.test`, `reportes.test` y `consulta.test` reciben `403` en las consultas.
+- Puede: `inventario.test`, `admin.test` y `supervisor.test` consultan inventario de las empresas donde son miembros; `inventario.test` registra ajustes y conteos en las sucursales asignadas; `admin.test` y `supervisor.test` configuran políticas (comodín).
+- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.test`, que tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; `compras.test`, `ventas.test`, `reportes.test` y `consulta.test` reciben `403`.

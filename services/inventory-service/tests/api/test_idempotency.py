@@ -62,7 +62,7 @@ def test_same_request_in_another_representation_is_the_same(operator, world) -> 
     [
         lambda b, w: b["lines"][0].update(quantity="11"),
         lambda b, w: b["lines"][0].update(unit_cost="1500.26"),
-        lambda b, w: b["lines"].append(line(w.products[1], "1")),
+        lambda b, w: b["lines"].append(line(w.products[1], "1", unit_cost="1")),  # 013: entrada con costo
         lambda b, w: b["lines"].reverse(),
         lambda b, w: b.update(application_user_id=str(w.other_company_user)),
         lambda b, w: b.update(reason="Otro motivo"),
@@ -97,7 +97,8 @@ def test_same_key_on_the_other_type_is_a_conflict(operator, world) -> None:
     product = world.products[0]
     entry = operation_body(world, line(product, "5"))
     assert operator.post(ENTRIES, json=entry).status_code == 201
-    output = {**entry, "origin_type": "SALE"}
+    # 013: una salida no admite costo; la misma clave con el cuerpo sin costo sigue siendo un conflicto.
+    output = {**entry, "origin_type": "SALE", "lines": [{k: v for k, v in entry["lines"][0].items() if k != "unit_cost"}]}
     assert operator.post(OUTPUTS, json=output).status_code == 409
 
 

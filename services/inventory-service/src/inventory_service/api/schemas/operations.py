@@ -15,7 +15,14 @@ from uuid import UUID
 from pydantic import BaseModel, BeforeValidator, ConfigDict, field_validator
 from pydantic_core import PydanticCustomError
 
-from inventory_service.domain.quantities import QuantityError, format_decimal, parse_quantity, parse_unit_cost
+from inventory_service.domain.quantities import (
+    QuantityError,
+    format_decimal,
+    optional_decimal,
+    optional_money,
+    parse_quantity,
+    parse_unit_cost,
+)
 
 MAX_LINES = 100
 REASON_MAX_LENGTH = 2000
@@ -109,12 +116,19 @@ class MovementResponse(BaseModel):
     new_balance: str
     balance_sequence: int
     unit_cost: str | None
+    movement_value: str | None
+    """Valor del movimiento (2 decimales); nulo en movimientos anteriores a la valoración (013)."""
+    cost_known: bool | None
+    """`false` si el costo incluye unidades de apertura sin costo histórico; nulo antes de la valoración."""
     reversed_movement_id: UUID | None
 
 
 class BalanceAfter(BaseModel):
     company_product_id: UUID
     quantity: str
+    inventory_value: str | None = None
+    average_unit_cost: str | None = None
+    has_unknown_cost: bool | None = None
 
 
 class InventoryOperationResponse(BaseModel):
@@ -140,7 +154,7 @@ class InventoryOperationResponse(BaseModel):
         extra: dict[str, Any] = {}
         if with_balances:
             extra["balances"] = [
-                BalanceAfter(company_product_id=product, quantity=format_decimal(quantity))
+                BalanceAfter(company_product_id=product, quantity=format_decimal(quantity), **_valuation(stored, product))
                 for product, quantity in stored.balances_after.items()
             ]
         return cls(
@@ -158,21 +172,35 @@ class InventoryOperationResponse(BaseModel):
             reversed_by_operation_id=stored.reversed_by_operation_id,
             created_at=stored.created_at,
             created_by=stored.created_by,
-            movements=[
-                MovementResponse(
-                    id=m.id,
-                    line_index=m.line_index,
-                    origin_detail_id=m.origin_detail_id,
-                    company_product_id=m.company_product_id,
-                    movement_type=m.movement_type,
-                    quantity=format_decimal(m.quantity),
-                    previous_balance=format_decimal(m.previous_balance),
-                    new_balance=format_decimal(m.new_balance),
-                    balance_sequence=m.balance_sequence,
-                    unit_cost=format_decimal(m.unit_cost) if m.unit_cost is not None else None,
-                    reversed_movement_id=m.reversed_movement_id,
-                )
-                for m in stored.movements
-            ],
+            movements=[movement_response(m) for m in stored.movements],
             **extra,
         )
+
+
+def movement_response(m: Any) -> MovementResponse:
+    return MovementResponse(
+        id=m.id,
+        line_index=m.line_index,
+        origin_detail_id=m.origin_detail_id,
+        company_product_id=m.company_product_id,
+        movement_type=m.movement_type,
+        quantity=format_decimal(m.quantity),
+        previous_balance=format_decimal(m.previous_balance),
+        new_balance=format_decimal(m.new_balance),
+        balance_sequence=m.balance_sequence,
+        unit_cost=optional_decimal(m.unit_cost),
+        movement_value=optional_money(m.movement_value),
+        cost_known=m.cost_known,
+        reversed_movement_id=m.reversed_movement_id,
+    )
+
+
+def _valuation(stored: Any, product: UUID) -> dict[str, Any]:
+    valuation = stored.valuation_after.get(product)
+    if valuation is None:
+        return {}
+    return {
+        "inventory_value": optional_money(valuation.inventory_value),
+        "average_unit_cost": optional_decimal(valuation.average_unit_cost),
+        "has_unknown_cost": valuation.has_unknown_cost,
+    }
