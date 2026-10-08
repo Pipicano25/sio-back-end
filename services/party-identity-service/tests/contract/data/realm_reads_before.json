@@ -122,7 +122,8 @@
         "supervisor",
         "perm:all:all:read",
         "perm:all:all:create",
-        "perm:all:all:update"
+        "perm:all:all:update",
+        "perm:sales:sales:read-profitability"
       ],
       "reads": [
         "perm:commercial-relationship:company_customers:read",
@@ -310,7 +311,17 @@
         "inventario",
         "perm:geography:all:read",
         "perm:product-catalog:all:read",
-        "perm:operational-context:all:read"
+        "perm:operational-context:all:read",
+        "perm:inventory:balances:read",
+        "perm:inventory:movements:read",
+        "perm:commercial-relationship:company_products:read",
+        "perm:inventory:adjustments:create",
+        "perm:inventory:counts:create",
+        "perm:inventory:adjustments:read",
+        "perm:inventory:counts:read",
+        "perm:inventory:company-policies:read",
+        "perm:inventory:product-policies:read",
+        "perm:inventory:valuation:read"
       ],
       "reads": [
         "perm:geography:global_administrative_divisions:read",

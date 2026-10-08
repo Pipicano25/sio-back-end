@@ -5,9 +5,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from sio_auth import SIOAuth
 
+import product_catalog_service.application.audit_events  # noqa: F401  (registra la outbox de auditoría, feature 016)
+from product_catalog_service.audit_context import bind_audit_actor
 from product_catalog_service.api.errors import register_error_handlers
 from product_catalog_service.api.health import build_router as build_health_router
 from product_catalog_service.api.openapi import configure_bearer_openapi
@@ -64,6 +66,8 @@ def create_app(
         title=SERVICE_TITLE,
         description="Microservicio del catálogo global y compartido de productos de SIO.",
         version=SERVICE_VERSION,
+        # Autor de auditoría de la solicitud (feature 016): no agrega parámetros a ninguna ruta.
+        dependencies=[Depends(bind_audit_actor)],
         docs_url="/docs" if current_settings.docs_enabled else None,
         redoc_url=None,
         openapi_url="/openapi.json" if current_settings.docs_enabled else None,

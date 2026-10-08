@@ -92,5 +92,11 @@ Registradas por `specs/002-product-catalog-service` (C-18):
   `SupplierProduct.purchase_unit_id` debe ser la unidad base del producto (validada en Product Catalog) y
   las cantidades se expresan en esa unidad o mediante una presentación.
 
+## Auditoría
+
+Emisor de Audit desde la feature 016: Eventos de empresa (`company_id`). Tabla `audit_outbox` (Outbox, D26) y
+contenedor `commercial-relationship-audit-outbox-worker` con el cliente `commercial-relationship-service`. Acciones en
+`specs/016-existing-services-audit/contracts/audit-actions.md`.
+
 ## Ubicación
 `services/commercial-relationship-service/docs/domain-map.md`

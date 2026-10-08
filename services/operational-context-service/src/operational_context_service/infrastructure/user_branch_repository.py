@@ -12,6 +12,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
 
+from operational_context_service.application import audit_events as audit
 from operational_context_service.application.exceptions import (
     BranchCompanyMismatchError,
     BranchInactiveError,
@@ -140,17 +141,20 @@ class SQLAlchemyUserBranchRepository:
         """Inserta la asignación si membresía, sucursal y empresa siguen `ACTIVE`."""
         self._lock_active_parents(application_user_id, branch_id, company_id)
         user_branch_id = uuid4()
-        self.session.add(
-            UserBranchModel(
-                id=user_branch_id,
-                application_user_id=application_user_id,
-                branch_id=branch_id,
-                company_id=company_id,
-                status="ACTIVE",
-                assigned_by=actor_id,
-                created_by=actor_id,
-                updated_by=actor_id,
-            )
+        model = UserBranchModel(
+            id=user_branch_id,
+            application_user_id=application_user_id,
+            branch_id=branch_id,
+            company_id=company_id,
+            status="ACTIVE",
+            assigned_by=actor_id,
+            created_by=actor_id,
+            updated_by=actor_id,
+        )
+        self.session.add(model)
+        audit.track_create(
+            self.session, model, action=audit.ASSIGN_USER_BRANCH, entity_type="UserBranch",
+            company_id=company_id, branch_id=branch_id,
         )
         self._commit()
 
@@ -167,6 +171,10 @@ class SQLAlchemyUserBranchRepository:
         # Hora de la base: misma fuente que `assigned_at` (server_default now()).
         model.deactivated_at = func.now()
         model.updated_by = actor_id
+        audit.track_update(
+            self.session, model, action=audit.DEACTIVATE_USER_BRANCH, entity_type="UserBranch",
+            company_id=model.company_id, branch_id=model.branch_id,
+        )
         self._commit()
 
         return self._reload(user_branch_id)
@@ -185,6 +193,10 @@ class SQLAlchemyUserBranchRepository:
         model.assigned_at = func.now()
         model.assigned_by = actor_id
         model.updated_by = actor_id
+        audit.track_update(
+            self.session, model, action=audit.REACTIVATE_USER_BRANCH, entity_type="UserBranch",
+            company_id=model.company_id, branch_id=model.branch_id,
+        )
         self._commit()
 
         return self._reload(user_branch_id)

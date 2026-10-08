@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.application.exceptions import DuplicatePriceListCodeError
 from commercial_relationship_service.application.mutation import touch, unchanged
 from commercial_relationship_service.domain.currency import validate_currency
@@ -39,7 +40,7 @@ class PriceListService:
             self._repository.lock_default_scope(company_id, values["currency_code"])
             self._repository.clear_default(company_id, values["currency_code"], exclude_id=None, actor=actor)
 
-        return self._repository.add(model, duplicates=self._repository.duplicates)
+        return self._repository.add(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.CREATE_PRICE_LIST, "PriceList", model.company_id))
 
     def update(self, current, values: dict[str, Any], *, version: int, actor: str):
         """`PUT` en cualquier estado sin cambiar `status` ni la moneda (FR-044, DS-09)."""
@@ -67,7 +68,7 @@ class PriceListService:
             setattr(model, name, values[name])
 
         touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_PRICE_LIST, "PriceList", model.company_id))
 
     def deactivate(self, current, *, version: int, actor: str):
         """Inactivar retira `is_default` y no modifica sus precios (FR-045)."""
@@ -75,10 +76,10 @@ class PriceListService:
         model.status = next_status(model.status, DEACTIVATE)
         model.is_default = False
         touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_PRICE_LIST, "PriceList", model.company_id))
 
     def reactivate(self, current, *, version: int, actor: str):
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, REACTIVATE)
         touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.REACTIVATE_PRICE_LIST, "PriceList", model.company_id))

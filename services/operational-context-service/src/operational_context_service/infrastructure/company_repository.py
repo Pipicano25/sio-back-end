@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from operational_context_service.application import audit_events as audit
 from operational_context_service.application.exceptions import (
     DuplicateOrganizationIdentityError,
 )
@@ -104,6 +105,9 @@ class SQLAlchemyCompanyRepository:
             updated_by=actor_id,
         )
         self.session.add(model)
+        audit.track_create(
+            self.session, model, action=audit.CREATE_COMPANY, entity_type="Company", company_id=lambda m: m.id,
+        )
         self._commit()
         self.session.refresh(model)
 
@@ -134,6 +138,10 @@ class SQLAlchemyCompanyRepository:
             setattr(model, field, value)
 
         model.updated_by = actor_id
+        audit.track_update(
+            self.session, model, action=audit.status_action(model, "COMPANY"), entity_type="Company",
+            company_id=company_id,
+        )
         self._commit()
         self.session.refresh(model)
 

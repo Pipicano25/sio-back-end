@@ -103,7 +103,13 @@ def test_every_read_permission_declared_by_code_exists_and_is_preserved(realm) -
     names = set(inventory.realm_roles(realm))
 
     assert declared <= names, declared - names
+    # La lectura de auditoría es exclusiva de quien la feature 011 decidió (no de reportes/consulta).
+    audit_reads = {permission for permission in declared if permission.startswith("perm:audit:")}
     for group in ("reportes", "consulta"):
         roles = inventory.group_roles(group, realm)
-        missing = {permission for permission in declared - SENSITIVE if not inventory.grants(roles, permission)}
+        missing = {
+            permission
+            for permission in declared - SENSITIVE - audit_reads
+            if not inventory.grants(roles, permission)
+        }
         assert not missing, (group, missing)

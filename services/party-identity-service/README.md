@@ -212,6 +212,32 @@ usa un JWKS local con tokens RS256 firmados en la prueba.
 Keycloak, Geography y Operational Context reales. Requiere el realm regenerado desde la plantilla, las
 variables del cliente técnico y los datos que indica su docstring.
 
+## Auditoría (feature 016)
+
+Eventos de plataforma (`company_id` nulo). 32 operaciones de escritura auditadas.
+
+Cada escritura de la API registra **un** evento de auditoría en la tabla `audit_outbox` de este
+servicio, en la misma transacción que el cambio (si el cambio se revierte, el evento no existe), y el
+proceso `party-identity-audit-outbox-worker` (misma imagen y base; `python -m sio_audit.worker`) lo entrega a
+Audit con el cliente técnico `party-identity-service` (`perm:audit:audit-events:create`; `source_service =
+party-identity-service`). Detalle por operación en
+[`specs/016-existing-services-audit/contracts/audit-actions.md`](../../specs/016-existing-services-audit/contracts/audit-actions.md).
+
+- Solo eventos `SUCCESS`: un rechazo sin efecto (`401`, `403`, `404`, `409`, `422`, `503`) no registra
+  nada; una escritura que no cambia ningún campo tampoco (DS-02, DS-05).
+- Valores: en la creación, los campos de la entidad; en la edición, solo los campos que cambiaron (antes y
+  después); sin `id`, `version` ni columnas `created_*`/`updated_*`.
+- Audit detenido no afecta a la API: los eventos quedan `PENDING` y el worker los entrega una sola vez al
+  volver (reintentos con backoff de `libs/sio-audit`, a lo sumo `AUDIT_OUTBOX_BACKOFF_MAX_SECONDS` + 60 s
+  después; sin orden de llegada garantizado: el historial se ordena por `occurred_at`).
+- Las cargas por `seed` no se auditan (no hay autor autenticado).
+- Variables del worker: `AUDIT_CLIENT_SECRET` = `PARTY_IDENTITY_CLIENT_SECRET` (solo en `infrastructure/.env`) y
+  `AUDIT_OUTBOX_*` opcionales (ver `infrastructure/.env.example`).
+- **Datos personales (DS-06)**: `identification_number`, `birth_date`, `email`, `phone`, `address_line`,
+  `postal_code` y `source_document_reference` solo como marcador y en `redacted_paths`; nunca su valor.
+- Perfiles de contacto (DS-11): cada versión nueva es un evento sobre la versión nueva, con la cerrada en
+  `previous_values`; `application_user_id` = usuario que confirmó; empresa confirmante en los valores.
+
 ## Disponibilidad de la base
 
 Regla de la Constitución 2.4.0 (Principio X), feature 009:

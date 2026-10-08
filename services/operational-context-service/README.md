@@ -215,6 +215,33 @@ Cada ejecución crea datos **ficticios de validación** que permanecen en el ent
 `compras.test` en esa empresa. Para comprobar un `503`, detenga el contenedor del proveedor y repita
 la operación.
 
+## Auditoría (feature 016)
+
+Eventos de empresa (`company_id`; `branch_id` en sucursales y asignaciones a sucursal). 18 operaciones de escritura auditadas.
+
+Cada escritura de la API registra **un** evento de auditoría en la tabla `audit_outbox` de este
+servicio, en la misma transacción que el cambio (si el cambio se revierte, el evento no existe), y el
+proceso `operational-context-audit-outbox-worker` (misma imagen y base; `python -m sio_audit.worker`) lo entrega a
+Audit con el cliente técnico `operational-context-service` (`perm:audit:audit-events:create`; `source_service =
+operational-context-service`). Detalle por operación en
+[`specs/016-existing-services-audit/contracts/audit-actions.md`](../../specs/016-existing-services-audit/contracts/audit-actions.md).
+
+- Solo eventos `SUCCESS`: un rechazo sin efecto (`401`, `403`, `404`, `409`, `422`, `503`) no registra
+  nada; una escritura que no cambia ningún campo tampoco (DS-02, DS-05).
+- Valores: en la creación, los campos de la entidad; en la edición, solo los campos que cambiaron (antes y
+  después); sin `id`, `version` ni columnas `created_*`/`updated_*`.
+- Audit detenido no afecta a la API: los eventos quedan `PENDING` y el worker los entrega una sola vez al
+  volver (reintentos con backoff de `libs/sio-audit`, a lo sumo `AUDIT_OUTBOX_BACKOFF_MAX_SECONDS` + 60 s
+  después; sin orden de llegada garantizado: el historial se ordena por `occurred_at`).
+- Las cargas por `seed` no se auditan (no hay autor autenticado).
+- Variables del worker: `AUDIT_CLIENT_SECRET` = `OPERATIONAL_CONTEXT_CLIENT_SECRET` (solo en `infrastructure/.env`) y
+  `AUDIT_OUTBOX_*` opcionales (ver `infrastructure/.env.example`).
+- **Datos protegidos (DS-09)**: `email`, `phone`, `address_line`, `postal_code`, `latitude` y `longitude`
+  de empresas y sucursales, y `reference_email` de usuarios de aplicación, se registran solo como
+  `"<registrado>"`, `"<modificado>"` o `"<eliminado>"` y se declaran en `redacted_paths`; nunca su valor.
+- Tras reconstruir Keycloak, reinicie el contenedor de este servicio: guarda en memoria el UUID interno
+  del cliente `sio-api` para la comprobación técnica de acceso.
+
 ## Disponibilidad de la base
 
 Regla de la Constitución 2.4.0 (Principio X), feature 009:

@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from party_identity_service.application import audit_events as audit
 from party_identity_service.application.exceptions import (
     DuplicateActiveSectorAssignmentError,
     InvalidPrimarySectorError,
@@ -122,6 +123,7 @@ class SQLAlchemyOrganizationBusinessSectorRepository:
             updated_by=actor_id,
         )
         self.session.add(model)
+        audit.track_create(self.session, model, action=audit.ASSIGN_ORGANIZATION_BUSINESS_SECTOR, entity_type="OrganizationBusinessSector")
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(model)
         return self._to_domain(model)
@@ -158,6 +160,7 @@ class SQLAlchemyOrganizationBusinessSectorRepository:
 
         target.is_primary = True
         target.updated_by = actor_id
+        audit.track_update(self.session, target, action=audit.SET_PRIMARY_ORGANIZATION_BUSINESS_SECTOR, entity_type="OrganizationBusinessSector", extra_previous={"previous_primary_id": previous.id if previous is not None else None})
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(target)
         return self._to_domain(target)
@@ -180,6 +183,7 @@ class SQLAlchemyOrganizationBusinessSectorRepository:
         target.is_primary = False
         target.valid_to = closing_instant(target.valid_from, datetime.now(timezone.utc))
         target.updated_by = actor_id
+        audit.track_update(self.session, target, action=audit.CLOSE_ORGANIZATION_BUSINESS_SECTOR, entity_type="OrganizationBusinessSector")
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(target)
         return self._to_domain(target)

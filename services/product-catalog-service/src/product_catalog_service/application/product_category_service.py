@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     DuplicateAssociationError,
@@ -79,6 +80,10 @@ class ProductCategoryService:
             association.is_primary = make_primary
             lifecycle.stamp_update(association, actor)
 
+        if created:
+            audit.track_create(self.session, association, action=audit.ADD_PRODUCT_CATEGORY, entity_type="ProductCategory")
+        else:
+            audit.track_update(self.session, association, action=audit.ADD_PRODUCT_CATEGORY, entity_type="ProductCategory")
         self.session.commit()
         return association, created
 
@@ -102,6 +107,7 @@ class ProductCategoryService:
 
         association.is_primary = True
         lifecycle.stamp_update(association, actor)
+        audit.track_update(self.session, association, action=audit.SET_PRIMARY_PRODUCT_CATEGORY, entity_type="ProductCategory", extra_previous={"previous_primary_id": current.id if current is not None else None})
         self.session.commit()
 
     def deactivate(
@@ -139,6 +145,7 @@ class ProductCategoryService:
                 )
 
         lifecycle.deactivate(association, version, actor)
+        audit.track_update(self.session, association, action=audit.DEACTIVATE_PRODUCT_CATEGORY, entity_type="ProductCategory")
         self.session.flush()
 
         if new_primary is not None:

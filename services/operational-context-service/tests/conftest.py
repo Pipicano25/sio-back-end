@@ -60,6 +60,7 @@ TEST_AUDIENCE = "sio-api"
 TEST_KID = "test-key"
 
 FUNCTIONAL_TABLES = (
+    "audit_outbox",
     "user_branches",
     "company_advisor_assignments",
     "application_users",
@@ -475,3 +476,42 @@ def make_member(session_factory):
             return str(model.id)
 
     return _make
+
+
+# --------------------------------------------------------------------------
+# Auditoría (feature 016)
+# --------------------------------------------------------------------------
+
+AUDIT_SUB = "9f0c2f1e-1111-4222-8333-944455556666"
+AUDIT_USERNAME = "auditor.prueba"
+
+
+@pytest.fixture
+def audited_api(test_client: TestClient, rsa_private_key: rsa.RSAPrivateKey) -> ApiClient:
+    """Administrador con `sub` UUID y `preferred_username` para verificar el autor de los eventos."""
+    now = int(time.time())
+    payload = {
+        "sub": AUDIT_SUB,
+        "preferred_username": AUDIT_USERNAME,
+        "iss": TEST_ISSUER,
+        "aud": TEST_AUDIENCE,
+        "iat": now,
+        "exp": now + 600,
+        "resource_access": {TEST_AUDIENCE: {"roles": [ADMIN_PERMISSION]}},
+    }
+    token = jwt.encode(payload, rsa_private_key, algorithm="RS256", headers={"kid": TEST_KID})
+    return ApiClient(test_client, token)
+
+
+@pytest.fixture
+def outbox(test_engine: Engine):
+    """Eventos de la outbox en orden de registro (payload canónico de `sio-audit`)."""
+
+    def _read() -> list[dict[str, Any]]:
+        with test_engine.connect() as connection:
+            rows = connection.execute(
+                text("SELECT payload FROM audit_outbox ORDER BY created_at, payload->>'occurred_at'")
+            ).scalars()
+            return [dict(row) for row in rows]
+
+    return _read

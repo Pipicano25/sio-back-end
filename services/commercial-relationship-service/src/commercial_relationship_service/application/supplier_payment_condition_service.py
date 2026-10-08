@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.application.exceptions import (
     PaymentConditionTypeInactiveError,
     PaymentConditionTypeNotFoundError,
@@ -90,7 +91,7 @@ class SupplierPaymentConditionService:
                 values["company_supplier_id"], values["currency_code"], exclude_id=None, actor=actor
             )
 
-        return self._repository.add(model, duplicates=self._repository.duplicates)
+        return self._repository.add(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.CREATE_SUPPLIER_PAYMENT_CONDITION, "SupplierPaymentCondition", model.company_id))
 
     def update(self, current, values: dict[str, Any], *, version: int, actor: str):
         """`PUT` en cualquier estado; Payment Reference solo si cambian el tipo o el plazo (DS-06)."""
@@ -129,7 +130,7 @@ class SupplierPaymentConditionService:
             setattr(model, name, values[name])
 
         touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_SUPPLIER_PAYMENT_CONDITION, "SupplierPaymentCondition", model.company_id))
 
     def deactivate(self, current, *, version: int, actor: str):
         """Inactivar retira `is_default` (DS-05); no consulta Payment Reference."""
@@ -137,7 +138,7 @@ class SupplierPaymentConditionService:
         model.status = next_status(model.status, DEACTIVATE)
         model.is_default = False
         touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_SUPPLIER_PAYMENT_CONDITION, "SupplierPaymentCondition", model.company_id))
 
     def reactivate(self, current, *, version: int, actor: str):
         """FR-031 y FR-032: proveedor `ACTIVE` y tipo de condición `ACTIVE`."""
@@ -148,7 +149,7 @@ class SupplierPaymentConditionService:
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, REACTIVATE)
         touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.REACTIVATE_SUPPLIER_PAYMENT_CONDITION, "SupplierPaymentCondition", model.company_id))
 
     # -------------------------------------------------------------- internos
 

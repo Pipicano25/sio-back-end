@@ -39,7 +39,7 @@ class RepositoryStub:
     def load_for_update(self, entity_id, *, expected_version):
         return self.current
 
-    def save(self, model, *, duplicates):
+    def save(self, model, *, duplicates, audit=None):
         self.saved = model
         return model
 

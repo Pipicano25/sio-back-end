@@ -15,6 +15,7 @@ from uuid import UUID
 from sqlalchemy import exists, func, select, update
 from sqlalchemy.orm import Session
 
+from party_identity_service.application import audit_events as audit
 from party_identity_service.application.exceptions import (
     ContactProfileAlreadyClosedError,
     ContactProfileNotFoundError,
@@ -142,6 +143,7 @@ class SQLAlchemyContactProfileRepository:
 
         now = _utcnow()
 
+        before = audit.snapshot(current) if current is not None else None
         if current is not None:
             current.is_active = False
             current.valid_to = now
@@ -185,6 +187,14 @@ class SQLAlchemyContactProfileRepository:
             .where(self.profile_model.__table__.c.id == model.id)
             .values(version=next_version)
         )
+        _audit_entity = "PersonContactProfile" if self.owner_column == "person_identity_id" else "OrganizationContactProfile"
+        audit.track_create(
+            self.session, model,
+            action=audit.REGISTER_PERSON_CONTACT_PROFILE if _audit_entity == "PersonContactProfile"
+            else audit.REGISTER_ORGANIZATION_CONTACT_PROFILE,
+            entity_type=_audit_entity, application_user_id=confirmed_by_user_id,
+            extra_previous={**before, "previous_profile_id": current.id} if before is not None else None,
+        )
         commit_or_translate(self.session, duplicates={self.active_constraint: VersionConflictError})
         self.session.refresh(model)
         return self._to_domain(model)
@@ -209,6 +219,13 @@ class SQLAlchemyContactProfileRepository:
         current.is_active = False
         current.valid_to = _utcnow()
         current.updated_by = actor_id
+        _audit_entity = "PersonContactProfile" if self.owner_column == "person_identity_id" else "OrganizationContactProfile"
+        audit.track_update(
+            self.session, current,
+            action=audit.CLOSE_PERSON_CONTACT_PROFILE if _audit_entity == "PersonContactProfile"
+            else audit.CLOSE_ORGANIZATION_CONTACT_PROFILE,
+            entity_type=_audit_entity,
+        )
         commit_or_translate(self.session, duplicates={})
         self.session.refresh(current)
         return self._to_domain(current)

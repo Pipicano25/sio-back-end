@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.application.exceptions import (
     ContactPersonNotAllowedError,
     DuplicateCustomerError,
@@ -72,6 +73,7 @@ class CompanyCustomerService:
             require_active_person(party, values["person_identity_id"])
 
         return self._repository.create(
+            audit=audit_events.spec(audit_events.CREATE_COMPANY_CUSTOMER, "CompanyCustomer", company_id),
             company_id=company_id,
             customer_kind=values["customer_kind"],
             person_identity_id=values.get("person_identity_id"),
@@ -108,13 +110,13 @@ class CompanyCustomerService:
             setattr(model, name, values.get(name))
 
         _touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_COMPANY_CUSTOMER, "CompanyCustomer", model.company_id))
 
     def deactivate(self, current, *, version: int, actor: str):
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE)
         _touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_COMPANY_CUSTOMER, "CompanyCustomer", model.company_id))
 
     def reactivate(self, current, *, version: int, actor: str):
         """Revalida la identidad (FR-025); no revalida el contacto preferido (DS-08)."""
@@ -129,7 +131,7 @@ class CompanyCustomerService:
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, REACTIVATE)
         _touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.REACTIVATE_COMPANY_CUSTOMER, "CompanyCustomer", model.company_id))
 
 
 def _touch(model, actor: str) -> None:

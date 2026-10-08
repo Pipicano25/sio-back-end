@@ -14,6 +14,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from operational_context_service.application import audit_events as audit
 from operational_context_service.application.exceptions import (
     CompanyInactiveError,
     DuplicateAdvisorAssignmentError,
@@ -132,6 +133,10 @@ class SQLAlchemyAdvisorAssignmentRepository:
         self._lock_active_company(company_id)
         model = self._new(company_id, values, actor_id)
         self.session.add(model)
+        audit.track_create(
+            self.session, model, action=audit.CREATE_ADVISOR_ASSIGNMENT, entity_type="CompanyAdvisorAssignment",
+            company_id=company_id,
+        )
         self._commit()
 
         return self._reload(model.id)
@@ -159,6 +164,10 @@ class SQLAlchemyAdvisorAssignmentRepository:
         model.status = "INACTIVE"
         model.valid_to = valid_to
         model.updated_by = actor_id
+        audit.track_update(
+            self.session, model, action=audit.CLOSE_ADVISOR_ASSIGNMENT, entity_type="CompanyAdvisorAssignment",
+            company_id=model.company_id,
+        )
         self._commit()
 
         return self._reload(assignment_id)
@@ -214,6 +223,12 @@ class SQLAlchemyAdvisorAssignmentRepository:
             actor_id,
         )
         self.session.add(created)
+        # Un evento por operación: la nueva principal, con la que dejó de serlo (contrato, SET_PRIMARY_*).
+        audit.track_create(
+            self.session, created, action=audit.CHANGE_PRIMARY_ADVISOR_ASSIGNMENT,
+            entity_type="CompanyAdvisorAssignment", company_id=company_id,
+            extra_previous={"previous_primary_id": current.id},
+        )
         self._commit()
 
         return self._reload(current_assignment_id), self._reload(created.id)

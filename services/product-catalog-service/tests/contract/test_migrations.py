@@ -148,7 +148,7 @@ def test_filter_indexes_migration_downgrades_and_upgrades(test_database_url: str
     try:
         command.downgrade(config, "0001")
         assert not (new_indexes & indexes())
-        assert set(FUNCTIONAL_TABLES) <= set(inspect(engine).get_table_names())
+        assert set(FUNCTIONAL_TABLES) - {"audit_outbox"} <= set(inspect(engine).get_table_names())  # la outbox llega en 0003
 
         command.upgrade(config, "head")
         assert new_indexes <= indexes()

@@ -525,3 +525,10 @@ class PriceListItemModel(_Audited, Base):
         Index("ix_price_list_items_resolution", "price_list_id", "company_product_id", "valid_from"),
         Index("ix_price_list_items_company_id_status", "company_id", "status"),
     )
+
+
+# Outbox de auditoría (feature 016, D26): estructura de `libs/sio-audit`, registrada en el
+# `metadata` para que `alembic check` coincida con la migración.
+from sio_audit.outbox import audit_outbox_table  # noqa: E402
+
+audit_outbox = audit_outbox_table(Base.metadata)

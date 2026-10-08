@@ -8,6 +8,8 @@ from product_catalog_service.infrastructure.models import GlobalPackagingTypeMod
 
 
 class PackagingTypeService(SimpleCatalogService[GlobalPackagingTypeModel]):
+    audit_entity = "PackagingType"  # feature 016
+    audit_suffix = "PACKAGING_TYPE"
     model = GlobalPackagingTypeModel
     label = "El tipo de empaque"
     code_max_length = 50

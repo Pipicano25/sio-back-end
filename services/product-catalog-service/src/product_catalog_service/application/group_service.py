@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     DuplicateCodeError,
@@ -41,6 +42,8 @@ ACTIVE = lifecycle.ACTIVE
 
 
 class GroupTypeService(SimpleCatalogService[GlobalProductGroupTypeModel]):
+    audit_entity = "ProductGroupType"  # feature 016
+    audit_suffix = "PRODUCT_GROUP_TYPE"
     model = GlobalProductGroupTypeModel
     label = "El tipo de grupo"
     code_max_length = 50
@@ -160,6 +163,7 @@ class GroupService:
         lifecycle.stamp_create(group, actor)
         self.session.add(group)
 
+        audit.track_create(self.session, group, action=audit.CREATE_PRODUCT_GROUP, entity_type="ProductGroup")
         try:
             self.session.commit()
         except IntegrityError:
@@ -195,6 +199,7 @@ class GroupService:
         group.description = normalize_optional_text(description)
         group.parent_group_id = parent_group_id
         lifecycle.stamp_update(group, actor)
+        audit.track_update(self.session, group, action=audit.UPDATE_PRODUCT_GROUP, entity_type="ProductGroup")
         self.session.commit()
         return group
 
@@ -203,6 +208,7 @@ class GroupService:
         if group.status == ACTIVE and self.tree.has_active_children(group.id):
             raise HasActiveChildrenError("Primero deben inactivarse o moverse los grupos hijos activos.")
         lifecycle.deactivate(group, version, actor)
+        audit.track_update(self.session, group, action=audit.DEACTIVATE_PRODUCT_GROUP, entity_type="ProductGroup")
         self.session.commit()
         return group
 
@@ -213,6 +219,7 @@ class GroupService:
         if group.parent_group_id is not None and self.get(group.parent_group_id).status != ACTIVE:
             raise ParentInactiveError("El grupo padre está inactivo.")
         lifecycle.reactivate(group, version, actor)
+        audit.track_update(self.session, group, action=audit.REACTIVATE_PRODUCT_GROUP, entity_type="ProductGroup")
         self.session.commit()
         return group
 

@@ -43,6 +43,7 @@ from commercial_relationship_service.infrastructure.models import (
     SupplierPaymentConditionModel,
     SupplierProductModel,
 )
+from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.infrastructure.persistence import end_read
 from commercial_relationship_service.infrastructure.repository_base import (
     SQLAlchemyRepositoryBase,
@@ -361,10 +362,14 @@ class PriceListItemRepository(SQLAlchemyRepositoryBase[PriceListItemModel]):
             or_(PriceListItemModel.valid_to.is_(None), PriceListItemModel.valid_to > at),
         )
 
-    def save_change(self, previous: PriceListItemModel, new: PriceListItemModel) -> None:
+    def save_change(
+        self, previous: PriceListItemModel, new: PriceListItemModel, *, audit: dict[str, Any] | None = None,
+    ) -> None:
         """Confirma `change-price`: cierre del anterior e inserción del nuevo en una transacción."""
         self.session.flush()
         self.session.add(new)
+        if audit is not None:  # feature 016: un evento sobre el ítem nuevo
+            audit_events.track_create(self.session, new, **audit)
         self.save(previous, duplicates=self.duplicates)
         self.session.refresh(new)
         end_read(self.session)

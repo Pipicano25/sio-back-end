@@ -54,7 +54,7 @@ class ItemsStub:
     def build(self, **fields):
         return SimpleNamespace(**{"id": uuid4(), "status": "ACTIVE", "version": 1, **fields})
 
-    def add(self, model, *, duplicates):
+    def add(self, model, *, duplicates, audit=None):
         self.events.append("add")
         self.model = model
         return model
@@ -63,11 +63,11 @@ class ItemsStub:
         self.events.append("load_for_update")
         return self.model
 
-    def save(self, model, *, duplicates):
+    def save(self, model, *, duplicates, audit=None):
         self.events.append("save")
         return model
 
-    def save_change(self, previous, new):
+    def save_change(self, previous, new, audit=None):
         self.events.append("save_change")
         self.change = (previous, new)
 

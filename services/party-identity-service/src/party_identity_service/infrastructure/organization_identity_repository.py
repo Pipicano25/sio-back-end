@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from party_identity_service.application import audit_events as audit
 from party_identity_service.application.exceptions import (
     DuplicateIdentificationError,
 )
@@ -160,6 +161,7 @@ class SQLAlchemyOrganizationIdentityRepository:
         )
 
         self.session.add(model)
+        audit.track_create(self.session, model, action=audit.CREATE_ORGANIZATION_IDENTITY, entity_type="OrganizationIdentity")
         commit_or_translate(
             self.session,
             duplicates={DUPLICATE_CONSTRAINT: DuplicateIdentificationError},
@@ -189,6 +191,7 @@ class SQLAlchemyOrganizationIdentityRepository:
             setattr(model, field, value)
 
         model.updated_by = actor_id
+        audit.track_update(self.session, model, action=audit.status_action(model, "ORGANIZATION_IDENTITY"), entity_type="OrganizationIdentity")
         commit_or_translate(
             self.session,
             duplicates={DUPLICATE_CONSTRAINT: DuplicateIdentificationError},

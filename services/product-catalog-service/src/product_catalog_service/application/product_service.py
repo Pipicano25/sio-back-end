@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     BaseUnitLockedByFirstUseError,
@@ -131,6 +132,7 @@ class ProductService:
         self.session.add(product)
         self.session.flush()
 
+        audit.track_create(self.session, product, action=audit.CREATE_PRODUCT, entity_type="Product")
         warnings = self._duplicate_warnings(product)
         self.session.commit()
         return ProductWriteResult(product, warnings)
@@ -181,6 +183,7 @@ class ProductService:
         product.manufacturer_organization_id = manufacturer_organization_id
         product.base_unit_id = base_unit_id
         lifecycle.stamp_update(product, actor)
+        audit.track_update(self.session, product, action=audit.UPDATE_PRODUCT, entity_type="Product")
         self.session.flush()
 
         warnings = self._duplicate_warnings(product) if name_or_brand_changed else ()
@@ -191,6 +194,7 @@ class ProductService:
         """Sin cascada sobre relaciones, presentaciones, identificadores ni activos (FR-030)."""
         product = lock_product(self.session, product_id)
         lifecycle.deactivate(product, version, actor)
+        audit.track_update(self.session, product, action=audit.DEACTIVATE_PRODUCT, entity_type="Product")
         self.session.commit()
         return product
 
@@ -198,6 +202,7 @@ class ProductService:
         """No revalida marca ni unidad base ya asignadas (FR-006, respuesta 5A)."""
         product = lock_product(self.session, product_id)
         lifecycle.reactivate(product, version, actor)
+        audit.track_update(self.session, product, action=audit.REACTIVATE_PRODUCT, entity_type="Product")
         self.session.commit()
         return product
 

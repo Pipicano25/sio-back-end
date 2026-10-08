@@ -14,6 +14,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.application.exceptions import (
     InvalidStatusTransitionError,
     VersionConflictError,
@@ -74,7 +75,7 @@ class PriceListItemService:
         validate_period(values["valid_from"], values["valid_to"])
 
         model = self._repository.build(company_id=company_id, created_by=actor, updated_by=actor, **values)
-        return self._repository.add(model, duplicates=self._repository.duplicates)
+        return self._repository.add(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.CREATE_PRICE_LIST_ITEM, "PriceListItem", model.company_id))
 
     # ----------------------------------------------------------- mantenimiento
 
@@ -109,7 +110,7 @@ class PriceListItemService:
             setattr(model, name, values[name])
 
         touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_PRICE_LIST_ITEM, "PriceListItem", model.company_id))
 
     def change_price(
         self,
@@ -154,14 +155,21 @@ class PriceListItemService:
         )
         previous.valid_to = effective
         touch(previous, actor)
-        self._repository.save_change(previous, new)
+        self._repository.save_change(
+            previous,
+            new,
+            audit=audit_events.spec(
+                audit_events.CHANGE_PRICE_LIST_ITEM_PRICE, "PriceListItem", previous.company_id,
+                extra_previous={"previous_item_id": previous.id, "unit_price": previous.unit_price},
+            ),
+        )
         return new, previous
 
     def deactivate(self, current, *, version: int, actor: str):
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE)
         touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_PRICE_LIST_ITEM, "PriceListItem", model.company_id))
 
     def reactivate(self, current, *, version: int, actor: str):
         """Revalida lista, producto y presentación `ACTIVE`; el solapamiento lo rechaza la base."""
@@ -173,7 +181,7 @@ class PriceListItemService:
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, REACTIVATE)
         touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.REACTIVATE_PRICE_LIST_ITEM, "PriceListItem", model.company_id))
 
     # -------------------------------------------------------------- internos
 

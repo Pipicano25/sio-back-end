@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session
 
+from operational_context_service.application import audit_events as audit
 from operational_context_service.application.exceptions import (
     CompanyInactiveError,
     DuplicateMembershipError,
@@ -152,15 +153,18 @@ class SQLAlchemyApplicationUserRepository:
         """Inserta la membresía si la empresa sigue `ACTIVE` (bloqueo `FOR SHARE`)."""
         self._lock_active_company(company_id)
         application_user_id = uuid4()
-        self.session.add(
-            ApplicationUserModel(
-                id=application_user_id,
-                company_id=company_id,
-                **values,
-                status="ACTIVE",
-                created_by=actor_id,
-                updated_by=actor_id,
-            )
+        model = ApplicationUserModel(
+            id=application_user_id,
+            company_id=company_id,
+            **values,
+            status="ACTIVE",
+            created_by=actor_id,
+            updated_by=actor_id,
+        )
+        self.session.add(model)
+        audit.track_create(
+            self.session, model, action=audit.CREATE_APPLICATION_USER, entity_type="ApplicationUser",
+            company_id=company_id,
         )
         self._commit()
 
@@ -186,6 +190,10 @@ class SQLAlchemyApplicationUserRepository:
             setattr(model, field, value)
 
         model.updated_by = actor_id
+        audit.track_update(
+            self.session, model, action=audit.status_action(model, "APPLICATION_USER"),
+            entity_type="ApplicationUser", company_id=model.company_id,
+        )
         self._commit()
 
         return self._reload(application_user_id)
@@ -213,6 +221,10 @@ class SQLAlchemyApplicationUserRepository:
         self._lock_active_company(model.company_id)
         model.status = "ACTIVE"
         model.updated_by = actor_id
+        audit.track_update(
+            self.session, model, action=audit.REACTIVATE_APPLICATION_USER, entity_type="ApplicationUser",
+            company_id=model.company_id,
+        )
         self._commit()
 
         return self._reload(application_user_id)

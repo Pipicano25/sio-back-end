@@ -68,7 +68,7 @@ class PresentationsStub:
     def clear_product_marks(self, mark, company_product_id, *, exclude_id, actor):
         self.events.append(f"clear:{mark}")
 
-    def add(self, model, *, duplicates):
+    def add(self, model, *, duplicates, audit=None):
         self.events.append("add")
         self.model = model
         return model
@@ -77,7 +77,7 @@ class PresentationsStub:
         self.events.append("load_for_update")
         return self.model
 
-    def save(self, model, *, duplicates):
+    def save(self, model, *, duplicates, audit=None):
         self.events.append("save")
         return model
 

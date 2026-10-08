@@ -443,3 +443,10 @@ from party_identity_service.infrastructure.phase_b_models import (  # noqa: E402
     OrganizationLegalRepresentativeModel,
     PersonContactProfileModel,
 )
+
+
+# Outbox de auditoría (feature 016, D26): estructura de `libs/sio-audit`, registrada en el
+# `metadata` para que `alembic check` coincida con la migración.
+from sio_audit.outbox import audit_outbox_table  # noqa: E402
+
+audit_outbox = audit_outbox_table(Base.metadata)

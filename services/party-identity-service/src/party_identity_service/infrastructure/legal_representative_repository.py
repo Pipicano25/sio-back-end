@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from party_identity_service.application import audit_events as audit
 from party_identity_service.application.exceptions import (
     DuplicateActiveRepresentativeError,
     InvalidStatusTransitionError,
@@ -148,6 +149,7 @@ class SQLAlchemyLegalRepresentativeRepository:
             actor_id=actor_id,
         )
         self.session.add(model)
+        audit.track_create(self.session, model, action=audit.CREATE_ORGANIZATION_LEGAL_REPRESENTATIVE, entity_type="OrganizationLegalRepresentative")
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(model)
         return self._to_domain(model)
@@ -168,6 +170,7 @@ class SQLAlchemyLegalRepresentativeRepository:
         for field, value in values.items():
             setattr(model, field, value)
         model.updated_by = actor_id
+        audit.track_update(self.session, model, action=audit.UPDATE_ORGANIZATION_LEGAL_REPRESENTATIVE, entity_type="OrganizationLegalRepresentative")
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(model)
         return self._to_domain(model)
@@ -184,6 +187,7 @@ class SQLAlchemyLegalRepresentativeRepository:
             self.session.rollback()
             raise InvalidStatusTransitionError("La relación ya está cerrada; no se reactiva.")
         self._close_model(model, actor_id)
+        audit.track_update(self.session, model, action=audit.CLOSE_ORGANIZATION_LEGAL_REPRESENTATIVE, entity_type="OrganizationLegalRepresentative")
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(model)
         return self._to_domain(model)
@@ -229,6 +233,7 @@ class SQLAlchemyLegalRepresentativeRepository:
             actor_id=actor_id,
         )
         self.session.add(model)
+        audit.track_create(self.session, model, action=audit.SET_PRIMARY_ORGANIZATION_LEGAL_REPRESENTATIVE, entity_type="OrganizationLegalRepresentative", extra_previous={"previous_primary_id": current.id if current is not None else None})
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(model)
         return self._to_domain(model), True

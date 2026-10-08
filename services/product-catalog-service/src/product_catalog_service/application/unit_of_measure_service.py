@@ -11,6 +11,8 @@ from product_catalog_service.infrastructure.models import GlobalUnitOfMeasureMod
 
 
 class UnitOfMeasureService(SimpleCatalogService[GlobalUnitOfMeasureModel]):
+    audit_entity = "UnitOfMeasure"  # feature 016
+    audit_suffix = "UNIT_OF_MEASURE"
     model = GlobalUnitOfMeasureModel
     label = "La unidad de medida"
     code_max_length = 20

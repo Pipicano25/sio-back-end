@@ -20,6 +20,7 @@ dependencies = [
     "python-dotenv>=1.0,<2.0",
 
     "sio-auth @ file:../../libs/sio-auth",
+    "sio-audit @ file:../../libs/sio-audit",
 ]
 
 [project.optional-dependencies]

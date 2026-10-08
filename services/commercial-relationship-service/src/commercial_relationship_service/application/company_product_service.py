@@ -13,6 +13,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.application.company_scope import (
     CompanyScopeService,
     RequestIdentity,
@@ -112,6 +113,7 @@ class CompanyProductService:
         catalog.register_first_use(global_product_id)
 
         return self._repository.create(
+            audit=audit_events.spec(audit_events.ADOPT_COMPANY_PRODUCT, "CompanyProduct", company_id),
             company_id=company_id,
             created_by=actor,
             updated_by=actor,
@@ -139,14 +141,14 @@ class CompanyProductService:
             setattr(model, name, values[name])
 
         _touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_COMPANY_PRODUCT, "CompanyProduct", model.company_id))
 
     def deactivate(self, current, *, version: int, actor: str):
         """Inactivar no consulta Product Catalog; se permite con la empresa inactiva."""
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE)
         _touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_COMPANY_PRODUCT, "CompanyProduct", model.company_id))
 
     def reactivate(self, current, *, version: int, actor: str):
         """Exige el producto global `ACTIVE`; no exige completitud ni registra primer uso (FR-016)."""
@@ -156,7 +158,7 @@ class CompanyProductService:
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, REACTIVATE)
         _touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.REACTIVATE_COMPANY_PRODUCT, "CompanyProduct", model.company_id))
 
     # ------------------------------------------------------------------ lotes
 

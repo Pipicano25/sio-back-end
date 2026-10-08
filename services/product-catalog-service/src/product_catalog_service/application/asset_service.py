@@ -12,6 +12,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     InvalidStorageUriError,
@@ -102,6 +103,7 @@ class AssetService:
         if is_primary:
             self._make_primary(asset, actor)
 
+        audit.track_create(self.session, asset, action=audit.CREATE_PRODUCT_ASSET, entity_type="ProductAsset")
         self.session.commit()
         return asset
 
@@ -124,6 +126,7 @@ class AssetService:
         asset.storage_uri = validate_storage_uri(storage_uri)
         asset.mime_type = validate_mime_type(mime_type)
         lifecycle.stamp_update(asset, actor)
+        audit.track_update(self.session, asset, action=audit.UPDATE_PRODUCT_ASSET, entity_type="ProductAsset")
         self.session.commit()
         return asset
 
@@ -135,6 +138,7 @@ class AssetService:
         if asset.status != ACTIVE:
             raise ReferenceInactiveError("Solo un activo vigente puede ser principal.")
         self._make_primary(asset, actor)
+        audit.track_update(self.session, asset, action=audit.SET_PRIMARY_PRODUCT_ASSET, entity_type="ProductAsset", extra_previous={"previous_primary_id": getattr(self, "_audit_previous_primary_id", None)})
         self.session.commit()
         return asset
 
@@ -142,6 +146,7 @@ class AssetService:
         lock_product(self.session, product_id)
         asset = self._asset(product_id, asset_id)
         lifecycle.deactivate(asset, version, actor)
+        audit.track_update(self.session, asset, action=audit.DEACTIVATE_PRODUCT_ASSET, entity_type="ProductAsset")
         self.session.commit()
         return asset
 
@@ -150,6 +155,7 @@ class AssetService:
         ensure_product_active_for_dependents(product)
         asset = self._asset(product_id, asset_id)
         lifecycle.reactivate(asset, version, actor)
+        audit.track_update(self.session, asset, action=audit.REACTIVATE_PRODUCT_ASSET, entity_type="ProductAsset")
         self.session.commit()
         return asset
 
@@ -166,6 +172,7 @@ class AssetService:
                 ProductAssetModel.status == ACTIVE,
             )
         ).scalar_one_or_none()
+        self._audit_previous_primary_id = current.id if current is not None and current.id != asset.id else None
         if current is not None and current.id != asset.id:
             current.is_primary = False
             lifecycle.stamp_update(current, actor)

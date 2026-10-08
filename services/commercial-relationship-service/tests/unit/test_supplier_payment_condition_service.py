@@ -55,7 +55,7 @@ class ConditionsStub:
     def clear_default(self, company_supplier_id, currency_code, *, exclude_id, actor):
         self.events.append(f"clear_default:{currency_code}")
 
-    def add(self, model, *, duplicates):
+    def add(self, model, *, duplicates, audit=None):
         self.events.append("add")
         self.model = model
         return model
@@ -63,7 +63,7 @@ class ConditionsStub:
     def load_for_update(self, entity_id, *, expected_version):
         return self.model
 
-    def save(self, model, *, duplicates):
+    def save(self, model, *, duplicates, audit=None):
         self.events.append("save")
         return model
 

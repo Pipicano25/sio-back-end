@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.application.exceptions import (
     DuplicateSupplierProductError,
     PresentationInactiveError,
@@ -87,7 +88,7 @@ class SupplierProductService:
             self._repository.lock_product(product.id)
             self._repository.clear_preferred(product.id, exclude_id=None, actor=actor)
 
-        return self._repository.add(model, duplicates=self._repository.duplicates)
+        return self._repository.add(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.CREATE_SUPPLIER_PRODUCT, "SupplierProduct", model.company_id))
 
     # ----------------------------------------------------------- mantenimiento
 
@@ -128,7 +129,7 @@ class SupplierProductService:
             setattr(model, name, values[name])
 
         touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_SUPPLIER_PRODUCT, "SupplierProduct", model.company_id))
 
     def deactivate(self, current, *, version: int, actor: str):
         """Inactivar retira `is_preferred` (DS-05)."""
@@ -136,7 +137,7 @@ class SupplierProductService:
         model.status = next_status(model.status, DEACTIVATE)
         model.is_preferred = False
         touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_SUPPLIER_PRODUCT, "SupplierProduct", model.company_id))
 
     def reactivate(self, current, *, version: int, actor: str):
         """FR-027: proveedor, producto y presentación `ACTIVE` y relación única entre `ACTIVE`."""
@@ -161,7 +162,7 @@ class SupplierProductService:
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, REACTIVATE)
         touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.REACTIVATE_SUPPLIER_PRODUCT, "SupplierProduct", model.company_id))
 
     # -------------------------------------------------------------- internos
 

@@ -65,6 +65,15 @@ asignándolos en la plantilla. Consultar auditoría de una empresa exige además
   Commercial Relationship; `perm:inventory:outputs:create`, `perm:inventory:balances:read`,
   `perm:inventory:movements:read` y `perm:inventory:platform:lookup` en Inventory; y
   `perm:audit:audit-events:create` para su `audit-outbox-worker`. Nunca escribe ventas. Solo en `.env`.
+- `${PRODUCT_CATALOG_SERVICE_CLIENT_SECRET}`: secreto del cliente técnico `product-catalog-service`
+  (feature 016, C-02): solo `perm:audit:audit-events:create`, para su `audit-outbox-worker`. Solo en `.env`.
+
+Auditoría de servicios existentes (feature 016, C-01/C-02): `party-identity-service` y
+`operational-context-service` tienen el scope por defecto `service_account` (su token emite
+`client_id`, que Audit usa como `source_service`); `operational-context-service` tiene además la
+audiencia `sio-api`. Las cuentas de servicio de Party Identity, Operational Context, Commercial
+Relationship y Product Catalog tienen `perm:audit:audit-events:create`, sin otros cambios de roles.
+Usuarios y grupos no cambian. Cambiar esta configuración exige reconstruir Keycloak.
 
 Rentabilidad de ventas (feature 015, C-08): el rol `perm:sales:sales:read-profitability` permite ver costo y
 margen de las ventas y no abre ninguna ruta. El grupo `ventas` tiene `perm:sales:all:create`, `read`,

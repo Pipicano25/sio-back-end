@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     DuplicateAssociationError,
@@ -86,6 +87,10 @@ class CategoryAttributeService:
         association.is_required = is_required
         association.is_filterable = is_filterable
         association.display_order = display_order
+        if created:
+            audit.track_create(self.session, association, action=audit.CREATE_CATEGORY_ATTRIBUTE, entity_type="CategoryAttribute")
+        else:
+            audit.track_update(self.session, association, action=audit.CREATE_CATEGORY_ATTRIBUTE, entity_type="CategoryAttribute")
         self.session.commit()
         return association, created
 
@@ -106,12 +111,14 @@ class CategoryAttributeService:
         association.is_filterable = is_filterable
         association.display_order = display_order
         lifecycle.stamp_update(association, actor)
+        audit.track_update(self.session, association, action=audit.UPDATE_CATEGORY_ATTRIBUTE, entity_type="CategoryAttribute")
         self.session.commit()
         return association
 
     def deactivate(self, category_id: UUID, association_id: UUID, *, version: int, actor: str):
         association = self._association(category_id, association_id)
         lifecycle.deactivate(association, version, actor)
+        audit.track_update(self.session, association, action=audit.DEACTIVATE_CATEGORY_ATTRIBUTE, entity_type="CategoryAttribute")
         self.session.commit()
         return association
 
@@ -120,6 +127,7 @@ class CategoryAttributeService:
         category = self.session.get(GlobalCategoryModel, category_id)
         self._require_active_references(category, association.attribute_definition_id)
         lifecycle.reactivate(association, version, actor)
+        audit.track_update(self.session, association, action=audit.REACTIVATE_CATEGORY_ATTRIBUTE, entity_type="CategoryAttribute")
         self.session.commit()
         return association
 

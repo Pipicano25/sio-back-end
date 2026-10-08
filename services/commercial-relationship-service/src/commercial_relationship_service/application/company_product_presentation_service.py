@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
+from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.application.company_product_service import (
     BATCH_LIMIT,
     BatchItem,
@@ -117,7 +118,7 @@ class CompanyProductPresentationService:
         model = self._repository.build(company_id=company_id, created_by=actor, updated_by=actor, **values)
         self._repository.lock_product(product.id)
         self._clear_new_marks(None, values, actor=actor, company_product_id=product.id)
-        return self._repository.add(model, duplicates=self._repository.duplicates)
+        return self._repository.add(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.CREATE_COMPANY_PRODUCT_PRESENTATION, "CompanyProductPresentation", model.company_id))
 
     # ----------------------------------------------------------- mantenimiento
 
@@ -157,7 +158,7 @@ class CompanyProductPresentationService:
             setattr(model, name, values[name])
 
         touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_COMPANY_PRODUCT_PRESENTATION, "CompanyProductPresentation", model.company_id))
 
     def deactivate(self, current, *, version: int, actor: str):
         """Inactivar retira sus marcas de predeterminada (DS-05); no consulta Product Catalog."""
@@ -168,7 +169,7 @@ class CompanyProductPresentationService:
             setattr(model, mark, False)
 
         touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_COMPANY_PRODUCT_PRESENTATION, "CompanyProductPresentation", model.company_id))
 
     def reactivate(self, current, *, version: int, actor: str):
         """FR-015: producto empresarial `ACTIVE` y presentación global `ACTIVE`; sin primer uso."""
@@ -188,7 +189,7 @@ class CompanyProductPresentationService:
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, REACTIVATE)
         touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.REACTIVATE_COMPANY_PRODUCT_PRESENTATION, "CompanyProductPresentation", model.company_id))
 
     # ------------------------------------------------------------------ lotes
 

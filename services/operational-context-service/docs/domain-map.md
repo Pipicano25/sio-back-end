@@ -52,5 +52,11 @@ Todas son `UUID REF` o `sub` sin FK física. Las FK son internas: `branches.comp
   para confirmar perfiles de contacto: guarda `confirmed_by_company_id` y el `application_user_id`.
   Sin recursión: `operational-access` no llama a Party Identity.
 
+## Auditoría
+
+Emisor de Audit desde la feature 016: Eventos de empresa (`company_id`; `branch_id` en sucursales y asignaciones a sucursal). Tabla `audit_outbox` (Outbox, D26) y
+contenedor `operational-context-audit-outbox-worker` con el cliente `operational-context-service`. Acciones en
+`specs/016-existing-services-audit/contracts/audit-actions.md`.
+
 ## Ubicación
 `services/operational-context-service/docs/domain-map.md`

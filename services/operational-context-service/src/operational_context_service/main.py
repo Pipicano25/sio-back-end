@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from sio_auth import SIOAuth
 
+import operational_context_service.application.audit_events  # noqa: F401  (registra la outbox de auditoría, feature 016)
+from operational_context_service.audit_context import bind_audit_actor
 from operational_context_service.api.advisor_assignments import build_router as build_advisors_router
 from operational_context_service.api.application_users import (
     build_router as build_application_users_router,
@@ -154,6 +156,8 @@ def create_app(
             "cliente de la plataforma y sus sucursales."
         ),
         version=SERVICE_VERSION,
+        # Autor de auditoría de la solicitud (feature 016): no agrega parámetros a ninguna ruta.
+        dependencies=[Depends(bind_audit_actor)],
         docs_url="/docs" if current_settings.docs_enabled else None,
         redoc_url=None,
         openapi_url="/openapi.json" if current_settings.docs_enabled else None,

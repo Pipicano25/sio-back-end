@@ -10,7 +10,7 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 - **`supervisor.test`**: **no puede completar el ejercicio**. Se detiene en el paso 06 (*Inactivar el acetaminofén*): sobre `company_products` solo tiene `create`, `read`, `update`; le falta `delete`. Sí puede hacer las consultas (`GET`) de los pasos 06, 07.
 - **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el acetaminofén*): sobre `company_products` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 06, 07.
 - **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el acetaminofén*): sobre `company_products` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 06, 07.
-- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el acetaminofén*): no tiene ningún permiso sobre `company_products` de `commercial-relationship`. No tiene ningún permiso de Commercial Relationship: todas sus llamadas a este servicio responden `403`.
+- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el acetaminofén*): sobre `company_products` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 06, 07.
 - **`reportes.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el acetaminofén*): sobre `company_products` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 06, 07.
 - **`consulta.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el acetaminofén*): sobre `company_products` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 06, 07.
 
@@ -37,11 +37,11 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 | [04](04-rechazos.md) | 5. Adoptar los pañales con su código del Excel | `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [05](05-precio-y-moneda.md) | 1. Fijar un precio en pesos chilenos con decimales (rechazado) | `PUT /api/v1/company-products/{id}` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [05](05-precio-y-moneda.md) | 2. Fijar el precio sin decimales | `PUT /api/v1/company-products/{id}` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [06](06-consultar-y-estados.md) | 1. Listar los productos de la empresa | `GET /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| [06](06-consultar-y-estados.md) | 2. Consultar varios productos por lotes | `POST /api/v1/company-products/batch-lookup` | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
+| [06](06-consultar-y-estados.md) | 1. Listar los productos de la empresa | `GET /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [06](06-consultar-y-estados.md) | 2. Consultar varios productos por lotes | `POST /api/v1/company-products/batch-lookup` | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [06](06-consultar-y-estados.md) | 3. Inactivar el acetaminofén | `POST /api/v1/company-products/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_products:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [06](06-consultar-y-estados.md) | 4. Reactivar el acetaminofén | `POST /api/v1/company-products/{id}/reactivate` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [07](07-resumen-de-empresas.md) | 1. Ver la primera empresa del resumen | `GET /api/v1/company-summaries` | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
+| [07](07-resumen-de-empresas.md) | 1. Ver la primera empresa del resumen | `GET /api/v1/company-summaries` | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Ejemplos de uso con los usuarios
 

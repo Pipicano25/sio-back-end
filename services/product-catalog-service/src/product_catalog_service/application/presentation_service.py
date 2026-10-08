@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     BasePresentationExistsError,
@@ -116,6 +117,7 @@ class PresentationService:
         )
         lifecycle.stamp_create(presentation, actor)
         self.session.add(presentation)
+        audit.track_create(self.session, presentation, action=audit.CREATE_PRODUCT_PRESENTATION, entity_type="ProductPresentation")
         self.session.commit()
         self.session.refresh(presentation)
         return presentation
@@ -177,6 +179,7 @@ class PresentationService:
         presentation.display_order = display_order
         presentation.is_base = is_base
         lifecycle.stamp_update(presentation, actor)
+        audit.track_update(self.session, presentation, action=audit.UPDATE_PRODUCT_PRESENTATION, entity_type="ProductPresentation")
         self.session.commit()
         self.session.refresh(presentation)
         return presentation
@@ -186,6 +189,7 @@ class PresentationService:
         lock_product(self.session, presentation.global_product_id)
         self.session.refresh(presentation, with_for_update=True)
         lifecycle.deactivate(presentation, version, actor)
+        audit.track_update(self.session, presentation, action=audit.DEACTIVATE_PRODUCT_PRESENTATION, entity_type="ProductPresentation")
         self.session.commit()
         return presentation
 
@@ -195,6 +199,7 @@ class PresentationService:
         ensure_product_active_for_dependents(product)
         self.session.refresh(presentation, with_for_update=True)
         lifecycle.reactivate(presentation, version, actor)
+        audit.track_update(self.session, presentation, action=audit.REACTIVATE_PRODUCT_PRESENTATION, entity_type="ProductPresentation")
         self.session.commit()
         return presentation
 

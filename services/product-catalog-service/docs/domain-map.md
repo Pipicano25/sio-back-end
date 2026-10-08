@@ -48,5 +48,11 @@ Ninguno: no publica ni consume eventos en esta versión (DS-11).
 
 No almacena precios privados, costos empresariales, proveedores ni stock.
 
+## Auditoría
+
+Emisor de Audit desde la feature 016: Eventos de plataforma (`company_id` nulo). Tabla `audit_outbox` (Outbox, D26) y
+contenedor `product-catalog-audit-outbox-worker` con el cliente `product-catalog-service`. Acciones en
+`specs/016-existing-services-audit/contracts/audit-actions.md`.
+
 ## Ubicación
 `services/product-catalog-service/docs/domain-map.md`

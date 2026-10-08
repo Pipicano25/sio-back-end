@@ -24,6 +24,8 @@ from product_catalog_service.infrastructure.models import GlobalCategoryModel
 
 
 class CategoryService(SimpleCatalogService[GlobalCategoryModel]):
+    audit_entity = "Category"  # feature 016
+    audit_suffix = "CATEGORY"
     model = GlobalCategoryModel
     label = "La categoría"
     code_max_length = 50

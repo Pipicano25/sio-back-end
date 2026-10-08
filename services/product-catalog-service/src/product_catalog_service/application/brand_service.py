@@ -8,6 +8,8 @@ from product_catalog_service.infrastructure.models import GlobalBrandModel
 
 
 class BrandService(SimpleCatalogService[GlobalBrandModel]):
+    audit_entity = "Brand"  # feature 016
+    audit_suffix = "BRAND"
     model = GlobalBrandModel
     label = "La marca"
     code_max_length = 50

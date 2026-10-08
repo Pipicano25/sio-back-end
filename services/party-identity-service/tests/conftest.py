@@ -52,6 +52,7 @@ COLOMBIA_ID = UUID("0c3f1a86-3f7b-4c55-9b1e-6f0e8a1d2c01")
 """País ficticio que el doble de Geography reconoce como Colombia (`COL`)."""
 
 FUNCTIONAL_TABLES = (
+    "audit_outbox",
     "identification_type_rules",
     "person_identities",
     "organization_identities",
@@ -534,3 +535,31 @@ def organization_payload(**overrides: Any) -> dict[str, Any]:
 
 def random_uuid() -> str:
     return str(uuid4())
+
+
+# --------------------------------------------------------------------------
+# Auditoría (feature 016)
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def outbox(test_engine: Engine):
+    """Eventos de la outbox en orden de registro (payload canónico de `sio-audit`)."""
+
+    def _read() -> list[dict[str, Any]]:
+        with test_engine.connect() as connection:
+            rows = connection.execute(
+                text("SELECT payload FROM audit_outbox ORDER BY created_at, payload->>'occurred_at'")
+            ).scalars()
+            return [dict(row) for row in rows]
+
+    return _read
+
+
+@pytest.fixture
+def clear_outbox(test_engine: Engine):
+    def _clear() -> None:
+        with test_engine.begin() as connection:
+            connection.execute(text("TRUNCATE TABLE audit_outbox"))
+
+    return _clear

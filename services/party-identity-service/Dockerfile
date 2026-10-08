@@ -7,6 +7,7 @@ ENV PIP_NO_CACHE_DIR=1
 WORKDIR /app
 
 COPY libs/sio-auth /app/libs/sio-auth
+COPY libs/sio-audit /app/libs/sio-audit
 COPY services/party-identity-service /app/services/party-identity-service
 
 WORKDIR /app/services/party-identity-service

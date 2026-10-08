@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     DuplicateCodeError,
@@ -93,6 +94,7 @@ class SimpleCatalogService(Generic[M]):
         )
         lifecycle.stamp_create(entity, actor)
         self.session.add(entity)
+        audit.track_create(self.session, entity, action=f"CREATE_{self.audit_suffix}", entity_type=self.audit_entity)
         self._commit_unique(normalized_code)
         return entity
 
@@ -106,6 +108,7 @@ class SimpleCatalogService(Generic[M]):
         self.before_update(entity)
 
         lifecycle.stamp_update(entity, actor)
+        audit.track_update(self.session, entity, action=f"UPDATE_{self.audit_suffix}", entity_type=self.audit_entity)
         self.session.commit()
         return entity
 
@@ -113,6 +116,7 @@ class SimpleCatalogService(Generic[M]):
         entity = lock_row(self.session, self.model, entity_id, label=self.label)
         self.before_deactivate(entity)
         lifecycle.deactivate(entity, version, actor)
+        audit.track_update(self.session, entity, action=f"DEACTIVATE_{self.audit_suffix}", entity_type=self.audit_entity)
         self.session.commit()
         return entity
 
@@ -120,6 +124,7 @@ class SimpleCatalogService(Generic[M]):
         entity = lock_row(self.session, self.model, entity_id, label=self.label)
         self.before_reactivate(entity)
         lifecycle.reactivate(entity, version, actor)
+        audit.track_update(self.session, entity, action=f"REACTIVATE_{self.audit_suffix}", entity_type=self.audit_entity)
         self.session.commit()
         return entity
 

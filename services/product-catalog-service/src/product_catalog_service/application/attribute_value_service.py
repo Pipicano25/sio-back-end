@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     AttributeNotApplicableError,
@@ -118,6 +119,10 @@ class AttributeValueService:
         for name in VALUE_FIELDS:
             setattr(existing, name, value if name == field else None)
 
+        if created:
+            audit.track_create(self.session, existing, action=audit.SET_PRODUCT_ATTRIBUTE_VALUE, entity_type="ProductAttributeValue")
+        else:
+            audit.track_update(self.session, existing, action=audit.SET_PRODUCT_ATTRIBUTE_VALUE, entity_type="ProductAttributeValue")
         self.session.commit()
         self.session.refresh(existing)
         return ValueView(existing, False), created
@@ -129,6 +134,7 @@ class AttributeValueService:
         if existing is None:
             raise NotFoundError("El producto no tiene valor para ese atributo.")
         lifecycle.check_version(existing, version)
+        audit.track_delete(self.session, existing, action=audit.DELETE_PRODUCT_ATTRIBUTE_VALUE, entity_type="ProductAttributeValue")
         self.session.delete(existing)
         self.session.commit()
 

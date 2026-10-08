@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from party_identity_service.application import audit_events as audit
 from party_identity_service.application.exceptions import (
     DuplicateActiveRuleError,
     InvalidStatusTransitionError,
@@ -178,6 +179,7 @@ class SQLAlchemyIdentificationTypeRuleRepository:
         )
 
         self.session.add(model)
+        audit.track_create(self.session, model, action=audit.CREATE_IDENTIFICATION_TYPE_RULE, entity_type="IdentificationTypeRule")
         commit_or_translate(
             self.session,
             duplicates=DUPLICATES,
@@ -207,6 +209,7 @@ class SQLAlchemyIdentificationTypeRuleRepository:
             setattr(model, field, value)
 
         model.updated_by = actor_id
+        audit.track_update(self.session, model, action=audit.UPDATE_IDENTIFICATION_TYPE_RULE, entity_type="IdentificationTypeRule")
         commit_or_translate(
             self.session,
             duplicates=DUPLICATES,
@@ -256,6 +259,7 @@ class SQLAlchemyIdentificationTypeRuleRepository:
             updated_by=actor_id,
         )
         self.session.add(successor)
+        audit.track_create(self.session, successor, action=audit.CREATE_IDENTIFICATION_TYPE_RULE_VERSION, entity_type="IdentificationTypeRule", extra_previous={"previous_version_id": current.id})
         commit_or_translate(
             self.session,
             duplicates=DUPLICATES,
@@ -277,6 +281,7 @@ class SQLAlchemyIdentificationTypeRuleRepository:
             expected_version=expected_version,
         )
         self._close(model, actor_id=actor_id)
+        audit.track_update(self.session, model, action=audit.DEACTIVATE_IDENTIFICATION_TYPE_RULE, entity_type="IdentificationTypeRule")
         commit_or_translate(
             self.session,
             duplicates=DUPLICATES,

@@ -29,6 +29,7 @@ dependencies = [
     # referencia directa no admite especificador de versión: la versión la fija
     # libs/sio-auth/pyproject.toml.
     "sio-auth @ file:../../libs/sio-auth",
+    "sio-audit @ file:../../libs/sio-audit",
 ]
 
 [project.optional-dependencies]

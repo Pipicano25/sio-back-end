@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from party_identity_service.application import audit_events as audit
 from party_identity_service.application.exceptions import (
     DuplicateActiveContactPersonError,
     InvalidPrimaryContactError,
@@ -108,6 +109,7 @@ class SQLAlchemyContactPersonRepository:
             updated_by=actor_id,
         )
         self.session.add(model)
+        audit.track_create(self.session, model, action=audit.CREATE_ORGANIZATION_CONTACT_PERSON, entity_type="OrganizationContactPerson")
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(model)
         return self._to_domain(model)
@@ -125,6 +127,7 @@ class SQLAlchemyContactPersonRepository:
         for field, value in values.items():
             setattr(model, field, value)
         model.updated_by = actor_id
+        audit.track_update(self.session, model, action=audit.status_action(model, "ORGANIZATION_CONTACT_PERSON"), entity_type="OrganizationContactPerson")
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(model)
         return self._to_domain(model)
@@ -169,6 +172,7 @@ class SQLAlchemyContactPersonRepository:
 
         target.is_primary = True
         target.updated_by = actor_id
+        audit.track_update(self.session, target, action=audit.SET_PRIMARY_ORGANIZATION_CONTACT_PERSON, entity_type="OrganizationContactPerson", extra_previous={"previous_primary_id": previous.id if previous is not None else None})
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(target)
         return self._to_domain(target)

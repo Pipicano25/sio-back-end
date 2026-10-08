@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     DefinitionNotOptionError,
@@ -44,6 +45,8 @@ def _required_description(value: str | None) -> str:
 
 
 class AttributeDefinitionService(SimpleCatalogService[ProductAttributeDefinitionModel]):
+    audit_entity = "AttributeDefinition"  # feature 016
+    audit_suffix = "ATTRIBUTE_DEFINITION"
     model = ProductAttributeDefinitionModel
     label = "La definición de atributo"
     code_max_length = 80
@@ -112,6 +115,7 @@ class AttributeDefinitionService(SimpleCatalogService[ProductAttributeDefinition
         lifecycle.stamp_create(option, actor)
         self.session.add(option)
 
+        audit.track_create(self.session, option, action=audit.CREATE_ATTRIBUTE_OPTION, entity_type="AttributeOption")
         try:
             self.session.commit()
         except IntegrityError:
@@ -138,12 +142,14 @@ class AttributeDefinitionService(SimpleCatalogService[ProductAttributeDefinition
         option.description = normalize_optional_text(description)
         option.display_order = display_order
         lifecycle.stamp_update(option, actor)
+        audit.track_update(self.session, option, action=audit.UPDATE_ATTRIBUTE_OPTION, entity_type="AttributeOption")
         self.session.commit()
         return option
 
     def deactivate_option(self, definition_id: UUID, option_id: UUID, *, version: int, actor: str):
         option = self._option(definition_id, option_id, lock=True)
         lifecycle.deactivate(option, version, actor)
+        audit.track_update(self.session, option, action=audit.DEACTIVATE_ATTRIBUTE_OPTION, entity_type="AttributeOption")
         self.session.commit()
         return option
 
@@ -153,6 +159,7 @@ class AttributeDefinitionService(SimpleCatalogService[ProductAttributeDefinition
         if definition.status != ACTIVE:
             raise ReferenceInactiveError("La definición del atributo está inactiva.")
         lifecycle.reactivate(option, version, actor)
+        audit.track_update(self.session, option, action=audit.REACTIVATE_ATTRIBUTE_OPTION, entity_type="AttributeOption")
         self.session.commit()
         return option
 

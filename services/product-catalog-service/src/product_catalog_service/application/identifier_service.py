@@ -8,6 +8,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     BarcodeIsGtinError,
@@ -95,6 +96,7 @@ class IdentifierService:
         if is_primary:
             self._make_primary(identifier, actor)
 
+        audit.track_create(self.session, identifier, action=audit.CREATE_PRODUCT_IDENTIFIER, entity_type="ProductIdentifier")
         try:
             self.session.commit()
         except IntegrityError:
@@ -112,6 +114,7 @@ class IdentifierService:
         if identifier.status != ACTIVE:
             raise ReferenceInactiveError("Solo un identificador vigente puede ser principal.")
         self._make_primary(identifier, actor)
+        audit.track_update(self.session, identifier, action=audit.SET_PRIMARY_PRODUCT_IDENTIFIER, entity_type="ProductIdentifier", extra_previous={"previous_primary_id": getattr(self, "_audit_previous_primary_id", None)})
         self.session.commit()
         return identifier
 
@@ -119,6 +122,7 @@ class IdentifierService:
         lock_product(self.session, product_id)
         identifier = self._identifier(product_id, identifier_id)
         lifecycle.deactivate(identifier, version, actor)
+        audit.track_update(self.session, identifier, action=audit.DEACTIVATE_PRODUCT_IDENTIFIER, entity_type="ProductIdentifier")
         self.session.commit()
         return identifier
 
@@ -127,6 +131,7 @@ class IdentifierService:
         ensure_product_active_for_dependents(product)
         identifier = self._identifier(product_id, identifier_id)
         lifecycle.reactivate(identifier, version, actor)
+        audit.track_update(self.session, identifier, action=audit.REACTIVATE_PRODUCT_IDENTIFIER, entity_type="ProductIdentifier")
         self.session.commit()
         return identifier
 
@@ -205,6 +210,7 @@ class IdentifierService:
             )
         ).scalar_one_or_none()
 
+        self._audit_previous_primary_id = current.id if current is not None and current.id != identifier.id else None
         if current is not None and current.id != identifier.id:
             current.is_primary = False
             lifecycle.stamp_update(current, actor)

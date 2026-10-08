@@ -10,7 +10,7 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 - **`supervisor.test`**: puede ejecutar **todo el ejercicio** (con membresía en la empresa).
 - **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el irbesartán (fila 16577)*): sobre `company_products` solo tiene `read`; le falta `create`.
 - **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el irbesartán (fila 16577)*): sobre `company_products` solo tiene `read`; le falta `create`.
-- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el irbesartán (fila 16577)*): no tiene ningún permiso sobre `company_products` de `commercial-relationship`. No tiene ningún permiso de Commercial Relationship: todas sus llamadas a este servicio responden `403`.
+- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el irbesartán (fila 16577)*): sobre `company_products` solo tiene `read`; le falta `create`. No tiene ningún permiso de Commercial Relationship: todas sus llamadas a este servicio responden `403`.
 - **`reportes.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el irbesartán (fila 16577)*): sobre `company_products` solo tiene `read`; le falta `create`.
 - **`consulta.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el irbesartán (fila 16577)*): sobre `company_products` solo tiene `read`; le falta `create`.
 

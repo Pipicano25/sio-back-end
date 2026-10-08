@@ -59,7 +59,7 @@ class SupplierProductsStub:
     def clear_preferred(self, company_product_id, *, exclude_id, actor):
         self.events.append("clear_preferred")
 
-    def add(self, model, *, duplicates):
+    def add(self, model, *, duplicates, audit=None):
         self.events.append("add")
         self.model = model
         return model
@@ -70,7 +70,7 @@ class SupplierProductsStub:
     def release(self):
         self.events.append("release")
 
-    def save(self, model, *, duplicates):
+    def save(self, model, *, duplicates, audit=None):
         self.events.append("save")
         return model
 

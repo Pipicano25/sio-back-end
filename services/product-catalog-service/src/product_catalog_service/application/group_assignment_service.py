@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     DuplicateAssociationError,
@@ -74,6 +75,10 @@ class GroupAssignmentService:
             assignment.status = ACTIVE
             lifecycle.stamp_update(assignment, actor)
 
+        if created:
+            audit.track_create(self.session, assignment, action=audit.CREATE_PRODUCT_GROUP_ASSIGNMENT, entity_type="ProductGroupAssignment")
+        else:
+            audit.track_update(self.session, assignment, action=audit.CREATE_PRODUCT_GROUP_ASSIGNMENT, entity_type="ProductGroupAssignment")
         self.session.commit()
         return assignment, created
 
@@ -81,6 +86,7 @@ class GroupAssignmentService:
         lock_product(self.session, product_id)
         assignment = self._assignment(product_id, assignment_id)
         lifecycle.deactivate(assignment, version, actor)
+        audit.track_update(self.session, assignment, action=audit.DEACTIVATE_PRODUCT_GROUP_ASSIGNMENT, entity_type="ProductGroupAssignment")
         self.session.commit()
         return assignment
 
@@ -93,6 +99,7 @@ class GroupAssignmentService:
             _, group_type = self._active_group(assignment.global_product_group_id)
             self._check_single_value(product_id, group_type, exclude_id=assignment.id)
         lifecycle.reactivate(assignment, version, actor)
+        audit.track_update(self.session, assignment, action=audit.REACTIVATE_PRODUCT_GROUP_ASSIGNMENT, entity_type="ProductGroupAssignment")
         self.session.commit()
         return assignment
 

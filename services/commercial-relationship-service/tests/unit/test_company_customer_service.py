@@ -50,7 +50,7 @@ class RepositoryStub:
         self.events.append("load_for_update")
         return self.current
 
-    def save(self, model, *, duplicates):
+    def save(self, model, *, duplicates, audit=None):
         self.events.append("save")
         self.saved = model
         return model
@@ -177,7 +177,7 @@ def test_reactivation_validates_identity_not_contact():
     party.organizations[organization] = "ACTIVE"
     party.add_contact(contact, organization, is_active=False)
     current = SimpleNamespace(
-        id=uuid4(), status="INACTIVE", customer_kind="ORGANIZATION", person_identity_id=None,
+        id=uuid4(), company_id=uuid4(), status="INACTIVE", customer_kind="ORGANIZATION", person_identity_id=None,
         organization_identity_id=organization, preferred_contact_person_id=contact,
     )
     repository.current = current

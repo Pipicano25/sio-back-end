@@ -62,5 +62,11 @@ sector económico y representantes legales.
 
 Las referencias desde otros servicios son `REF`, nunca FK físicas entre bases de datos.
 
+## Auditoría
+
+Emisor de Audit desde la feature 016: Eventos de plataforma (`company_id` nulo). Tabla `audit_outbox` (Outbox, D26) y
+contenedor `party-identity-audit-outbox-worker` con el cliente `party-identity-service`. Acciones en
+`specs/016-existing-services-audit/contracts/audit-actions.md`.
+
 ## Ubicación
 `services/party-identity-service/docs/domain-map.md`

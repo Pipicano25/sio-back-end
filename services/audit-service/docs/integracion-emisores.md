@@ -6,7 +6,7 @@ La política de redacción reutilizable es la del [`README.md` de `libs/sio-audi
 
 **Aplica a**: todo microservicio construido después de `AUDIT-CORE READY` y a la feature transversal
 "Auditoría de servicios existentes". Party Identity, Product Catalog, Operational Context y Commercial
-Relationship **no** están auditados hasta completar esa feature.
+Relationship están auditados desde esa feature (`specs/016-existing-services-audit/`).
 
 ## 1. Qué DEBE definir la Spec del emisor desde el inicio
 

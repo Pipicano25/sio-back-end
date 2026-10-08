@@ -63,11 +63,11 @@ pedido) y, cuando existe, su contenedor de aplicación (puertos en
 | Proyecto | Contenedores |
 |---|---|
 | `geography-service` | `geography-db`, `geography-service`, `geography-test-db` (perfil `test`) |
-| `party-identity-service` | `party-identity-db`, `party-identity-service`, `party-identity-test-db` (perfil `test`) |
-| `product-catalog-service` | `product-catalog-db`, `product-catalog-service`, `product-catalog-test-db` (perfil `test`) |
-| `operational-context-service` | `operational-context-db`, `operational-context-service`, `operational-context-test-db` (perfil `test`) |
+| `party-identity-service` | `party-identity-db`, `party-identity-service`, `party-identity-audit-outbox-worker`, `party-identity-test-db` (perfil `test`) |
+| `product-catalog-service` | `product-catalog-db`, `product-catalog-service`, `product-catalog-audit-outbox-worker`, `product-catalog-test-db` (perfil `test`) |
+| `operational-context-service` | `operational-context-db`, `operational-context-service`, `operational-context-audit-outbox-worker`, `operational-context-test-db` (perfil `test`) |
 | `payment-reference-service` | `payment-reference-db`, `payment-reference-service`, `payment-reference-test-db` (perfil `test`) |
-| `commercial-relationship-service` | `commercial-relationship-db`, `commercial-relationship-service`, `commercial-relationship-test-db` (perfil `test`) |
+| `commercial-relationship-service` | `commercial-relationship-db`, `commercial-relationship-service`, `commercial-relationship-audit-outbox-worker`, `commercial-relationship-test-db` (perfil `test`) |
 | `purchase-service` | `purchase-db`, `purchase-service`, `purchase-audit-outbox-worker`, `purchase-reconciler`, `purchase-test-db` (perfil `test`) |
 | `sales-service` | `sales-db`, `sales-service`, `sales-audit-outbox-worker`, `sales-reconciler`, `sales-test-db` (perfil `test`) |
 | `inventory-service` | `inventory-db`, `inventory-service`, `inventory-audit-outbox-worker`, `inventory-test-db` (perfil `test`) |
@@ -90,6 +90,14 @@ usando los nombres de servicio (`http://keycloak:8080`,
 `http://party-identity-service:8000`). `depends_on` no cruza proyectos: el
 orden (primero `sio`, después los microservicios) lo garantiza
 `scripts/rebuild-all.sh`.
+
+Los `<servicio>-audit-outbox-worker` (Inventory, Purchase y Sales; desde la feature 016 también Party
+Identity, Product Catalog, Operational Context y Commercial Relationship) usan la imagen y la base de
+su servicio y entregan la tabla `audit_outbox` a `audit-service`. Arrancan después de las migraciones
+del servicio (la tabla `audit_outbox` debe existir); si Audit aún no está disponible, los eventos
+quedan `PENDING` y se entregan cuando vuelve, sin bloquear la API. Cada worker usa el secreto del
+cliente técnico de su servicio en `.env`; Product Catalog usa `PRODUCT_CATALOG_SERVICE_CLIENT_SECRET`
+(cliente `product-catalog-service`, solo para su auditoría).
 
 ## Requisitos previos
 
@@ -220,8 +228,9 @@ docker volume rm sio-keycloak-db-data
 docker compose --file compose.yaml --env-file .env up -d keycloak-db keycloak
 ```
 
-Después, verificar que los usuarios de prueba y las cuentas de servicio obtienen token y ejecutar las
-pruebas `-m integration` de los microservicios.
+Después, reiniciar `sio-operational-context-service` (guarda en memoria el UUID interno del cliente
+`sio-api`, que cambia al reconstruir Keycloak), verificar que los usuarios de prueba y las cuentas de
+servicio obtienen token y ejecutar las pruebas `-m integration` de los microservicios.
 
 ## Validación de configuración
 

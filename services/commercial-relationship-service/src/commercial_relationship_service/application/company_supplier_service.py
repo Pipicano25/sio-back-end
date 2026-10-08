@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.application.exceptions import (
     DuplicateInternalCodeError,
     DuplicateSupplierError,
@@ -56,6 +57,7 @@ class CompanySupplierService:
             require_valid_contact(party, values["preferred_contact_person_id"], organization_id)
 
         return self._repository.create(
+            audit=audit_events.spec(audit_events.CREATE_COMPANY_SUPPLIER, "CompanySupplier", company_id),
             company_id=company_id,
             organization_identity_id=organization_id,
             internal_code=values["internal_code"],
@@ -87,13 +89,13 @@ class CompanySupplierService:
             setattr(model, name, values.get(name))
 
         _touch(model, actor)
-        return self._repository.save(model, duplicates=self._repository.duplicates)
+        return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_COMPANY_SUPPLIER, "CompanySupplier", model.company_id))
 
     def deactivate(self, current, *, version: int, actor: str):
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE, supplier=True)
         _touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_COMPANY_SUPPLIER, "CompanySupplier", model.company_id))
 
     def reactivate(self, current, *, version: int, actor: str):
         return self._to_active(current, REACTIVATE, version=version, actor=actor)
@@ -107,7 +109,9 @@ class CompanySupplierService:
         model.status = next_status(model.status, BLOCK, supplier=True)
         model.block_reason = block_reason
         _touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec(
+            audit_events.BLOCK_COMPANY_SUPPLIER, "CompanySupplier", model.company_id, reason=block_reason,
+        ))
 
     def _to_active(self, current, action: str, *, version: int, actor: str):
         next_status(current.status, action, supplier=True)
@@ -117,7 +121,7 @@ class CompanySupplierService:
         model.status = next_status(model.status, action, supplier=True)
         model.block_reason = None
         _touch(model, actor)
-        return self._repository.save(model, duplicates={})
+        return self._repository.save(model, duplicates={}, audit=audit_events.spec((audit_events.REACTIVATE_COMPANY_SUPPLIER if action == REACTIVATE else audit_events.UNBLOCK_COMPANY_SUPPLIER), "CompanySupplier", model.company_id))
 
 
 def _touch(model, actor: str) -> None:

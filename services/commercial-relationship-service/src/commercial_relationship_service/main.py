@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from sio_auth import SIOAuth
 
+import commercial_relationship_service.application.audit_events  # noqa: F401  (registra la outbox de auditoría, feature 016)
+from commercial_relationship_service.audit_context import bind_audit_actor
 from commercial_relationship_service.api.applicable_prices import (
     build_router as build_applicable_prices_router,
 )
@@ -195,6 +197,8 @@ def create_app(
             "y listas de precios."
         ),
         version=SERVICE_VERSION,
+        # Autor de auditoría de la solicitud (feature 016): no agrega parámetros a ninguna ruta.
+        dependencies=[Depends(bind_audit_actor)],
         openapi_tags=OPENAPI_TAGS,
         docs_url="/docs" if current_settings.docs_enabled else None,
         redoc_url=None,

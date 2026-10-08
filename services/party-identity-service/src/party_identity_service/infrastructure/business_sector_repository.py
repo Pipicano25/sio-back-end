@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy import exists, func, or_, select, text
 from sqlalchemy.orm import Session
 
+from party_identity_service.application import audit_events as audit
 from party_identity_service.application.exceptions import DuplicateSectorCodeError
 from party_identity_service.application.pagination import PageResult
 from party_identity_service.domain.business_sector import BusinessSector, SectorStatus
@@ -108,6 +109,7 @@ class SQLAlchemyBusinessSectorRepository:
             updated_by=actor_id,
         )
         self.session.add(model)
+        audit.track_create(self.session, model, action=audit.CREATE_GLOBAL_BUSINESS_SECTOR, entity_type="GlobalBusinessSector")
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(model)
         return self._to_domain(model)
@@ -125,6 +127,7 @@ class SQLAlchemyBusinessSectorRepository:
         for field, value in values.items():
             setattr(model, field, value)
         model.updated_by = actor_id
+        audit.track_update(self.session, model, action=audit.status_action(model, "GLOBAL_BUSINESS_SECTOR"), entity_type="GlobalBusinessSector")
         commit_or_translate(self.session, duplicates=DUPLICATES)
         self.session.refresh(model)
         return self._to_domain(model)

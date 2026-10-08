@@ -84,7 +84,7 @@
     {
       "clientId": "party-identity-service",
       "name": "Party Identity Service",
-      "description": "Identidad técnica de party-identity-service (client_credentials). La usan el seed para consultar Geography y la confirmación de perfiles de contacto para consultar Operational Context (vía técnica de operational-access).",
+      "description": "Identidad técnica de party-identity-service (client_credentials): seed (Geography), confirmación de perfiles (Operational Context) y entrega de auditoría (feature 016).",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
@@ -96,6 +96,15 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
       "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "acr",
+        "basic",
+        "email",
+        "profile",
+        "roles",
+        "web-origins",
+        "service_account"
+      ],
       "protocolMappers": [
         {
           "name": "sio-api-audience",
@@ -114,7 +123,7 @@
     {
       "clientId": "operational-context-service",
       "name": "Operational Context Service",
-      "description": "Identidad técnica de operational-context-service (client_credentials). Solo lectura de la Admin API: verificar cuentas al registrar usuarios operativos y leer permisos efectivos en la comprobación técnica de acceso (DS-14).",
+      "description": "Identidad técnica de operational-context-service (client_credentials): lectura de la Admin API (DS-14) y entrega de auditoría (feature 016).",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
@@ -125,7 +134,30 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
-      "fullScopeAllowed": true
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "acr",
+        "basic",
+        "email",
+        "profile",
+        "roles",
+        "web-origins",
+        "service_account"
+      ],
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     },
     {
       "clientId": "commercial-relationship-service",
@@ -137,6 +169,45 @@
       "bearerOnly": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "${COMMERCIAL_RELATIONSHIP_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "acr",
+        "basic",
+        "email",
+        "profile",
+        "roles",
+        "web-origins",
+        "service_account"
+      ],
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "product-catalog-service",
+      "name": "Product Catalog Service",
+      "description": "Identidad técnica de product-catalog-service (client_credentials): solo entrega de auditoría (feature 016, C-02).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${PRODUCT_CATALOG_SERVICE_CLIENT_SECRET}",
       "standardFlowEnabled": false,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
@@ -1801,7 +1872,8 @@
         "sio-api": [
           "perm:geography:global_countries:read",
           "perm:operational-context:platform:lookup",
-          "perm:operational-context:application_users:read"
+          "perm:operational-context:application_users:read",
+          "perm:audit:audit-events:create"
         ]
       }
     },
@@ -1814,6 +1886,9 @@
         "realm-management": [
           "view-users",
           "query-clients"
+        ],
+        "sio-api": [
+          "perm:audit:audit-events:create"
         ]
       }
     },
@@ -1826,7 +1901,19 @@
         "sio-api": [
           "perm:product-catalog:products:read",
           "perm:product-catalog:first-use:register",
-          "perm:payment-reference:global_payment_condition_types:read"
+          "perm:payment-reference:global_payment_condition_types:read",
+          "perm:audit:audit-events:create"
+        ]
+      }
+    },
+    {
+      "id": "7c1e9a52-3b4d-4e8f-a1c2-6d7e8f9a0b1c",
+      "username": "service-account-product-catalog-service",
+      "enabled": true,
+      "serviceAccountClientId": "product-catalog-service",
+      "clientRoles": {
+        "sio-api": [
+          "perm:audit:audit-events:create"
         ]
       }
     },

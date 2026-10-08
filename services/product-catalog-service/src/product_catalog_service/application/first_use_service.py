@@ -14,6 +14,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.completeness_service import CompletenessService
 from product_catalog_service.application.exceptions import (
@@ -90,6 +91,13 @@ class FirstUseService:
             entity.first_use_source = source
             lifecycle.stamp_update(entity, actor)
 
+        audit.track_update(
+            self.session, product, action=audit.REGISTER_PRODUCT_FIRST_USE, entity_type="Product",
+            extra_new={
+                "origin": "MANUAL" if source == MANUAL else "AUTOMATIC",
+                **({"global_product_presentation_id": presentation.id} if presentation in pending else {}),
+            },
+        )
         self.session.commit()
         return FirstUseResult(product, presentation)
 

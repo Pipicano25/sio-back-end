@@ -61,6 +61,7 @@ TEST_AUDIENCE = "sio-api"
 TEST_KID = "test-key"
 
 FUNCTIONAL_TABLES = (
+    "audit_outbox",
     "price_list_items",
     "price_lists",
     "supplier_payment_conditions",
@@ -418,3 +419,31 @@ def other_company(fake_oc) -> UUID:
     company_id = uuid4()
     fake_oc.organizations[company_id] = uuid4()
     return company_id
+
+
+# --------------------------------------------------------------------------
+# Auditoría (feature 016)
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def outbox(test_engine: Engine):
+    """Eventos de la outbox en orden de registro (payload canónico de `sio-audit`)."""
+
+    def _read() -> list[dict[str, Any]]:
+        with test_engine.connect() as connection:
+            rows = connection.execute(
+                text("SELECT payload FROM audit_outbox ORDER BY created_at, payload->>'occurred_at'")
+            ).scalars()
+            return [dict(row) for row in rows]
+
+    return _read
+
+
+@pytest.fixture
+def clear_outbox(test_engine: Engine):
+    def _clear() -> None:
+        with test_engine.begin() as connection:
+            connection.execute(text("TRUNCATE TABLE audit_outbox"))
+
+    return _clear

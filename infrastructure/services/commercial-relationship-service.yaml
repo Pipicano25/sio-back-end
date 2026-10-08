@@ -106,6 +106,39 @@ services:
     networks:
       - sio-network
 
+  # audit-outbox-worker (feature 016; plantilla libs/sio-audit/compose/audit-outbox-worker.example.yaml):
+  # misma imagen, configuración y base que la API; solo cambia el comando. Entrega la outbox de
+  # auditoría a Audit con el cliente técnico commercial-relationship-service.
+  commercial-relationship-audit-outbox-worker:
+    image: sio/commercial-relationship-service:${SIO_SERVICES_VERSION}
+    container_name: sio-commercial-relationship-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://${COMMERCIAL_RELATIONSHIP_DB_USER}:${COMMERCIAL_RELATIONSHIP_DB_PASSWORD}@commercial-relationship-db:5432/${COMMERCIAL_RELATIONSHIP_DB_NAME}
+      AUDIT_SERVICE_BASE_URL: http://audit-service:8000/api/v1
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      AUDIT_CLIENT_ID: commercial-relationship-service
+      AUDIT_CLIENT_SECRET: ${COMMERCIAL_RELATIONSHIP_CLIENT_SECRET}
+      AUDIT_OUTBOX_POLL_INTERVAL_SECONDS: ${AUDIT_OUTBOX_POLL_INTERVAL_SECONDS:-2}
+      AUDIT_OUTBOX_HTTP_TIMEOUT_SECONDS: ${AUDIT_OUTBOX_HTTP_TIMEOUT_SECONDS:-5}
+      AUDIT_OUTBOX_BACKOFF_INITIAL_SECONDS: ${AUDIT_OUTBOX_BACKOFF_INITIAL_SECONDS:-1}
+      AUDIT_OUTBOX_BACKOFF_FACTOR: ${AUDIT_OUTBOX_BACKOFF_FACTOR:-2}
+      AUDIT_OUTBOX_BACKOFF_MAX_SECONDS: ${AUDIT_OUTBOX_BACKOFF_MAX_SECONDS:-300}
+      AUDIT_OUTBOX_BATCH_SIZE: ${AUDIT_OUTBOX_BATCH_SIZE:-100}
+    depends_on:
+      commercial-relationship-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "sio_audit.worker", "--check"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 15s
+    networks:
+      - sio-network
+
 volumes:
   commercial_relationship_db_data:
     name: sio-commercial-relationship-db-data

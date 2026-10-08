@@ -24,6 +24,7 @@ dependencies = [
     # local file: la versión mínima no se expresa en la misma cadena PEP 508, por lo
     # que debe verificarse contra libs/sio-auth/pyproject.toml (hoy 0.4.0).
     "sio-auth @ file:../../libs/sio-auth",
+    "sio-audit @ file:../../libs/sio-audit",
 ]
 
 [project.optional-dependencies]

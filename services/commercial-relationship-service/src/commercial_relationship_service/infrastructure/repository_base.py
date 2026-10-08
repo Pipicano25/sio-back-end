@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from commercial_relationship_service.application.exceptions import CommercialRelationshipError
 from commercial_relationship_service.application.pagination import PageResult
 from commercial_relationship_service.domain.rules import code_key
+from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.infrastructure.persistence import (
     commit_or_translate,
     end_read,
@@ -142,23 +143,41 @@ class SQLAlchemyRepositoryBase(Generic[ModelT]):
 
     # ------------------------------------------------------------- escrituras
 
-    def create(self, **fields: Any) -> ModelT:
+    def create(self, *, audit: dict[str, Any] | None = None, **fields: Any) -> ModelT:
         """Inserta una fila nueva traduciendo las unicidades de la entidad."""
-        return self.add(self.model(**fields), duplicates=self.duplicates)
+        return self.add(self.model(**fields), duplicates=self.duplicates, audit=audit)
 
-    def add(self, model: ModelT, *, duplicates: dict[str, Callable[[], CommercialRelationshipError]]) -> ModelT:
+    def add(
+        self,
+        model: ModelT,
+        *,
+        duplicates: dict[str, Callable[[], CommercialRelationshipError]],
+        audit: dict[str, Any] | None = None,
+    ) -> ModelT:
         self.session.add(model)
+        if audit is not None:  # evento en la misma transacción (feature 016)
+            audit_events.track_create(self.session, model, **audit)
         commit_or_translate(self.session, duplicates=duplicates)
         self.session.refresh(model)
         end_read(self.session)
         return model
 
     def load_for_update(self, entity_id: UUID, *, expected_version: int) -> ModelT:
-        return load_for_update(
+        model = load_for_update(
             self.session, self.model, entity_id, expected_version=expected_version
         )
+        audit_events.remember(self.session, model)  # imagen previa (feature 016)
+        return model
 
-    def save(self, model: ModelT, *, duplicates: dict[str, Callable[[], CommercialRelationshipError]]) -> ModelT:
+    def save(
+        self,
+        model: ModelT,
+        *,
+        duplicates: dict[str, Callable[[], CommercialRelationshipError]],
+        audit: dict[str, Any] | None = None,
+    ) -> ModelT:
+        if audit is not None:  # solo campos modificados; sin cambios no hay evento (feature 016)
+            audit_events.track_update(self.session, model, **audit)
         commit_or_translate(self.session, duplicates=duplicates)
         self.session.refresh(model)
         end_read(self.session)
