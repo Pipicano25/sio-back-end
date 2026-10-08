@@ -3218,6 +3218,11 @@ Contador independiente por secuencia y período. La asignación es una sola sent
 > hitos con vigencia por tipo. La publicación a Finance queda fuera del MVP (C-02). Los nombres de
 > restricciones, índices y triggers están en el `data-model.md` de esa feature.
 
+# 8. Sales DB` y `# 9. Inventory DB`. **No aplicada** hasta la aprobación
+del usuario (T100).
+
+---
+
 # 8. Sales DB
 
 ## 8.1 Sale
@@ -3228,59 +3233,59 @@ Contador independiente por secuencia y período. La asignación es una sola sent
 
 ### Descripción
 
-Representa la cabecera de una venta.
+Representa la cabecera de una venta: empresa, sucursal, cliente privado (persona u organización), totales, estado, número oficial, snapshots del cliente y usuarios responsables.
 
-Relaciona empresa, sucursal y cliente privado.
-
-Conserva totales, estado, consecutivo, snapshots del cliente y usuarios responsables.
-
-Comienza en `DRAFT` y no descuenta inventario.
-
-Al confirmar, Inventory Service valida saldo y aplica todas las salidas.
-
-Si una línea no tiene disponibilidad y se rechaza toda la confirmación.
+Comienza en `DRAFT` y no descuenta inventario. Al confirmar se revalidan cliente, productos, presentaciones y precios (si el precio vigente difiere del guardado se rechaza con `PRICES_CHANGED` sin efectos), se fija la fecha de negocio y se congelan los snapshots; Inventory valida el saldo y aplica una sola salida con todas las líneas en unidad base, informando el costo FIFO de cada una; y, en la misma transacción local que la confirma, se guardan costo y margen y se asigna el número del período. Si una línea no tiene saldo se rechaza toda la confirmación; si algo falla la venta no queda confirmada ni consume número.
 
 ### Atributos
 
-| Atributo                           | Tipo            | Regla                | Descripción                                       |
-| ---------------------------------- | --------------- | -------------------- | ------------------------------------------------- |
-| `id`                               | `UUID`          | PK, NN               | Identificador.                                    |
-| `company_id`                       | `UUID`          | REF, NN              | Empresa.                                          |
-| `branch_id`                        | `UUID`          | REF, NN              | Sucursal.                                         |
-| `company_customer_id`              | `UUID`          | REF, NN              | Cliente privado.                                  |
-| `customer_payment_condition_id`    | `UUID`          | REF, nullable        | Condición de compra seleccionada para el cliente. |
-| `payment_condition_code_snapshot`  | `VARCHAR(30)`   | NN                   | Snapshot `CASH`, `CREDIT` o `FINANCING`.          |
-| `payment_terms_days_snapshot`      | `INTEGER`       | NN, DEFAULT `0`      | Plazo concedido al confirmar la venta.            |
-| `due_date`                         | `DATE`          | NN                   | Fecha de exigibilidad usada por Finance Service.  |
-| `sale_sequence_id`                 | `UUID`          | FK, nullable         | Secuencia.                                        |
-| `number`                           | `VARCHAR(80)`   | UQ parcial, nullable | Número oficial.                                   |
-| `sequence_value`                   | `BIGINT`        | nullable             | Parte numérica.                                   |
-| `status`                           | `VARCHAR(20)`   | NN, CK               | `DRAFT`, `CONFIRMED` o `CANCELLED`.               |
-| `operation_date`                   | `DATE`          | NN                   | Fecha.                                            |
-| `customer_name_snapshot`           | `VARCHAR(200)`  | NN                   | Nombre histórico.                                 |
-| `customer_identification_snapshot` | `VARCHAR(100)`  | NN                   | Identificación histórica.                         |
-| `currency_code`                    | `CHAR(3)`       | NN                   | Moneda.                                           |
-| `observations`                     | `TEXT`          | nullable             | Observaciones.                                    |
-| `subtotal`                         | `NUMERIC(18,2)` | NN                   | Subtotal.                                         |
-| `discount_total`                   | `NUMERIC(18,2)` | NN                   | Descuentos.                                       |
-| `tax_total`                        | `NUMERIC(18,2)` | NN                   | Impuestos.                                        |
-| `total`                            | `NUMERIC(18,2)` | NN                   | Total.                                            |
-| `created_by_user_id`               | `UUID`          | REF, NN              | Usuario creador.                                  |
-| `cancelled_by_user_id`             | `UUID`          | REF, nullable        | Usuario que anuló.                                |
-| `cancelled_at`                     | `TIMESTAMPTZ`   | nullable             | Anulación.                                        |
-| `cancellation_reason`              | `TEXT`          | nullable             | Motivo.                                           |
-| `version`                          | `INTEGER`       | NN, DEFAULT `1`      | Control concurrente.                              |
-| `created_at`                       | `TIMESTAMPTZ`   | NN                   | Creación.                                         |
-| `updated_at`                       | `TIMESTAMPTZ`   | NN                   | Modificación.                                     |
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `id` | `UUID` | PK, NN | Identificador. |
+| `company_id` | `UUID` | REF, NN | Empresa. |
+| `branch_id` | `UUID` | REF, NN | Sucursal. |
+| `company_customer_id` | `UUID` | REF, NN | Cliente privado (persona u organización). |
+| `customer_payment_condition_id` | `UUID` | REF, CK, nullable | Condición comercial del cliente; siempre nula en el MVP (solo contado), se conserva para la evolución posterior. |
+| `payment_condition_code_snapshot` | `VARCHAR(30)` | CK, NN | Snapshot de la condición; `CASH` en el MVP. |
+| `payment_terms_days_snapshot` | `INTEGER` | CK, NN, DEFAULT `0` | Plazo concedido; `0` en el MVP. |
+| `due_date` | `DATE` | CK, NN | Fecha de exigibilidad; igual a `operation_date` en el MVP; se conserva para Finance (fuera de alcance). |
+| `sale_sequence_id` | `UUID` | FK, CK, nullable | Secuencia usada; no nula si hay número. |
+| `number` | `VARCHAR(80)` | UQ parcial (con `company_id`), CK, nullable | Número oficial con el período (`FV-202610-000001`); único por empresa. |
+| `sequence_value` | `BIGINT` | CK, nullable | Parte numérica del contador del período. |
+| `status` | `VARCHAR(20)` | CK, NN | `DRAFT`, `CONFIRMED` o `CANCELLED`. |
+| `operation_date` | `DATE` | CK, NN | Fecha de negocio: el día de la confirmación en la zona horaria de la sucursal (informativa en el borrador); determina el período de la numeración. |
+| `customer_name_snapshot` | `VARCHAR(200)` | NN | Nombre histórico (`display_name` del cliente). |
+| `customer_identification_snapshot` | `VARCHAR(100)` | NN | Identificación histórica `<tipo> <número>` (Party Identity, persona u organización). |
+| `currency_code` | `CHAR(3)` | CK, NN | Moneda: la funcional de la empresa (`default_currency`). |
+| `observations` | `TEXT` | nullable | Observaciones. |
+| `subtotal` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Subtotal (suma de las líneas). |
+| `discount_total` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Descuentos. |
+| `tax_total` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Impuestos. |
+| `total` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Total final = subtotal − descuentos + impuestos. |
+| `has_unknown_cost` | `BOOLEAN` | CK, NN, DEFAULT `false` | `true` si alguna línea se confirmó con `cost_known = false`; `false` en `DRAFT`. |
+| `inventory_operation_id` | `UUID` | REF, CK, nullable | Operación de salida aplicada en Inventory al confirmar; se usa para su reverso exacto. Nula en `DRAFT`. |
+| `created_by_user_id` | `UUID` | REF, NN | Usuario operativo creador. |
+| `cancelled_by_user_id` | `UUID` | REF, CK, nullable | Usuario operativo que anuló. |
+| `cancelled_at` | `TIMESTAMPTZ` | CK, nullable | Anulación. |
+| `cancellation_reason` | `TEXT` | CK, nullable | Motivo. |
+| `version` | `INTEGER` | CK, NN, DEFAULT `1` | Control concurrente. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que creó el registro (D1). |
+| `updated_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Última modificación. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` de la identidad que hizo la última modificación (D1; el conciliador usa `system:sales-reconciler`). |
 
-### Reglas financieras
+### Reglas y restricciones
 
-- La condición seleccionada debe pertenecer al mismo `CompanyCustomer` y estar activa al confirmar la venta.
-- Para `CREDIT` o `FINANCING` se debe validar el `CustomerCreditProfile` su riesgo, cupo y plazo autorizado.
-- Para `CASH`, `payment_terms_days_snapshot = 0`.
-- La condición de pago no determina el medio de pago, los recaudos reales se registran en `Finance Service`.
-- Al confirmar la venta `Sales Service` publica el hecho necesario para crear la cuenta por cobrar correspondiente.
-- `Sales Service` no administra cartera.
+- Ciclo de vida (`ck_sales_lifecycle`): `DRAFT` sin número, secuencia, `inventory_operation_id` ni datos de anulación; `CONFIRMED` con todos ellos salvo la anulación; `CANCELLED` con datos de anulación y, si estuvo confirmada, su número e `inventory_operation_id`.
+- Transiciones: `DRAFT → CONFIRMED`, `DRAFT → CANCELLED`, `CONFIRMED → CANCELLED` (esta última solo tras el reverso exacto de la salida en Inventory). Una venta fuera de `DRAFT` solo admite su anulación; número, secuencia, `inventory_operation_id`, totales y `has_unknown_cost` no cambian una vez confirmada (`tr_sales_frozen`). Nunca se elimina (`tr_sales_no_delete`, `tr_sales_no_truncate`).
+- Número único por empresa (`uq_sales_company_number`, índice parcial `WHERE number IS NOT NULL`).
+- `total = subtotal − discount_total + tax_total` (`ck_sales_totals`); montos no negativos.
+- Solo contado en el MVP (`ck_sales_cash_only`): `customer_payment_condition_id` nulo, `CASH`, plazo `0` y `due_date = operation_date`. Crédito, financiación, cupo y `CustomerCreditProfile` quedan para una evolución posterior.
+- Fecha de negocio = fecha de la confirmación en la zona horaria de la sucursal; se fija al iniciar la confirmación y los reintentos la conservan. El cliente no la envía.
+- `has_unknown_cost` es `false` en `DRAFT` (`ck_sales_draft_unknown_cost`).
+- Costo, margen y `has_unknown_cost` solo se exponen con el permiso `perm:sales:sales:read-profitability` y nunca se envían a Audit.
+- Un intento de confirmación refresca y congela los snapshots y puede incrementar `version` aunque la venta no llegue a `CONFIRMED`.
+- La publicación del hecho a Finance Service (cuenta por cobrar) queda fuera del MVP de Sales (Finance no existe). La condición de pago no determina el medio de pago. `Sales Service` no administra cartera.
 
 ## 8.2 SaleDetail
 
@@ -3290,55 +3295,54 @@ Si una línea no tiene disponibilidad y se rechaza toda la confirmación.
 
 ### Descripción
 
-Representa cada producto vendido o contiene el desglose de lo vendido.
-
-Conserva cantidad, precio, descuentos, impuestos y snapshots.
-
-El precio histórico no cambia cuando se modifica el precio actual del producto empresarial.
+Representa cada producto vendido con cantidad, precio, descuento, impuesto, costo, margen y snapshots. El precio histórico no cambia cuando se modifica el precio del producto o de la lista: los snapshots son provisionales en el borrador y se congelan al confirmar.
 
 ### Atributos
 
-| Atributo                          | Tipo            | Regla           | Descripción                                                                                  |
-| --------------------------------- | --------------- | --------------- | -------------------------------------------------------------------------------------------- |
-| `id`                              | `UUID`          | PK, NN          | Identificador.                                                                               |
-| `sale_id`                         | `UUID`          | FK, NN          | Venta.                                                                                       |
-| `line_number`                     | `SMALLINT`      | NN              | Número de línea.                                                                             |
-| `company_product_id`              | `UUID`          | REF, NN         | Producto empresarial.                                                                        |
-| `company_product_presentation_id` | `UUID`          | REF, nullable   | Presentación empresarial utilizada en la venta.                                              |
-| `price_list_id`                   | `UUID`          | REF, nullable   | Lista de precios utilizada para determinar el precio cuando aplique.                         |
-| `price_list_item_id`              | `UUID`          | REF, nullable   | Precio configurado de la lista utilizado como referencia cuando aplique.                     |
-| `product_code_snapshot`           | `VARCHAR(80)`   | NN              | Código histórico.                                                                            |
-| `product_name_snapshot`           | `VARCHAR(200)`  | NN              | Nombre histórico.                                                                            |
-| `presentation_code_snapshot`      | `VARCHAR(80)`   | nullable        | Código histórico de la presentación vendida.                                                 |
-| `presentation_name_snapshot`      | `VARCHAR(160)`  | nullable        | Nombre histórico de la presentación vendida.                                                 |
-| `base_quantity_factor_snapshot`   | `NUMERIC(18,8)` | NN, DEFAULT `1` | Factor histórico utilizado para convertir la cantidad vendida a la unidad base del producto. |
-| `unit_code_snapshot`              | `VARCHAR(20)`   | NN              | Unidad histórica.                                                                            |
-| `quantity`                        | `NUMERIC(18,4)` | NN              | Cantidad.                                                                                    |
-| `unit_price`                      | `NUMERIC(18,4)` | NN              | Precio unitario.                                                                             |
-| `unit_cost_snapshot`              | `NUMERIC(18,4)` | nullable        | Costo unitario histórico aplicado al confirmar.                                              |
-| `cost_total`                      | `NUMERIC(18,2)` | nullable        | Costo total histórico de la línea.                                                           |
-| `gross_margin_amount`             | `NUMERIC(18,2)` | nullable        | Margen bruto monetario de la línea.                                                          |
-| `gross_margin_percentage`         | `NUMERIC(7,4)`  | nullable        | Margen bruto porcentual sobre venta neta.                                                    |
-| `discount_amount`                 | `NUMERIC(18,2)` | NN, DEFAULT `0` | Descuento.                                                                                   |
-| `tax_amount`                      | `NUMERIC(18,2)` | NN, DEFAULT `0` | Impuesto.                                                                                    |
-| `subtotal`                        | `NUMERIC(18,2)` | NN              | Subtotal.                                                                                    |
-| `total`                           | `NUMERIC(18,2)` | NN              | Total.                                                                                       |
-| `created_at`                      | `TIMESTAMPTZ`   | NN              | Creación.                                                                                    |
-| `updated_at`                      | `TIMESTAMPTZ`   | NN              | Modificación.                                                                                |
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `id` | `UUID` | PK, NN | Identificador; `origin_detail_id` de la salida en Inventory. |
+| `sale_id` | `UUID` | FK, NN | Venta. |
+| `line_number` | `SMALLINT` | UQ (con `sale_id`), CK, NN | Posición (1–100); única en la venta. |
+| `company_product_id` | `UUID` | REF, NN | Producto empresarial (vendible y con control de inventario). |
+| `company_product_presentation_id` | `UUID` | REF, CK, nullable | Presentación empresarial utilizada en la venta. |
+| `price_list_id` | `UUID` | REF, CK, nullable | Lista de precios con la que se resolvió el precio, cuando aplique. |
+| `price_list_item_id` | `UUID` | REF, CK, nullable | Precio de la lista utilizado, cuando aplique. |
+| `price_list_requested` | `BOOLEAN` | CK, NN, DEFAULT `false` | `true` si el usuario indicó la lista explícitamente (la lista no puede sustituirse en silencio al confirmar). |
+| `product_code_snapshot` | `VARCHAR(80)` | NN | Código histórico. |
+| `product_name_snapshot` | `VARCHAR(200)` | NN | Nombre histórico. |
+| `presentation_code_snapshot` | `VARCHAR(80)` | CK, nullable | Código histórico de la presentación vendida. |
+| `presentation_name_snapshot` | `VARCHAR(160)` | CK, nullable | Nombre histórico de la presentación vendida. |
+| `base_quantity_factor_snapshot` | `NUMERIC(18,8)` | CK, NN, DEFAULT `1` | Factor histórico a la unidad base (`1` sin presentación). |
+| `unit_code_snapshot` | `VARCHAR(20)` | NN | Código histórico de la unidad base del producto. |
+| `quantity` | `NUMERIC(18,4)` | CK, NN | Cantidad en la unidad de venta. |
+| `unit_price` | `NUMERIC(18,4)` | CK, NN | Precio unitario histórico en la unidad de venta, resuelto por Commercial Relationship (sin precio manual). |
+| `unit_cost_snapshot` | `NUMERIC(18,4)` | CK, nullable | Costo FIFO por unidad base informado por Inventory al confirmar. |
+| `cost_total` | `NUMERIC(18,2)` | CK, nullable | Costo total histórico de la línea (Inventory). |
+| `cost_known` | `BOOLEAN` | CK, nullable | `false` si Inventory no conocía el costo de alguna capa consumida; nulo en `DRAFT`. |
+| `gross_margin_amount` | `NUMERIC(18,2)` | CK, nullable | Margen bruto = (subtotal − descuento) − costo total; puede ser negativo. |
+| `gross_margin_percentage` | `NUMERIC(7,4)` | CK, nullable | Margen bruto porcentual sobre la venta neta. |
+| `discount_amount` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Descuento (≤ subtotal). |
+| `tax_amount` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Impuesto. |
+| `subtotal` | `NUMERIC(18,2)` | CK, NN | Subtotal = cantidad × precio (2 decimales). |
+| `total` | `NUMERIC(18,2)` | CK, NN | Total = subtotal − descuento + impuesto. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que creó el registro (D1). |
+| `updated_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Última modificación. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` de la identidad que hizo la última modificación (D1; el conciliador usa `system:sales-reconciler`). |
 
 ### Reglas y restricciones
 
-- El número de línea es único dentro de la venta.
-- Cantidad mayor que cero.
-- Valores monetarios no negativos.
-- `unit_cost_snapshot`, `cost_total` y los márgenes se completan al confirmar la venta con el costo informado por `Inventory Service`.
-- Una venta histórica no recalcula sus márgenes cuando cambia `CompanyProduct.reference_cost`.
-- Cuando exista `company_product_presentation_id`, debe pertenecer al mismo `CompanyProduct` indicado por `company_product_id`.
-- `base_quantity_factor_snapshot` debe ser mayor que cero.
-- La validación y salida de inventario debe realizarse en la unidad base utilizando `base_quantity_factor_snapshot`.
-- `price_list_id` y `price_list_item_id` son referencias externas a Commercial Relationship Service y no utilizan llaves foráneas físicas.
-- Cuando exista `price_list_item_id`, debe corresponder a la misma `price_list_id`, producto y presentación utilizados por la línea.
-- `unit_price` representa el precio histórico definitivo de la venta y no debe recalcularse posteriormente aunque cambie la lista de precios.
+- Número de línea 1–100, único dentro de la venta; a lo sumo 100 líneas; al confirmar, al menos una.
+- Cantidad mayor que cero; montos no negativos; `discount_amount ≤ subtotal`; `total = subtotal − discount_amount + tax_amount`.
+- Sin presentación, `base_quantity_factor_snapshot = 1` y sin snapshots de presentación; con presentación, sus snapshots son obligatorios. La presentación pertenece al mismo `CompanyProduct`; el factor es mayor que cero.
+- La validación y la salida de inventario se hacen en la unidad base: `quantity × base_quantity_factor_snapshot` (≤ 4 decimales). Inventory no recibe costo.
+- `unit_price` lo resuelve Commercial Relationship (lista indicada, lista aplicable o `sale_price`); el usuario no lo envía. Con presentación, el precio por unidad base se convierte a la unidad de venta y se redondea a 4 decimales. Es el precio histórico definitivo.
+- `price_list_item_id` exige `price_list_id` (`ck_sale_details_price_list_item`) y corresponde a la misma lista, producto y presentación; `price_list_requested = true` exige `price_list_id` (`ck_sale_details_price_list_requested`). `price_list_id` y `price_list_item_id` son referencias externas sin FK física.
+- Costo (`ck_sale_details_cost_block`): `unit_cost_snapshot`, `cost_total` y `cost_known` son todos nulos (`DRAFT`) o todos no nulos (confirmada). `unit_cost_snapshot` es el costo por unidad base exactamente como lo informa Inventory; `cost_total` es el costo total que informa Inventory.
+- Margen (`ck_sale_details_margin_amount`, `ck_sale_details_margin_percentage`): con `cost_known = true`, `gross_margin_amount = (subtotal − discount_amount) − cost_total`; con `cost_known = false` ambos márgenes son nulos. `gross_margin_percentage = gross_margin_amount / (subtotal − discount_amount) × 100` (≤ 100) es nulo si el neto es cero o si el valor no es representable en `NUMERIC(7,4)`; nunca se satura ni se trunca. El motivo del nulo no se persiste.
+- Costo y margen se escriben una sola vez, en la transacción que confirma la venta; una venta histórica no recalcula sus márgenes cuando cambia `CompanyProduct.reference_cost` ni el costo de Inventory.
+- Solo se insertan, modifican o eliminan mientras la venta está en `DRAFT` (`tr_sale_details_draft_only`).
 
 ## 8.3 SaleSequence
 
@@ -3348,33 +3352,64 @@ El precio histórico no cambia cuando se modifica el precio actual del producto 
 
 ### Descripción
 
-Controla exclusivamente la numeración de ventas.
-
-Su separación de compras permite incorporar después cotizaciones, pedidos, facturas y notas crédito sin afectar Purchase Service.
-
-Tiene la misma estructura técnica que `PurchaseSequence`.
+Controla exclusivamente la numeración de ventas; su separación de compras permite incorporar después cotizaciones, pedidos, facturas y notas crédito sin afectar Purchase Service. El frontend no decide el número. El contador vive en `sale_sequence_counters` (§8.3.1), uno por período.
 
 ### Atributos
 
-| Atributo         | Tipo          | Regla              | Descripción          |
-| ---------------- | ------------- | ------------------ | -------------------- |
-| `id`             | `UUID`        | PK, NN             | Identificador.       |
-| `company_id`     | `UUID`        | REF, NN            | Empresa.             |
-| `branch_id`      | `UUID`        | REF, nullable      | Sucursal.            |
-| `document_kind`  | `VARCHAR(40)` | NN                 | Tipo documental.     |
-| `series_code`    | `VARCHAR(40)` | NN                 | Serie.               |
-| `prefix`         | `VARCHAR(20)` | NN                 | Prefijo.             |
-| `separator`      | `VARCHAR(5)`  | NN                 | Separador.           |
-| `current_number` | `BIGINT`      | NN                 | Último número.       |
-| `initial_number` | `BIGINT`      | NN                 | Número inicial.      |
-| `maximum_number` | `BIGINT`      | nullable           | Máximo.              |
-| `number_length`  | `SMALLINT`    | NN                 | Dígitos.             |
-| `reset_policy`   | `VARCHAR(20)` | NN, CK             | Política.            |
-| `last_reset_at`  | `TIMESTAMPTZ` | nullable           | Reinicio.            |
-| `is_active`      | `BOOLEAN`     | NN, DEFAULT `TRUE` | Estado.              |
-| `version`        | `INTEGER`     | NN, DEFAULT `1`    | Control concurrente. |
-| `created_at`     | `TIMESTAMPTZ` | NN                 | Creación.            |
-| `updated_at`     | `TIMESTAMPTZ` | NN                 | Modificación.        |
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `id` | `UUID` | PK, NN | Identificador. |
+| `company_id` | `UUID` | REF, NN | Empresa. |
+| `branch_id` | `UUID` | REF, nullable | Sucursal; nula para la secuencia de la empresa. |
+| `document_kind` | `VARCHAR(40)` | CK, NN | Tipo documental (`SALE`). |
+| `series_code` | `VARCHAR(40)` | UQ (con empresa, sucursal y tipo), CK, NN | Serie. |
+| `prefix` | `VARCHAR(20)` | CK, NN | Prefijo. |
+| `separator` | `VARCHAR(5)` | CK, NN | Separador. |
+| `initial_number` | `BIGINT` | CK, NN | Primer número de cada período. |
+| `maximum_number` | `BIGINT` | CK, nullable | Máximo por período. |
+| `number_length` | `SMALLINT` | CK, NN | Cantidad de dígitos. |
+| `reset_policy` | `VARCHAR(20)` | CK, NN | `NEVER`, `YEARLY` o `MONTHLY`: contador continuo, por año o por año-mes. |
+| `is_active` | `BOOLEAN` | UQ parcial (una activa por empresa, sucursal y tipo), NN, DEFAULT `true` | Estado. |
+| `version` | `INTEGER` | CK, NN, DEFAULT `1` | Control concurrente. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que creó el registro (D1). |
+| `updated_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Última modificación. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` de la identidad que hizo la última modificación (D1; el conciliador usa `system:sales-reconciler`). |
+
+### Reglas y restricciones
+
+- A lo sumo una secuencia activa por empresa, sucursal (o ninguna) y tipo documental (`uq_sale_sequences_active`); la serie no se repite en el mismo alcance (`uq_sale_sequences_series`). La secuencia de la sucursal tiene prioridad sobre la de la empresa.
+- `document_kind = 'SALE'` (`ck_sale_sequences_document_kind`); `maximum_number ≥ initial_number`; el número completo cabe en 80 caracteres.
+- Tras el primer número asignado son inmutables `branch_id`, `series_code`, `prefix`, `separator`, `initial_number`, `number_length` y `reset_policy`.
+- La secuencia está agotada para un período cuando el siguiente número supera `maximum_number` o ya no puede representarse con `number_length` dígitos.
+- Nunca se elimina (`tr_sale_sequences_no_delete`); se desactiva.
+
+### 8.3.1 SaleSequenceCounter
+
+**Tabla:** `sale_sequence_counters`  
+**Naturaleza:** infraestructura transaccional privada.  
+**Servicio propietario:** Sales Service.
+
+#### Descripción
+
+Contador independiente por secuencia y período. La asignación es una sola sentencia `INSERT … ON CONFLICT DO UPDATE … RETURNING` dentro de la transacción que confirma la venta: los concurrentes del mismo período se serializan y un `ROLLBACK` no consume número.
+
+#### Atributos
+
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `sale_sequence_id` | `UUID` | PK, FK, NN | Secuencia. |
+| `period_key` | `VARCHAR(6)` | PK, CK, NN | Período: `''` (`NEVER`), `YYYY` (`YEARLY`) o `YYYYMM` (`MONTHLY`). |
+| `current_number` | `BIGINT` | CK, NN | Último número asignado en el período; solo crece. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que creó el registro (D1). |
+| `updated_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Última modificación. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` de la identidad que hizo la última modificación (D1; el conciliador usa `system:sales-reconciler`). |
+
+#### Reglas y restricciones
+
+- Llave primaria `(sale_sequence_id, period_key)`.
+- Solo crece y no se elimina (`tr_sale_sequence_counters_monotonic`, `tr_sale_sequence_counters_no_delete`).
 
 ## 8.4 SaleOperation
 
@@ -3384,28 +3419,52 @@ Tiene la misma estructura técnica que `PurchaseSequence`.
 
 ### Descripción
 
-Sigue la confirmación o anulación distribuida de una venta.
-
-Permite saber si inventario aplicó salidas, rechazó la operación por saldo insuficiente, aplicó un reverso o encontró un error.
-
-La idempotencia evita descontar dos veces por reintentos.
+Sigue la confirmación o anulación distribuida de una venta (venta e inventario están en bases diferentes): permite saber si Inventory aplicó la salida, la rechazó por saldo insuficiente, aplicó un reverso o encontró un error. Se registra `PENDING` antes de llamar a Inventory; su `id` es la clave de operación enviada y se reutiliza en todo reintento, de modo que nunca se descuenta dos veces. La resuelven la solicitud, su reintento con la misma clave o el conciliador, que consulta Inventory por clave.
 
 ### Atributos
 
-| Atributo          | Tipo           | Regla    | Descripción           |
-| ----------------- | -------------- | -------- | --------------------- |
-| `id`              | `UUID`         | PK, NN   | Identificador.        |
-| `company_id`      | `UUID`         | REF, NN  | Empresa.              |
-| `sale_id`         | `UUID`         | FK, NN   | Venta.                |
-| `operation_type`  | `VARCHAR(20)`  | NN, CK   | `CONFIRM` o `CANCEL`. |
-| `idempotency_key` | `VARCHAR(150)` | NN, UQ   | Clave idempotente.    |
-| `status`          | `VARCHAR(20)`  | NN, CK   | Estado.               |
-| `correlation_id`  | `UUID`         | NN       | Flujo.                |
-| `error_code`      | `VARCHAR(100)` | nullable | Código.               |
-| `error_details`   | `JSONB`        | nullable | Detalle.              |
-| `started_at`      | `TIMESTAMPTZ`  | NN       | Inicio.               |
-| `updated_at`      | `TIMESTAMPTZ`  | NN       | Actualización.        |
-| `completed_at`    | `TIMESTAMPTZ`  | nullable | Finalización.         |
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `id` | `UUID` | PK, NN | Identificador; es la clave de operación enviada a Inventory. |
+| `company_id` | `UUID` | REF, NN | Empresa. |
+| `sale_id` | `UUID` | FK, UQ parcial (una `PENDING`), NN | Venta. |
+| `operation_type` | `VARCHAR(20)` | CK, NN | `CONFIRM` o `CANCEL`. |
+| `idempotency_key` | `VARCHAR(150)` | UQ, CK, NN | Clave idempotente del cliente, ligada a venta, tipo y `created_by`. |
+| `status` | `VARCHAR(20)` | CK, NN | `PENDING`, `SUCCEEDED` o `FAILED`. |
+| `correlation_id` | `UUID` | NN | Flujo distribuido. |
+| `application_user_id` | `UUID` | REF, NN | Usuario operativo que inició la operación; se reenvía a Inventory en todo reintento, conciliación y reverso compensatorio. Inmutable. |
+| `reason` | `TEXT` | CK, nullable | Motivo de la anulación (obligatorio en `CANCEL`). Inmutable. |
+| `error_code` | `VARCHAR(100)` | CK, nullable | Código de error; obligatorio si `FAILED`. |
+| `error_details` | `JSONB` | nullable | Solo información de errores: el error original (p. ej. faltantes por línea) y, tras compensar, `compensation_operation_id`. |
+| `inventory_operation_id` | `UUID` | REF, CK, nullable | Operación aplicada en Inventory: salida (`CONFIRM`) o reverso (`CANCEL` de una venta confirmada). |
+| `started_at` | `TIMESTAMPTZ` | NN | Inicio. |
+| `completed_at` | `TIMESTAMPTZ` | CK, nullable | Finalización; nula solo si `PENDING`. |
+| `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
+| `created_by` | `VARCHAR(255)` | NN | `sub` de la identidad que creó el registro (D1). |
+| `updated_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Última modificación. |
+| `updated_by` | `VARCHAR(255)` | NN | `sub` de la identidad que hizo la última modificación (D1; el conciliador usa `system:sales-reconciler`). |
+
+### Reglas y restricciones
+
+- Clave idempotente única (`uq_sale_operations_idempotency_key`); a lo sumo una operación `PENDING` por venta (`uq_sale_operations_pending`).
+- `error_code` obligatorio si `FAILED`; `completed_at` nulo solo si `PENDING`; `SUCCEEDED` de `CONFIRM` exige `inventory_operation_id`.
+- `CANCEL` exige `reason` (`ck_sale_operations_cancel_reason`).
+- Una operación terminal no cambia; su identidad, clave, `created_by`, `application_user_id` y `reason` nunca cambian; `inventory_operation_id` no se reemplaza (`tr_sale_operations_terminal`). Nunca se elimina.
+- Una venta nunca queda `CONFIRMED` sin salida aplicada ni `CANCELLED` (desde `CONFIRMED`) sin reverso aplicado.
+- Compensación: si Inventory aplicó la salida pero la confirmación local ya no es posible (p. ej. secuencia agotada), la operación queda `PENDING` con `error_code = COMPENSATION_PENDING` hasta revertir la salida (con el `application_user_id` de la operación) y luego `FAILED`.
+- Conciliación: el conciliador toma las operaciones `PENDING` antiguas, consulta Inventory por la clave y completa (`SUCCEEDED`, guardando el costo informado) o cierra (`FAILED OPERATION_NOT_APPLIED`) sin volver a aplicar; usa la identidad `system:sales-reconciler`.
+
+> **Reconciliación (2026-10-07):** sección 8 alineada con `specs/015-sales-core` (Sales Service, BR-15):
+> `inventory_operation_id` en ventas y operaciones (C-04); `has_unknown_cost` y `cost_known` (C-03);
+> `price_list_requested` (P-02); usuario operativo y motivo originales de cada operación en columnas
+> propias e inmutables (C-07); columnas de auditoría `created_*`/`updated_*` con el `sub` (D1) en todas las
+> tablas; contador independiente por período en `sale_sequence_counters` (§8.3.1) en lugar de
+> `current_number`/`last_reset_at` (C-05); una secuencia activa por empresa, sucursal y tipo;
+> `document_kind = SALE`; número con el período y único por empresa; ciclo de vida e inmutabilidad en la
+> base; una operación `PENDING` por venta; solo contado en el MVP (DP-01); fecha de negocio = fecha de la
+> confirmación; costo por unidad base (P-05) y reglas del margen porcentual (P-01). La publicación a
+> Finance y el crédito quedan fuera del MVP. Los nombres de restricciones, índices y triggers están en el
+> `data-model.md` de esa feature.
 
 # 9. Inventory DB
 

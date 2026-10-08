@@ -1,0 +1,27 @@
+"""Estados de la venta y de las operaciones distribuidas (§8.1, §8.4)."""
+
+DRAFT = "DRAFT"
+CONFIRMED = "CONFIRMED"
+CANCELLED = "CANCELLED"
+SALES_STATUSES = (DRAFT, CONFIRMED, CANCELLED)
+
+CONFIRM = "CONFIRM"
+CANCEL = "CANCEL"
+OPERATION_TYPES = (CONFIRM, CANCEL)
+
+PENDING = "PENDING"
+SUCCEEDED = "SUCCEEDED"
+FAILED = "FAILED"
+OPERATION_STATUSES = (PENDING, SUCCEEDED, FAILED)
+
+CASH = "CASH"
+"""Única condición de pago del MVP (DP-01); crédito y financiación son POST-MVP."""
+
+DOCUMENT_KIND = "SALE"
+MAX_LINES = 100
+
+RECONCILER_ACTOR = "system:sales-reconciler"
+"""Identidad técnica del conciliador para `created_by`/`updated_by` (D1, D22)."""
+
+COMPENSATION_PENDING = "COMPENSATION_PENDING"
+NOT_APPLIED_AFTER_RECONCILIATION = "NOT_APPLIED_AFTER_RECONCILIATION"

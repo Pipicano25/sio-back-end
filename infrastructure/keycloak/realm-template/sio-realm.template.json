@@ -321,6 +321,45 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "sales-service",
+      "name": "Sales Service",
+      "description": "Identidad técnica de sales-service (client_credentials): lecturas técnicas de sus dependencias, salidas, reversos y saldos en Inventory y auditoría (feature 015, R-02). Nunca escribe ventas.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${SALES_SERVICE_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "acr",
+        "basic",
+        "email",
+        "profile",
+        "roles",
+        "web-origins",
+        "service_account"
+      ],
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "roles": {
@@ -1455,6 +1494,10 @@
           "description": "Eliminar o desactivar sale_sequences en sales"
         },
         {
+          "name": "perm:sales:sales:read-profitability",
+          "description": "Ver costo y margen de las ventas (unit_cost_snapshot, cost_total, cost_known, márgenes, has_unknown_cost); no autoriza ninguna ruta (feature 015, DS-12)"
+        },
+        {
           "name": "perm:payment_reference:global_payment_condition_types:read",
           "description": "Lectura de global_payment_condition_types (nombre de servicio que declara payment-reference-service)"
         },
@@ -1550,7 +1593,8 @@
           "supervisor",
           "perm:all:all:read",
           "perm:all:all:create",
-          "perm:all:all:update"
+          "perm:all:all:update",
+          "perm:sales:sales:read-profitability"
         ]
       }
     },
@@ -1581,7 +1625,10 @@
       "clientRoles": {
         "sio-api": [
           "ventas",
-          "perm:sales:all:all",
+          "perm:sales:all:create",
+          "perm:sales:all:read",
+          "perm:sales:all:update",
+          "perm:sales:all:delete",
           "perm:geography:all:read",
           "perm:payment-reference:all:read",
           "perm:product-catalog:all:read",
@@ -2035,6 +2082,35 @@
           "perm:party-identity:organization_identities:read",
           "perm:payment-reference:global_payment_condition_types:read",
           "perm:inventory:entries:create",
+          "perm:inventory:movements:read",
+          "perm:inventory:platform:lookup",
+          "perm:audit:audit-events:create"
+        ]
+      }
+    },
+    {
+      "id": "5b2e8c41-7a3d-4f6e-9c12-3d44e5f6a7b8",
+      "username": "service-account-sales-service",
+      "enabled": true,
+      "serviceAccountClientId": "sales-service",
+      "clientRoles": {
+        "sio-api": [
+          "perm:operational-context:platform:lookup",
+          "perm:operational-context:companies:read",
+          "perm:operational-context:branches:read",
+          "perm:operational-context:application_users:read",
+          "perm:commercial-relationship:platform:lookup",
+          "perm:commercial-relationship:company_customers:read",
+          "perm:commercial-relationship:company_products:read",
+          "perm:commercial-relationship:company_product_presentations:read",
+          "perm:commercial-relationship:price_lists:read",
+          "perm:commercial-relationship:price_list_items:read",
+          "perm:product-catalog:products:read",
+          "perm:product-catalog:units-of-measure:read",
+          "perm:party-identity:person_identities:read",
+          "perm:party-identity:organization_identities:read",
+          "perm:inventory:outputs:create",
+          "perm:inventory:balances:read",
           "perm:inventory:movements:read",
           "perm:inventory:platform:lookup",
           "perm:audit:audit-events:create"

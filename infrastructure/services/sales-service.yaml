@@ -1,8 +1,42 @@
 name: sales-service
 
-# Proyecto compose "sales-service": por ahora solo su base de datos propia;
-# el contenedor de aplicación se agregará aquí cuando exista. Se une a
-# "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
+# Proyecto compose "sales-service" (única definición Compose del microservicio):
+# base de datos propia, base de pruebas (perfil test), contenedor de aplicación,
+# audit-outbox-worker y conciliador de operaciones pendientes (misma imagen).
+# La base, la aplicación y los procesos auxiliares se unen a "sio-network",
+# creada por el proyecto "sio" (infrastructure/compose.yaml), que debe estar
+# levantado antes: ahí vive Keycloak (depends_on no cruza proyectos; el orden lo
+# garantiza infrastructure/scripts/rebuild-all.sh).
+
+x-sales-environment: &sales-environment
+  DATABASE_URL: postgresql+psycopg://${SALES_DB_USER}:${SALES_DB_PASSWORD}@sales-db:5432/${SALES_DB_NAME}
+  # El issuer debe coincidir con KEYCLOAK_PUBLIC_URL; las llaves se obtienen
+  # dentro de sio-network.
+  SIO_AUTH_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+  SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+  SIO_AUTH_AUDIENCE: sio-api
+  SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
+  # Dependencias (specs/015-sales-core/contracts/dependencies.md). Las URL
+  # incluyen /api/v1 (sin Payment Reference: solo contado, DP-01). Sin dependencia de arranque: si
+  # no están disponibles, las operaciones responden 503 con la dependencia.
+  OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+  OPERATIONAL_CONTEXT_TIMEOUT_SECONDS: ${OPERATIONAL_CONTEXT_TIMEOUT_SECONDS:-5}
+  COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
+  COMMERCIAL_RELATIONSHIP_TIMEOUT_SECONDS: ${COMMERCIAL_RELATIONSHIP_TIMEOUT_SECONDS:-5}
+  PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
+  PRODUCT_CATALOG_TIMEOUT_SECONDS: ${PRODUCT_CATALOG_TIMEOUT_SECONDS:-5}
+  PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
+  PARTY_IDENTITY_TIMEOUT_SECONDS: ${PARTY_IDENTITY_TIMEOUT_SECONDS:-5}
+  INVENTORY_SERVICE_BASE_URL: http://inventory-service:8000/api/v1
+  INVENTORY_TIMEOUT_SECONDS: ${INVENTORY_TIMEOUT_SECONDS:-10}
+  SALES_LOOKUP_CONCURRENCY: ${SALES_LOOKUP_CONCURRENCY:-8}
+  SALES_LOCK_TIMEOUT_SECONDS: ${SALES_LOCK_TIMEOUT_SECONDS:-5}
+  SALES_RECONCILER_INTERVAL_SECONDS: ${SALES_RECONCILER_INTERVAL_SECONDS:-60}
+  SALES_RECONCILER_THRESHOLD_SECONDS: ${SALES_RECONCILER_THRESHOLD_SECONDS:-300}
+  # Identidad técnica propia (client_credentials, D5).
+  KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+  SALES_CLIENT_ID: sales-service
+  SALES_CLIENT_SECRET: ${SALES_SERVICE_CLIENT_SECRET}
 
 services:
   sales-db:
@@ -25,6 +59,107 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  # Base de pruebas (perfil "test"): solo se levanta a pedido, desde la raíz:
+  #   docker compose --file infrastructure/services/sales-service.yaml --env-file infrastructure/.env --profile test up -d sales-test-db
+  # Datos en tmpfs (se pierden al detenerla). No usa sio-network: las pruebas
+  # la alcanzan por el host (SALES_TEST_DATABASE_URL del .env del servicio).
+  sales-test-db:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: sio-sales-test-db
+    profiles:
+      - test
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${SALES_TEST_DB_NAME:-sio_sales_test}
+      POSTGRES_USER: ${SALES_TEST_DB_USER:-sio_sales_test}
+      POSTGRES_PASSWORD: ${SALES_TEST_DB_PASSWORD:-sio_sales_test_dev_change_me}
+    ports:
+      - "127.0.0.1:${SALES_TEST_DB_PORT:-55447}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  sales-service:
+    build:
+      context: ../..
+      dockerfile: services/sales-service/Dockerfile
+    image: sio/sales-service:${SIO_SERVICES_VERSION}
+    container_name: sio-sales-service
+    restart: unless-stopped
+    environment:
+      <<: *sales-environment
+    ports:
+      - "127.0.0.1:${SALES_SERVICE_PORT:-8108}:8000"
+    depends_on:
+      sales-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - sio-network
+
+  # audit-outbox-worker (plantilla libs/sio-audit/compose/audit-outbox-worker.example.yaml):
+  # misma imagen, configuración y base que la API; solo cambia el comando.
+  sales-audit-outbox-worker:
+    image: sio/sales-service:${SIO_SERVICES_VERSION}
+    container_name: sio-sales-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://${SALES_DB_USER}:${SALES_DB_PASSWORD}@sales-db:5432/${SALES_DB_NAME}
+      AUDIT_SERVICE_BASE_URL: http://audit-service:8000/api/v1
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      AUDIT_CLIENT_ID: sales-service
+      AUDIT_CLIENT_SECRET: ${SALES_SERVICE_CLIENT_SECRET}
+      AUDIT_OUTBOX_POLL_INTERVAL_SECONDS: ${AUDIT_OUTBOX_POLL_INTERVAL_SECONDS:-2}
+      AUDIT_OUTBOX_HTTP_TIMEOUT_SECONDS: ${AUDIT_OUTBOX_HTTP_TIMEOUT_SECONDS:-5}
+      AUDIT_OUTBOX_BACKOFF_INITIAL_SECONDS: ${AUDIT_OUTBOX_BACKOFF_INITIAL_SECONDS:-1}
+      AUDIT_OUTBOX_BACKOFF_FACTOR: ${AUDIT_OUTBOX_BACKOFF_FACTOR:-2}
+      AUDIT_OUTBOX_BACKOFF_MAX_SECONDS: ${AUDIT_OUTBOX_BACKOFF_MAX_SECONDS:-300}
+      AUDIT_OUTBOX_BATCH_SIZE: ${AUDIT_OUTBOX_BATCH_SIZE:-100}
+    depends_on:
+      sales-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "sio_audit.worker", "--check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - sio-network
+
+  # Conciliador de operaciones PENDING (research.md R-16): misma imagen y
+  # configuración que la API; consulta Inventory por clave.
+  sales-reconciler:
+    image: sio/sales-service:${SIO_SERVICES_VERSION}
+    container_name: sio-sales-reconciler
+    command: ["python", "-m", "sales_service.reconciler"]
+    restart: unless-stopped
+    environment:
+      <<: *sales-environment
+    depends_on:
+      sales-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "sales_service.reconciler", "--check"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 15s
+    networks:
+      - sio-network
 
 volumes:
   sales_db_data:

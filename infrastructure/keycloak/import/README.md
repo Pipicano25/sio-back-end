@@ -57,6 +57,20 @@ asignándolos en la plantilla. Consultar auditoría de una empresa exige además
   `perm:audit:audit-events:create` para su `audit-outbox-worker`. Nunca escribe compras: las rutas de
   purchase-service exigen usuarios humanos. Los grupos no cambian (`compras` ya tiene
   `perm:purchase:all:all`). Solo en `.env`.
+- `${SALES_SERVICE_CLIENT_SECRET}`: secreto del cliente técnico `sales-service` (feature 015, R-02):
+  lectura técnica en Operational Context (`companies`, `branches`, `application_users`), Commercial
+  Relationship (`company_customers`, `company_products`, `company_product_presentations`,
+  `price_lists`, `price_list_items`), Product Catalog (`products`, `units-of-measure`) y Party Identity
+  (`person_identities`, `organization_identities`), con `platform:lookup` en Operational Context y
+  Commercial Relationship; `perm:inventory:outputs:create`, `perm:inventory:balances:read`,
+  `perm:inventory:movements:read` y `perm:inventory:platform:lookup` en Inventory; y
+  `perm:audit:audit-events:create` para su `audit-outbox-worker`. Nunca escribe ventas. Solo en `.env`.
+
+Rentabilidad de ventas (feature 015, C-08): el rol `perm:sales:sales:read-profitability` permite ver costo y
+margen de las ventas y no abre ninguna ruta. El grupo `ventas` tiene `perm:sales:all:create`, `read`,
+`update` y `delete` explícitos (no `perm:sales:all:all`, que por comodín de acción incluiría la
+rentabilidad); `supervisores` tiene el rol de rentabilidad asignado explícitamente y `administradores` lo
+obtiene por `perm:all:all:all`. Cambiar esta matriz exige reconstruir Keycloak.
 
 Permisos de inventario (feature 012): `perm:inventory:entries:create`, `perm:inventory:outputs:create`
 (solo cuentas de servicio: Purchase, Sales y el cliente de pruebas), `perm:inventory:balances:read`,

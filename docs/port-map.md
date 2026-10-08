@@ -74,7 +74,7 @@ operational-context `8004`, commercial-relationship `8005`), sin compose.
 | payment-reference-service | `sio-payment-reference-service` | `PAYMENT_REFERENCE_SERVICE_PORT` | `8105` | `sio-payment-reference-db` | `PAYMENT_REFERENCE_DB_PORT` | `5443` | `PAYMENT_REFERENCE_TEST_DB_PORT` | `55441` |
 | commercial-relationship-service | `sio-commercial-relationship-service` | `COMMERCIAL_RELATIONSHIP_SERVICE_PORT` | `8106` | `sio-commercial-relationship-db` | `COMMERCIAL_RELATIONSHIP_DB_PORT` | `5445` | `COMMERCIAL_RELATIONSHIP_TEST_DB_PORT` | `55443` |
 | purchase-service | `sio-purchase-service` | `PURCHASE_SERVICE_PORT` | `8107` | `sio-purchase-db` | `PURCHASE_DB_PORT` | `5446` | `PURCHASE_TEST_DB_PORT` | `55445` |
-| sales-service | *(reservado)* | `SALES_SERVICE_PORT` | `8108` | `sio-sales-db` | `SALES_DB_PORT` | `5447` | `SALES_TEST_DB_PORT` | `55447` |
+| sales-service | `sio-sales-service` | `SALES_SERVICE_PORT` | `8108` | `sio-sales-db` | `SALES_DB_PORT` | `5447` | `SALES_TEST_DB_PORT` | `55447` |
 | inventory-service | `sio-inventory-service` | `INVENTORY_SERVICE_PORT` | `8109` | `sio-inventory-db` | `INVENTORY_DB_PORT` | `5448` | `INVENTORY_TEST_DB_PORT` | `55449` |
 | audit-service | `sio-audit-service` | `AUDIT_SERVICE_PORT` | `8110` | `sio-audit-db` | `AUDIT_DB_PORT` | `5449` | `AUDIT_TEST_DB_PORT` | `55451` |
 | workflow-service | *(reservado)* | `WORKFLOW_SERVICE_PORT` | `8111` | `sio-workflow-db` | `WORKFLOW_DB_PORT` | `5450` | `WORKFLOW_TEST_DB_PORT` | `55453` |

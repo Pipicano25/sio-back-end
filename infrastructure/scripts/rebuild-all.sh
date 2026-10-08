@@ -110,6 +110,7 @@ SERVICES=(
     audit-service
     inventory-service
     purchase-service
+    sales-service
 )
 
 # Proyectos compose del entorno: primero la infraestructura, luego uno por
