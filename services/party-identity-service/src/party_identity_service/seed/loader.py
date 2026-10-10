@@ -6,6 +6,10 @@
 - El país se resuelve **antes** de escribir: con `country_id` explícito (modo
   independiente, sin Geography) o consultando `COL` en Geography.
 - Todo ocurre en una transacción: un error no deja filas escritas.
+- Las 8 reglas de las migraciones históricas (ids fijos, `HISTORIC_RULE_IDS`) cuentan como
+  existentes una vez que la migración 0020 corrigió su país. Si alguna sigue activa con otro país
+  (migración pendiente o país distinto del de `PARTY_IDENTITY_SEED_COUNTRY_ID`), la carga se
+  rechaza sin escribir en vez de crear copias equivalentes (G-017-01).
 """
 
 from __future__ import annotations
@@ -18,8 +22,16 @@ from sqlalchemy.orm import Session
 
 from party_identity_service.application.ports import CountryDirectory
 from party_identity_service.infrastructure.models import IdentificationTypeRuleModel
-from party_identity_service.seed.constants import COUNTRY_ISO3, SEED_ACTOR
+from party_identity_service.seed.constants import (
+    COUNTRY_ISO3,
+    HISTORIC_RULE_IDS,
+    SEED_ACTOR,
+)
 from party_identity_service.seed.data import COLOMBIAN_RULES
+
+
+class HistoricRuleCountryMismatchError(ValueError):
+    """Una regla histórica activa está asociada a un país distinto del resuelto."""
 
 
 @dataclass(slots=True)
@@ -87,6 +99,8 @@ def load_seed(
     stats = SeedStats(country_id=resolved_country, mode=mode)
 
     try:
+        _check_historic_rules(session, resolved_country)
+
         for rule in COLOMBIAN_RULES:
             existing = session.scalar(
                 select(IdentificationTypeRuleModel.id).where(
@@ -121,6 +135,35 @@ def load_seed(
         raise
 
     return stats
+
+
+def _check_historic_rules(session: Session, country_id: UUID) -> None:
+    """Rechaza la carga si una regla histórica activa apunta a otro país.
+
+    Crear la regla del `seed` en ese caso dejaría dos reglas colombianas equivalentes (una de
+    ellas huérfana si su país no existe en Geography).
+    """
+    rows = session.execute(
+        select(
+            IdentificationTypeRuleModel.id,
+            IdentificationTypeRuleModel.party_kind,
+            IdentificationTypeRuleModel.identification_type,
+            IdentificationTypeRuleModel.country_id,
+        ).where(
+            IdentificationTypeRuleModel.id.in_([UUID(value) for value in HISTORIC_RULE_IDS.values()]),
+            IdentificationTypeRuleModel.is_active.is_(True),
+            IdentificationTypeRuleModel.country_id != country_id,
+        )
+    ).all()
+
+    if rows:
+        rule_id, party_kind, identification_type, other_country = rows[0]
+        raise HistoricRuleCountryMismatchError(
+            f"{len(rows)} regla(s) histórica(s) de las migraciones siguen activas con otro país "
+            f"(p. ej. {rule_id} {party_kind}/{identification_type} → {other_country}; país resuelto "
+            f"{country_id}). Aplique 'alembic upgrade head' con PARTY_IDENTITY_SEED_COUNTRY_ID igual "
+            "al UUID de Colombia de este entorno; la carga no crea copias equivalentes."
+        )
 
 
 def _foreign_country_rules(session: Session, country_id: UUID) -> list[str]:

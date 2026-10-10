@@ -4,6 +4,7 @@
   por sesión con Alembic y vaciada antes de cada prueba.
 - `sio-auth` real con un JWKS local: los tokens se firman en la prueba con una
   clave RSA temporal (sin Keycloak, Principio IV).
+- La migración 0020 recibe `PARTY_IDENTITY_SEED_COUNTRY_ID = COLOMBIA_ID`.
 - Geography se sustituye por `FakeCountryDirectory`, un doble del puerto
   `CountryDirectory` que vive solo aquí y se inyecta en `create_app` (FR-044).
 """
@@ -50,6 +51,10 @@ TEST_KID = "test-key"
 
 COLOMBIA_ID = UUID("0c3f1a86-3f7b-4c55-9b1e-6f0e8a1d2c01")
 """País ficticio que el doble de Geography reconoce como Colombia (`COL`)."""
+
+# La migración 0020 exige el UUID de Colombia del entorno (G-017-01). La base de pruebas se migra
+# siempre con el país ficticio del doble de Geography, sea cual sea el valor del `.env`.
+os.environ["PARTY_IDENTITY_SEED_COUNTRY_ID"] = str(COLOMBIA_ID)
 
 FUNCTIONAL_TABLES = (
     "audit_outbox",

@@ -433,6 +433,39 @@ class IdentificationTypeRuleModel(Base):
     }
 
 
+class IdentificationTypeRuleCountryCorrectionModel(Base):
+    """Registro de la migración 0020 (G-017-01): estado anterior de cada regla corregida.
+
+    `COUNTRY_CORRECTED`: regla histórica de 0006/0010 cuyo `country_id` pasó del UUID histórico
+    al de Colombia del entorno. `DUPLICATE_RETIRED`: copia equivalente del `seed` retirada. La
+    aplicación no lo escribe; el `downgrade` de 0020 restaura las reglas desde aquí.
+    """
+
+    __tablename__ = "identification_type_rule_country_corrections"
+
+    __table_args__ = (
+        CheckConstraint(
+            "correction IN ('COUNTRY_CORRECTED', 'DUPLICATE_RETIRED')",
+            name="ck_identification_type_rule_country_corrections_correction",
+        ),
+    )
+
+    rule_id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), primary_key=True)
+    correction: Mapped[str] = mapped_column(String(30), nullable=False)
+    previous_country_id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=False)
+    new_country_id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=False)
+    previous_is_active: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    previous_valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    previous_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    previous_updated_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    previous_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    applied_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
 # Modelos de la Fase B: se definen en un módulo propio y se reexportan aquí para
 # que `models` siga siendo el punto único de registro de la metadata.
 from party_identity_service.infrastructure.phase_b_models import (  # noqa: E402,F401

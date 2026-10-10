@@ -113,7 +113,7 @@ Copie `.env.example` a `.env`. Variables:
 | `GEOGRAPHY_TIMEOUT_SECONDS` | Tiempo de espera de Geography | `5` |
 | `OPERATIONAL_CONTEXT_SERVICE_BASE_URL` | URL de Operational Context **con** `/api/v1` | `http://localhost:8104/api/v1` |
 | `OPERATIONAL_CONTEXT_TIMEOUT_SECONDS` | Tiempo de espera de Operational Context | `5` |
-| `PARTY_IDENTITY_SEED_COUNTRY_ID` | País explícito del `seed` de reglas (vacío = modo Geography) | UUID de Colombia en su Geography |
+| `PARTY_IDENTITY_SEED_COUNTRY_ID` | UUID de Colombia en el Geography del entorno: **obligatorio para la migración `0020`**; en el `seed` de reglas activa el modo país explícito (vacío = modo Geography) | UUID de Colombia en su Geography (`GET /global-countries?iso3_code=COL`) |
 | `KEYCLOAK_TOKEN_URL`, `KEYCLOAK_TIMEOUT_SECONDS` | Token técnico (`seed` y Operational Context) | `…/protocol/openid-connect/token`, `5` |
 | `PARTY_IDENTITY_CLIENT_ID`, `PARTY_IDENTITY_CLIENT_SECRET` | Cliente técnico `party-identity-service` (`client_credentials`) | secreto real solo en `.env`, nunca en el repositorio |
 
@@ -127,7 +127,7 @@ Hyper-V/WinNAT), defina otro en su `infrastructure/.env` local, por ejemplo
 cd services/party-identity-service
 docker compose --file ../../infrastructure/services/party-identity-service.yaml --env-file ../../infrastructure/.env up -d party-identity-db                       # sio-party-identity-db
 python -m venv .venv && .venv/Scripts/pip install -e ".[test]"
-alembic upgrade head
+PARTY_IDENTITY_SEED_COUNTRY_ID=<uuid> alembic upgrade head     # ver "Migraciones"
 python -m party_identity_service.seed load --country-id <uuid>   # ver "Datos iniciales"
 python -m party_identity_service.seed load-business-sectors      # catálogo CIIU (ver "Datos iniciales")
 uvicorn party_identity_service.main:app --port 8002
@@ -150,6 +150,27 @@ Fase B: `0013` (sectores), `0014` (perfiles de contacto), `0015` (personas de co
 (sectores de organización) y `0017` (representantes legales). Solo añaden tablas; su `downgrade` las
 elimina y deja intacta la Fase A.
 
+**`0020` — país de las reglas colombianas históricas (G-017-01).** `0006` y `0010` insertan las 8
+reglas colombianas con el `id` de Colombia fijo `cf160c2d-…`, que no existe en un Geography cargado
+desde su `seed`. `0020` cambia su `country_id` por el `id` de Colombia **de este entorno**, que recibe
+en `PARTY_IDENTITY_SEED_COUNTRY_ID` (sin la variable falla sin escribir nada; no hace llamadas HTTP):
+
+```bash
+PARTY_IDENTITY_SEED_COUNTRY_ID=<uuid de COL en Geography> alembic upgrade head
+docker compose --file ../../infrastructure/services/party-identity-service.yaml --env-file ../../infrastructure/.env \
+  exec -e PARTY_IDENTITY_SEED_COUNTRY_ID=<uuid> party-identity-service alembic upgrade head
+```
+
+- Solo toca las 8 reglas por su `id` fijo y solo si aún apuntan al UUID histórico (donde Colombia
+  conserva ese `id`, no cambia nada). Las 8 quedan activas; las copias activas equivalentes que el
+  `seed` haya creado con el país real se retiran (`is_active = false`, `valid_to`). No borra filas.
+- Falla sin escribir si otra regla usa el UUID histórico, si la copia equivalente no la creó el
+  `seed` o si difiere en patrón, sigla o edades.
+- El estado anterior queda en `identification_type_rule_country_corrections`; el `downgrade`
+  restaura exactamente `country_id`, `is_active`, `valid_to`, `version`, `updated_by` y `updated_at`.
+- `infrastructure/scripts/rebuild-all.sh` lee el `id` de Colombia de `geography-db` y lo pasa a esta
+  migración; en modo completo carga los datos de Geography antes de migrar Party Identity.
+
 ## Datos iniciales
 
 `python -m party_identity_service.seed load` carga, de forma idempotente, las 8 reglas de
@@ -168,9 +189,22 @@ Si falla (Geography caído, `COL` inexistente o ambiguo, credenciales ausentes) 
 distinto de cero y **no escribe nada**. En el entorno integrado:
 `docker compose --file ../../infrastructure/services/party-identity-service.yaml --env-file ../../infrastructure/.env exec party-identity-service python -m party_identity_service.seed load`.
 
-Las migraciones históricas `0003`–`0010` también insertan reglas con un `id` de Colombia fijo; si en
-su entorno Colombia tiene otro `id`, el `seed` crea las reglas correctas y lista las anteriores como
-advertencia (no se eliminan).
+Las 8 reglas que insertan las migraciones históricas (con el país corregido por `0020`) cuentan como
+existentes: tras una instalación limpia el `seed` las omite y quedan exactamente 8 reglas colombianas
+activas. Si alguna sigue activa con otro país (`0020` pendiente o un `id` de Colombia distinto del
+resuelto), el `seed` termina con error **sin escribir**, en vez de crear copias equivalentes. Otras
+reglas activas equivalentes asociadas a otro país se listan como advertencia (no se eliminan).
+
+**Validador de integridad** (repetible; solo lectura): `country_id` de todas las reglas ⊆ países de
+Geography, una consulta `GET /global-countries/{id}` por país distinto, con el cliente técnico.
+Código `0` sin referencias huérfanas, `1` con huérfanas, `2` si no se pudo validar:
+
+```bash
+docker compose --file ../../infrastructure/services/party-identity-service.yaml --env-file ../../infrastructure/.env exec party-identity-service python -m party_identity_service.integrity country-references
+```
+
+La misma comprobación, por las API de ambos servicios, está en
+`tests/integration/test_geography_country_references.py` (`pytest -m integration`).
 
 **Catálogo de sectores (Fase B):** `python -m party_identity_service.seed load-business-sectors`
 carga la CIIU Rev. 5 A.C. completa (`CIIU_REV5_AC`: 22 secciones, 87 divisiones, 266 grupos y 544
@@ -200,7 +234,9 @@ pytest -m integration                    # opcionales contra servicios reales (v
   HTTP (Geography, Operational Context, token técnico) con `httpx.MockTransport`.
 - `tests/contract`: migraciones desde cero, restricciones, repositorios, concurrencia (incluidas 20
   solicitudes simultáneas sobre perfiles y principales), `seed` y mínimo privilegio del realm
-  (`test_realm_least_privilege.py`, con la instantánea `data/realm_reads_before.json`).
+  (`test_realm_least_privilege.py`, con la instantánea `data/realm_reads_before.json`). Migración `0020` y `seed`
+  sin duplicados: `test_colombia_rule_country_migration.py`. Las pruebas migran su base con
+  `PARTY_IDENTITY_SEED_COUNTRY_ID` = el país ficticio del doble de Geography (`tests/conftest.py`).
 - `tests/api`: rutas, errores RFC 9457, `401`/`403` por operación, contratos Provider, no recursión
   con Operational Context, OpenAPI.
 - `tests/health`, `tests/examples`.
@@ -211,6 +247,10 @@ usa un JWKS local con tokens RS256 firmados en la prueba.
 **Pruebas de integración (`-m integration`):** `tests/integration/test_phase_b_integration.py` usa
 Keycloak, Geography y Operational Context reales. Requiere el realm regenerado desde la plantilla, las
 variables del cliente técnico y los datos que indica su docstring.
+`tests/integration/test_geography_country_references.py` (G-017-01) valida con Party Identity y
+Geography reales que el país de todas las reglas exista en Geography (0 huérfanas), que haya
+exactamente las 8 reglas colombianas activas de las migraciones, y que la API rechace un país
+inexistente (`422 COUNTRY_NOT_FOUND`) y no cambie el país en `PUT` (`422 IMMUTABLE_FIELD`).
 
 ## Auditoría (feature 016)
 

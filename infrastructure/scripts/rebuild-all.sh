@@ -28,7 +28,9 @@
 #                sus volúmenes (bases de datos, Keycloak, RabbitMQ),
 #                reconstruye, levanta (Keycloak reimporta el realm desde la
 #                plantilla), migra desde cero y carga los datos iniciales en
-#                orden: geography -> product-catalog -> party-identity (id de COL)
+#                orden: geography -> product-catalog -> party-identity (id de COL).
+#                Los datos de geography se cargan justo después de migrarla:
+#                la migración 0020 de party-identity necesita el id de Colombia.
 #
 # Verificaciones previas (antes de bajar nada):
 #   - carpetas ilegibles dentro de los servicios (p. ej. una .pytest_cache con
@@ -557,20 +559,6 @@ alembic_revision() {
     echo "${rev:-ninguna}"
 }
 
-step "Aplicando migraciones"
-for service in "${SERVICES[@]}"; do
-    echo "--- $service"
-    before="$(alembic_revision "$service")"
-    compose "$(project_of "$service")" exec -T "$service" alembic upgrade head
-    after="$(alembic_revision "$service")"
-    if [ "$before" = "$after" ]; then
-        note "Migraciones $service: sin cambios (revisión $after)"
-    else
-        note "Migraciones $service: $before -> $after"
-    fi
-done
-
-# --- Datos iniciales ----------------------------------------------------------
 # Ejecuta un seed mostrando su salida y registra su última línea en el resumen.
 # Uso: run_seed <etiqueta> <microservicio> <comando...>
 run_seed() {
@@ -583,12 +571,48 @@ run_seed() {
     note "Datos iniciales $label: cargados${last:+ — $last}"
 }
 
-if [ "$MODE" = full ]; then
-    step "Datos iniciales: geography-service"
-    run_seed geography-service geography-service \
-        python -m geography_service.seed load \
-        --data-dir /app/services/geography-service/data/south_america
+# Id de Colombia en este entorno. Lo genera Geography; se lee de su base para no
+# depender del token técnico de Keycloak.
+colombia_id() {
+    COLOMBIA_ID="$(compose "$(project_of geography-service)" exec -T geography-db \
+        psql -U "$GEOGRAPHY_DB_USER" -d "$GEOGRAPHY_DB_NAME" -tA \
+        -c "SELECT id FROM global_countries WHERE iso2_code = 'CO'" | tr -d '[:space:]')"
 
+    [ -n "$COLOMBIA_ID" ] || { echo "Error: Colombia (CO) no existe en geography-db." >&2; exit 1; }
+    echo "Colombia: $COLOMBIA_ID"
+}
+
+step "Aplicando migraciones"
+for service in "${SERVICES[@]}"; do
+    echo "--- $service"
+    before="$(alembic_revision "$service")"
+    if [ "$service" = party-identity-service ]; then
+        # La migración 0020 (G-017-01) corrige el país de las reglas colombianas
+        # de las migraciones históricas con el id de Colombia de este entorno.
+        colombia_id
+        compose "$(project_of "$service")" exec -T \
+            -e PARTY_IDENTITY_SEED_COUNTRY_ID="$COLOMBIA_ID" "$service" alembic upgrade head
+    else
+        compose "$(project_of "$service")" exec -T "$service" alembic upgrade head
+    fi
+    after="$(alembic_revision "$service")"
+    if [ "$before" = "$after" ]; then
+        note "Migraciones $service: sin cambios (revisión $after)"
+    else
+        note "Migraciones $service: $before -> $after"
+    fi
+
+    if [ "$MODE" = full ] && [ "$service" = geography-service ]; then
+        step "Datos iniciales: geography-service"
+        run_seed geography-service geography-service \
+            python -m geography_service.seed load \
+            --data-dir /app/services/geography-service/data/south_america
+        step "Aplicando migraciones (continuación)"
+    fi
+done
+
+# --- Datos iniciales ----------------------------------------------------------
+if [ "$MODE" = full ]; then
     step "Datos iniciales: product-catalog-service"
     run_seed product-catalog-service product-catalog-service \
         python -m product_catalog_service.seed load
@@ -598,15 +622,8 @@ if [ "$MODE" = full ]; then
         python -m payment_reference_service.seed load
 
     step "Datos iniciales: party-identity-service (modo país explícito)"
-    # El id de Colombia lo genera Geography; se lee de su base para no depender
-    # del token técnico de Keycloak.
-    COLOMBIA_ID="$(compose "$(project_of geography-service)" exec -T geography-db \
-        psql -U "$GEOGRAPHY_DB_USER" -d "$GEOGRAPHY_DB_NAME" -tA \
-        -c "SELECT id FROM global_countries WHERE iso2_code = 'CO'" | tr -d '[:space:]')"
-
-    [ -n "$COLOMBIA_ID" ] || { echo "Error: Colombia (CO) no existe en geography-db." >&2; exit 1; }
-    echo "Colombia: $COLOMBIA_ID"
-
+    # Mismo id de Colombia que recibió la migración 0020: el seed omite las 8
+    # reglas de las migraciones y no crea copias.
     run_seed "party-identity-service (Colombia $COLOMBIA_ID)" party-identity-service \
         python -m party_identity_service.seed load --country-id "$COLOMBIA_ID"
 

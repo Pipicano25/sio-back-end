@@ -1,0 +1,23 @@
+[project]
+name = "sio-mvp-e2e"
+version = "0.1.0"
+description = "Validación integral del MVP de SIO (FASE 10, feature 017): recorrido E2E, seguridad, caídas, guía y regresión contra el entorno integrado."
+requires-python = ">=3.12"
+
+# Solo dependencias que ya usan las pruebas de los servicios (research R-02).
+# run.sh las instala en validation/mvp-e2e/.venv; la suite no se empaqueta.
+dependencies = [
+    "pytest>=8.3,<9.0",
+    "httpx>=0.27,<1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+# Sin addopts que oculten fallos: cada etapa elige sus archivos y marcadores desde run.py.
+markers = [
+    "unit: pruebas de la suite sin servicios (sio_mvp)",
+    "e2e: recorrido, auditoría, seguridad y guía contra los servicios reales",
+    "outage: caídas controladas de dependencias (O1, O2, O3, O4a, O4b, O5, O6)",
+    "regression: regresión integral de los 10 servicios y las librerías",
+]

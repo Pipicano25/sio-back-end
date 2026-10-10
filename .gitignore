@@ -81,3 +81,7 @@ docs/service-map.md
 infrastructure/keycloak/import/sio-realm.json
 
 # Volúmenes locales de Docker (no aplica, se gestionan como named volumes)
+
+# Validación integral del MVP (017): informes de cada corrida y entorno virtual de la suite
+validation/mvp-e2e/reports/
+validation/mvp-e2e/.venv/

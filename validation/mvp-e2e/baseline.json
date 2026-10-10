@@ -1,0 +1,368 @@
+{
+  "taken_at": "2026-10-09T05:39:37Z",
+  "git_head": "e91aee4568f96ab7f1c6a8e0a1b5d3b93dbf07ef",
+  "known_failures": {
+    "geography": [
+      "tests.contract.test_global_administrative_division_repository::test_list_all_returns_divisions_ordered_by_name",
+      "tests.contract.test_global_city_repository::test_list_all_returns_cities_ordered_by_name",
+      "tests.contract.test_global_country_repository::test_list_all_returns_countries_ordered_by_name",
+      "tests.unit.test_global_administrative_division_service::test_list_all_returns_repository_divisions",
+      "tests.unit.test_global_city_service::test_list_all_returns_repository_cities",
+      "tests.unit.test_global_country_service::test_list_all_returns_repository_countries"
+    ]
+  },
+  "test_databases_started": [],
+  "containers_restored": [],
+  "results": {
+    "party-identity": {
+      "full": {
+        "passed": 782,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 782,
+        "failures": [],
+        "duration_seconds": 182.7,
+        "exit_code": 0,
+        "note": ""
+      },
+      "integration": {
+        "passed": 3,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 6,
+        "total": 9,
+        "failures": [],
+        "duration_seconds": 606.0,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "geography": {
+      "full": {
+        "passed": 107,
+        "failed": 6,
+        "errors": 0,
+        "skipped": 0,
+        "total": 113,
+        "failures": [
+          "tests.contract.test_global_administrative_division_repository::test_list_all_returns_divisions_ordered_by_name",
+          "tests.contract.test_global_city_repository::test_list_all_returns_cities_ordered_by_name",
+          "tests.contract.test_global_country_repository::test_list_all_returns_countries_ordered_by_name",
+          "tests.unit.test_global_administrative_division_service::test_list_all_returns_repository_divisions",
+          "tests.unit.test_global_city_service::test_list_all_returns_repository_cities",
+          "tests.unit.test_global_country_service::test_list_all_returns_repository_countries"
+        ],
+        "duration_seconds": 5.8,
+        "exit_code": 1,
+        "note": ""
+      },
+      "integration": {
+        "passed": 2,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 2,
+        "failures": [],
+        "duration_seconds": 15.6,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "product-catalog": {
+      "full": {
+        "passed": 591,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 2,
+        "total": 593,
+        "failures": [],
+        "duration_seconds": 350.7,
+        "exit_code": 0,
+        "note": ""
+      },
+      "integration": {
+        "passed": 8,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 2,
+        "total": 10,
+        "failures": [],
+        "duration_seconds": 613.0,
+        "exit_code": 0,
+        "note": ""
+      },
+      "performance": {
+        "passed": 2,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 2,
+        "failures": [],
+        "duration_seconds": 108.6,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "operational-context": {
+      "full": {
+        "passed": 776,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 776,
+        "failures": [],
+        "duration_seconds": 132.1,
+        "exit_code": 0,
+        "note": ""
+      },
+      "integration": {
+        "passed": 13,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 13,
+        "failures": [],
+        "duration_seconds": 601.5,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "payment-reference": {
+      "full": {
+        "passed": 130,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 130,
+        "failures": [],
+        "duration_seconds": 8.8,
+        "exit_code": 0,
+        "note": ""
+      },
+      "integration": {
+        "passed": 2,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 2,
+        "failures": [],
+        "duration_seconds": 14.5,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "commercial-relationship": {
+      "full": {
+        "passed": 1148,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 2,
+        "total": 1150,
+        "failures": [],
+        "duration_seconds": 374.7,
+        "exit_code": 0,
+        "note": ""
+      },
+      "integration": {
+        "passed": 19,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 19,
+        "failures": [],
+        "duration_seconds": 625.0,
+        "exit_code": 0,
+        "note": ""
+      },
+      "performance": {
+        "passed": 5,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 5,
+        "failures": [],
+        "duration_seconds": 71.2,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "purchase": {
+      "full": {
+        "passed": 371,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 371,
+        "failures": [],
+        "duration_seconds": 59.6,
+        "exit_code": 0,
+        "note": ""
+      },
+      "integration": {
+        "passed": 21,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 21,
+        "failures": [],
+        "duration_seconds": 111.1,
+        "exit_code": 0,
+        "note": ""
+      },
+      "performance": {
+        "passed": 5,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 5,
+        "failures": [],
+        "duration_seconds": 18.2,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "sales": {
+      "full": {
+        "passed": 486,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 486,
+        "failures": [],
+        "duration_seconds": 73.6,
+        "exit_code": 0,
+        "note": ""
+      },
+      "integration": {
+        "passed": 22,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 22,
+        "failures": [],
+        "duration_seconds": 107.3,
+        "exit_code": 0,
+        "note": ""
+      },
+      "performance": {
+        "passed": 6,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 6,
+        "failures": [],
+        "duration_seconds": 27.0,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "inventory": {
+      "full": {
+        "passed": 1135,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 1135,
+        "failures": [],
+        "duration_seconds": 186.6,
+        "exit_code": 0,
+        "note": ""
+      },
+      "integration": {
+        "passed": 19,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 19,
+        "failures": [],
+        "duration_seconds": 57.9,
+        "exit_code": 0,
+        "note": ""
+      },
+      "performance": {
+        "passed": 3,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 3,
+        "failures": [],
+        "duration_seconds": 140.3,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "audit": {
+      "full": {
+        "passed": 209,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 209,
+        "failures": [],
+        "duration_seconds": 28.2,
+        "exit_code": 0,
+        "note": ""
+      },
+      "integration": {
+        "passed": 9,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 9,
+        "failures": [],
+        "duration_seconds": 17.8,
+        "exit_code": 0,
+        "note": ""
+      },
+      "performance": {
+        "passed": 2,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 2,
+        "failures": [],
+        "duration_seconds": 130.0,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "libs/sio-audit": {
+      "full": {
+        "passed": 128,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 128,
+        "failures": [],
+        "duration_seconds": 2.3,
+        "exit_code": 0,
+        "note": ""
+      },
+      "integration": {
+        "passed": 5,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 5,
+        "failures": [],
+        "duration_seconds": 10.1,
+        "exit_code": 0,
+        "note": ""
+      }
+    },
+    "libs/sio-auth": {
+      "full": {
+        "passed": 22,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "total": 22,
+        "failures": [],
+        "duration_seconds": 1.0,
+        "exit_code": 0,
+        "note": ""
+      }
+    }
+  }
+}
