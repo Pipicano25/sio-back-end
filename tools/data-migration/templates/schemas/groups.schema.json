@@ -1,0 +1,134 @@
+{
+  "name": "groups",
+  "title": "product-catalog · GroupCreate",
+  "description": "Entidad GroupCreate de product-catalog. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "group_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "group_type_code",
+      "type": "string",
+      "description": "Catálogo global Product Catalog: tipo de grupo existente (GROUP_1 … GROUP_15)",
+      "constraints": {
+        "maxLength": 100,
+        "pattern": "^[A-Z0-9](?:[A-Z0-9._\\-/ ]*[A-Z0-9])?$",
+        "required": true
+      }
+    },
+    {
+      "name": "code",
+      "type": "string",
+      "description": "Código del grupo (único por tipo)",
+      "constraints": {
+        "maxLength": 100,
+        "pattern": "^[A-Z0-9](?:[A-Z0-9._\\-/ ]*[A-Z0-9])?$",
+        "required": true
+      }
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Nombre",
+      "constraints": {
+        "maxLength": 320,
+        "required": true
+      }
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "Descripción"
+    },
+    {
+      "name": "parent_group_ref",
+      "type": "string",
+      "description": "Grupo padre",
+      "constraints": {
+        "maxLength": 120
+      }
+    }
+  ],
+  "primaryKey": [
+    "group_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "parent_group_ref"
+      ],
+      "reference": {
+        "resource": "groups",
+        "fields": [
+          "group_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "group_type_code",
+      "code"
+    ]
+  ],
+  "sio": {
+    "service": "product-catalog",
+    "endpoint": "POST /api/v1/group-types/{group_type_id}/groups",
+    "contract": "GroupCreate",
+    "identity": [
+      "group_type_code",
+      "code"
+    ],
+    "rules": [
+      {
+        "type": "catalog",
+        "field": "group_type_code",
+        "service": "product-catalog",
+        "path": "/api/v1/group-types"
+      }
+    ],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

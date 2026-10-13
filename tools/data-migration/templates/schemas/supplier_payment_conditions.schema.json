@@ -1,0 +1,179 @@
+{
+  "name": "supplier_payment_conditions",
+  "title": "commercial-relationship · SupplierPaymentConditionCreate",
+  "description": "Entidad SupplierPaymentConditionCreate de commercial-relationship. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "supplier_payment_condition_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "company_supplier_ref",
+      "type": "string",
+      "description": "Proveedor",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "payment_condition_type_code",
+      "type": "string",
+      "description": "Catálogo global Payment Reference (CASH, CREDIT, FINANCING)",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "currency_code",
+      "type": "string",
+      "description": "Moneda",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 10,
+        "required": true
+      }
+    },
+    {
+      "name": "payment_terms_days",
+      "type": "integer",
+      "description": "Plazo en días",
+      "constraints": {
+        "minimum": 0,
+        "maximum": 3650
+      }
+    },
+    {
+      "name": "credit_limit",
+      "type": "number",
+      "description": "Cupo",
+      "constraints": {
+        "minimum": 0
+      }
+    },
+    {
+      "name": "interest_rate_percentage",
+      "type": "number",
+      "description": "Interés %"
+    },
+    {
+      "name": "cash_discount_percentage",
+      "type": "number",
+      "description": "Descuento pronto pago %"
+    },
+    {
+      "name": "is_default",
+      "type": "boolean",
+      "description": "Predeterminada (una activa por proveedor y moneda)",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    },
+    {
+      "name": "valid_from",
+      "type": "datetime",
+      "description": "Vigente desde"
+    },
+    {
+      "name": "valid_to",
+      "type": "datetime",
+      "description": "Vigente hasta"
+    }
+  ],
+  "primaryKey": [
+    "supplier_payment_condition_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "company_supplier_ref"
+      ],
+      "reference": {
+        "resource": "company_suppliers",
+        "fields": [
+          "company_supplier_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "company_supplier_ref",
+      "payment_condition_type_code",
+      "currency_code",
+      "payment_terms_days"
+    ]
+  ],
+  "sio": {
+    "service": "commercial-relationship",
+    "endpoint": "POST /api/v1/companies/{company_id}/supplier-payment-conditions",
+    "contract": "SupplierPaymentConditionCreate",
+    "identity": [
+      "company_supplier_ref",
+      "payment_condition_type_code",
+      "payment_terms_days"
+    ],
+    "rules": [
+      {
+        "type": "one_true",
+        "field": "is_default",
+        "per": [
+          "company_supplier_ref",
+          "currency_code"
+        ],
+        "max": 1
+      },
+      {
+        "type": "catalog",
+        "field": "payment_condition_type_code",
+        "service": "payment-reference",
+        "path": "/global-payment-condition-types"
+      }
+    ],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

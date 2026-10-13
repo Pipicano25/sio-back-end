@@ -51,3 +51,18 @@ def test_unknown_code(api) -> None:
     response = api.get(f"{URL}/0000000000000")
     assert response.status_code == 404
     assert response.json()["code"] == "PRODUCT_CATALOG.NOT_FOUND"
+
+
+def test_lookup_ium(api, session_factory) -> None:
+    """El IUM es único en todo el catálogo y se resuelve por código (spec 018, FR-058a)."""
+    product, _, _ = factories.complete_product(session_factory)
+    box = factories.presentation(session_factory, product.id, "CAJA_X_30", base_quantity=30)
+    factories.identifier(session_factory, product.id, "2H1005971005105", "IUM", presentation_id=box.id)
+
+    body = api.get(f"{URL}/2H1005971005105").json()
+
+    assert body["product"]["id"] == str(product.id)
+    assert body["presentation"]["id"] == str(box.id)
+    assert body["identifier"]["identifier_type"] == "IUM"
+    assert body["is_current"] is True
+    assert api.get(f"{URL}/2H1005971005106").status_code == 404

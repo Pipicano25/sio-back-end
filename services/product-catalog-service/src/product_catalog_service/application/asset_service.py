@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
+    AssetContentNotStoredError,
     InvalidStorageUriError,
     NotFoundError,
     ReferenceInactiveError,
@@ -179,6 +180,24 @@ class AssetService:
             self.session.flush()
         asset.is_primary = True
         lifecycle.stamp_update(asset, actor)
+
+    def content_key(self, product_id: UUID, asset_id: UUID, bucket: str) -> tuple[ProductAssetModel, str]:
+        """Activo vigente y clave del objeto en el almacenamiento de SIO (`s3://<bucket>/<clave>`).
+
+        Un activo con referencia externa (p. ej. `https://…` histórico) sigue siendo válido como
+        recurso, pero su contenido no lo entrega SIO: `409 ASSET_CONTENT_NOT_STORED`.
+        """
+        if self.session.get(GlobalProductModel, product_id) is None:
+            raise NotFoundError(f"El producto {product_id} no existe.")
+        asset = self._asset(product_id, asset_id)
+        if asset.status != ACTIVE:
+            raise NotFoundError(f"El activo {asset_id} no está vigente.")
+        parsed = urlparse(asset.storage_uri)
+        if parsed.scheme != "s3" or parsed.netloc != bucket or not parsed.path.strip("/"):
+            raise AssetContentNotStoredError(
+                "El activo referencia un recurso externo; su contenido no está en el almacenamiento de SIO."
+            )
+        return asset, parsed.path.lstrip("/")
 
     def _asset(self, product_id: UUID, asset_id: UUID) -> ProductAssetModel:
         asset = self.session.get(ProductAssetModel, asset_id)

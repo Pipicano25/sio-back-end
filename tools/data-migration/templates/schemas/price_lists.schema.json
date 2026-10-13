@@ -1,0 +1,150 @@
+{
+  "name": "price_lists",
+  "title": "commercial-relationship · PriceListCreate",
+  "description": "Entidad PriceListCreate de commercial-relationship. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "price_list_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "company_ref",
+      "type": "string",
+      "description": "Empresa",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "code",
+      "type": "string",
+      "description": "Código",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 50,
+        "required": true
+      }
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Nombre",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "currency_code",
+      "type": "string",
+      "description": "Moneda",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 10,
+        "required": true
+      }
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "Descripción"
+    },
+    {
+      "name": "valid_from",
+      "type": "datetime",
+      "description": "Vigente desde"
+    },
+    {
+      "name": "valid_to",
+      "type": "datetime",
+      "description": "Vigente hasta"
+    },
+    {
+      "name": "is_default",
+      "type": "boolean",
+      "description": "Predeterminada",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    }
+  ],
+  "primaryKey": [
+    "price_list_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "company_ref"
+      ],
+      "reference": {
+        "resource": "companies",
+        "fields": [
+          "company_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "company_ref",
+      "code"
+    ]
+  ],
+  "sio": {
+    "service": "commercial-relationship",
+    "endpoint": "POST /api/v1/companies/{company_id}/price-lists",
+    "contract": "PriceListCreate",
+    "identity": [
+      "company_ref",
+      "code"
+    ],
+    "rules": [],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

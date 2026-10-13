@@ -44,7 +44,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         response_model=IdentifierResponse,
         status_code=status.HTTP_201_CREATED,
         dependencies=[permission(auth, RESOURCE, "update")],
-        summary="Registrar un identificador (GTIN, EAN, UPC, BARCODE u OTHER)",
+        summary="Registrar un identificador (GTIN, EAN, UPC, BARCODE, OTHER o IUM)",
     )
     def create_identifier(
         product_id: UUID,

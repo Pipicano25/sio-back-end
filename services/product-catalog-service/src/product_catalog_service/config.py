@@ -15,12 +15,25 @@ class Settings:
             incluido su prefijo de ruta.
         party_identity_timeout_seconds: Tiempo de espera de la validación del
             fabricante.
+        asset_storage_*: Almacenamiento de objetos compatible con S3 del contenido
+            de los activos (`ASSET_STORAGE_*`); opcional: sin él, `/content`
+            responde 503.
     """
 
     docs_enabled: bool
     database_url: str
     party_identity_service_base_url: str
     party_identity_timeout_seconds: float
+    asset_storage_endpoint: str | None = None
+    asset_storage_bucket: str = "sio-product-assets"
+    asset_storage_access_key: str | None = None
+    asset_storage_secret_key: str | None = None
+    asset_storage_region: str = "us-east-1"
+    asset_storage_timeout_seconds: float = 5.0
+
+    @property
+    def asset_storage_configured(self) -> bool:
+        return bool(self.asset_storage_endpoint and self.asset_storage_access_key and self.asset_storage_secret_key)
 
 
 def load_settings() -> Settings:
@@ -46,7 +59,19 @@ def load_settings() -> Settings:
             name="PARTY_IDENTITY_TIMEOUT_SECONDS",
             default=3.0,
         ),
+        asset_storage_endpoint=_optional_text("ASSET_STORAGE_ENDPOINT"),
+        asset_storage_bucket=_read_text(name="ASSET_STORAGE_BUCKET", default="sio-product-assets"),
+        asset_storage_access_key=_optional_text("ASSET_STORAGE_ACCESS_KEY"),
+        asset_storage_secret_key=_optional_text("ASSET_STORAGE_SECRET_KEY"),
+        asset_storage_region=_read_text(name="ASSET_STORAGE_REGION", default="us-east-1"),
+        asset_storage_timeout_seconds=_read_float(name="ASSET_STORAGE_TIMEOUT_SECONDS", default=5.0),
     )
+
+
+def _optional_text(name: str) -> str | None:
+    """Variable opcional; vacía equivale a no definida (nunca se registra su valor)."""
+    value = os.getenv(name)
+    return value.strip() if value and value.strip() else None
 
 
 def _required_text(name: str) -> str:

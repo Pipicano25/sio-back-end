@@ -1,0 +1,145 @@
+{
+  "name": "organization_identities",
+  "title": "party-identity · OrganizationIdentityCreate",
+  "description": "Entidad OrganizationIdentityCreate de party-identity. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "organization_identity_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "country_iso3",
+      "type": "string",
+      "description": "Catálogo global Geography (ISO3)",
+      "constraints": {
+        "pattern": "^[A-Z]{3}$",
+        "required": true
+      }
+    },
+    {
+      "name": "identification_type",
+      "type": "string",
+      "description": "Tipo de identificación (regla activa de Party Identity; NIT para organizaciones; INTERNAL_CODE solo FABRICANTE GENERICO)",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 40,
+        "required": true
+      }
+    },
+    {
+      "name": "identification_number",
+      "type": "string",
+      "description": "Número de identificación tal como lo valida Party Identity (NIT con dígito de verificación: 817004260-0). Nunca inventado.",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 40,
+        "required": true
+      }
+    },
+    {
+      "name": "legal_name",
+      "type": "string",
+      "description": "Razón social",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 200,
+        "required": true
+      }
+    },
+    {
+      "name": "trade_name",
+      "type": "string",
+      "description": "Nombre comercial",
+      "constraints": {
+        "maxLength": 200
+      }
+    },
+    {
+      "name": "organization_type",
+      "type": "string",
+      "description": "Tipo de organización",
+      "constraints": {
+        "maxLength": 40
+      }
+    },
+    {
+      "name": "registration_status",
+      "type": "string",
+      "description": "Estado de registro",
+      "constraints": {
+        "maxLength": 30
+      }
+    },
+    {
+      "name": "website",
+      "type": "string",
+      "description": "Sitio web",
+      "constraints": {
+        "maxLength": 300
+      }
+    }
+  ],
+  "primaryKey": [
+    "organization_identity_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "uniqueKeys": [
+    [
+      "country_iso3",
+      "identification_type",
+      "identification_number"
+    ]
+  ],
+  "sio": {
+    "service": "party-identity",
+    "endpoint": "POST /api/v1/organization-identities",
+    "contract": "OrganizationIdentityCreate",
+    "identity": [
+      "country_iso3",
+      "identification_type",
+      "identification_number"
+    ],
+    "rules": [],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

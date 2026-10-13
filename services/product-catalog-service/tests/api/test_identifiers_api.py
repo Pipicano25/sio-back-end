@@ -132,3 +132,117 @@ def test_deactivate_requires_deactivate_permission(api, api_as, session_factory)
     response = api_as("products:update").post(f"{_url(product.id)}/{created['id']}/deactivate", json={"version": 1})
 
     assert response.status_code == 403
+
+
+# ------------------------------------------------------------------ IUM (spec 018)
+
+IUM = "2H1005971005105"
+
+
+def test_register_ium_on_presentation(api, session_factory) -> None:
+    product, _ = _two_products(session_factory)
+    box = factories.presentation(session_factory, product.id, "CAJA_X_30", base_quantity=30)
+
+    response = api.post(
+        _url(product.id),
+        json={"identifier_type": "IUM", "value": IUM, "global_product_presentation_id": str(box.id), "is_primary": True},
+    )
+
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["identifier_type"] == "IUM"
+    assert body["value"] == IUM
+    assert body["canonical_value"] == IUM
+    assert body["global_product_presentation_id"] == str(box.id)
+    assert body["is_primary"] is True
+
+
+def test_ium_requires_presentation(api, session_factory) -> None:
+    product, _ = _two_products(session_factory)
+
+    response = api.post(_url(product.id), json={"identifier_type": "IUM", "value": IUM})
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "PRODUCT_CATALOG.IUM_REQUIRES_PRESENTATION"
+
+
+def test_ium_format(api, session_factory) -> None:
+    product, _ = _two_products(session_factory)
+    box = factories.presentation(session_factory, product.id, "CAJA")
+
+    for value in ("ACTIVO", "1E100329100010", "2h1005971005105", "21H005971005105"):
+        response = api.post(
+            _url(product.id),
+            json={"identifier_type": "IUM", "value": value, "global_product_presentation_id": str(box.id)},
+        )
+        assert response.status_code == 422, value
+        assert response.json()["code"] == "PRODUCT_CATALOG.INVALID_IUM_FORMAT", value
+
+
+def test_ium_normalized_like_other_identifiers(api, session_factory) -> None:
+    product, _ = _two_products(session_factory)
+    box = factories.presentation(session_factory, product.id, "CAJA")
+
+    response = api.post(
+        _url(product.id),
+        json={"identifier_type": "IUM", "value": "2H1-0059710-05105", "global_product_presentation_id": str(box.id)},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["value"] == IUM
+
+
+def test_ium_unique_across_catalog_including_inactive(api, session_factory) -> None:
+    first, second = _two_products(session_factory)
+    first_box = factories.presentation(session_factory, first.id, "CAJA")
+    other_box = factories.presentation(session_factory, first.id, "FRASCO")
+    second_box = factories.presentation(session_factory, second.id, "CAJA")
+    existing = api.post(
+        _url(first.id),
+        json={"identifier_type": "IUM", "value": IUM, "global_product_presentation_id": str(first_box.id)},
+    ).json()
+
+    same_product = api.post(
+        _url(first.id),
+        json={"identifier_type": "IUM", "value": IUM, "global_product_presentation_id": str(other_box.id)},
+    )
+    assert same_product.status_code == 409
+
+    api.post(f"{_url(first.id)}/{existing['id']}/deactivate", json={"version": 1})
+    other_product = api.post(
+        _url(second.id),
+        json={"identifier_type": "IUM", "value": IUM, "global_product_presentation_id": str(second_box.id)},
+    )
+    assert other_product.status_code == 409
+    body = other_product.json()
+    assert body["code"] == "PRODUCT_CATALOG.IDENTIFIER_COLLISION"
+    assert body["conflict"]["identifier_type"] == "IUM"
+    assert body["conflict"]["global_product_id"] == str(first.id)
+    assert body["conflict"]["global_product_presentation_id"] == str(first_box.id)
+
+
+def test_ium_presentation_must_belong_to_product(api, session_factory) -> None:
+    first, second = _two_products(session_factory)
+    foreign = factories.presentation(session_factory, second.id, "CAJA")
+
+    response = api.post(
+        _url(first.id),
+        json={"identifier_type": "IUM", "value": IUM, "global_product_presentation_id": str(foreign.id)},
+    )
+
+    assert response.json()["code"] == "PRODUCT_CATALOG.PRESENTATION_OF_OTHER_PRODUCT"
+
+
+def test_existing_types_unchanged_with_ium_shaped_values(api, session_factory) -> None:
+    """Compatibilidad (RC-IUM-4, DS-02): BARCODE y OTHER conservan sus reglas aunque el valor parezca un IUM."""
+    first, second = _two_products(session_factory)
+    box = factories.presentation(session_factory, first.id, "CAJA")
+
+    assert api.post(_url(first.id), json={"identifier_type": "OTHER", "value": IUM}).status_code == 201
+    assert api.post(_url(second.id), json={"identifier_type": "OTHER", "value": IUM}).status_code == 201
+    assert api.post(_url(second.id), json={"identifier_type": "BARCODE", "value": "1A1023421000100"}).status_code == 201
+    ium = api.post(
+        _url(first.id),
+        json={"identifier_type": "IUM", "value": IUM, "global_product_presentation_id": str(box.id)},
+    )
+    assert ium.status_code == 201

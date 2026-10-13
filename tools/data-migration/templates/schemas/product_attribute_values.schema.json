@@ -1,0 +1,156 @@
+{
+  "name": "product_attribute_values",
+  "title": "product-catalog · AttributeValuePut",
+  "description": "Exige que el atributo sea aplicable al producto por una categoría (category_attributes + product_categories).",
+  "fields": [
+    {
+      "name": "product_attribute_value_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "product_ref",
+      "type": "string",
+      "description": "Producto",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "attribute_definition_ref",
+      "type": "string",
+      "description": "Atributo",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "text_value",
+      "type": "string",
+      "description": "Valor TEXT"
+    },
+    {
+      "name": "integer_value",
+      "type": "integer",
+      "description": "Valor INTEGER"
+    },
+    {
+      "name": "decimal_value",
+      "type": "number",
+      "description": "Valor DECIMAL"
+    },
+    {
+      "name": "boolean_value",
+      "type": "boolean",
+      "description": "Valor BOOLEAN",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    },
+    {
+      "name": "date_value",
+      "type": "date",
+      "description": "Valor DATE"
+    }
+  ],
+  "primaryKey": [
+    "product_attribute_value_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "product_ref"
+      ],
+      "reference": {
+        "resource": "products",
+        "fields": [
+          "product_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "attribute_definition_ref"
+      ],
+      "reference": {
+        "resource": "attribute_definitions",
+        "fields": [
+          "attribute_definition_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "product_ref",
+      "attribute_definition_ref"
+    ]
+  ],
+  "sio": {
+    "service": "product-catalog",
+    "endpoint": "PUT /api/v1/products/{product_id}/attribute-values/{definition_id}",
+    "contract": "AttributeValuePut",
+    "identity": [
+      "product_ref",
+      "attribute_definition_ref"
+    ],
+    "rules": [
+      {
+        "type": "exactly_one_of",
+        "fields": [
+          "text_value",
+          "integer_value",
+          "decimal_value",
+          "boolean_value",
+          "date_value"
+        ]
+      }
+    ],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

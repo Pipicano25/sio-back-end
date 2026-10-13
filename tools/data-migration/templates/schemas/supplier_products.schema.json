@@ -1,0 +1,214 @@
+{
+  "name": "supplier_products",
+  "title": "commercial-relationship · SupplierProductCreate",
+  "description": "Entidad SupplierProductCreate de commercial-relationship. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "supplier_product_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "company_supplier_ref",
+      "type": "string",
+      "description": "Proveedor",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "company_product_ref",
+      "type": "string",
+      "description": "Producto de empresa",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "company_product_presentation_ref",
+      "type": "string",
+      "description": "Presentación de empresa",
+      "constraints": {
+        "maxLength": 120
+      }
+    },
+    {
+      "name": "supplier_product_code",
+      "type": "string",
+      "description": "Código del proveedor",
+      "constraints": {
+        "maxLength": 100
+      }
+    },
+    {
+      "name": "purchase_unit_code",
+      "type": "string",
+      "description": "Catálogo global Product Catalog: unidad de compra",
+      "constraints": {
+        "maxLength": 100,
+        "required": true
+      }
+    },
+    {
+      "name": "minimum_order_quantity",
+      "type": "number",
+      "description": "Pedido mínimo",
+      "constraints": {
+        "minimum": 0
+      }
+    },
+    {
+      "name": "pack_quantity",
+      "type": "number",
+      "description": "Cantidad por empaque",
+      "constraints": {
+        "minimum": 0
+      }
+    },
+    {
+      "name": "negotiated_unit_cost",
+      "type": "number",
+      "description": "Costo negociado (vacío = dato faltante)",
+      "constraints": {
+        "minimum": 0
+      }
+    },
+    {
+      "name": "currency_code",
+      "type": "string",
+      "description": "Moneda",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 10,
+        "required": true
+      }
+    },
+    {
+      "name": "expected_supplier_lead_time_hours",
+      "type": "number",
+      "description": "Tiempo de entrega (horas)",
+      "constraints": {
+        "minimum": 0
+      }
+    },
+    {
+      "name": "priority",
+      "type": "integer",
+      "description": "Prioridad",
+      "constraints": {
+        "minimum": 0,
+        "maximum": 32767
+      }
+    },
+    {
+      "name": "is_preferred",
+      "type": "boolean",
+      "description": "Preferido",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    }
+  ],
+  "primaryKey": [
+    "supplier_product_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "company_supplier_ref"
+      ],
+      "reference": {
+        "resource": "company_suppliers",
+        "fields": [
+          "company_supplier_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "company_product_ref"
+      ],
+      "reference": {
+        "resource": "company_products",
+        "fields": [
+          "company_product_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "company_product_presentation_ref"
+      ],
+      "reference": {
+        "resource": "company_product_presentations",
+        "fields": [
+          "company_product_presentation_ref"
+        ]
+      }
+    }
+  ],
+  "sio": {
+    "service": "commercial-relationship",
+    "endpoint": "POST /api/v1/companies/{company_id}/supplier-products",
+    "contract": "SupplierProductCreate",
+    "identity": [
+      "company_supplier_ref",
+      "company_product_ref",
+      "company_product_presentation_ref"
+    ],
+    "rules": [
+      {
+        "type": "catalog",
+        "field": "purchase_unit_code",
+        "service": "product-catalog",
+        "path": "/api/v1/units-of-measure"
+      }
+    ],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

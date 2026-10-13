@@ -66,3 +66,38 @@ def test_gtin_format_check(session_factory) -> None:
     first, _ = _products(session_factory)
     with pytest.raises(IntegrityError, match="ck_global_product_identifiers_gtin_format"):
         factories.identifier(session_factory, first.id, "12345", "GTIN")
+
+
+# ------------------------------------------------------------------ IUM (spec 018)
+
+
+def test_ium_unique_across_products_and_status(session_factory) -> None:
+    first, second = _products(session_factory)
+    first_box = factories.presentation(session_factory, first.id, "CAJA")
+    second_box = factories.presentation(session_factory, second.id, "CAJA")
+    factories.identifier(session_factory, first.id, "2H1005971005105", "IUM", presentation_id=first_box.id, status="INACTIVE")
+
+    with pytest.raises(IntegrityError, match="uq_global_product_identifiers_ium"):
+        factories.identifier(session_factory, second.id, "2H1005971005105", "IUM", presentation_id=second_box.id)
+
+
+def test_ium_requires_presentation_in_database(session_factory) -> None:
+    first, _ = _products(session_factory)
+
+    with pytest.raises(IntegrityError, match="ck_global_product_identifiers_ium_format"):
+        factories.identifier(session_factory, first.id, "2H1005971005105", "IUM")
+
+
+def test_ium_format_in_database(session_factory) -> None:
+    first, _ = _products(session_factory)
+    box = factories.presentation(session_factory, first.id, "CAJA")
+
+    with pytest.raises(IntegrityError, match="ck_global_product_identifiers_ium_format"):
+        factories.identifier(session_factory, first.id, "ACTIVO", "IUM", presentation_id=box.id)
+
+
+def test_unknown_identifier_type_still_rejected(session_factory) -> None:
+    first, _ = _products(session_factory)
+
+    with pytest.raises(IntegrityError, match="ck_global_product_identifiers_type"):
+        factories.identifier(session_factory, first.id, "X1", "CUM")

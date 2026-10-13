@@ -1,0 +1,126 @@
+{
+  "name": "source_classifications",
+  "title": "ninguno (solo Silver) · Clasificación original del cliente",
+  "description": "Clasificaciones originales del cliente por registro (tipos, grupos, líneas). Se conservan como evidencia para decidir categorías y grupos; nunca se cargan en SIO.",
+  "fields": [
+    {
+      "name": "source_classification_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "product_ref",
+      "type": "string",
+      "description": "Producto global al que pertenece el registro (vacío si el registro fue excluido sin producto)",
+      "constraints": {
+        "maxLength": 120
+      }
+    },
+    {
+      "name": "dimension",
+      "type": "string",
+      "description": "Columna de clasificación del sistema de origen (p. ej. 'Tipo Producto', 'Grupo 1')",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "code",
+      "type": "string",
+      "description": "Código original tal como viene en la fuente",
+      "constraints": {
+        "maxLength": 200,
+        "required": true
+      }
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Nombre original tal como viene en la fuente",
+      "constraints": {
+        "maxLength": 400
+      }
+    }
+  ],
+  "primaryKey": [
+    "source_classification_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "product_ref"
+      ],
+      "reference": {
+        "resource": "products",
+        "fields": [
+          "product_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "source_ref",
+      "dimension"
+    ]
+  ],
+  "sio": {
+    "service": "ninguno (solo Silver)",
+    "endpoint": "— (no se carga en SIO)",
+    "contract": "Clasificación original del cliente",
+    "identity": [
+      "source_ref",
+      "dimension"
+    ],
+    "rules": [
+      {
+        "type": "gold_requires",
+        "field": "migration_status",
+        "values": [],
+        "note": "Evidencia: nunca pasa a Gold"
+      }
+    ],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

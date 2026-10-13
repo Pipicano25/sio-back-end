@@ -17,7 +17,9 @@ from product_catalog_service.api.routers import include_domain_routers
 from product_catalog_service.api.security import build_auth
 from product_catalog_service.api.tracing import TracingMiddleware, configure_logging
 from product_catalog_service.application.ports import ManufacturerDirectory
+from product_catalog_service.application.ports import AssetStorage
 from product_catalog_service.config import Settings, load_settings
+from product_catalog_service.infrastructure.s3_asset_storage import S3AssetStorage
 from product_catalog_service.infrastructure.database import Database
 from product_catalog_service.infrastructure.party_identity_manufacturer_directory import (
     build_manufacturer_directory,
@@ -44,6 +46,7 @@ def create_app(
     *,
     auth: SIOAuth | None = None,
     manufacturer_directory_factory: ManufacturerDirectoryFactory | None = None,
+    asset_storage: AssetStorage | None = None,
 ) -> FastAPI:
     """Construye la aplicación FastAPI del microservicio.
 
@@ -52,6 +55,8 @@ def create_app(
         auth: Fachada `sio-auth` opcional (las pruebas inyectan una con JWKS local).
         manufacturer_directory_factory: Fábrica opcional del adaptador de Party
             Identity por solicitud (las pruebas inyectan un doble).
+        asset_storage: Almacenamiento de objetos del contenido de los activos; por
+            defecto, el adaptador S3 configurado por `ASSET_STORAGE_*` (o ninguno).
     """
     current_settings = settings or load_settings()
     configure_logging()
@@ -76,6 +81,7 @@ def create_app(
 
     app.state.settings = current_settings
     app.state.database = database
+    app.state.asset_storage = asset_storage if asset_storage is not None else S3AssetStorage.from_settings(current_settings)
     app.state.manufacturer_directory_factory = (
         manufacturer_directory_factory
         or (lambda request: build_manufacturer_directory(request, current_settings))

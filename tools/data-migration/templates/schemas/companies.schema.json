@@ -1,0 +1,166 @@
+{
+  "name": "companies",
+  "title": "operational-context · CompanyCreate",
+  "description": "Entidad CompanyCreate de operational-context. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "company_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "organization_identity_ref",
+      "type": "string",
+      "description": "Organización de la empresa",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "description": "Correo",
+      "format": "email"
+    },
+    {
+      "name": "phone",
+      "type": "string",
+      "description": "Teléfono",
+      "constraints": {
+        "maxLength": 40
+      }
+    },
+    {
+      "name": "address_line",
+      "type": "string",
+      "description": "Dirección"
+    },
+    {
+      "name": "country_iso3",
+      "type": "string",
+      "description": "Catálogo global Geography: ISO3 del país",
+      "constraints": {
+        "pattern": "^[A-Z]{3}$"
+      }
+    },
+    {
+      "name": "administrative_division_name",
+      "type": "string",
+      "description": "Catálogo global Geography: nombre de la división administrativa"
+    },
+    {
+      "name": "city_name",
+      "type": "string",
+      "description": "Catálogo global Geography: nombre de la ciudad"
+    },
+    {
+      "name": "postal_code",
+      "type": "string",
+      "description": "Código postal",
+      "constraints": {
+        "maxLength": 20
+      }
+    },
+    {
+      "name": "latitude",
+      "type": "number",
+      "description": "Latitud"
+    },
+    {
+      "name": "longitude",
+      "type": "number",
+      "description": "Longitud"
+    },
+    {
+      "name": "timezone",
+      "type": "string",
+      "description": "Zona horaria (predeterminada America/Bogota)",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 60,
+        "required": true
+      }
+    },
+    {
+      "name": "default_currency",
+      "type": "string",
+      "description": "Moneda predeterminada (COP)",
+      "constraints": {
+        "pattern": "^[A-Z]{3}$",
+        "required": true
+      }
+    }
+  ],
+  "primaryKey": [
+    "company_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "organization_identity_ref"
+      ],
+      "reference": {
+        "resource": "organization_identities",
+        "fields": [
+          "organization_identity_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "organization_identity_ref"
+    ]
+  ],
+  "sio": {
+    "service": "operational-context",
+    "endpoint": "POST /api/v1/companies",
+    "contract": "CompanyCreate",
+    "identity": [
+      "organization_identity_ref"
+    ],
+    "rules": [],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

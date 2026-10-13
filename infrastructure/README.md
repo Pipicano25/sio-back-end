@@ -15,8 +15,9 @@ Esta carpeta contiene los recursos y la configuración necesarios para levantar 
   proyectos; no define `COMPOSE_PROJECT_NAME`, cada archivo declara su `name:`).
 - `keycloak/`: configuración de Keycloak (Containerfile, plantilla del
   realm, realm ya renderizado, temas).
-- `scripts/`: utilidades locales — `render-realm.sh` y `rebuild-all.sh`
-  (regenera todos los proyectos en orden).
+- `scripts/`: utilidades locales — `render-realm.sh`, `rebuild-all.sh`
+  (regenera todos los proyectos en orden) y `reset-business-data.sh` (vacía
+  los datos de negocio en desarrollo; ver "Reset de datos funcionales").
 
 ## Estructura de carpetas
 
@@ -30,7 +31,9 @@ infrastructure/
 ├── .env.example
 ├── scripts/
 │   ├── rebuild-all.sh
-│   └── render-realm.sh
+│   ├── render-realm.sh
+│   ├── reset-business-data.sh
+│   └── tests/reset-business-data.test.sh
 └── keycloak/
     ├── Containerfile
     ├── realm-template/
@@ -282,6 +285,77 @@ Después, levanta de nuevo los servicios:
 ```bash
 docker compose --file services/operational-context-service.yaml --env-file .env up --build -d
 ```
+
+## Almacenamiento de objetos (MinIO)
+
+Proyecto `object-storage` (`services/object-storage.yaml`): almacenamiento propio de SIO, compatible
+con S3, para el contenido de los activos de Product Catalog (imágenes de producto).
+
+- Bucket privado `sio-product-assets` (sin acceso anónimo); objetos por hash: `assets/<sha256>.<ext>`.
+- Volumen persistente `sio-object-storage-data`: **ni `rebuild-all.sh --full` ni
+  `reset-business-data.sh` lo borran**. Vaciarlo sería una operación explícita aparte.
+- Imagen fijada por digest (MinIO dejó de publicar imágenes gratuitas; se usa la compilación desde el
+  código fuente de Chainguard).
+- Puertos solo locales: API `127.0.0.1:9002`, consola `127.0.0.1:9003`. Entre contenedores:
+  `http://object-storage:9000` (red `sio-network`).
+- Credenciales solo en `infrastructure/.env` (ver `.env.example`): `MINIO_ROOT_*` (solo para el
+  bootstrap), `PRODUCT_CATALOG_ASSET_STORAGE_*` (solo lectura) y `MIGRATION_ASSET_STORAGE_*`
+  (lectura y escritura, sin borrado). Sin ellas, `rebuild-all.sh` omite el proyecto con un aviso.
+- Bootstrap idempotente (`object-storage/bootstrap.sh`; `rebuild-all.sh` lo ejecuta tras levantar):
+
+```bash
+docker compose --project-name object-storage --file infrastructure/services/object-storage.yaml \
+  --env-file infrastructure/.env up -d --wait
+docker compose --project-name object-storage --file infrastructure/services/object-storage.yaml \
+  --env-file infrastructure/.env run --rm object-storage-bootstrap
+```
+
+El frontend nunca habla con MinIO: obtiene el contenido por
+`GET /api/v1/products/{product_id}/assets/{asset_id}/content` (Product Catalog).
+Pruebas: `bash infrastructure/scripts/tests/object-storage.test.sh [--live]` (`--live` usa un MinIO
+efímero aislado).
+
+## Reset de datos funcionales
+
+> **Solo para entornos de desarrollo o pruebas. Nunca en producción.** Borra
+> de forma irreversible las empresas, sucursales, usuarios operativos,
+> identidades, productos, clientes, proveedores, listas de precios, compras,
+> ventas, inventario (kardex, saldos y capas FIFO) y eventos de auditoría.
+
+`scripts/reset-business-data.sh` deja el entorno sin datos de negocio, listo
+para una importación, sin tocar bases, esquemas ni volúmenes:
+
+```bash
+# Muestra qué borraría (servicio, tabla, filas) sin modificar nada
+bash infrastructure/scripts/reset-business-data.sh --dry-run
+
+# Ejecuta el borrado (exige el texto exacto)
+bash infrastructure/scripts/reset-business-data.sh --confirm RESET-SIO-BUSINESS-DATA
+```
+
+- **Limpia**, en este orden: Sales → Purchase → Inventory → Commercial
+  Relationship → Operational Context → Product Catalog → Party Identity →
+  Audit (los dependientes antes que aquello a lo que referencian).
+- **Conserva**: Geography y Payment Reference (no se tocan), Keycloak con sus
+  usuarios y clientes, `alembic_version`, y los maestros de los seeds: unidades
+  de medida, tipos de empaque y tipos de grupo (Product Catalog); sectores
+  CIIU, reglas de identificación y la trazabilidad de la migración `0020`
+  (Party Identity).
+- **Cómo**: detiene APIs, workers y conciliadores (`docker compose stop`), hace
+  un `TRUNCATE` por base en una transacción sobre una lista explícita de
+  tablas, sin `CASCADE`, los vuelve a iniciar, ejecuta los seeds idempotentes y
+  valida: migraciones en head, `/health/live` y `/health/ready`, Geography y
+  Payment Reference intactos, maestros conservados y 0 filas en lo limpiado.
+- **Protecciones**: sin `--confirm` no borra; se niega si `KEYCLOAK_PUBLIC_URL`
+  no apunta a la máquina local o si `SIO_ENVIRONMENT` (opcional) no es
+  `development`, `test` o `local`; se detiene si una base tiene una tabla que
+  el script no clasifica o si un servicio no está en head. Nunca ejecuta
+  `docker compose down -v`, `docker volume rm` ni `DROP DATABASE`.
+- La salida por consola es el único registro; no escribe archivos ni muestra
+  valores de `.env`.
+
+Pruebas del script (sin borrar nada): `bash infrastructure/scripts/tests/reset-business-data.test.sh`
+(con `--live` también ejecuta el `--dry-run` contra el entorno levantado).
 
 ## URLs de administración
 

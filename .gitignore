@@ -85,3 +85,13 @@ infrastructure/keycloak/import/sio-realm.json
 # Validación integral del MVP (017): informes de cada corrida y entorno virtual de la suite
 validation/mvp-e2e/reports/
 validation/mvp-e2e/.venv/
+
+# Migración de datos (tools/data-migration): entorno virtual, ejecuciones por RUN_ID y caché de fuentes externas
+tools/data-migration/.venv/
+tools/data-migration/data/
+
+# Migración por empresa (tools/data-migration/<EMPRESA>/{bronze,silver,gold,assets,reports}): datos
+# privados del cliente, nunca se versionan. Agregar una línea por cada empresa nueva.
+tools/data-migration/DAO/
+# Excepción: plantilla estándar de información requerida (versionada con los esquemas)
+!tools/data-migration/templates/required_information.xlsx

@@ -88,6 +88,14 @@ Alembic en `alembic/versions/`. La migración `0001` crea la extensión `pg_trgm
 restricciones nombradas (`uq_`, `ck_`, `ix_`, `fk_`). Una migración ya aplicada en un entorno
 compartido no se edita: las correcciones van en una migración nueva.
 
+La migración `0004` (spec 018) agrega el tipo de identificador `IUM` (Identificador Único de
+Medicamento del INVIMA):
+- siempre ligado a una presentación;
+- con formato `^[0-9][A-Z][0-9]{13}$`;
+- único en todo el catálogo, incluidos los inactivos (`uq_global_product_identifiers_ium`).
+
+No transforma datos. Su `downgrade` se rechaza sin borrar datos si existen identificadores `IUM`.
+
 ## Datos iniciales
 
 ```bash
@@ -207,3 +215,27 @@ Roles de cliente `sio-api` (plantilla `infrastructure/keycloak/realm-template/si
 | `units-of-measure`, `packaging-types`, `brands`, `categories`, `attribute-definitions`, `group-types`    | `read`, `create`, `update`, `deactivate`           |
 | `products` (incluye categorías, valores, presentaciones, identificadores, grupos y activos del producto) | `read`, `create`, `update`, `deactivate`, `delete` |
 | `first-use`                                                                                              | `register`, `register-manual`                      |
+
+## Contenido de los activos (`/content`)
+
+`GET /api/v1/products/{product_id}/assets/{asset_id}/content` entrega el archivo de un activo cuyo
+`storage_uri` es `s3://<ASSET_STORAGE_BUCKET>/<clave>` leyéndolo del almacenamiento de objetos de SIO
+(MinIO, proyecto `object-storage`) y transmitiéndolo en streaming (sin cargarlo completo en memoria).
+
+- Seguridad normal de SIO: sin token `401`; sin `perm:product-catalog:products:read` `403`.
+- `404`: producto o activo inexistente, activo inactivo u objeto inexistente; `409
+  ASSET_CONTENT_NOT_STORED`: referencia externa (`https://…`, se conserva como antes); `503
+  DEPENDENCY_UNAVAILABLE` (`dependency: asset-storage`): almacenamiento caído o sin configurar.
+- Cabeceras: `Content-Type`, `Content-Length`, `ETag` (SHA-256 del archivo cuando la clave es
+  `assets/<sha256>.<ext>`), `Cache-Control: private, max-age=31536000, immutable` (contenido
+  inmutable) y `If-None-Match` → `304` sin descargar el objeto. Nunca expone bucket, clave ni
+  credenciales.
+- Puerto `AssetStorage` (`application/ports.py`) con implementación S3 (`infrastructure/s3_asset_storage.py`):
+  cambiar de proveedor S3 no cambia el dominio.
+
+| Variable | Uso |
+| --- | --- |
+| `ASSET_STORAGE_ENDPOINT` | `http://object-storage:9000` dentro de `sio-network` |
+| `ASSET_STORAGE_BUCKET` | `sio-product-assets` |
+| `ASSET_STORAGE_ACCESS_KEY` / `ASSET_STORAGE_SECRET_KEY` | Cuenta de solo lectura (desde `PRODUCT_CATALOG_ASSET_STORAGE_*` de `infrastructure/.env`) |
+| `ASSET_STORAGE_REGION`, `ASSET_STORAGE_TIMEOUT_SECONDS` | Opcionales (`us-east-1`, `5`) |

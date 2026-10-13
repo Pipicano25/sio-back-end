@@ -1,4 +1,4 @@
-"""Identificadores del producto (FR-055 a FR-060, DS-05, DS-17, R-13)."""
+"""Identificadores del producto (FR-055 a FR-060, DS-05, DS-17, R-13; IUM: spec 018)."""
 
 from __future__ import annotations
 
@@ -15,6 +15,8 @@ from product_catalog_service.application.exceptions import (
     IdentifierCollisionError,
     InvalidCheckDigitError,
     InvalidGtinFormatError,
+    InvalidIumFormatError,
+    IumRequiresPresentationError,
     NotFoundError,
     PresentationOfOtherProductError,
     ReferenceInactiveError,
@@ -28,6 +30,7 @@ from product_catalog_service.domain.gtin import (
     has_valid_check_digit,
     is_valid_gtin_format,
 )
+from product_catalog_service.domain.ium import IUM_TYPE, is_valid_ium
 from product_catalog_service.infrastructure.locks import lock_product
 from product_catalog_service.infrastructure.models import (
     GlobalProductIdentifierModel,
@@ -71,6 +74,11 @@ class IdentifierService:
 
         normalized = normalize_identifier_value(value)
         self._validate_format(identifier_type, normalized)
+
+        if identifier_type == IUM_TYPE and global_product_presentation_id is None:
+            raise IumRequiresPresentationError(
+                "El IUM identifica una presentación comercial: indique global_product_presentation_id."
+            )
 
         if global_product_presentation_id is not None:
             presentation = self.session.get(GlobalProductPresentationModel, global_product_presentation_id)
@@ -148,6 +156,13 @@ class IdentifierService:
                 raise InvalidCheckDigitError("El dígito de control GS1 no es válido.")
             return
 
+        if identifier_type == IUM_TYPE:
+            if not is_valid_ium(value):
+                raise InvalidIumFormatError(
+                    "El IUM debe tener 15 caracteres: un dígito, una letra mayúscula y 13 dígitos."
+                )
+            return
+
         if identifier_type == "BARCODE" and is_valid_gtin_format(value):
             raise BarcodeIsGtinError(
                 "El código cumple el estándar GTIN/EAN/UPC: regístrelo con su tipo específico."
@@ -159,9 +174,10 @@ class IdentifierService:
                 GlobalProductIdentifierModel.identifier_type.in_(sorted(GTIN_FAMILY)),
                 GlobalProductIdentifierModel.canonical_value == canonical,
             )
-        elif identifier_type == "BARCODE":
+        elif identifier_type in ("BARCODE", IUM_TYPE):
+            # Únicos en todo el catálogo, incluidos los inactivos (DS-17; IUM: FR-057c).
             condition = and_(
-                GlobalProductIdentifierModel.identifier_type == "BARCODE",
+                GlobalProductIdentifierModel.identifier_type == identifier_type,
                 GlobalProductIdentifierModel.value == value,
             )
         else:

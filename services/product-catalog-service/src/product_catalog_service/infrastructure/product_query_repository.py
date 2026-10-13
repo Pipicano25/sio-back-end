@@ -9,6 +9,7 @@ from sqlalchemy import Select, and_, exists, or_, select
 from sqlalchemy.orm import Session
 
 from product_catalog_service.domain.gtin import GTIN_FAMILY, gtin_canonical, has_gtin_shape
+from product_catalog_service.domain.ium import IUM_TYPE
 from product_catalog_service.infrastructure.hierarchy_repository import HierarchyRepository
 from product_catalog_service.infrastructure.models import (
     GlobalCategoryAttributeModel,
@@ -52,13 +53,13 @@ class ProductSearchFilters:
 def identifier_match_condition(value: str, *, include_other: bool = False):
     """Condición de identificador por valor normalizado.
 
-    Siempre considera la familia GTIN (forma canónica) y `BARCODE`, que son únicos
-    en todo el catálogo. Con `include_other` también considera `OTHER`, que solo es
+    Siempre considera la familia GTIN (forma canónica), `BARCODE` e `IUM`, que son
+    únicos en todo el catálogo. Con `include_other` también considera `OTHER`, que solo es
     único dentro de su producto y puede coincidir en varios (búsqueda, FR-071).
     """
     conditions = [
         and_(
-            GlobalProductIdentifierModel.identifier_type == "BARCODE",
+            GlobalProductIdentifierModel.identifier_type.in_(("BARCODE", IUM_TYPE)),
             GlobalProductIdentifierModel.value == value,
         )
     ]

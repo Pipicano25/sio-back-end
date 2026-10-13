@@ -47,6 +47,7 @@ EXPECTED_CONSTRAINTS = {
     "ck_global_product_identifiers_gtin_format",
     "ck_global_product_identifiers_value_normalized",
     "ck_global_product_identifiers_primary_active",
+    "ck_global_product_identifiers_ium_format",
     "uq_global_product_group_types_code",
     "ck_global_product_group_types_display_order",
     "uq_global_product_groups_type_code",
@@ -72,6 +73,7 @@ EXPECTED_INDEXES = {
     "uq_global_product_identifiers_gtin_family",
     "uq_global_product_identifiers_barcode",
     "uq_global_product_identifiers_other",
+    "uq_global_product_identifiers_ium",
     "uq_global_product_identifiers_primary",
     "ix_global_product_group_assignments_product_type",
     "uq_product_assets_primary",
@@ -152,5 +154,54 @@ def test_filter_indexes_migration_downgrades_and_upgrades(test_database_url: str
 
         command.upgrade(config, "head")
         assert new_indexes <= indexes()
+    finally:
+        engine.dispose()
+
+
+def test_ium_migration_downgrades_and_upgrades(test_database_url: str) -> None:
+    """La migración 0004 agrega y retira solo el tipo IUM (spec 018, RC-IUM-5)."""
+    config = build_alembic_config()
+    engine = create_engine(test_database_url)
+
+    def ium_objects() -> set[str]:
+        with engine.connect() as connection:
+            names = set(connection.execute(text("SELECT indexname FROM pg_indexes")).scalars())
+            names |= set(connection.execute(text("SELECT conname FROM pg_constraint")).scalars())
+            type_check = connection.execute(
+                text("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'ck_global_product_identifiers_type'")
+            ).scalar_one()
+        return {name for name in names if "ium" in name} | ({"IUM en el CHECK de tipos"} if "IUM" in type_check else set())
+
+    expected = {"uq_global_product_identifiers_ium", "ck_global_product_identifiers_ium_format", "IUM en el CHECK de tipos"}
+    try:
+        command.downgrade(config, "0003")
+        assert not ium_objects()
+        command.upgrade(config, "head")
+        assert ium_objects() == expected
+    finally:
+        engine.dispose()
+
+
+def test_ium_migration_downgrade_refuses_existing_ium_rows(test_database_url: str, session_factory) -> None:
+    """Con identificadores IUM, la reversión falla sin borrar datos (spec 018, plan: impacto)."""
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+
+    from tests import factories
+
+    unit = factories.unit(session_factory)
+    product = factories.product(session_factory, unit.id, "Con IUM")
+    box = factories.presentation(session_factory, product.id, "CAJA")
+    factories.identifier(session_factory, product.id, "2H1005971005105", "IUM", presentation_id=box.id)
+    config = build_alembic_config()
+    engine = create_engine(test_database_url)
+    try:
+        with pytest.raises(IntegrityError, match="ck_global_product_identifiers_type"):
+            command.downgrade(config, "0003")
+        with engine.connect() as connection:
+            assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0004"
+            assert connection.execute(
+                text("SELECT count(*) FROM global_product_identifiers WHERE identifier_type = 'IUM'")
+            ).scalar_one() == 1
     finally:
         engine.dispose()

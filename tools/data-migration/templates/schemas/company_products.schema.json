@@ -1,0 +1,235 @@
+{
+  "name": "company_products",
+  "title": "commercial-relationship · CompanyProductCreate",
+  "description": "Entidad CompanyProductCreate de commercial-relationship. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "company_product_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "company_ref",
+      "type": "string",
+      "description": "Empresa",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "product_ref",
+      "type": "string",
+      "description": "Producto global",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "internal_code",
+      "type": "string",
+      "description": "Código interno (único por empresa)",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 60,
+        "required": true
+      }
+    },
+    {
+      "name": "reference_code",
+      "type": "string",
+      "description": "Referencia",
+      "constraints": {
+        "maxLength": 100
+      }
+    },
+    {
+      "name": "display_name",
+      "type": "string",
+      "description": "Nombre para mostrar",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 200,
+        "required": true
+      }
+    },
+    {
+      "name": "short_name",
+      "type": "string",
+      "description": "Nombre corto",
+      "constraints": {
+        "maxLength": 160
+      }
+    },
+    {
+      "name": "sale_price",
+      "type": "number",
+      "description": "Precio de venta. VACÍO = DATO FALTANTE (la API usa 0 si se omite: no enviar 0 como precio real).",
+      "constraints": {
+        "minimum": 0
+      }
+    },
+    {
+      "name": "currency_code",
+      "type": "string",
+      "description": "Moneda",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 10,
+        "required": true
+      }
+    },
+    {
+      "name": "reference_cost",
+      "type": "number",
+      "description": "Costo de referencia. VACÍO = DATO FALTANTE (no enviar 0 como costo real).",
+      "constraints": {
+        "minimum": 0
+      }
+    },
+    {
+      "name": "inventory_control_enabled",
+      "type": "boolean",
+      "description": "Control de inventario",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    },
+    {
+      "name": "lot_tracking_enabled",
+      "type": "boolean",
+      "description": "Maneja lotes",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    },
+    {
+      "name": "expiration_tracking_enabled",
+      "type": "boolean",
+      "description": "Maneja vencimiento",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    },
+    {
+      "name": "is_purchasable",
+      "type": "boolean",
+      "description": "Comprable",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    },
+    {
+      "name": "is_sellable",
+      "type": "boolean",
+      "description": "Vendible",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    }
+  ],
+  "primaryKey": [
+    "company_product_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "company_ref"
+      ],
+      "reference": {
+        "resource": "companies",
+        "fields": [
+          "company_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "product_ref"
+      ],
+      "reference": {
+        "resource": "products",
+        "fields": [
+          "product_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "company_ref",
+      "product_ref"
+    ],
+    [
+      "company_ref",
+      "internal_code"
+    ]
+  ],
+  "sio": {
+    "service": "commercial-relationship",
+    "endpoint": "POST /api/v1/companies/{company_id}/company-products",
+    "contract": "CompanyProductCreate",
+    "identity": [
+      "company_ref",
+      "product_ref"
+    ],
+    "rules": [],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

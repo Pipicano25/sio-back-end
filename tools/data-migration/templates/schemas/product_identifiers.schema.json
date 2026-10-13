@@ -1,0 +1,225 @@
+{
+  "name": "product_identifiers",
+  "title": "product-catalog · IdentifierCreate",
+  "description": "Entidad IdentifierCreate de product-catalog. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "product_identifier_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "product_ref",
+      "type": "string",
+      "description": "Producto",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "product_presentation_ref",
+      "type": "string",
+      "description": "Presentación del código",
+      "constraints": {
+        "maxLength": 120
+      }
+    },
+    {
+      "name": "identifier_type",
+      "type": "string",
+      "description": "Tipo (IUM: Identificador Único de Medicamento, spec 018 de Product Catalog)",
+      "constraints": {
+        "enum": [
+          "GTIN",
+          "EAN",
+          "UPC",
+          "BARCODE",
+          "OTHER",
+          "IUM"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "description": "Valor (GTIN canónico de 14 dígitos)",
+      "constraints": {
+        "maxLength": 200,
+        "required": true
+      }
+    },
+    {
+      "name": "is_primary",
+      "type": "boolean",
+      "description": "Principal (a lo sumo uno por producto, presentación y tipo)",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    }
+  ],
+  "primaryKey": [
+    "product_identifier_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "product_ref"
+      ],
+      "reference": {
+        "resource": "products",
+        "fields": [
+          "product_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "product_presentation_ref"
+      ],
+      "reference": {
+        "resource": "product_presentations",
+        "fields": [
+          "product_presentation_ref"
+        ]
+      }
+    }
+  ],
+  "sio": {
+    "service": "product-catalog",
+    "endpoint": "POST /api/v1/products/{product_id}/identifiers",
+    "contract": "IdentifierCreate",
+    "identity": [
+      "identifier_type",
+      "value"
+    ],
+    "rules": [
+      {
+        "type": "unique_where",
+        "fields": [
+          "value"
+        ],
+        "where": {
+          "identifier_type": [
+            "GTIN",
+            "EAN",
+            "UPC"
+          ]
+        },
+        "note": "canonical_value único global"
+      },
+      {
+        "type": "unique_where",
+        "fields": [
+          "value"
+        ],
+        "where": {
+          "identifier_type": [
+            "BARCODE"
+          ]
+        }
+      },
+      {
+        "type": "unique_where",
+        "fields": [
+          "product_ref",
+          "value"
+        ],
+        "where": {
+          "identifier_type": [
+            "OTHER"
+          ]
+        }
+      },
+      {
+        "type": "unique_where",
+        "fields": [
+          "value"
+        ],
+        "where": {
+          "identifier_type": [
+            "IUM"
+          ]
+        },
+        "note": "uq_global_product_identifiers_ium (único global)"
+      },
+      {
+        "type": "check_where",
+        "where": {
+          "identifier_type": [
+            "IUM"
+          ]
+        },
+        "required": [
+          "product_presentation_ref"
+        ],
+        "pattern": {
+          "value": "^[0-9][A-Z][0-9]{13}$"
+        },
+        "note": "ck_global_product_identifiers_ium_format (migración 0004)"
+      },
+      {
+        "type": "one_true",
+        "field": "is_primary",
+        "per": [
+          "product_ref",
+          "product_presentation_ref",
+          "identifier_type"
+        ],
+        "max": 1,
+        "note": "uq_global_product_identifiers_primary (producto, presentación, tipo; nulos no distintos)"
+      },
+      {
+        "type": "same_parent",
+        "field": "product_presentation_ref",
+        "parent": "product_ref",
+        "file": "product_presentations"
+      }
+    ],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

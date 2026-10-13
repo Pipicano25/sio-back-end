@@ -482,8 +482,13 @@ class GlobalProductIdentifierModel(AuditVersionMixin, StatusMixin, Base):
         ),
         status_check(),
         CheckConstraint(
-            "identifier_type IN ('GTIN','EAN','UPC','BARCODE','OTHER')",
+            "identifier_type IN ('GTIN','EAN','UPC','BARCODE','OTHER','IUM')",
             name="type",
+        ),
+        CheckConstraint(
+            "identifier_type <> 'IUM' OR (global_product_presentation_id IS NOT NULL"
+            " AND value ~ '^[0-9][A-Z][0-9]{13}$' AND canonical_value = value)",
+            name="ium_format",
         ),
         CheckConstraint(
             "identifier_type NOT IN ('GTIN','EAN','UPC') OR (value ~ '^[0-9]+$'"
@@ -506,6 +511,12 @@ class GlobalProductIdentifierModel(AuditVersionMixin, StatusMixin, Base):
             "value",
             unique=True,
             postgresql_where=text("identifier_type = 'BARCODE'"),
+        ),
+        Index(
+            "uq_global_product_identifiers_ium",
+            "value",
+            unique=True,
+            postgresql_where=text("identifier_type = 'IUM'"),
         ),
         Index(
             "uq_global_product_identifiers_other",

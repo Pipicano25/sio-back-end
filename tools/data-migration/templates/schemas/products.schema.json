@@ -1,0 +1,147 @@
+{
+  "name": "products",
+  "title": "product-catalog · ProductCreate",
+  "description": "Un producto global agrupa sus presentaciones (cada una con sus códigos de barras). No se identifica por nombre.",
+  "fields": [
+    {
+      "name": "product_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "product_type",
+      "type": "string",
+      "description": "Tipo de producto (solo GOOD)",
+      "constraints": {
+        "enum": [
+          "GOOD"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "canonical_name",
+      "type": "string",
+      "description": "Nombre canónico (la API admite 400; la columna del servicio es de 200)",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 200,
+        "required": true
+      }
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "Descripción"
+    },
+    {
+      "name": "brand_ref",
+      "type": "string",
+      "description": "Marca global (solo con evidencia)",
+      "constraints": {
+        "maxLength": 120
+      }
+    },
+    {
+      "name": "manufacturer_organization_ref",
+      "type": "string",
+      "description": "Fabricante: real verificado o FABRICANTE GENERICO",
+      "constraints": {
+        "maxLength": 120
+      }
+    },
+    {
+      "name": "base_unit_code",
+      "type": "string",
+      "description": "Catálogo global Product Catalog: unidad base (UND…)",
+      "constraints": {
+        "maxLength": 100,
+        "required": true
+      }
+    }
+  ],
+  "primaryKey": [
+    "product_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "brand_ref"
+      ],
+      "reference": {
+        "resource": "brands",
+        "fields": [
+          "brand_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "manufacturer_organization_ref"
+      ],
+      "reference": {
+        "resource": "organization_identities",
+        "fields": [
+          "organization_identity_ref"
+        ]
+      }
+    }
+  ],
+  "sio": {
+    "service": "product-catalog",
+    "endpoint": "POST /api/v1/products",
+    "contract": "ProductCreate",
+    "identity": [
+      "identificadores globales (product_identifiers: GTIN/EAN/UPC/BARCODE) vía GET /api/v1/products/by-identifier/{value}; nunca por nombre"
+    ],
+    "rules": [
+      {
+        "type": "catalog",
+        "field": "base_unit_code",
+        "service": "product-catalog",
+        "path": "/api/v1/units-of-measure"
+      }
+    ],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

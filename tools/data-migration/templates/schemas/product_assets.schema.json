@@ -1,0 +1,187 @@
+{
+  "name": "product_assets",
+  "title": "product-catalog · AssetCreate",
+  "description": "Entidad AssetCreate de product-catalog. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "product_asset_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "product_ref",
+      "type": "string",
+      "description": "Producto",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "asset_type",
+      "type": "string",
+      "description": "Tipo",
+      "constraints": {
+        "enum": [
+          "IMAGE",
+          "TECHNICAL_SHEET",
+          "MANUAL",
+          "CERTIFICATE",
+          "OTHER"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "file_name",
+      "type": "string",
+      "description": "Nombre del archivo",
+      "constraints": {
+        "maxLength": 510,
+        "required": true
+      }
+    },
+    {
+      "name": "storage_uri",
+      "type": "string",
+      "description": "s3://<bucket>/assets/<sha256>.<ext>",
+      "constraints": {
+        "maxLength": 4000,
+        "required": true
+      }
+    },
+    {
+      "name": "mime_type",
+      "type": "string",
+      "description": "Tipo MIME",
+      "constraints": {
+        "maxLength": 240
+      }
+    },
+    {
+      "name": "is_primary",
+      "type": "boolean",
+      "description": "Principal (a lo sumo uno por producto y tipo)",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    },
+    {
+      "name": "product_presentation_ref",
+      "type": "string",
+      "description": "Técnica: presentación que muestra la imagen (la API asocia el activo al producto)",
+      "constraints": {
+        "maxLength": 120
+      }
+    },
+    {
+      "name": "local_file",
+      "type": "string",
+      "description": "Técnica: archivo en la carpeta de la empresa (assets/<sha256>.<ext>)",
+      "constraints": {
+        "pattern": "^assets/[0-9a-f]{64}\\.[a-z0-9]+$"
+      }
+    }
+  ],
+  "primaryKey": [
+    "product_asset_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "product_ref"
+      ],
+      "reference": {
+        "resource": "products",
+        "fields": [
+          "product_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "product_presentation_ref"
+      ],
+      "reference": {
+        "resource": "product_presentations",
+        "fields": [
+          "product_presentation_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "product_ref",
+      "storage_uri"
+    ]
+  ],
+  "sio": {
+    "service": "product-catalog",
+    "endpoint": "POST /api/v1/products/{product_id}/assets",
+    "contract": "AssetCreate",
+    "identity": [
+      "product_ref",
+      "storage_uri"
+    ],
+    "rules": [
+      {
+        "type": "one_true",
+        "field": "is_primary",
+        "per": [
+          "product_ref",
+          "asset_type"
+        ],
+        "max": 1
+      },
+      {
+        "type": "file_hash",
+        "field": "local_file"
+      }
+    ],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

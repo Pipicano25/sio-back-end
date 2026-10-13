@@ -511,7 +511,9 @@ Esta entidad permite representar los campos `Código Barras 1`, `Código Barras 
 
 ### Reglas y restricciones
 
-- `identifier_type` admite inicialmente `GTIN`, `EAN`, `UPC`, `BARCODE` u `OTHER`.
+- `identifier_type` admite inicialmente `GTIN`, `EAN`, `UPC`, `BARCODE` u `OTHER`; desde la spec 018 también `IUM`
+  (Identificador Único de Medicamento del INVIMA), siempre ligado a una presentación, con formato
+  `^[0-9][A-Z][0-9]{13}$` y único en todo el catálogo.
 - Cuando exista `global_product_presentation_id`, la presentación debe pertenecer al mismo `global_product_id`.
 - Los identificadores destinados a identificación inequívoca o lectura automática deben ser únicos después de normalización.
 - Una colisión entre códigos durante una importación debe tratarse como inconsistencia y no resolverse automáticamente.

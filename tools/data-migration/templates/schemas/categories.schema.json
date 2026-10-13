@@ -1,0 +1,111 @@
+{
+  "name": "categories",
+  "title": "product-catalog · CategoryCreate",
+  "description": "Entidad CategoryCreate de product-catalog. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "category_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "code",
+      "type": "string",
+      "description": "Código global de la categoría",
+      "constraints": {
+        "maxLength": 100,
+        "pattern": "^[A-Z0-9](?:[A-Z0-9._\\-/ ]*[A-Z0-9])?$",
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Nombre",
+      "constraints": {
+        "maxLength": 240,
+        "required": true
+      }
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "Descripción"
+    },
+    {
+      "name": "parent_category_ref",
+      "type": "string",
+      "description": "Categoría padre",
+      "constraints": {
+        "maxLength": 120
+      }
+    }
+  ],
+  "primaryKey": [
+    "category_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "parent_category_ref"
+      ],
+      "reference": {
+        "resource": "categories",
+        "fields": [
+          "category_ref"
+        ]
+      }
+    }
+  ],
+  "sio": {
+    "service": "product-catalog",
+    "endpoint": "POST /api/v1/categories",
+    "contract": "CategoryCreate",
+    "identity": [
+      "code"
+    ],
+    "rules": [],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

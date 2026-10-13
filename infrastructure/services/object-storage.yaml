@@ -1,0 +1,78 @@
+name: object-storage
+
+# Proyecto compose "object-storage": almacenamiento de objetos propio de SIO (MinIO, API S3).
+# Guarda el contenido de los activos de Product Catalog (imágenes de producto) en el bucket
+# privado OBJECT_STORAGE_BUCKET; Product Catalog lo entrega por su API
+# (GET /api/v1/products/{id}/assets/{asset_id}/content). Nadie accede al bucket de forma anónima.
+#
+# - Imagen fijada por digest: MinIO dejó de publicar imágenes gratuitas (Docker Hub y quay.io,
+#   2025-2026); se usa la compilación desde el código fuente de Chainguard (RELEASE.2026-09-22).
+# - Volumen persistente "sio-object-storage-data": ni rebuild-all.sh (tampoco --full) ni
+#   reset-business-data.sh lo borran.
+# - Credenciales solo en infrastructure/.env (nunca versionadas). root solo se usa en el
+#   bootstrap; las aplicaciones usan cuentas de mínimo privilegio que el bootstrap crea:
+#     PRODUCT_CATALOG_ASSET_STORAGE_*  → solo lectura de assets/* (Product Catalog)
+#     MIGRATION_ASSET_STORAGE_*        → lectura y escritura de assets/*, sin borrado (loader de migración)
+# - Bootstrap idempotente (perfil "bootstrap"; rebuild-all.sh lo ejecuta tras levantar):
+#     docker compose --project-name object-storage --file infrastructure/services/object-storage.yaml \
+#       --env-file infrastructure/.env run --rm object-storage-bootstrap
+
+x-object-storage-image: &object-storage-image
+  image: cgr.dev/chainguard/minio@sha256:7df55d002b698e4494a131b848dd553361bbe58b7e19f62d9623c29af1ba9ccf
+
+services:
+  object-storage:
+    <<: *object-storage-image
+    container_name: sio-object-storage
+    restart: unless-stopped
+    command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Defina MINIO_ROOT_USER en infrastructure/.env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Defina MINIO_ROOT_PASSWORD en infrastructure/.env}
+      MINIO_BROWSER_REDIRECT: "false"
+      MC_CONFIG_DIR: /tmp/.mc
+    ports:
+      - "127.0.0.1:${OBJECT_STORAGE_API_PORT:-9002}:9000"
+      - "127.0.0.1:${OBJECT_STORAGE_CONSOLE_PORT:-9003}:9001"
+    volumes:
+      - object_storage_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sio-network
+
+  object-storage-bootstrap:
+    <<: *object-storage-image
+    profiles: ["bootstrap"]
+    restart: "no"
+    entrypoint: ["/bin/sh", "/bootstrap/bootstrap.sh"]
+    environment:
+      OBJECT_STORAGE_URL: http://object-storage:9000
+      OBJECT_STORAGE_BUCKET: ${OBJECT_STORAGE_BUCKET:-sio-product-assets}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Defina MINIO_ROOT_USER en infrastructure/.env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Defina MINIO_ROOT_PASSWORD en infrastructure/.env}
+      PRODUCT_CATALOG_ASSET_STORAGE_ACCESS_KEY: ${PRODUCT_CATALOG_ASSET_STORAGE_ACCESS_KEY:?Defina PRODUCT_CATALOG_ASSET_STORAGE_ACCESS_KEY}
+      PRODUCT_CATALOG_ASSET_STORAGE_SECRET_KEY: ${PRODUCT_CATALOG_ASSET_STORAGE_SECRET_KEY:?Defina PRODUCT_CATALOG_ASSET_STORAGE_SECRET_KEY}
+      MIGRATION_ASSET_STORAGE_ACCESS_KEY: ${MIGRATION_ASSET_STORAGE_ACCESS_KEY:?Defina MIGRATION_ASSET_STORAGE_ACCESS_KEY}
+      MIGRATION_ASSET_STORAGE_SECRET_KEY: ${MIGRATION_ASSET_STORAGE_SECRET_KEY:?Defina MIGRATION_ASSET_STORAGE_SECRET_KEY}
+      MC_CONFIG_DIR: /tmp/.mc
+    volumes:
+      - ../object-storage:/bootstrap:ro
+    depends_on:
+      object-storage:
+        condition: service_healthy
+    networks:
+      - sio-network
+
+volumes:
+  object_storage_data:
+    name: sio-object-storage-data
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

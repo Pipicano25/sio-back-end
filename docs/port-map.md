@@ -58,6 +58,8 @@ operational-context `8004`, commercial-relationship `8005`), sin compose.
 | Base de Keycloak | `sio-keycloak-db` | `KEYCLOAK_DB_PORT` | `5433` | `5432` |
 | RabbitMQ AMQP | `sio-rabbitmq` | `RABBITMQ_AMQP_PORT` | `5672` | `5672` |
 | RabbitMQ management | `sio-rabbitmq` | `RABBITMQ_MANAGEMENT_PORT` | `15672` | `15672` |
+| Almacenamiento de objetos (API S3) | `sio-object-storage` | `OBJECT_STORAGE_API_PORT` | `9002` | `9000` |
+| Almacenamiento de objetos (consola) | `sio-object-storage` | `OBJECT_STORAGE_CONSOLE_PORT` | `9003` | `9001` |
 | Frontend (origen permitido) | — | `SIO_WEB_ORIGIN` | `3000` | — |
 
 `KEYCLOAK_PUBLIC_URL` debe usar el mismo puerto que `KEYCLOAK_HTTP_PORT`: es el

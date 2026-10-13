@@ -1,0 +1,185 @@
+{
+  "name": "purchases",
+  "title": "purchase · PurchaseCreateIn",
+  "description": "La confirmación de la compra genera la entrada de inventario (no hay CSV propio de inventario).",
+  "fields": [
+    {
+      "name": "purchase_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "company_ref",
+      "type": "string",
+      "description": "Empresa",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "branch_ref",
+      "type": "string",
+      "description": "Sede",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "company_supplier_ref",
+      "type": "string",
+      "description": "Proveedor",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "supplier_payment_condition_ref",
+      "type": "string",
+      "description": "Condición de pago",
+      "constraints": {
+        "maxLength": 120
+      }
+    },
+    {
+      "name": "operation_date",
+      "type": "date",
+      "description": "Fecha de la operación",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "promised_delivery_at",
+      "type": "datetime",
+      "description": "Entrega prometida"
+    },
+    {
+      "name": "supplier_document_number",
+      "type": "string",
+      "description": "Documento del proveedor",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 100
+      }
+    },
+    {
+      "name": "observations",
+      "type": "string",
+      "description": "Observaciones",
+      "constraints": {
+        "maxLength": 2000
+      }
+    }
+  ],
+  "primaryKey": [
+    "purchase_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "company_ref"
+      ],
+      "reference": {
+        "resource": "companies",
+        "fields": [
+          "company_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "branch_ref"
+      ],
+      "reference": {
+        "resource": "branches",
+        "fields": [
+          "branch_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "company_supplier_ref"
+      ],
+      "reference": {
+        "resource": "company_suppliers",
+        "fields": [
+          "company_supplier_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "supplier_payment_condition_ref"
+      ],
+      "reference": {
+        "resource": "supplier_payment_conditions",
+        "fields": [
+          "supplier_payment_condition_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "company_ref",
+      "company_supplier_ref",
+      "supplier_document_number"
+    ]
+  ],
+  "sio": {
+    "service": "purchase",
+    "endpoint": "POST /api/v1/companies/{company_id}/purchases",
+    "contract": "PurchaseCreateIn",
+    "identity": [
+      "company_ref",
+      "company_supplier_ref",
+      "supplier_document_number"
+    ],
+    "rules": [],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

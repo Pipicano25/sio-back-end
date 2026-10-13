@@ -9,7 +9,7 @@ from pydantic import Field
 from product_catalog_service.api.schemas.base import RequestModel, UpdateModel
 from product_catalog_service.api.schemas.product import FIRST_USE_FIELDS
 
-IdentifierType = Literal["GTIN", "EAN", "UPC", "BARCODE", "OTHER"]
+IdentifierType = Literal["GTIN", "EAN", "UPC", "BARCODE", "OTHER", "IUM"]
 
 
 class PresentationCreate(RequestModel):

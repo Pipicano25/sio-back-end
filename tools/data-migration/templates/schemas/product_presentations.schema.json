@@ -1,0 +1,198 @@
+{
+  "name": "product_presentations",
+  "title": "product-catalog · PresentationCreate",
+  "description": "Entidad PresentationCreate de product-catalog. Mismo esquema en Silver y Gold.",
+  "fields": [
+    {
+      "name": "product_presentation_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "product_ref",
+      "type": "string",
+      "description": "Producto",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "code",
+      "type": "string",
+      "description": "Código de la presentación (único por producto)",
+      "constraints": {
+        "maxLength": 120,
+        "pattern": "^[A-Z0-9](?:[A-Z0-9._\\-/ ]*[A-Z0-9])?$",
+        "required": true
+      }
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Nombre",
+      "constraints": {
+        "maxLength": 320,
+        "required": true
+      }
+    },
+    {
+      "name": "packaging_type_code",
+      "type": "string",
+      "description": "Tipo de empaque: catálogo de SIO o packaging_types.csv",
+      "constraints": {
+        "maxLength": 100
+      }
+    },
+    {
+      "name": "base_quantity",
+      "type": "number",
+      "description": "Cantidad en unidad base (> 0)",
+      "constraints": {
+        "minimum": 0,
+        "required": true
+      }
+    },
+    {
+      "name": "content_quantity",
+      "type": "number",
+      "description": "Contenido",
+      "constraints": {
+        "minimum": 0
+      }
+    },
+    {
+      "name": "content_unit_code",
+      "type": "string",
+      "description": "Catálogo global Product Catalog: unidad del contenido",
+      "constraints": {
+        "maxLength": 100
+      }
+    },
+    {
+      "name": "display_order",
+      "type": "integer",
+      "description": "Orden",
+      "constraints": {
+        "minimum": 0,
+        "maximum": 32767
+      }
+    },
+    {
+      "name": "is_base",
+      "type": "boolean",
+      "description": "Presentación base (exactamente una por producto)",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ],
+      "constraints": {
+        "required": true
+      }
+    }
+  ],
+  "primaryKey": [
+    "product_presentation_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "product_ref"
+      ],
+      "reference": {
+        "resource": "products",
+        "fields": [
+          "product_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "product_ref",
+      "code"
+    ]
+  ],
+  "sio": {
+    "service": "product-catalog",
+    "endpoint": "POST /api/v1/products/{product_id}/presentations",
+    "contract": "PresentationCreate",
+    "identity": [
+      "product_ref",
+      "code"
+    ],
+    "rules": [
+      {
+        "type": "positive",
+        "field": "base_quantity"
+      },
+      {
+        "type": "one_true",
+        "field": "is_base",
+        "per": [
+          "product_ref"
+        ],
+        "min": 1,
+        "max": 1,
+        "scope": "products"
+      },
+      {
+        "type": "catalog_or_file",
+        "field": "packaging_type_code",
+        "service": "product-catalog",
+        "path": "/api/v1/packaging-types",
+        "file": "packaging_types",
+        "file_field": "code"
+      },
+      {
+        "type": "catalog",
+        "field": "content_unit_code",
+        "service": "product-catalog",
+        "path": "/api/v1/units-of-measure"
+      }
+    ],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

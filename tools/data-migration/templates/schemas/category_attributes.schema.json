@@ -1,0 +1,145 @@
+{
+  "name": "category_attributes",
+  "title": "product-catalog · CategoryAttributeCreate",
+  "description": "Hace aplicable un atributo a una categoría (RN-10: un valor de atributo solo se admite si es aplicable).",
+  "fields": [
+    {
+      "name": "category_attribute_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "category_ref",
+      "type": "string",
+      "description": "Categoría",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "attribute_definition_ref",
+      "type": "string",
+      "description": "Atributo",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "is_required",
+      "type": "boolean",
+      "description": "Obligatorio en la categoría",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    },
+    {
+      "name": "is_filterable",
+      "type": "boolean",
+      "description": "Filtrable",
+      "trueValues": [
+        "true"
+      ],
+      "falseValues": [
+        "false"
+      ]
+    },
+    {
+      "name": "display_order",
+      "type": "integer",
+      "description": "Orden",
+      "constraints": {
+        "minimum": 0,
+        "maximum": 32767
+      }
+    }
+  ],
+  "primaryKey": [
+    "category_attribute_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "category_ref"
+      ],
+      "reference": {
+        "resource": "categories",
+        "fields": [
+          "category_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "attribute_definition_ref"
+      ],
+      "reference": {
+        "resource": "attribute_definitions",
+        "fields": [
+          "attribute_definition_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "category_ref",
+      "attribute_definition_ref"
+    ]
+  ],
+  "sio": {
+    "service": "product-catalog",
+    "endpoint": "POST /api/v1/categories/{category_id}/attributes",
+    "contract": "CategoryAttributeCreate",
+    "identity": [
+      "category_ref",
+      "attribute_definition_ref"
+    ],
+    "rules": [],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

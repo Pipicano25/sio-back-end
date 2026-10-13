@@ -1,0 +1,186 @@
+{
+  "name": "purchase_sequences",
+  "title": "purchase · SequenceIn",
+  "description": "Sin una secuencia activa aplicable no se confirma una compra (spec 014).",
+  "fields": [
+    {
+      "name": "purchase_sequence_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "company_ref",
+      "type": "string",
+      "description": "Empresa",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "branch_ref",
+      "type": "string",
+      "description": "Sede (opcional)",
+      "constraints": {
+        "maxLength": 120
+      }
+    },
+    {
+      "name": "series_code",
+      "type": "string",
+      "description": "Serie",
+      "constraints": {
+        "pattern": "^[A-Z0-9_-]{1,40}$",
+        "required": true
+      }
+    },
+    {
+      "name": "prefix",
+      "type": "string",
+      "description": "Prefijo",
+      "constraints": {
+        "pattern": "^[A-Z0-9]{1,20}$",
+        "required": true
+      }
+    },
+    {
+      "name": "separator",
+      "type": "string",
+      "description": "Separador (- / . _ o vacío)",
+      "constraints": {
+        "enum": [
+          "-",
+          "/",
+          ".",
+          "_"
+        ]
+      }
+    },
+    {
+      "name": "initial_number",
+      "type": "integer",
+      "description": "Número inicial",
+      "constraints": {
+        "minimum": 1,
+        "required": true
+      }
+    },
+    {
+      "name": "maximum_number",
+      "type": "integer",
+      "description": "Número máximo",
+      "constraints": {
+        "minimum": 1
+      }
+    },
+    {
+      "name": "number_length",
+      "type": "integer",
+      "description": "Longitud",
+      "constraints": {
+        "minimum": 1,
+        "maximum": 18,
+        "required": true
+      }
+    },
+    {
+      "name": "reset_policy",
+      "type": "string",
+      "description": "Reinicio",
+      "constraints": {
+        "enum": [
+          "NEVER",
+          "YEARLY",
+          "MONTHLY"
+        ],
+        "required": true
+      }
+    }
+  ],
+  "primaryKey": [
+    "purchase_sequence_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "company_ref"
+      ],
+      "reference": {
+        "resource": "companies",
+        "fields": [
+          "company_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "branch_ref"
+      ],
+      "reference": {
+        "resource": "branches",
+        "fields": [
+          "branch_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "company_ref",
+      "branch_ref",
+      "series_code"
+    ]
+  ],
+  "sio": {
+    "service": "purchase",
+    "endpoint": "POST /api/v1/companies/{company_id}/purchase-sequences",
+    "contract": "SequenceIn",
+    "identity": [
+      "company_ref",
+      "branch_ref",
+      "series_code"
+    ],
+    "rules": [],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

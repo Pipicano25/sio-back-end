@@ -1,0 +1,156 @@
+{
+  "name": "price_list_items",
+  "title": "commercial-relationship · PriceListItemCreate",
+  "description": "La API no tiene restricción única: la unicidad se exige aquí para no duplicar precios en una recarga.",
+  "fields": [
+    {
+      "name": "price_list_item_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID existente en SIO, verificado por API. Vacío si aún no existe. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "price_list_ref",
+      "type": "string",
+      "description": "Lista",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "company_product_ref",
+      "type": "string",
+      "description": "Producto de empresa",
+      "constraints": {
+        "maxLength": 120,
+        "required": true
+      }
+    },
+    {
+      "name": "company_product_presentation_ref",
+      "type": "string",
+      "description": "Presentación de empresa",
+      "constraints": {
+        "maxLength": 120
+      }
+    },
+    {
+      "name": "unit_price",
+      "type": "number",
+      "description": "Precio unitario real (nunca 0 por ausencia de dato)",
+      "constraints": {
+        "minimum": 0,
+        "required": true
+      }
+    },
+    {
+      "name": "valid_from",
+      "type": "datetime",
+      "description": "Vigente desde"
+    },
+    {
+      "name": "valid_to",
+      "type": "datetime",
+      "description": "Vigente hasta"
+    }
+  ],
+  "primaryKey": [
+    "price_list_item_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "price_list_ref"
+      ],
+      "reference": {
+        "resource": "price_lists",
+        "fields": [
+          "price_list_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "company_product_ref"
+      ],
+      "reference": {
+        "resource": "company_products",
+        "fields": [
+          "company_product_ref"
+        ]
+      }
+    },
+    {
+      "fields": [
+        "company_product_presentation_ref"
+      ],
+      "reference": {
+        "resource": "company_product_presentations",
+        "fields": [
+          "company_product_presentation_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "price_list_ref",
+      "company_product_ref",
+      "company_product_presentation_ref",
+      "valid_from"
+    ]
+  ],
+  "sio": {
+    "service": "commercial-relationship",
+    "endpoint": "POST /api/v1/companies/{company_id}/price-list-items",
+    "contract": "PriceListItemCreate",
+    "identity": [
+      "price_list_ref",
+      "company_product_ref",
+      "company_product_presentation_ref",
+      "valid_from"
+    ],
+    "rules": [],
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+  }
+}

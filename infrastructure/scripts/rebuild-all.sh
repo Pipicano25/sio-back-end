@@ -122,6 +122,11 @@ for file in "$STACKS_DIR"/*.yaml; do
     [ -f "$file" ] && PROJECTS+=("$(basename "$file" .yaml)")
 done
 
+# Proyectos cuyos volúmenes nunca se borran, ni siquiera con --full: el almacenamiento de
+# objetos (imágenes de producto) solo se vacía con una operación explícita propia.
+PRESERVED_VOLUME_PROJECTS=(object-storage)
+OBJECT_STORAGE_SKIPPED=false
+
 # --- Registro de lo realizado (para el resumen final) -----------------------
 CURRENT_STEP=""
 STEP_START=0
@@ -214,6 +219,14 @@ confirm() {
 
 # shellcheck disable=SC1090
 set -a; . "$ENV_FILE"; set +a
+
+# El almacenamiento de objetos exige credenciales propias en .env; sin ellas se omite (aviso).
+if [ -z "${MINIO_ROOT_USER:-}" ] || [ -z "${MINIO_ROOT_PASSWORD:-}" ]; then
+    for i in "${!PROJECTS[@]}"; do
+        [ "${PROJECTS[$i]}" = object-storage ] && unset 'PROJECTS[i]' && OBJECT_STORAGE_SKIPPED=true
+    done
+    PROJECTS=("${PROJECTS[@]}")
+fi
 # Un COMPOSE_PROJECT_NAME heredado (p. ej. de un .env anterior) no debe
 # imponerse sobre el "name:" de cada archivo.
 unset COMPOSE_PROJECT_NAME
@@ -499,10 +512,14 @@ else
 fi
 for project in "${PROJECTS[@]:1}" "$INFRA_PROJECT"; do
     echo "--- $project"
-    compose "$project" down "${DOWN_ARGS[@]}"
+    if [[ " ${PRESERVED_VOLUME_PROJECTS[*]} " == *" $project "* ]]; then
+        compose "$project" down --remove-orphans   # nunca --volumes
+    else
+        compose "$project" down "${DOWN_ARGS[@]}"
+    fi
 done
 if [ "$MODE" = full ]; then
-    note "Volúmenes de todos los proyectos eliminados (información anterior borrada)"
+    note "Volúmenes eliminados (información anterior borrada), excepto: ${PRESERVED_VOLUME_PROJECTS[*]}"
 else
     note "Volúmenes conservados: la información anterior se mantiene"
 fi
@@ -549,7 +566,14 @@ step "Levantando el resto de servicios y esperando healthchecks"
 for project in "${PROJECTS[@]}"; do
     echo "--- $project"
     compose "$project" up -d --wait
+    if [ "$project" = object-storage ]; then
+        # Bootstrap idempotente: bucket privado, políticas y cuentas de mínimo privilegio.
+        compose "$project" run --rm object-storage-bootstrap
+    fi
 done
+if [ "$OBJECT_STORAGE_SKIPPED" = true ]; then
+    note "Almacenamiento de objetos omitido: defina MINIO_ROOT_USER, MINIO_ROOT_PASSWORD y las cuentas *_ASSET_STORAGE_* en $ENV_FILE"
+fi
 
 # --- Migraciones ----------------------------------------------------------------
 # Revisión de Alembic vigente de un servicio ("ninguna" si la base está vacía).

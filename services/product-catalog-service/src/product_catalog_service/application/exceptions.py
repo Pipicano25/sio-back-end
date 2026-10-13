@@ -188,6 +188,18 @@ class BarcodeIsGtinError(DomainError):
     title = "El código debe registrarse con su tipo GTIN, EAN o UPC"
 
 
+class InvalidIumFormatError(DomainError):
+    code = "INVALID_IUM_FORMAT"
+    status_code = 422
+    title = "Formato IUM inválido"
+
+
+class IumRequiresPresentationError(DomainError):
+    code = "IUM_REQUIRES_PRESENTATION"
+    status_code = 422
+    title = "El IUM debe asociarse a una presentación"
+
+
 class PresentationOfOtherProductError(DomainError):
     code = "PRESENTATION_OF_OTHER_PRODUCT"
     status_code = 422
@@ -279,6 +291,16 @@ class DependencyUnavailableError(DomainError):
     code = "DEPENDENCY_UNAVAILABLE"
     status_code = 503
     title = "Dependencia no disponible"
+
+
+class AssetContentNotStoredError(DomainError):
+    code = "ASSET_CONTENT_NOT_STORED"
+    status_code = 409
+    title = "El contenido del activo no está en el almacenamiento de SIO"
+
+
+class AssetStorageUnavailableError(Exception):
+    """El almacenamiento de objetos no respondió de forma utilizable (lo emite el adaptador)."""
 
 
 class ManufacturerDirectoryUnavailableError(Exception):

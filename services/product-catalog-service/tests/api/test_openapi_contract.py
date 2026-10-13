@@ -97,6 +97,7 @@ EXPECTED = (
         ("POST", f"{P}/products/{{product_id}}/assets/{{asset_id}}/set-primary"),
         ("POST", f"{P}/products/{{product_id}}/assets/{{asset_id}}/deactivate"),
         ("POST", f"{P}/products/{{product_id}}/assets/{{asset_id}}/reactivate"),
+        ("GET", f"{P}/products/{{product_id}}/assets/{{asset_id}}/content"),
         # Primer uso §6.8
         ("POST", f"{P}/products/{{product_id}}/first-use"),
         ("POST", f"{P}/products/{{product_id}}/first-use/manual"),
