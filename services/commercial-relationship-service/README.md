@@ -3,7 +3,7 @@
 Microservicio de SIO que es la **fuente de verdad de la relación comercial de cada empresa** con
 productos, clientes y proveedores (Fase A, núcleo) y de su configuración comercial: presentaciones,
 productos de proveedor, condiciones de pago y listas de precios (Fase B, producto comercial). Guarda solo
-lo que pertenece a la empresa (códigos internos, nombres visibles, precios, costos, banderas, vigencias,
+lo que pertenece a la empresa (códigos internos, nombres visibles, precios por presentación, banderas, vigencias,
 estado); la identidad del producto, de la presentación, de la persona, de la organización y del tipo de
 condición de pago vive en su servicio dueño y aquí solo se guarda su UUID.
 
@@ -231,11 +231,17 @@ base detenida: `docker start sio-commercial-relationship-db`.
   Un precio en vigencia no se reescribe: solo se cierra o pospone su fin, se inactiva o se cambia con
   `POST /api/v1/price-list-items/{id}/change-price`, que cierra el vigente y crea el nuevo en una operación.
 - Precio aplicable: `POST /api/v1/companies/{company_id}/applicable-prices/resolve` con hasta 100 líneas;
-  usa la lista indicada o la predeterminada en la moneda del producto, el precio de la presentación o el
-  general del producto y, **solo si no se indicó lista**, `sale_price` como respaldo.
-- Importes: entrada como número o cadena; salida siempre como cadena decimal (`sale_price` con 2
-  decimales, `reference_cost` con 4). `currency_code` ISO 4217 de la lista soportada; en las monedas sin
-  decimales (`CLP`, `PYG`, `JPY`, `KRW`) un `sale_price` con fracción → `422 PRICE_SCALE_NOT_ALLOWED`.
+  cada línea indica su presentación (spec 019) y se usa **solo** el precio explícito de esa presentación en
+  la lista indicada o en la predeterminada vigente de la moneda del producto. Sin él: `NO_PRICE_IN_LIST`
+  (o `NO_APPLICABLE_PRICE_LIST` si no hay lista predeterminada vigente). No hay precios generales por
+  producto, respaldos ni conversiones entre presentaciones.
+- Producto empresarial sin precio ni costo (spec 019, migración `0004`): `sale_price` y `reference_cost`
+  no existen; enviarlos responde `422 VALIDATION_ERROR`. Los costos vienen de las compras e Inventory.
+- Precios de lista: `company_product_presentation_id` obligatorio; un precio anterior sin presentación se
+  conserva y se puede consultar o inactivar, pero `change-price` responde `422 PRICE_ITEM_WITHOUT_PRESENTATION`.
+- Importes: entrada como número o cadena; salida siempre como cadena decimal. `currency_code` ISO 4217 de
+  la lista soportada; en las monedas sin decimales (`CLP`, `PYG`, `JPY`, `KRW`) un `unit_price` con
+  fracción → `422 PRICE_SCALE_NOT_ALLOWED`.
 - Adopción: el producto global debe existir, estar `ACTIVE` y ser elegible; el primer uso se registra
   en Product Catalog antes de guardar. Un producto se adopta una sola vez por empresa (en cualquier
   estado: si está inactivo, se reactiva).

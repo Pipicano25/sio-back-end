@@ -19,7 +19,7 @@ from tests.examples.spec_common import (
 
 PRODUCT_SHOW = [
     "id", "global_product_id", "internal_code", "reference_code", "display_name", "short_name",
-    "sale_price", "currency_code", "reference_cost", "inventory_control_enabled", "lot_tracking_enabled",
+    "currency_code", "inventory_control_enabled", "lot_tracking_enabled",
     "expiration_tracking_enabled", "is_purchasable", "is_sellable", "status", "version",
 ]
 ERROR_SHOW = ["status", "code", "detail", "errors"]
@@ -106,8 +106,8 @@ EX1 = dict(
                           "`Código` 000045 → `internal_code`; `Referencia` 48691 → `reference_code`.",
                           "`Maneja Lotes` = S y `Maneja Fecha Vencimiento` = S → ambas banderas en `true`; exigen "
                           "`inventory_control_enabled` (`Control Inventario` = S).",
-                          "Sin `sale_price` ni `reference_cost`: el Excel los trae vacíos; quedan en `0`. Los importes se "
-                          "devuelven como **texto decimal** (`\"0.00\"`), nunca como número.",
+                          "El producto de la empresa no tiene precio ni costo (spec 019): los precios de venta se registran "
+                          "en las listas, por presentación, y los costos vienen de las compras y de Inventory.",
                           "El servicio comprueba que el producto global esté `ACTIVE` y completo y registra su primer "
                           "uso en Product Catalog **antes** de guardar.",
                       ],
@@ -167,9 +167,9 @@ EX1 = dict(
                       why=["Con el `Código` 015721 de la fila 11499 la adopción procede."],
                       save={"CP_WINNY": "id"}, show=["id", "internal_code", "status"]),
              ]),
-        step("05-precio-y-moneda.md", "Cambiar precio y moneda",
-             "Mostrar los decimales de cada moneda (precio **ficticio**).", [
-                 call("Fijar un precio en pesos chilenos con decimales (rechazado)", "PUT",
+        step("05-precio-y-moneda.md", "Cambiar la moneda (sin precio en el producto)",
+             "El producto de la empresa no admite precio ni costo (spec 019); la moneda sí se cambia.", [
+                 call("Intentar fijar un precio en el producto (rechazado)", "PUT",
                       f"{API}/company-products/<CP_AGUJA>",
                       body={"internal_code": "000537", "reference_code": "71430",
                             "display_name": "AGUJA 18GX1 1/2 CAJAX100 RFZC18B RYMCO", "short_name": "AGUJA 18GX1 1/2",
@@ -178,19 +178,19 @@ EX1 = dict(
                             "expiration_tracking_enabled": True, "is_purchasable": True, "is_sellable": True,
                             "version": 1},
                       why=["El `PUT` reemplaza todos los campos modificables y exige la `version` vigente.",
-                           "`CLP` no usa decimales (ISO 4217): `1500.50` → `422 PRICE_SCALE_NOT_ALLOWED`, sin redondear."],
+                           "`sale_price` y `reference_cost` ya no existen (spec 019): enviarlos responde "
+                           "`422 VALIDATION_ERROR`, aunque sean `0`. El precio se registra en una lista, por presentación."],
                       expect=422, show=ERROR_SHOW),
-                 call("Fijar el precio sin decimales", "PUT", f"{API}/company-products/<CP_AGUJA>",
+                 call("Cambiar la moneda", "PUT", f"{API}/company-products/<CP_AGUJA>",
                       body={"internal_code": "000537", "reference_code": "71430",
                             "display_name": "AGUJA 18GX1 1/2 CAJAX100 RFZC18B RYMCO", "short_name": "AGUJA 18GX1 1/2",
-                            "sale_price": "1500", "currency_code": "clp", "reference_cost": "820.5",
+                            "currency_code": "clp",
                             "inventory_control_enabled": True, "lot_tracking_enabled": True,
                             "expiration_tracking_enabled": True, "is_purchasable": True, "is_sellable": True,
                             "version": 1},
-                      why=["`clp` se normaliza a `CLP`. El precio se devuelve como `\"1500.00\"` (escala de la columna) "
-                           "y el costo de referencia con 4 decimales (`\"820.5000\"`).",
+                      why=["`clp` se normaliza a `CLP`; la moneda elige la lista de precios predeterminada.",
                            "El `PUT` no consulta Product Catalog y la versión sube a 2."],
-                      show=["id", "sale_price", "currency_code", "reference_cost", "version"]),
+                      show=["id", "currency_code", "version"]),
              ]),
         step("06-consultar-y-estados.md", "Consultar, inactivar y reactivar",
              "Ver el listado, la consulta por lotes y el ciclo de vida.", [

@@ -132,11 +132,15 @@ def test_c09_person_customer(world, clients, journal):
 @pytest.mark.items(6, 7)
 @pytest.mark.evidence("C-10", "C-11")
 def test_c10_c11_products_adopted_with_presentation(world, clients, journal):
-    for letter, price in (("a", "1600.00"), ("b", "7000.00")):
+    for letter in ("a", "b"):
         product = get(clients, "admin.test", "commercial-relationship", f"/company-products/{world[f'producto_empresa_{letter}']}", f"C-11.producto_{letter}")
         check(journal, f"C-11.producto_{letter}", "estado", "ACTIVE", product["status"])
         check(journal, f"C-11.producto_{letter}", "control de inventario", True, product["inventory_control_enabled"])
-        check(journal, f"C-11.producto_{letter}", "sale_price", price, product["sale_price"])
+        check(journal, f"C-11.producto_{letter}", "sin precio ni costo (spec 019)", True,
+              "sale_price" not in product and "reference_cost" not in product)
+        base = get(clients, "admin.test", "commercial-relationship",
+                   f"/company-product-presentations/{world[f'presentacion_base_empresa_{letter}']}", f"C-11.base_{letter}")
+        check(journal, f"C-11.base_{letter}", "presentación global", world[f"presentacion_base_{letter}"], base["global_product_presentation_id"])
         global_product = get(clients, "admin.test", "product-catalog", f"/products/{world[f'producto_{letter}']}", f"C-10.producto_{letter}")
         assert global_product.get("first_used_at"), f"C-11.producto_{letter}: el producto global no registró su primer uso"
     box = get(clients, "admin.test", "product-catalog", f"/presentations/{world['presentacion_caja_a']}", "C-10.caja_a")
@@ -154,7 +158,7 @@ def test_c12_price_lists_and_items(world, clients, journal):
     check(journal, "C-12.lista_general", "predeterminada", True, general["is_default"])
     mayorista = get(clients, "admin.test", "commercial-relationship", f"/price-lists/{world['lista_mayorista']}", "C-12.lista_mayorista")
     check(journal, "C-12.lista_mayorista", "predeterminada", False, mayorista["is_default"])
-    for item, price in (("item_general", "1500.00"), ("item_mayorista", "16000.00")):
+    for item, price in (("item_general", "1500.00"), ("item_b", "7000.00"), ("item_mayorista", "16000.00")):
         body = get(clients, "admin.test", "commercial-relationship", f"/price-list-items/{world[item]}", f"C-12.{item}")
         check(journal, f"C-12.{item}", "precio", price, body["unit_price"])
         check(journal, f"C-12.{item}", "moneda", "COP", body["currency_code"])
@@ -227,7 +231,7 @@ def test_p03_inventory_after_purchases(world, journal):
 # --- ventas (V-01..V-07; ítems 13–18) -----------------------------------------------------------------
 @pytest.mark.items(13)
 @pytest.mark.evidence("V-01")
-def test_v01_register_sales_with_three_price_mechanisms(world, journal, timer):
+def test_v01_register_sales_with_presentation_prices(world, journal, timer):
     with timer.measure("recorrido.ventas"):
         for number in ("1", "2", "3", "4", "5", "6", "7"):
             body = run(world, f"V-01.V{number}").body
@@ -240,9 +244,9 @@ def test_v01_register_sales_with_three_price_mechanisms(world, journal, timer):
     check(journal, "V-01.V2", "precio (lista predeterminada GENERAL)", D("1500"), dec(v2["unit_price"]))
     check(journal, "V-01.V2", "lista resuelta", world["lista_general"], v2["price_list_id"])
     check(journal, "V-01.V2", "lista no pedida", False, v2["price_list_requested"])
-    check(journal, "V-01.V3", "precio (sale_price)", D("7000"), dec(v3["unit_price"]))
-    check(journal, "V-01.V3", "origen del precio", "COMPANY_PRODUCT_SALE_PRICE", v3["price_source"])
-    check(journal, "V-01.V3", "sin lista", None, v3["price_list_id"])
+    check(journal, "V-01.V3", "precio (unidad de B en GENERAL)", D("7000"), dec(v3["unit_price"]))
+    check(journal, "V-01.V3", "origen del precio", "PRICE_LIST_ITEM", v3["price_source"])
+    check(journal, "V-01.V3", "ítem de lista", world["item_b"], v3["price_list_item_id"])
     check(journal, "V-01.V1", "origen del precio", "PRICE_LIST_ITEM", v1["price_source"])
 
 

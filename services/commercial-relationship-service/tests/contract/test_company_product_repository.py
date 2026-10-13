@@ -21,8 +21,6 @@ def _fields(company_id, product_id=None, code="000045"):
         "internal_code": code,
         "display_name": "Producto",
         "currency_code": "COP",
-        "sale_price": Decimal("10.00"),
-        "reference_cost": Decimal("1.0000"),
         "created_by": "sub",
         "updated_by": "sub",
     }

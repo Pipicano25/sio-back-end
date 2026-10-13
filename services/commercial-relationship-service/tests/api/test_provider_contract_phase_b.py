@@ -138,7 +138,8 @@ def test_presentation_batch_lookup(as_user, company, other_company, fake_catalog
 def test_applicable_price_with_technical_identity(company, resources, no_members, as_token, service_token, fake_oc):
     response = as_token(service_token(READ["price"], LOOKUP)).post(
         f"/api/v1/companies/{company}/applicable-prices/resolve",
-        json={"lines": [{"company_product_id": resources["product"]["id"], "price_list_id": resources["price_list"]["id"]}]},
+        json={"lines": [{"company_product_id": resources["product"]["id"], "price_list_id": resources["price_list"]["id"],
+                         "company_product_presentation_id": resources["presentation"]["id"]}]},
     )
     assert response.status_code == 200, response.text
     assert response.json()["items"][0]["resolution"] == "PRICE_LIST_ITEM"

@@ -21,7 +21,7 @@ from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from dotenv import load_dotenv
 
@@ -42,7 +42,7 @@ from sqlalchemy.exc import SQLAlchemyError  # noqa: E402
 
 from sales_service.config import Settings  # noqa: E402
 from sales_service.main import create_app  # noqa: E402
-from tests.fakes import Fakes, build_fakes  # noqa: E402
+from tests.fakes import UNIT_PRESENTATION_OF, Fakes, build_fakes  # noqa: E402
 
 TEST_ISSUER = "https://keycloak.test/realms/sio"
 TEST_AUDIENCE = "sio-api"
@@ -421,7 +421,14 @@ def sale_body(world, *lines: dict[str, Any], **header: Any) -> dict[str, Any]:
 
 
 def line(product, quantity: str = "2", **extra: Any) -> dict[str, Any]:
+    """Línea de venta; sin presentación indicada usa la de factor 1 del producto (spec 019).
+
+    `company_product_presentation_id=None` la omite (para probar el rechazo).
+    """
     body: dict[str, Any] = {"company_product_id": str(product), "quantity": quantity}
+    presentation = extra.pop("company_product_presentation_id", UNIT_PRESENTATION_OF.get(UUID(str(product)), uuid4()))
+    if presentation is not None:
+        body["company_product_presentation_id"] = str(presentation)
     body.update({key: str(value) if hasattr(value, "hex") else value for key, value in extra.items()})
     return body
 

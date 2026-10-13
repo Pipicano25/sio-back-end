@@ -44,12 +44,6 @@ ReferenceCode = Annotated[
 ShortName = Annotated[Annotated[str, Field(max_length=160)] | None, BeforeValidator(_blank_to_none)]
 CurrencyCode = Annotated[str, BeforeValidator(_strip), Field(min_length=1, max_length=10)]
 BlockReason = Annotated[str, BeforeValidator(_strip), Field(min_length=1, max_length=500)]
-SalePriceIn = Annotated[
-    Decimal, BeforeValidator(_reject_bool), Field(ge=0, max_digits=18, decimal_places=2)
-]
-ReferenceCostIn = Annotated[
-    Decimal, BeforeValidator(_reject_bool), Field(ge=0, max_digits=18, decimal_places=4)
-]
 Version = Annotated[int, Field(ge=1)]
 
 
@@ -58,8 +52,6 @@ def _money(places: int):
     return PlainSerializer(lambda value: format(Decimal(value).quantize(quantum), "f"), return_type=str)
 
 
-SalePriceOut = Annotated[Decimal, _money(2)]
-ReferenceCostOut = Annotated[Decimal, _money(4)]
 
 # ---------------------------------------------------------------- Fase B (010)
 

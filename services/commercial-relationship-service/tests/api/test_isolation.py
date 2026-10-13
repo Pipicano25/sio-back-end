@@ -66,7 +66,8 @@ def _call(client, route, url, body, resources=None):
         return client.get(url)
     if route.target == "resolve" and resources is not None and body is None:
         # Lectura con cuerpo (precio aplicable, FR-055).
-        body = {"lines": [{"company_product_id": resources["product"]["id"]}]}
+        body = {"lines": [{"company_product_id": resources["product"]["id"],
+                           "company_product_presentation_id": resources["presentation"]["id"]}]}
     return client.request(route.method, url, json=body)
 
 
@@ -193,8 +194,10 @@ def test_body_references_of_other_company_are_not_found(as_user, company, other_
         ("supplier-payment-conditions", {"company_supplier_id": foreign_supplier["id"], "currency_code": "COP",
                                          "payment_condition_type_id": str(fake_payment.id_of("CASH"))}, "COMPANY_SUPPLIER_NOT_FOUND"),
         ("price-list-items", {"price_list_id": foreign_list["id"], "company_product_id": resources["product"]["id"],
+                              "company_product_presentation_id": resources["presentation"]["id"],
                               "unit_price": "1"}, "PRICE_LIST_NOT_FOUND"),
         ("price-list-items", {"price_list_id": resources["price_list"]["id"], "company_product_id": foreign_product["id"],
+                              "company_product_presentation_id": resources["presentation"]["id"],
                               "unit_price": "1"}, "COMPANY_PRODUCT_NOT_FOUND"),
     )
 
@@ -211,7 +214,7 @@ def test_applicable_price_hides_products_of_other_company(as_user, company, othe
 
     response = admin.post(
         f"/api/v1/companies/{company}/applicable-prices/resolve",
-        json={"lines": [{"company_product_id": foreign_product["id"]}]},
+        json={"lines": [{"company_product_id": foreign_product["id"], "company_product_presentation_id": str(uuid4())}]},
     )
     assert response.status_code == 200
     [line] = response.json()["items"]

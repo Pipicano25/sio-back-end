@@ -130,6 +130,17 @@ class ValidityInvalidError(CommercialRelationshipError):
     default_message = "El fin de la vigencia debe ser posterior a su inicio."
 
 
+class PriceItemWithoutPresentationError(CommercialRelationshipError):
+    """`change-price` sobre un precio anterior sin presentación (spec 019, FR-019-04)."""
+
+    code = "PRICE_ITEM_WITHOUT_PRESENTATION"
+    title = "Precio sin presentación"
+    default_message = (
+        "Este precio no pertenece a una presentación: desde la spec 019 todo precio es de una presentación. "
+        "Regístrelo para la presentación que corresponda; este solo puede consultarse o inactivarse."
+    )
+
+
 class PriceInEffectNotModifiableError(CommercialRelationshipError):
     """Cambio de `unit_price` o `valid_from` en un precio en vigencia (FR-054, DS-08)."""
 

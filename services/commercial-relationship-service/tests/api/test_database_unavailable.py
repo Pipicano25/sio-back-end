@@ -179,7 +179,8 @@ def test_phase_b_routes_respond_controlled_503_and_recover(app, admin, company, 
         ("POST", f"/api/v1/price-lists/{price_list['id']}/deactivate", {"version": 1}),
         ("GET", f"/api/v1/price-list-items/{price['id']}", None),
         ("POST", f"/api/v1/price-list-items/{price['id']}/change-price", {"unit_price": "1", "version": 1}),
-        ("POST", f"/api/v1/companies/{company}/applicable-prices/resolve", {"lines": [{"company_product_id": product["id"]}]}),
+        ("POST", f"/api/v1/companies/{company}/applicable-prices/resolve",
+         {"lines": [{"company_product_id": product["id"], "company_product_presentation_id": presentation["id"]}]}),
     ]
 
     with database_down(app):
@@ -194,6 +195,7 @@ def test_phase_b_routes_respond_controlled_503_and_recover(app, admin, company, 
     assert admin.get(f"/api/v1/company-product-presentations/{presentation['id']}").json()["status"] == "ACTIVE"
     resolved = admin.post(
         f"/api/v1/companies/{company}/applicable-prices/resolve",
-        json={"lines": [{"company_product_id": product["id"], "price_list_id": price_list["id"]}]},
+        json={"lines": [{"company_product_id": product["id"], "price_list_id": price_list["id"],
+                         "company_product_presentation_id": presentation["id"]}]},
     )
     assert resolved.status_code == 200 and resolved.json()["items"][0]["resolution"] == "PRICE_LIST_ITEM"

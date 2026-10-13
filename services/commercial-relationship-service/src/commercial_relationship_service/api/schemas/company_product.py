@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -13,10 +12,6 @@ from commercial_relationship_service.api.schemas.common import (
     DisplayName,
     InternalCode,
     ReferenceCode,
-    ReferenceCostIn,
-    ReferenceCostOut,
-    SalePriceIn,
-    SalePriceOut,
     ShortName,
     StrictModel,
     UpdateModel,
@@ -24,16 +19,14 @@ from commercial_relationship_service.api.schemas.common import (
 
 
 class CompanyProductCreate(StrictModel):
-    """Adopción (FR-010). Los valores por defecto son los de `data-model.md`."""
+    """Adopción (FR-010). Sin precio ni costo (spec 019): enviarlos responde `422`."""
 
     global_product_id: UUID
     internal_code: InternalCode
     reference_code: ReferenceCode = None
     display_name: DisplayName
     short_name: ShortName = None
-    sale_price: SalePriceIn = Decimal("0")
     currency_code: CurrencyCode
-    reference_cost: ReferenceCostIn = Decimal("0")
     inventory_control_enabled: bool = True
     lot_tracking_enabled: bool = False
     expiration_tracking_enabled: bool = False
@@ -50,9 +43,7 @@ class CompanyProductUpdate(UpdateModel):
     reference_code: ReferenceCode = None
     display_name: DisplayName
     short_name: ShortName = None
-    sale_price: SalePriceIn
     currency_code: CurrencyCode
-    reference_cost: ReferenceCostIn
     inventory_control_enabled: bool
     lot_tracking_enabled: bool
     expiration_tracking_enabled: bool
@@ -68,9 +59,7 @@ class CompanyProductResponse(AuditedResponse):
     reference_code: str | None
     display_name: str
     short_name: str | None
-    sale_price: SalePriceOut
     currency_code: str
-    reference_cost: ReferenceCostOut
     inventory_control_enabled: bool
     lot_tracking_enabled: bool
     expiration_tracking_enabled: bool
@@ -94,7 +83,6 @@ class BatchLookupItem(BaseModel):
     internal_code: str | None = None
     display_name: str | None = None
     currency_code: str | None = None
-    sale_price: SalePriceOut | None = None
     inventory_control_enabled: bool | None = None
     lot_tracking_enabled: bool | None = None
     expiration_tracking_enabled: bool | None = None

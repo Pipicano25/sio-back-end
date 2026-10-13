@@ -65,7 +65,8 @@ Spec: `specs/010-commercial-relationship-commercial-product/`.
   de venta por producto, preferido por producto, condición por proveedor y moneda, lista por empresa y
   moneda); productos de proveedor únicos por proveedor + producto + presentación entre las `ACTIVE`;
   precios sin vigencias solapadas (exclusión `btree_gist`), inmutables en vigencia y con `change-price`;
-  precio aplicable con respaldo en `sale_price` solo sin lista explícita.
+  precio aplicable solo con el precio explícito de la presentación (spec 019: sin `sale_price`, sin precios
+  generales por producto ni respaldos).
 - **Contrato Provider ampliado**: `specs/010-commercial-relationship-commercial-product/contracts/commercial-relationship-provider.md`
   (por UUID de las cinco entidades, lotes de presentaciones y precio aplicable por lotes).
 - **Contratos consumidos nuevos**: `presentations/batch-lookup`, `products/{id}` y `first-use` con

@@ -26,7 +26,6 @@ from commercial_relationship_service.application.exceptions import (
 from commercial_relationship_service.domain.errors import (
     CurrencyNotSupportedError,
     InventoryFlagsInvalidError,
-    PriceScaleNotAllowedError,
 )
 from tests.fakes import FakeProductCatalog
 
@@ -61,9 +60,7 @@ def _values(product_id, **overrides):
         "reference_code": None,
         "display_name": "Producto",
         "short_name": None,
-        "sale_price": Decimal("0"),
         "currency_code": "cop",
-        "reference_cost": Decimal("0"),
         "inventory_control_enabled": True,
         "lot_tracking_enabled": False,
         "expiration_tracking_enabled": False,
@@ -90,7 +87,7 @@ def test_happy_path_order_and_defaults():
     assert catalog.first_use_calls == [product]
     assert created["currency_code"] == "COP"
     assert created["created_by"] == created["updated_by"] == "sub-1"
-    assert created["sale_price"] == Decimal("0") and created["reference_cost"] == Decimal("0")
+    assert "sale_price" not in created and "reference_cost" not in created  # spec 019
     assert created["inventory_control_enabled"] and created["is_purchasable"] and created["is_sellable"]
     assert not created["lot_tracking_enabled"] and not created["expiration_tracking_enabled"]
 
@@ -99,7 +96,6 @@ def test_happy_path_order_and_defaults():
     ("overrides", "error"),
     [
         ({"currency_code": "XYZ"}, CurrencyNotSupportedError),
-        ({"currency_code": "CLP", "sale_price": Decimal("1500.50")}, PriceScaleNotAllowedError),
         ({"inventory_control_enabled": False, "lot_tracking_enabled": True}, InventoryFlagsInvalidError),
     ],
 )

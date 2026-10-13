@@ -1,4 +1,4 @@
-# Usuarios y permisos — Ejercicio 4 — Ventas con los tres mecanismos de precio, rechazos, costo FIFO y margen
+# Usuarios y permisos — Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen
 
 [← Orden del ejercicio](ORDEN.md) · [Usuarios y permisos (general)](../usuarios-y-permisos.md)
 

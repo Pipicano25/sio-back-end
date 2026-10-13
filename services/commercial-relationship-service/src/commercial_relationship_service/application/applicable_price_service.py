@@ -1,17 +1,18 @@
-"""Precio aplicable por lotes (FR-055, FR-056; R-10; DS-11; aclaración 2; H-03).
+"""Precio aplicable por lotes (FR-055, FR-056; R-10; DS-11; aclaración 2; H-03; spec 019).
 
-Orden de resolución por línea:
+Orden de resolución por línea (spec 019: el precio siempre es de una presentación):
 
 1. Lista: la indicada (de la empresa, `ACTIVE` y vigente en `at`; si no, la
    línea informa `PRICE_LIST_NOT_APPLICABLE`) o, si no se indica, la
-   predeterminada `ACTIVE` y vigente en la moneda del producto empresarial.
-2. En la lista: el precio de la presentación (`PRESENTATION`) o el general del
-   producto (`BASE_UNIT`).
-3. Sin precio de lista: `CompanyProduct.sale_price` **solo** si no se indicó
-   lista; con lista explícita la línea informa `NO_PRICE_IN_LIST`.
+   predeterminada `ACTIVE` y vigente en la moneda del producto empresarial
+   (si no la hay, `NO_APPLICABLE_PRICE_LIST`).
+2. En la lista: **solo** el precio explícito de la presentación de la línea
+   (`basis = PRESENTATION`). Sin él, `NO_PRICE_IN_LIST`.
 
-No convierte unidades ni monedas, no persiste nada y no juzga la aptitud: el
-consumidor decide con los estados informados.
+No hay precios generales por producto, ni respaldo en el producto empresarial,
+ni conversiones entre presentaciones. Los precios anteriores sin presentación
+se ignoran. No persiste nada y no juzga la aptitud: el consumidor decide con los
+estados informados.
 """
 
 from __future__ import annotations
@@ -28,12 +29,11 @@ from commercial_relationship_service.domain.status import ACTIVE
 from commercial_relationship_service.domain.validity import contains
 
 PRICE_LIST_ITEM = "PRICE_LIST_ITEM"
-COMPANY_PRODUCT_SALE_PRICE = "COMPANY_PRODUCT_SALE_PRICE"
 NO_PRICE_IN_LIST = "NO_PRICE_IN_LIST"
+NO_APPLICABLE_PRICE_LIST = "NO_APPLICABLE_PRICE_LIST"
 PRICE_LIST_NOT_APPLICABLE = "PRICE_LIST_NOT_APPLICABLE"
 NOT_FOUND = "NOT_FOUND"
 PRESENTATION = "PRESENTATION"
-BASE_UNIT = "BASE_UNIT"
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,7 +41,7 @@ class PriceLine:
     """Línea solicitada."""
 
     company_product_id: UUID
-    company_product_presentation_id: UUID | None = None
+    company_product_presentation_id: UUID | None = None  # obligatorio en la API (spec 019)
     price_list_id: UUID | None = None
     line_id: str | None = None
 
@@ -134,40 +134,23 @@ def _resolve_line(line: PriceLine, at: datetime, products, presentations, lists,
         if price_list is not None and not _applicable(price_list, at):
             price_list = None
 
-    if price_list is not None:
-        candidates = []
+    if price_list is None:
+        return ResolvedPrice(line_id=line.line_id, found=True, resolution=NO_APPLICABLE_PRICE_LIST, **states)
 
-        if presentation is not None:
-            candidates.append((presentation.id, PRESENTATION))
+    item = items.get((price_list.id, product.id, presentation.id)) if presentation is not None else None
 
-        candidates.append((None, BASE_UNIT))
-
-        for presentation_id, basis in candidates:
-            item = items.get((price_list.id, product.id, presentation_id))
-
-            if item is not None:
-                return ResolvedPrice(
-                    line_id=line.line_id,
-                    found=True,
-                    resolution=PRICE_LIST_ITEM,
-                    basis=basis,
-                    unit_price=item.unit_price,
-                    currency_code=price_list.currency_code,
-                    price_list_id=price_list.id,
-                    price_list_item_id=item.id,
-                    **states,
-                )
-
-        if explicit:
-            # Aclaración 2: con lista explícita no hay respaldo en `sale_price`.
-            return ResolvedPrice(line_id=line.line_id, found=True, resolution=NO_PRICE_IN_LIST, **states)
+    if item is None:
+        # Spec 019: sin el precio explícito de la presentación no hay precio (ni general ni de respaldo).
+        return ResolvedPrice(line_id=line.line_id, found=True, resolution=NO_PRICE_IN_LIST, **states)
 
     return ResolvedPrice(
         line_id=line.line_id,
         found=True,
-        resolution=COMPANY_PRODUCT_SALE_PRICE,
-        basis=BASE_UNIT,
-        unit_price=product.sale_price,
-        currency_code=product.currency_code,
+        resolution=PRICE_LIST_ITEM,
+        basis=PRESENTATION,
+        unit_price=item.unit_price,
+        currency_code=price_list.currency_code,
+        price_list_id=price_list.id,
+        price_list_item_id=item.id,
         **states,
     )

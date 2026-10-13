@@ -36,7 +36,8 @@ def admin(as_user):
 @pytest.fixture
 def world(admin, company, fake_catalog):
     product = adopt(admin, company, fake_catalog)
-    return {"product": product, "list": create_price_list(admin, company, is_default=True)}
+    presentation = adopt_presentation(admin, company, fake_catalog, product)  # spec 019: precio por presentación
+    return {"product": product, "presentation": presentation, "list": create_price_list(admin, company, is_default=True)}
 
 
 def _post(client, company, body):
@@ -53,7 +54,8 @@ def test_scenarios_5_and_6_overlap_and_contiguous(admin, company, world):
     current = create_price(admin, company, world["list"], world["product"], valid_from=YESTERDAY)
 
     overlap = _post(admin, company, {"price_list_id": world["list"]["id"], "company_product_id": world["product"]["id"],
-                                     "unit_price": "16000", "valid_from": TOMORROW})
+                                     "unit_price": "16000", "valid_from": TOMORROW,
+                                     "company_product_presentation_id": world["presentation"]["id"]})
     assert overlap.status_code == 409 and code_of(overlap) == "PRICE_PERIOD_OVERLAP"
 
     closed = admin.put(f"/api/v1/price-list-items/{current['id']}", json=price_update_body(current, valid_to=TOMORROW))
@@ -123,10 +125,12 @@ def test_scenarios_9_and_10_zero_negative_and_currency_scale(admin, company, wor
     assert create_price(admin, company, world["list"], world["product"], unit_price="0")["unit_price"] == "0.00"
 
     clp = create_price_list(admin, company, code="CLP", currency_code="CLP")
-    response = _post(admin, company, {"price_list_id": clp["id"], "company_product_id": world["product"]["id"], "unit_price": "1500.5"})
+    response = _post(admin, company, {"price_list_id": clp["id"], "company_product_id": world["product"]["id"], "unit_price": "1500.5",
+                                      "company_product_presentation_id": world["presentation"]["id"]})
     assert response.status_code == 422 and code_of(response) == "PRICE_SCALE_NOT_ALLOWED"
 
-    response = _post(admin, company, {"price_list_id": clp["id"], "company_product_id": world["product"]["id"], "unit_price": "-1"})
+    response = _post(admin, company, {"price_list_id": clp["id"], "company_product_id": world["product"]["id"], "unit_price": "-1",
+                                      "company_product_presentation_id": world["presentation"]["id"]})
     assert response.status_code == 422 and code_of(response) == "VALIDATION_ERROR"
 
 
@@ -149,7 +153,8 @@ def test_inactive_list_and_reactivation_overlap(admin, company, world):
     assert response.status_code == 409 and code_of(response) == "PRICE_PERIOD_OVERLAP"
 
     admin.post(f"/api/v1/price-lists/{world['list']['id']}/deactivate", json={"version": 1})
-    response = _post(admin, company, {"price_list_id": world["list"]["id"], "company_product_id": world["product"]["id"], "unit_price": "1"})
+    response = _post(admin, company, {"price_list_id": world["list"]["id"], "company_product_id": world["product"]["id"], "unit_price": "1",
+                                      "company_product_presentation_id": world["presentation"]["id"]})
     assert response.status_code == 422 and code_of(response) == "PRICE_LIST_INACTIVE"
 
 
@@ -175,3 +180,48 @@ def test_permissions(as_user, admin, company, world):
     assert as_user("ventas.test").post(url + "/change-price", json={"unit_price": "1", "version": 1}).status_code == 403
     assert as_user("supervisor.test").post(url + "/deactivate", json={"version": 1}).status_code == 403
     assert as_user("inventario.test").get(URL.format(company=company)).status_code == 403
+
+
+# --- spec 019: precios exclusivamente por presentación ---------------------------------------------------------------
+
+
+def test_price_without_presentation_is_rejected_spec_019(admin, company, world):
+    """FR-019-03: no hay precios generales por producto."""
+    response = _post(admin, company, {"price_list_id": world["list"]["id"], "company_product_id": world["product"]["id"],
+                                      "unit_price": "1500"})
+    assert response.status_code == 422 and code_of(response) == "VALIDATION_ERROR"
+    assert "company_product_presentation_id" in response.text
+    assert admin.get(URL.format(company=company)).json()["total_records"] == 0
+
+
+def test_each_presentation_keeps_its_own_price_spec_019(admin, company, fake_catalog, world):
+    """Dos presentaciones del mismo producto: cada una con su precio; nunca se copia uno a otra."""
+    box = adopt_presentation(admin, company, fake_catalog, world["product"])
+    unit = create_price(admin, company, world["list"], world["product"], unit_price="1500",
+                        company_product_presentation_id=world["presentation"]["id"])
+    boxed = create_price(admin, company, world["list"], world["product"], unit_price="16000",
+                         company_product_presentation_id=box["id"])
+    assert (unit["unit_price"], boxed["unit_price"]) == ("1500.00", "16000.00")
+    assert unit["company_product_presentation_id"] != boxed["company_product_presentation_id"]
+
+
+def test_change_price_of_a_legacy_item_without_presentation_spec_019(admin, company, world, test_engine):
+    """FR-019-04: un precio anterior sin presentación se conserva, pero no se prolonga con change-price."""
+    from uuid import uuid4
+
+    from sqlalchemy import text
+
+    legacy = uuid4()
+    with test_engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO price_list_items (id, company_id, price_list_id, company_product_id, unit_price, valid_from, "
+                "status, created_by, updated_by) VALUES (:id, :company, :list, :product, 1500, now() - interval '1 day', "
+                "'ACTIVE', 'legado', 'legado')"
+            ),
+            {"id": legacy, "company": str(company), "list": world["list"]["id"], "product": world["product"]["id"]},
+        )
+    assert admin.get(f"/api/v1/price-list-items/{legacy}").status_code == 200  # se conserva y se consulta
+    response = admin.post(f"/api/v1/price-list-items/{legacy}/change-price", json={"unit_price": "1600", "version": 1})
+    assert response.status_code == 422 and code_of(response) == "PRICE_ITEM_WITHOUT_PRESENTATION"
+    assert admin.post(f"/api/v1/price-list-items/{legacy}/deactivate", json={"version": 1}).status_code == 200

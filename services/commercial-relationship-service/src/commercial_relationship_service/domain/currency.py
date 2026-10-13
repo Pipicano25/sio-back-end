@@ -46,7 +46,7 @@ def validate_currency(code: str, *, field: str = "currency_code") -> str:
     return normalized
 
 
-def validate_price_scale(price: Decimal, currency_code: str, *, field: str = "sale_price") -> None:
+def validate_price_scale(price: Decimal, currency_code: str, *, field: str = "unit_price") -> None:
     """Exige que el precio no tenga más decimales que los de su moneda (sin redondear).
 
     Raises:
@@ -70,7 +70,7 @@ def currency_places(currency_code: str) -> int:
 def validate_amount_scale(amount: Decimal, currency_code: str, *, field: str) -> None:
     """`unit_price` y `credit_limit`: a lo sumo los decimales de su moneda (DS-10).
 
-    Misma regla que `sale_price` (FR-014a de la 007), sin redondeo silencioso.
+    Regla FR-014a de la 007 (hoy aplicada a los importes, sin redondeo silencioso).
 
     Raises:
         PriceScaleNotAllowedError: Si el importe excede los decimales de la moneda.

@@ -62,11 +62,8 @@ class CompanyProductModel(_Audited, Base):
     reference_code: Mapped[str | None] = mapped_column(String(100))
     display_name: Mapped[str] = mapped_column(String(200), nullable=False)
     short_name: Mapped[str | None] = mapped_column(String(160))
-    sale_price: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False, server_default="0")
+    # Spec 019: sin precio ni costo; `currency_code` elige la lista de precios predeterminada.
     currency_code: Mapped[str] = mapped_column(CHAR(3), nullable=False)
-    reference_cost: Mapped[Decimal] = mapped_column(
-        Numeric(18, 4), nullable=False, server_default="0"
-    )
     inventory_control_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="true"
     )
@@ -94,10 +91,6 @@ class CompanyProductModel(_Audited, Base):
             unique=True,
         ),
         CheckConstraint("status IN ('ACTIVE','INACTIVE')", name="status"),
-        CheckConstraint("sale_price >= 0", name="sale_price_non_negative"),
-        CheckConstraint(
-            "reference_cost >= 0", name="reference_cost_non_negative"
-        ),
         CheckConstraint(
             "currency_code ~ '^[A-Z]{3}$'", name="currency_code_format"
         ),

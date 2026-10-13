@@ -28,7 +28,7 @@ class Data:
     """Repositorio de resolución en memoria (misma forma que `resolution_data`)."""
 
     def __init__(self) -> None:
-        self.product = _row(currency_code="COP", sale_price=Decimal("12000"))
+        self.product = _row(currency_code="COP")  # spec 019: sin sale_price
         self.presentation = _row(company_product_id=self.product.id)
         self.default = _row(currency_code="COP", is_default=True, valid_from=None, valid_to=None)
         self.explicit = _row(currency_code="USD", is_default=False, valid_from=None, valid_to=None)
@@ -68,42 +68,43 @@ def _resolve(data, *lines, at=AT):
     return ApplicablePriceService(data).resolve(COMPANY, list(lines), at=at)[1]
 
 
-def test_presentation_price_then_base_unit_price(data):
+def test_only_the_presentation_price_applies_spec_019(data):
     by_presentation = data.price(data.default, data.presentation, "170000")
-    general = data.price(data.default, None, "15000")
+    data.price(data.default, None, "15000")  # precio anterior sin presentación: se ignora
 
-    with_presentation, without = _resolve(
-        data,
-        PriceLine(data.product.id, data.presentation.id, line_id="1"),
-        PriceLine(data.product.id, line_id="2"),
-    )
+    [line] = _resolve(data, PriceLine(data.product.id, data.presentation.id, line_id="1"))
 
-    assert (with_presentation.resolution, with_presentation.basis, with_presentation.price_list_item_id) == (
-        "PRICE_LIST_ITEM", "PRESENTATION", by_presentation.id)
-    assert (without.resolution, without.basis, without.price_list_item_id) == ("PRICE_LIST_ITEM", "BASE_UNIT", general.id)
-    assert without.currency_code == "COP" and with_presentation.line_id == "1"
+    assert (line.resolution, line.basis, line.price_list_item_id, line.unit_price) == (
+        "PRICE_LIST_ITEM", "PRESENTATION", by_presentation.id, Decimal("170000"))
+    assert line.currency_code == "COP" and line.line_id == "1"
     assert data.calls == 1  # una sola consulta de datos por lote
 
 
-def test_general_price_used_when_presentation_has_none(data):
+def test_general_price_is_never_used_spec_019(data):
     data.price(data.default, None, "15000")
     [line] = _resolve(data, PriceLine(data.product.id, data.presentation.id))
-    assert (line.resolution, line.basis, line.unit_price) == ("PRICE_LIST_ITEM", "BASE_UNIT", Decimal("15000"))
+    assert (line.resolution, line.basis, line.unit_price, line.price_list_item_id) == ("NO_PRICE_IN_LIST", None, None, None)
 
 
-def test_fallback_to_sale_price_only_without_explicit_list(data):
-    [implicit] = _resolve(data, PriceLine(data.product.id))
-    assert (implicit.resolution, implicit.unit_price, implicit.currency_code) == (
-        "COMPANY_PRODUCT_SALE_PRICE", Decimal("12000"), "COP")
+def test_no_fallback_to_the_company_product_spec_019(data):
+    [implicit] = _resolve(data, PriceLine(data.product.id, data.presentation.id))
+    assert (implicit.resolution, implicit.unit_price) == ("NO_PRICE_IN_LIST", None)
 
-    [explicit] = _resolve(data, PriceLine(data.product.id, price_list_id=data.explicit.id))
+    [explicit] = _resolve(data, PriceLine(data.product.id, data.presentation.id, price_list_id=data.explicit.id))
     assert explicit.resolution == "NO_PRICE_IN_LIST" and explicit.unit_price is None  # aclaración 2
 
 
-def test_no_default_list_falls_back(data):
+def test_no_default_list_is_reported_spec_019(data):
     data.default.is_default = False
+    [line] = _resolve(data, PriceLine(data.product.id, data.presentation.id))
+    assert (line.resolution, line.unit_price) == ("NO_APPLICABLE_PRICE_LIST", None)
+
+
+def test_line_without_presentation_has_no_price_spec_019(data):
+    """La API exige la presentación (`422`); el servicio, por si acaso, nunca resuelve un precio sin ella."""
+    data.price(data.default, None, "15000")
     [line] = _resolve(data, PriceLine(data.product.id))
-    assert line.resolution == "COMPANY_PRODUCT_SALE_PRICE"
+    assert (line.resolution, line.unit_price) == ("NO_PRICE_IN_LIST", None)
 
 
 @pytest.mark.parametrize(
@@ -116,12 +117,12 @@ def test_no_default_list_falls_back(data):
 )
 def test_explicit_list_not_applicable(data, mutate):
     mutate(data.explicit)
-    [line] = _resolve(data, PriceLine(data.product.id, price_list_id=data.explicit.id))
+    [line] = _resolve(data, PriceLine(data.product.id, data.presentation.id, price_list_id=data.explicit.id))
     assert line.resolution == "PRICE_LIST_NOT_APPLICABLE" and line.found is True
 
 
 def test_explicit_list_of_other_company_or_missing(data):
-    [line] = _resolve(data, PriceLine(data.product.id, price_list_id=uuid4()))
+    [line] = _resolve(data, PriceLine(data.product.id, data.presentation.id, price_list_id=uuid4()))
     assert line.resolution == "PRICE_LIST_NOT_APPLICABLE"
 
 
@@ -138,8 +139,8 @@ def test_not_found_product_presentation_and_h03(data):
 def test_default_list_out_of_validity_is_ignored(data):
     data.price(data.default)
     data.default.valid_to = AT
-    [line] = _resolve(data, PriceLine(data.product.id))
-    assert line.resolution == "COMPANY_PRODUCT_SALE_PRICE"
+    [line] = _resolve(data, PriceLine(data.product.id, data.presentation.id))
+    assert line.resolution == "NO_APPLICABLE_PRICE_LIST"
 
 
 def test_statuses_reported_and_batch_limit(data):

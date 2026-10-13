@@ -16,6 +16,7 @@ from commercial_relationship_service.domain.errors import (
     PaymentTermsInconsistentError,
     PriceChangeOutOfPeriodError,
     PriceInEffectNotModifiableError,
+    PriceItemWithoutPresentationError,
     PriceScaleNotAllowedError,
     ValidityInvalidError,
 )
@@ -43,6 +44,7 @@ __all__ = [
     "PaymentTermsInconsistentError",
     "PriceChangeOutOfPeriodError",
     "PriceInEffectNotModifiableError",
+    "PriceItemWithoutPresentationError",
     "ValidityInvalidError",
     "CommercialRelationshipError",
     "CompanyInactiveError",

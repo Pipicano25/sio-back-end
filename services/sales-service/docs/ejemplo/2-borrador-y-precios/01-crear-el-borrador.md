@@ -17,13 +17,14 @@ Ejecuta: `ventas.test`.
   "lines": [
     {
       "company_product_id": "d15d0000-0000-4000-8000-000000000001",
-      "quantity": "2",
       "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000001",
+      "quantity": "2",
       "price_list_id": "d15f0000-0000-4000-8000-000000000001",
       "tax_amount": "5700"
     },
     {
       "company_product_id": "d15d0000-0000-4000-8000-000000000002",
+      "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000003",
       "quantity": "3",
       "discount_amount": "300"
     }
@@ -34,7 +35,7 @@ Ejecuta: `ventas.test`.
 ### Por qué
 
 - La primera línea pide la lista mayorista: precio de la caja 16000 (`price_list_requested = true`).
-- La segunda no pide lista: se usa el precio simple del aceite (9000 por unidad base).
+- La segunda no pide lista: se usa el precio de la unidad de aceite en la lista predeterminada GENERAL (9000).
 - Solo contado: `CASH`, sin plazo, `due_date` = `operation_date` = hoy en la zona de la sucursal.
 - El borrador no afecta inventario y no tiene número.
 
@@ -140,15 +141,15 @@ Estado `201`.
       "sale_id": "<VENTA>",
       "line_number": 2,
       "company_product_id": "d15d0000-0000-4000-8000-000000000002",
-      "company_product_presentation_id": null,
-      "price_list_id": null,
-      "price_list_item_id": null,
+      "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000003",
+      "price_list_id": "d15f0000-0000-4000-8000-000000000003",
+      "price_list_item_id": "d15f0000-0000-4000-8000-000000000014",
       "price_list_requested": false,
-      "price_source": "COMPANY_PRODUCT_SALE_PRICE",
+      "price_source": "PRICE_LIST_ITEM",
       "product_code_snapshot": "000046",
       "product_name_snapshot": "Aceite ficticio 1 L",
-      "presentation_code_snapshot": null,
-      "presentation_name_snapshot": null,
+      "presentation_code_snapshot": "UND",
+      "presentation_name_snapshot": "Unidad",
       "base_quantity_factor_snapshot": "1.00000000",
       "unit_code_snapshot": "UND",
       "quantity": "3.0000",

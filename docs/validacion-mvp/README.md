@@ -1,7 +1,7 @@
 # Recorrido del MVP de SIO — guía de validación
 
 Recorrido completo del MVP con los servicios reales: configuración de la empresa → relación comercial y
-precios → compras e inventario → ventas con los tres mecanismos de precio → anulaciones → auditoría →
+precios → compras e inventario → ventas con precio por presentación → anulaciones → auditoría →
 seguridad entre empresas. Cada paso indica el usuario de prueba, el permiso que exige la URL, la petición y
 la respuesta esperada (Principio XXII, feature 017).
 
@@ -35,9 +35,9 @@ impuestos para que costos y márgenes sean exactos (`specs/017-mvp-integral-vali
 | Ejercicio | Llamadas |
 | --- | --- |
 | [1 — Configuración de la empresa: organizaciones, personas, empresas, sucursales y usuarios operativos](1-configuracion/ORDEN.md) | 36 |
-| [2 — Relación comercial y precios: proveedor, cliente, productos, adopción, presentaciones y listas](2-relacion-comercial-y-precios/ORDEN.md) | 20 |
+| [2 — Relación comercial y precios: proveedor, cliente, productos, adopción, presentaciones y listas](2-relacion-comercial-y-precios/ORDEN.md) | 23 |
 | [3 — Compras e inventario: secuencias, compras, confirmación, entradas, saldos, kardex y capas](3-compras-e-inventario/ORDEN.md) | 14 |
-| [4 — Ventas con los tres mecanismos de precio, rechazos, costo FIFO y margen](4-ventas/ORDEN.md) | 29 |
+| [4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen](4-ventas/ORDEN.md) | 29 |
 | [5 — Anulaciones y reversos](5-anulaciones/ORDEN.md) | 14 |
 | [6 — Auditoría del recorrido](6-auditoria/ORDEN.md) | 3 |
 | [7 — Seguridad entre empresas y permisos](7-seguridad/ORDEN.md) | 65 |

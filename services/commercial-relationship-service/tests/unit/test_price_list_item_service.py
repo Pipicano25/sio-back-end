@@ -103,7 +103,7 @@ def _values(world, **overrides):
 def _item(world, valid_from, valid_to=None, unit_price=Decimal("15000"), status="ACTIVE"):
     item = world.repository.build(
         company_id=COMPANY, price_list_id=world.price_list.id, company_product_id=world.product.id,
-        company_product_presentation_id=None, unit_price=unit_price, valid_from=valid_from, valid_to=valid_to,
+        company_product_presentation_id=world.presentation.id, unit_price=unit_price, valid_from=valid_from, valid_to=valid_to,
     )
     item.status = status
     world.repository.model = item

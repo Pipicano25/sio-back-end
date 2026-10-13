@@ -17,6 +17,7 @@ Ejecuta: `ventas.test`.
   "lines": [
     {
       "company_product_id": "d15d0000-0000-4000-8000-000000000001",
+      "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000002",
       "quantity": "4"
     }
   ]
@@ -25,7 +26,7 @@ Ejecuta: `ventas.test`.
 
 ### Por qué
 
-- Precio simple del arroz: 1500.
+- Precio de la unidad de arroz en la lista predeterminada: 1500.
 
 ## Permiso
 
@@ -101,15 +102,15 @@ Estado `201`.
       "sale_id": "<VENTA>",
       "line_number": 1,
       "company_product_id": "d15d0000-0000-4000-8000-000000000001",
-      "company_product_presentation_id": null,
-      "price_list_id": null,
-      "price_list_item_id": null,
+      "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000002",
+      "price_list_id": "d15f0000-0000-4000-8000-000000000003",
+      "price_list_item_id": "d15f0000-0000-4000-8000-000000000013",
       "price_list_requested": false,
-      "price_source": "COMPANY_PRODUCT_SALE_PRICE",
+      "price_source": "PRICE_LIST_ITEM",
       "product_code_snapshot": "000045",
       "product_name_snapshot": "Arroz ficticio 500 g",
-      "presentation_code_snapshot": null,
-      "presentation_name_snapshot": null,
+      "presentation_code_snapshot": "UND",
+      "presentation_name_snapshot": "Unidad",
       "base_quantity_factor_snapshot": "1.00000000",
       "unit_code_snapshot": "UND",
       "quantity": "4.0000",

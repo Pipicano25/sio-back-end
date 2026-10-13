@@ -1,6 +1,6 @@
 # Paso 01 de 08 — Registrar las ventas
 
-Ejercicio 4 — Ventas con los tres mecanismos de precio, rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
+Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
 
 ---
 
@@ -56,6 +56,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_A>",
+      "company_product_presentation_id": "<PRESENTACION_BASE_EMPRESA_A>",
       "quantity": "20"
     }
   ]
@@ -68,7 +69,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Por qué se hace así**
 
-- Sin lista: se aplica la predeterminada GENERAL, 1 500 por unidad
+- Sin lista: se aplica la predeterminada GENERAL, 1 500 la unidad
 
 **Respuesta esperada:** `201`
 
@@ -91,6 +92,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_B>",
+      "company_product_presentation_id": "<PRESENTACION_BASE_EMPRESA_B>",
       "quantity": "4"
     }
   ]
@@ -103,7 +105,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Por qué se hace así**
 
-- Producto B sin precio en listas: `sale_price` 7 000
+- Producto B: precio de su unidad en la lista predeterminada GENERAL, 7 000
 
 **Respuesta esperada:** `201`
 
@@ -126,6 +128,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_A>",
+      "company_product_presentation_id": "<PRESENTACION_BASE_EMPRESA_A>",
       "quantity": "100"
     }
   ]
@@ -161,6 +164,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_A>",
+      "company_product_presentation_id": "<PRESENTACION_BASE_EMPRESA_A>",
       "quantity": "1"
     }
   ]
@@ -196,6 +200,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_A>",
+      "company_product_presentation_id": "<PRESENTACION_BASE_EMPRESA_A>",
       "quantity": "1"
     }
   ]
@@ -231,6 +236,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_B>",
+      "company_product_presentation_id": "<PRESENTACION_BASE_EMPRESA_B>",
       "quantity": "1"
     }
   ]

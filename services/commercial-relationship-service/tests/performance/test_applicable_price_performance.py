@@ -21,7 +21,9 @@ SAMPLES = 30
 
 
 def _load(engine, company):
-    products = [{"id": uuid4(), "company_id": company, "global_product_id": uuid4(), "code": f"{index:06d}"}
+    # Spec 019: cada producto con su presentación unidad; el precio es de la presentación.
+    products = [{"id": uuid4(), "company_id": company, "global_product_id": uuid4(), "code": f"{index:06d}",
+                 "presentation": uuid4(), "global_presentation": uuid4()}
                 for index in range(PRODUCTS)]
     lists = [{"id": uuid4(), "company_id": company, "code": f"L{index}", "is_default": index == 0} for index in range(LISTS)]
 
@@ -30,8 +32,16 @@ def _load(engine, company):
             connection.execute(
                 text(
                     "INSERT INTO company_products (id, company_id, global_product_id, internal_code, display_name, "
-                    "currency_code, sale_price, created_by, updated_by) VALUES "
-                    "(:id, :company_id, :global_product_id, :code, :code, 'COP', 1000, 'perf', 'perf')"
+                    "currency_code, created_by, updated_by) VALUES "
+                    "(:id, :company_id, :global_product_id, :code, :code, 'COP', 'perf', 'perf')"
+                ),
+                products[start : start + 5_000],
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO company_product_presentations (id, company_id, company_product_id, "
+                    "global_product_presentation_id, status, created_by, updated_by) VALUES "
+                    "(:presentation, :company_id, :id, :global_presentation, 'ACTIVE', 'perf', 'perf')"
                 ),
                 products[start : start + 5_000],
             )
@@ -42,18 +52,19 @@ def _load(engine, company):
             ),
             lists,
         )
-        # Un precio general por producto en cada lista para los primeros 5 000 productos (50 000 precios).
+        # Un precio por presentación en cada lista para los primeros 5 000 productos (50 000 precios).
         prices = [
-            {"id": uuid4(), "company_id": company, "list": price_list["id"], "product": product["id"]}
+            {"id": uuid4(), "company_id": company, "list": price_list["id"], "product": product["id"],
+             "presentation": product["presentation"]}
             for price_list in lists
             for product in products[:5_000]
         ]
         for start in range(0, len(prices), 5_000):
             connection.execute(
                 text(
-                    "INSERT INTO price_list_items (id, company_id, price_list_id, company_product_id, unit_price, "
-                    "valid_from, created_by, updated_by) VALUES "
-                    "(:id, :company_id, :list, :product, 1500, '2026-01-01T00:00:00Z', 'perf', 'perf')"
+                    "INSERT INTO price_list_items (id, company_id, price_list_id, company_product_id, "
+                    "company_product_presentation_id, unit_price, valid_from, created_by, updated_by) VALUES "
+                    "(:id, :company_id, :list, :product, :presentation, 1500, '2026-01-01T00:00:00Z', 'perf', 'perf')"
                 ),
                 prices[start : start + 5_000],
             )
@@ -65,7 +76,8 @@ def _load(engine, company):
 
 def test_100_lines_under_one_second_with_at_most_three_queries(test_engine, app, as_user, company):
     products = _load(test_engine, company)
-    lines = [{"company_product_id": str(product["id"])} for product in products[4_950:5_050]]
+    lines = [{"company_product_id": str(product["id"]), "company_product_presentation_id": str(product["presentation"])}
+             for product in products[4_950:5_050]]
     client = as_user("ventas.test")
     url = f"/api/v1/companies/{company}/applicable-prices/resolve"
     body = {"lines": lines, "at": "2026-10-05T12:00:00Z"}
@@ -86,7 +98,7 @@ def test_100_lines_under_one_second_with_at_most_three_queries(test_engine, app,
     assert response.status_code == 200, response.text
     assert len(statements) <= 3, statements
     resolutions = {item["resolution"] for item in response.json()["items"]}
-    assert resolutions == {"PRICE_LIST_ITEM", "COMPANY_PRODUCT_SALE_PRICE"}
+    assert resolutions == {"PRICE_LIST_ITEM", "NO_PRICE_IN_LIST"}  # spec 019: sin respaldo
 
     durations = []
     for _ in range(SAMPLES):

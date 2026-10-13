@@ -67,6 +67,22 @@ asignándolos en la plantilla. Consultar auditoría de una empresa exige además
   `perm:audit:audit-events:create` para su `audit-outbox-worker`. Nunca escribe ventas. Solo en `.env`.
 - `${PRODUCT_CATALOG_SERVICE_CLIENT_SECRET}`: secreto del cliente técnico `product-catalog-service`
   (feature 016, C-02): solo `perm:audit:audit-events:create`, para su `audit-outbox-worker`. Solo en `.env`.
+- `${SIO_DATA_IMPORTER_CLIENT_SECRET}`: secreto del cliente técnico `sio-data-importer`
+  (`client_credentials`), con el que `tools/data-migration/ia-tools/cargar_gold.py` carga los datos de una
+  empresa (`--rol cliente:sio-data-importer`; token con `python services/get_token.py --cliente
+  sio-data-importer`).
+  - **Permisos de lectura:** `perm:geography:all:read`, `perm:party-identity:organization_identities:read`,
+    `perm:operational-context:companies:read`, `perm:operational-context:branches:read` y
+    `perm:product-catalog:all:read`.
+  - **Permisos de creación:** `perm:party-identity:organization_identities:create` y
+    `perm:product-catalog:{packaging-types,brands,attribute-definitions,categories,products}:create`.
+  - **Actualización:** `perm:product-catalog:products:update` (presentaciones, identificadores, categorías y
+    valores de atributo de un producto) y `perm:product-catalog:categories:update` (asociar atributos a categorías).
+  - **Sin** `delete`, `deactivate`, `platform:administer` ni roles de realm.
+  - **No puede crear** empresas ni sedes (requieren `platform:administer`) ni datos de empresa en Commercial
+    Relationship (requieren membresía `ACTIVE`); eso lo hace una identidad administrativa.
+
+  Solo en `.env`.
 
 Auditoría de servicios existentes (feature 016, C-01/C-02): `party-identity-service` y
 `operational-context-service` tienen el scope por defecto `service_account` (su token emite

@@ -46,24 +46,25 @@ def test_line_snapshots_prices_and_distinct_lookups() -> None:
     lines = [
         LineInput(world.product, world.presentation, world.price_list, Decimal("2")),
         LineInput(world.product, world.presentation, None, Decimal("1")),
-        LineInput(world.product_2, None, None, Decimal("3")),
+        LineInput(world.product_2, world.unit_presentation_2, None, Decimal("3")),
     ]
     snapshots = resolver(fakes).resolve_lines(world.company, "COP", lines)
-    box_list, box_simple, oil = snapshots
+    box_list, box_default, oil = snapshots
     assert (box_list.product_code, box_list.product_name) == ("000045", "Arroz ficticio 500 g")
     assert (box_list.presentation_code, box_list.presentation_name, box_list.factor) == ("CAJA12", "Caja x12", Decimal("12"))
     assert box_list.unit_code == "UND"
     assert (box_list.unit_price, box_list.price_list_id, box_list.price_list_requested) == (
         Decimal("16000.0000"), world.price_list, True,
     )
-    assert (box_simple.unit_price, box_simple.price_list_id, box_simple.price_list_requested) == (
-        Decimal("18000.0000"), None, False,
+    # Spec 019: la caja sin lista pedida usa su propio precio en la predeterminada (no 1500 × 12).
+    assert (box_default.unit_price, box_default.price_list_id, box_default.price_list_requested) == (
+        Decimal("18000.0000"), world.default_list, False,
     )
-    assert (oil.factor, oil.presentation_code, oil.unit_price) == (Decimal("1"), None, Decimal("9000.0000"))
-    # Una consulta por valor distinto: presentación global y productos globales sin repetir.
-    assert [call for call in fakes.catalog.availability.calls if call[0] == "presentation"] == [
-        ("presentation", world.global_presentation)
-    ]
+    assert (oil.factor, oil.presentation_code, oil.unit_price) == (Decimal("1"), "UND", Decimal("9000.0000"))
+    # Una consulta por valor distinto: presentaciones globales y productos globales sin repetir.
+    assert sorted(call[1] for call in fakes.catalog.availability.calls if call[0] == "presentation") == sorted(
+        [world.global_presentation, world.global_unit_2]
+    )
     assert len([call for call in fakes.catalog.availability.calls if call[0] == "product"]) == 2
     assert len([call for call in fakes.cr.availability.calls if call[0] == "applicable_prices"]) == 1
 
@@ -71,7 +72,10 @@ def test_line_snapshots_prices_and_distinct_lookups() -> None:
 def test_sequential_and_parallel_lookups_give_the_same_snapshots() -> None:
     fakes = build_fakes()
     world = fakes.world
-    lines = [LineInput(world.product, world.presentation, None, Decimal("1")), LineInput(world.product_2, None, None, Decimal("1"))]
+    lines = [
+        LineInput(world.product, world.presentation, None, Decimal("1")),
+        LineInput(world.product_2, world.unit_presentation_2, None, Decimal("1")),
+    ]
     assert resolver(fakes, 1).resolve_lines(world.company, "COP", lines) == resolver(fakes, 8).resolve_lines(
         world.company, "COP", lines
     )

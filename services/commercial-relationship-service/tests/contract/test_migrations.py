@@ -15,8 +15,6 @@ EXPECTED_CONSTRAINTS = {
         "pk_company_products",
         "uq_company_products_company_id_global_product_id",
         "ck_company_products_status",
-        "ck_company_products_sale_price_non_negative",
-        "ck_company_products_reference_cost_non_negative",
         "ck_company_products_currency_code_format",
         "ck_company_products_lot_requires_inventory",
         "ck_company_products_expiration_requires_lot",
@@ -322,4 +320,70 @@ def test_phase_b_applies_over_phase_a_data_and_reverts(test_database_url, migrat
         run_alembic(test_database_url, "upgrade", "head")
         with engine.begin() as connection:
             connection.execute(text("TRUNCATE company_products, company_suppliers CASCADE"))
+        engine.dispose()
+
+
+# --------------------------------------------------------------------------
+# Spec 019 (0004): sin precio ni costo en company_products, con guarda contra pérdida de valores
+# --------------------------------------------------------------------------
+
+
+def _insert_legacy_product(connection, sale_price: str, reference_cost: str):
+    product_id = uuid4()
+    connection.execute(
+        text(
+            "INSERT INTO company_products (id, company_id, global_product_id, internal_code, display_name, currency_code, "
+            "sale_price, reference_cost, status, version, created_by, updated_by, created_at, updated_at) VALUES "
+            "(:id, :company, :product, 'LEG-1', 'Producto legado', 'COP', :price, :cost, 'ACTIVE', 1, 'sub', 'sub', now(), now())"
+        ),
+        {"id": product_id, "company": uuid4(), "product": uuid4(), "price": sale_price, "cost": reference_cost},
+    )
+    return product_id
+
+
+def _columns(engine) -> set[str]:
+    return {column["name"] for column in inspect(engine).get_columns("company_products")}
+
+
+def test_0004_removes_price_and_cost_columns(test_database_url, migrated_database):
+    engine = create_engine(test_database_url)
+    try:
+        assert not {"sale_price", "reference_cost"} & _columns(engine)
+        assert "currency_code" in _columns(engine)  # se conserva (elige la lista predeterminada)
+    finally:
+        engine.dispose()
+
+
+def test_0004_keeps_rows_with_default_zeros(test_database_url, migrated_database):
+    run_alembic(test_database_url, "downgrade", "0003")
+    engine = create_engine(test_database_url)
+    try:
+        with engine.begin() as connection:
+            product_id = _insert_legacy_product(connection, "0", "0")
+        run_alembic(test_database_url, "upgrade", "head")
+        with engine.begin() as connection:
+            assert connection.execute(text("SELECT count(*) FROM company_products WHERE id = :id"), {"id": product_id}).scalar_one() == 1
+            connection.execute(text("DELETE FROM company_products"))
+    finally:
+        run_alembic(test_database_url, "upgrade", "head")
+        engine.dispose()
+
+
+def test_0004_guard_refuses_to_lose_commercial_values(test_database_url, migrated_database):
+    """RC-PRC-5: con un precio o costo distinto de 0, la migración se detiene sin cambios."""
+    import pytest
+
+    run_alembic(test_database_url, "downgrade", "0003")
+    engine = create_engine(test_database_url)
+    try:
+        with engine.begin() as connection:
+            _insert_legacy_product(connection, "1500.00", "0")
+        with pytest.raises(RuntimeError, match="eliminaría precios o costos de 1"):
+            run_alembic(test_database_url, "upgrade", "head")
+        assert {"sale_price", "reference_cost"} <= _columns(engine)  # nada cambió
+        with engine.begin() as connection:
+            assert connection.execute(text("SELECT sale_price FROM company_products")).scalar_one() == 1500
+            connection.execute(text("DELETE FROM company_products"))  # dato sintético de la prueba
+    finally:
+        run_alembic(test_database_url, "upgrade", "head")
         engine.dispose()

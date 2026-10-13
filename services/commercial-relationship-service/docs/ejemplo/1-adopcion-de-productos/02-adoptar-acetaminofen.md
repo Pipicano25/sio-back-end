@@ -41,7 +41,7 @@ POST /api/v1/companies/<EMPRESA>/company-products
 
 - `Código` 000045 → `internal_code`; `Referencia` 48691 → `reference_code`.
 - `Maneja Lotes` = S y `Maneja Fecha Vencimiento` = S → ambas banderas en `true`; exigen `inventory_control_enabled` (`Control Inventario` = S).
-- Sin `sale_price` ni `reference_cost`: el Excel los trae vacíos; quedan en `0`. Los importes se devuelven como **texto decimal** (`"0.00"`), nunca como número.
+- El producto de la empresa no tiene precio ni costo (spec 019): los precios de venta se registran en las listas, por presentación, y los costos vienen de las compras y de Inventory.
 - El servicio comprueba que el producto global esté `ACTIVE` y completo y registra su primer uso en Product Catalog **antes** de guardar.
 
 **Respuesta esperada — `201 Created`** (abreviada)
@@ -54,9 +54,7 @@ POST /api/v1/companies/<EMPRESA>/company-products
   "reference_code": "48691",
   "display_name": "ACETAMINOFEN (ADOREM) 500MG TABLETA CAJAX100 SIEGFRIED",
   "short_name": "ACETAMINOFEN",
-  "sale_price": "0.00",
   "currency_code": "COP",
-  "reference_cost": "0.0000",
   "inventory_control_enabled": true,
   "lot_tracking_enabled": true,
   "expiration_tracking_enabled": true,

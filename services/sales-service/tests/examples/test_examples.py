@@ -64,6 +64,16 @@ def fixed_world() -> World:
         price_list_2=UUID(data.LISTA_2),
         item_box=UUID(data.ITEM_CAJA),
         item_product_2=UUID(data.ITEM_ACEITE),
+        unit_presentation=UUID(data.UNIDAD_ARROZ),
+        unit_presentation_2=UUID(data.UNIDAD_ACEITE),
+        unit_presentation_ni=UUID(data.UNIDAD_SERVICIO),
+        global_unit=UUID(data.GLOBAL_UNIDAD_ARROZ),
+        global_unit_2=UUID(data.GLOBAL_UNIDAD_ACEITE),
+        default_list=UUID(data.LISTA_GENERAL),
+        item_unit=UUID(data.ITEM_UNIDAD_ARROZ),
+        item_unit_2=UUID(data.ITEM_UNIDAD_ACEITE),
+        item_unit_ni=UUID(data.ITEM_UNIDAD_SERVICIO),
+        item_box_default=UUID(data.ITEM_CAJA_GENERAL),
     )
 
 
@@ -111,7 +121,9 @@ def before_hook(fakes):
         elif change == "inventory_up":
             fakes.inventory.availability.down = False
         elif change.startswith("price:"):
-            fakes.cr.sale_prices[fakes.world.product] = (Decimal(change.split(":", 1)[1]), "COP")
+            world = fakes.world  # spec 019: precio de la unidad de arroz en la predeterminada, con id fijo
+            fakes.cr.set_price(world.default_list, world.product, world.unit_presentation, change.split(":", 1)[1],
+                               item=UUID(data.ITEM_UNIDAD_ARROZ_NUEVO))
         elif change.startswith("stock:"):
             fakes.inventory.layers.pop((str(fakes.world.branch), str(fakes.world.product)), None)
             fakes.inventory.stock(fakes.world.branch, fakes.world.product, change.split(":", 1)[1], "1000")

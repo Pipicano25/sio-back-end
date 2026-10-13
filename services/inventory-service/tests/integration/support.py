@@ -187,7 +187,6 @@ def _adopt(client, company: str, label: str, *, inventory_control: bool) -> str:
         "internal_code": f"INV-{label}-{RUN_ID}",
         "display_name": f"Producto ficticio INV {label} {RUN_ID}",
         "currency_code": "COP",
-        "sale_price": "1000.00",
         "inventory_control_enabled": inventory_control,
     })
     assert adopted.status_code == 201, adopted.text

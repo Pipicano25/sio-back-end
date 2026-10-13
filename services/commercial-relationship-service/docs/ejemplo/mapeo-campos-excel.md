@@ -18,7 +18,7 @@ servicio: aquí se detalla lo que corresponde a **Commercial Relationship Servic
 | `Control Inventario` (`S`/`N`) | `inventory_control_enabled` | `S` → `true` |
 | `Maneja Lotes` (`S`/`N`) | `lot_tracking_enabled` | Exige control de inventario |
 | `Maneja Fecha Vencimiento` (`S`/`N`) | `expiration_tracking_enabled` | Exige lotes |
-| `Costo` | `reference_cost` | Costo de referencia (4 decimales); no reemplaza el costo histórico de Inventory. Vacío en las filas usadas → `0` |
+| `Costo` | — | No se carga en el producto empresarial (spec 019: sin `reference_cost`); los costos vienen de las compras y de Inventory |
 
 El producto global (nombre canónico, marca, unidad, códigos de barras, categorías, atributos) vive en Product
 Catalog: Commercial Relationship guarda solo su `id` (`global_product_id`).
@@ -27,7 +27,7 @@ Catalog: Commercial Relationship guarda solo su `id` (`global_product_id`).
 
 | Columna del Excel | Entidad y campo | Regla |
 | --- | --- | --- |
-| `Precio Lista 1` … `Precio Lista 18` | Una `PriceList` por columna (p. ej. código `LISTA-10`) y un `PriceListItem` con `unit_price` por producto | Moneda de la lista con sus decimales; `0` es un precio real, la ausencia de precio se representa sin registro. En toda la fuente solo la **fila 16577** tiene un precio por lista (`Precio Lista 10` = 30420; ejercicio 6); las demás tienen `0` o vacío |
+| `Precio Lista 1` … `Precio Lista 18` | Una `PriceList` por columna (p. ej. código `LISTA-10`) y un `PriceListItem` con `unit_price` por presentación (spec 019) | Moneda de la lista con sus decimales; `0` es un precio real, la ausencia de precio se representa sin registro. En toda la fuente solo la **fila 16577** tiene un precio por lista (`Precio Lista 10` = 30420; ejercicio 6); las demás tienen `0` o vacío |
 | `Nombre Proveedor` | `SupplierProduct.supplier_product_code` | Cómo llama el proveedor al producto (máximo 100 caracteres). La fila 40 se usa en el ejercicio 5 |
 | `Maneja Presentaciones`, `Contenido Interno` | Indican que el producto tiene presentaciones (`CompanyProductPresentation`) | La presentación global (nombre, cantidad base, empaque) vive en Product Catalog; la empresa solo adopta su `id` y le pone su código o SKU. La fuente no trae presentaciones por fila: las de los ejercicios son ficticias |
 

@@ -25,7 +25,8 @@ def test_adoption_with_defaults_and_first_use(as_user, company, fake_catalog):
     assert response.headers["location"] == f"/api/v1/company-products/{body['id']}"
     assert body["status"] == "ACTIVE" and body["version"] == 1
     assert body["company_id"] == str(company)
-    assert body["sale_price"] == "0.00" and body["reference_cost"] == "0.0000"
+    # Spec 019: sin precio ni costo (ni siquiera 0).
+    assert "sale_price" not in body and "reference_cost" not in body
     assert body["inventory_control_enabled"] is True and body["lot_tracking_enabled"] is False
     assert body["expiration_tracking_enabled"] is False
     assert body["is_purchasable"] is True and body["is_sellable"] is True
@@ -38,22 +39,16 @@ def test_adoption_with_defaults_and_first_use(as_user, company, fake_catalog):
     assert detail.status_code == 200 and detail.json() == body
 
 
-def test_amounts_are_decimal_strings(as_user, company, fake_catalog):
-    body = adopt(
-        as_user("admin.test"),
-        company,
-        fake_catalog,
-        sale_price="12500.5",
-        reference_cost=3400.125,
-        currency_code="COP",
-    )
-    assert body["sale_price"] == "12500.50"
-    assert body["reference_cost"] == "3400.1250"
-
-    clp = adopt(
-        as_user("admin.test"), company, fake_catalog, internal_code="CLP-1", sale_price=1500, currency_code="CLP"
-    )
-    assert clp["sale_price"] == "1500.00"  # cadena con la escala de la columna (R-10)
+@pytest.mark.parametrize(
+    "field,value", [("sale_price", "12500.50"), ("reference_cost", "3400.1250"), ("sale_price", "0"), ("reference_cost", 0)]
+)
+def test_price_and_cost_are_rejected_spec_019(as_user, company, fake_catalog, field, value):
+    """FR-019-02: enviar `sale_price` o `reference_cost` (aunque sea 0) responde `422` y no guarda nada."""
+    product = fake_catalog.add(uuid4())
+    response = _post(as_user("admin.test"), company, product_body(product, **{field: value}))
+    assert response.status_code == 422, response.text
+    assert code_of(response) == "VALIDATION_ERROR" and field in response.text
+    assert fake_catalog.first_use_calls == []
 
 
 def test_incomplete_product_is_not_eligible(as_user, company, fake_catalog):
@@ -157,11 +152,6 @@ def test_lots_and_expiration_together(as_user, company, fake_catalog):
     [
         ({"currency_code": "XYZ"}, "CURRENCY_NOT_SUPPORTED"),
         ({"currency_code": "ZAR"}, "CURRENCY_NOT_SUPPORTED"),
-        ({"currency_code": "CLP", "sale_price": "1500.50"}, "PRICE_SCALE_NOT_ALLOWED"),
-        ({"sale_price": -1}, "VALIDATION_ERROR"),
-        ({"reference_cost": "-0.01"}, "VALIDATION_ERROR"),
-        ({"sale_price": "10.555"}, "VALIDATION_ERROR"),
-        ({"reference_cost": "1.00001"}, "VALIDATION_ERROR"),
         ({"display_name": "   "}, "VALIDATION_ERROR"),
         ({"internal_code": "x" * 61}, "VALIDATION_ERROR"),
         ({"status": "INACTIVE"}, "VALIDATION_ERROR"),

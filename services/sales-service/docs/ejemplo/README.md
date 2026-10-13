@@ -18,7 +18,7 @@ documentos).
 | Ejercicio | Qué muestra |
 | --- | --- |
 | [1-secuencias](1-secuencias/ORDEN.md) | Secuencia mensual, consulta y rechazo de una segunda activa |
-| [2-borrador-y-precios](2-borrador-y-precios/ORDEN.md) | Borrador con precio de lista y precio simple; sin precio manual; lista inexistente, lista sin precio y producto sin control de inventario |
+| [2-borrador-y-precios](2-borrador-y-precios/ORDEN.md) | Borrador con precio de lista pedida y de lista predeterminada, siempre por presentación; sin precio manual; lista inexistente, lista sin precio y producto sin control de inventario |
 | [3-disponibilidad](3-disponibilidad/ORDEN.md) | Existencias por producto en unidad base, sin reservar |
 | [4-confirmacion](4-confirmacion/ORDEN.md) | Precio cambiado (`409 PRICES_CHANGED`), Inventory caído, reintento idempotente |
 | [5-existencias-insuficientes](5-existencias-insuficientes/ORDEN.md) | La venta se confirma completa o no se confirma |

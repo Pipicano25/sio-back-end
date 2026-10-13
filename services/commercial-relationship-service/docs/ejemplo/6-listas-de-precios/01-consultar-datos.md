@@ -4,7 +4,7 @@ Ejercicio 6 — Listas de precios y precio aplicable · [Orden del ejercicio](OR
 
 **Objetivo:** Obtener `<EMPRESA>` y los productos globales.
 
-**Deja guardado para los siguientes pasos:** `<EMPRESA>`, `<GP_IRBESARTAN>`, `<GP_ACETAMINOFEN>`
+**Deja guardado para los siguientes pasos:** `<EMPRESA>`, `<GP_IRBESARTAN>`, `<GP_ACETAMINOFEN>`, `<GPRES_IRBE>`, `<GPRES_ACETA>`
 
 ---
 
@@ -111,6 +111,72 @@ GET http://localhost:8003/api/v1/products/by-identifier/7707355056876
 ```
 
 **Guardar:** `product.id` → `<GP_ACETAMINOFEN>`
+
+## 4. Consultar la presentación global caja x30 del irbesartán en Product Catalog
+
+> **Otro servicio:** esta llamada va a **Product Catalog Service**, no a Commercial Relationship. No se ejecuta en la validación automática: su resultado se simula.
+
+```http
+GET http://localhost:8003/api/v1/products/<GP_IRBESARTAN>/presentations
+```
+
+**Permiso que exige la URL:** `perm:product-catalog:products:read`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`), `reportes.test` (por `perm:product-catalog:products:read`), `consulta.test` (por `perm:product-catalog:products:read`)
+
+**Por qué se hace así**
+
+- Commercial Relationship **no copia** el nombre, la cantidad base ni el empaque de la presentación global: solo guarda su `id` (`global_product_presentation_id`, FR-017).
+- Al adoptar, el servicio vuelve a comprobar en Product Catalog que esté `ACTIVE`, sea elegible y pertenezca al mismo producto global, y registra su **primer uso** con su identidad técnica.
+
+**Respuesta esperada — `200 OK`** (abreviada)
+
+```json
+[
+  {
+    "id": "<GPRES_IRBE>",
+    "global_product_id": "<GP_IRBESARTAN>",
+    "name": "caja x30 del irbesartán (nombre en Product Catalog)",
+    "status": "ACTIVE",
+    "eligible_for_adoption": true
+  }
+]
+```
+
+**Guardar:** `[0].id` → `<GPRES_IRBE>`
+
+## 5. Consultar la presentación global caja x100 del acetaminofén en Product Catalog
+
+> **Otro servicio:** esta llamada va a **Product Catalog Service**, no a Commercial Relationship. No se ejecuta en la validación automática: su resultado se simula.
+
+```http
+GET http://localhost:8003/api/v1/products/<GP_ACETAMINOFEN>/presentations
+```
+
+**Permiso que exige la URL:** `perm:product-catalog:products:read`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`), `reportes.test` (por `perm:product-catalog:products:read`), `consulta.test` (por `perm:product-catalog:products:read`)
+
+**Por qué se hace así**
+
+- Commercial Relationship **no copia** el nombre, la cantidad base ni el empaque de la presentación global: solo guarda su `id` (`global_product_presentation_id`, FR-017).
+- Al adoptar, el servicio vuelve a comprobar en Product Catalog que esté `ACTIVE`, sea elegible y pertenezca al mismo producto global, y registra su **primer uso** con su identidad técnica.
+
+**Respuesta esperada — `200 OK`** (abreviada)
+
+```json
+[
+  {
+    "id": "<GPRES_ACETA>",
+    "global_product_id": "<GP_ACETAMINOFEN>",
+    "name": "caja x100 del acetaminofén (nombre en Product Catalog)",
+    "status": "ACTIVE",
+    "eligible_for_adoption": true
+  }
+]
+```
+
+**Guardar:** `[0].id` → `<GPRES_ACETA>`
 
 ---
 

@@ -355,6 +355,45 @@
       ]
     },
     {
+      "clientId": "sio-data-importer",
+      "name": "SIO Data Importer",
+      "description": "Identidad técnica del cargue de datos de empresas (tools/data-migration, client_credentials). Solo consulta y creación del catálogo global y de organizaciones; sin borrar, inactivar ni administrar la plataforma.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${SIO_DATA_IMPORTER_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "acr",
+        "basic",
+        "email",
+        "profile",
+        "roles",
+        "web-origins",
+        "service_account"
+      ],
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
       "clientId": "purchase-service",
       "name": "Purchase Service",
       "description": "Identidad técnica de purchase-service (client_credentials): lecturas técnicas de sus dependencias, entradas y reversos en Inventory y auditoría (feature 014, R-02). Nunca escribe compras.",
@@ -2144,6 +2183,29 @@
           "perm:inventory:company-policies:read",
           "perm:inventory:product-policies:read",
           "perm:inventory:valuation:read"
+        ]
+      }
+    },
+    {
+      "id": "36753a9a-377b-5c03-8ba3-b9b3ff12145d",
+      "username": "service-account-sio-data-importer",
+      "enabled": true,
+      "serviceAccountClientId": "sio-data-importer",
+      "clientRoles": {
+        "sio-api": [
+          "perm:geography:all:read",
+          "perm:party-identity:organization_identities:read",
+          "perm:party-identity:organization_identities:create",
+          "perm:operational-context:companies:read",
+          "perm:operational-context:branches:read",
+          "perm:product-catalog:all:read",
+          "perm:product-catalog:packaging-types:create",
+          "perm:product-catalog:brands:create",
+          "perm:product-catalog:attribute-definitions:create",
+          "perm:product-catalog:categories:create",
+          "perm:product-catalog:categories:update",
+          "perm:product-catalog:products:create",
+          "perm:product-catalog:products:update"
         ]
       }
     },

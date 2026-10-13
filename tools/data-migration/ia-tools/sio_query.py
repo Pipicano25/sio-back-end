@@ -13,8 +13,11 @@ Ejemplos:
   no se inventan rutas ni se suponen filtros comunes. La ruta puede ser la plantilla del contrato
   (`/api/v1/products/{product_id}`) o una ruta concreta (`/api/v1/products/<uuid>`).
 - Solo GET. No existe código para POST, PUT, PATCH ni DELETE.
-- El token se obtiene con la función existente `obtener_token(rol)` de `services/get_token.py`; vive solo
-  en memoria y nunca se imprime ni se guarda. Ante un 401 se pide uno nuevo una sola vez.
+- El token se obtiene con `services/get_token.py`: `obtener_token(rol)` para los usuarios de prueba y
+  `obtener_token_cliente(client_id)` para un cliente técnico (`--rol cliente:<client_id>`, p. ej.
+  `cliente:sio-data-importer`) y `obtener_token_usuario(nombre)` para un usuario nominal
+  (`--rol usuario:<nombre>`, p. ej. `usuario:santiago.rodriguez`). Vive solo en memoria y nunca se imprime ni se guarda. Ante un 401 se pide
+  uno nuevo una sola vez.
 - La salida estándar es el JSON de la respuesta; el código HTTP va a la salida de errores.
 """
 
@@ -65,10 +68,21 @@ def _public_port(key: str) -> str | None:
     return None
 
 
-def _load_token_function():
+CLIENT_PREFIX = "cliente:"
+USER_PREFIX = "usuario:"
+
+
+def _load_token_function(rol: str):
+    """Función de services/get_token.py que emite el token del rol (usuario de prueba o cliente técnico)."""
     spec = importlib.util.spec_from_file_location("sio_get_token", TOKEN_SCRIPT)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)  # el script no ejecuta nada al importarse (__main__)
+    if rol.startswith(CLIENT_PREFIX):
+        client_id = rol.removeprefix(CLIENT_PREFIX)
+        return lambda _rol: module.obtener_token_cliente(client_id)
+    if rol.startswith(USER_PREFIX):
+        username = rol.removeprefix(USER_PREFIX)
+        return lambda _rol: module.obtener_token_usuario(username)
     return module.obtener_token
 
 
@@ -140,7 +154,7 @@ class SioQuery:
     def _authorization(self, renew: bool = False) -> dict[str, str]:
         if self._token is None or renew:
             if self._obtener_token is None:
-                self._obtener_token = _load_token_function()
+                self._obtener_token = _load_token_function(self.rol)
             self._token = self._obtener_token(self.rol)
         return {"Authorization": f"Bearer {self._token}"}
 
@@ -189,7 +203,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--param", action="append", default=[], help="Parámetro de ruta o de consulta clave=valor (repetible)")
     parser.add_argument("--all-pages", action="store_true", help="Recorrer todas las páginas cuando la operación pagina")
     parser.add_argument("--list", action="store_true", help="Listar las operaciones GET del servicio y sus parámetros")
-    parser.add_argument("--rol", default="consulta", help="Rol de services/get_token.py (por defecto consulta)")
+    parser.add_argument("--rol", default="consulta",
+                        help="Rol de services/get_token.py (por defecto consulta), cliente:<client_id> o usuario:<nombre>")
     args = parser.parse_args(argv)
     client = SioQuery(rol=args.rol)
     try:

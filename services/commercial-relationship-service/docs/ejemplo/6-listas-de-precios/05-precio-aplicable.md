@@ -2,9 +2,9 @@
 
 Ejercicio 6 — Listas de precios y precio aplicable · [← Paso anterior](04-cambiar-precio.md) · [Orden del ejercicio](ORDEN.md)
 
-**Objetivo:** Precio de lista, respaldo en el precio simple y lista explícita sin precio.
+**Objetivo:** Precio de la presentación en la lista y presentación sin precio (sin respaldo).
 
-**Necesita (de pasos anteriores):** `<EMPRESA>`, `<IRBESARTAN>`, `<ACETAMINOFEN>`, `<LISTA>` — pasos [01](01-consultar-datos.md), [02](02-adoptar-productos.md), [03](03-lista-y-precio.md)
+**Necesita (de pasos anteriores):** `<EMPRESA>`, `<IRBESARTAN>`, `<PRES_IRBE>`, `<ACETAMINOFEN>`, `<PRES_ACETA>`, `<LISTA>` — pasos [01](01-consultar-datos.md), [02](02-adoptar-productos.md), [03](03-lista-y-precio.md)
 
 ---
 
@@ -20,11 +20,13 @@ POST /api/v1/companies/<EMPRESA>/applicable-prices/resolve
   "lines": [
     {
       "line_id": "1",
-      "company_product_id": "<IRBESARTAN>"
+      "company_product_id": "<IRBESARTAN>",
+      "company_product_presentation_id": "<PRES_IRBE>"
     },
     {
       "line_id": "2",
-      "company_product_id": "<ACETAMINOFEN>"
+      "company_product_id": "<ACETAMINOFEN>",
+      "company_product_presentation_id": "<PRES_ACETA>"
     }
   ]
 }
@@ -38,7 +40,7 @@ POST /api/v1/companies/<EMPRESA>/applicable-prices/resolve
 
 **Por qué se hace así**
 
-- Línea 1: precio de la lista predeterminada (`PRICE_LIST_ITEM`, por unidad base). Línea 2: sin precio en la lista se usa `sale_price` (`COMPANY_PRODUCT_SALE_PRICE`).
+- Línea 1: precio de la caja x30 en la lista predeterminada (`PRICE_LIST_ITEM`, base `PRESENTATION`). Línea 2: la caja del acetaminofén no tiene precio → `NO_PRICE_IN_LIST`, sin respaldo (spec 019): no se puede vender hasta registrar su precio.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 
@@ -48,16 +50,16 @@ POST /api/v1/companies/<EMPRESA>/applicable-prices/resolve
     {
       "line_id": "1",
       "resolution": "PRICE_LIST_ITEM",
-      "basis": "BASE_UNIT",
+      "basis": "PRESENTATION",
       "unit_price": "30420.00",
       "currency_code": "COP"
     },
     {
       "line_id": "2",
-      "resolution": "COMPANY_PRODUCT_SALE_PRICE",
-      "basis": "BASE_UNIT",
-      "unit_price": "12000.00",
-      "currency_code": "COP"
+      "resolution": "NO_PRICE_IN_LIST",
+      "basis": null,
+      "unit_price": null,
+      "currency_code": null
     }
   ]
 }
@@ -76,6 +78,7 @@ POST /api/v1/companies/<EMPRESA>/applicable-prices/resolve
     {
       "line_id": "1",
       "company_product_id": "<ACETAMINOFEN>",
+      "company_product_presentation_id": "<PRES_ACETA>",
       "price_list_id": "<LISTA>"
     }
   ]
@@ -90,7 +93,7 @@ POST /api/v1/companies/<EMPRESA>/applicable-prices/resolve
 
 **Por qué se hace así**
 
-- Con lista explícita y sin precio no hay respaldo: `NO_PRICE_IN_LIST` (aclaración 2).
+- Con lista explícita y sin precio de la presentación tampoco hay precio: `NO_PRICE_IN_LIST`.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 
@@ -118,7 +121,8 @@ POST /api/v1/companies/<EMPRESA>/applicable-prices/resolve
   "lines": [
     {
       "line_id": "1",
-      "company_product_id": "<IRBESARTAN>"
+      "company_product_id": "<IRBESARTAN>",
+      "company_product_presentation_id": "<PRES_IRBE>"
     }
   ]
 }

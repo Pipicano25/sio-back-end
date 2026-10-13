@@ -23,9 +23,12 @@ confirmada no se recalculan nunca (RN-04).
 ## Reglas de la venta
 
 - **Precio** (R-07): siempre lo resuelve Commercial Relationship (`applicable-prices/resolve`); no hay
-  precio manual (`422 UNIT_PRICE_NOT_ALLOWED`). La línea puede pedir una lista; si no, se usa la
-  predeterminada o el precio simple del producto. `price_list_requested` guarda esa intención. Un precio
-  por unidad base en una línea con presentación se multiplica por el factor y se redondea a 4 decimales.
+  precio manual (`422 UNIT_PRICE_NOT_ALLOWED`). Toda línea indica su presentación, también la de factor 1
+  para vender la unidad base (spec 019; sin ella, `422`). Se usa solo el precio explícito de esa
+  presentación en la lista pedida o en la predeterminada, tal cual y sin conversiones entre presentaciones;
+  `price_list_requested` guarda la intención. Sin precio vigente la línea se rechaza (`409 PRICE_NOT_IN_LIST`
+  o `PRICE_NOT_AVAILABLE`). No hay precio del producto ni respaldo (`COMPANY_PRODUCT_SALE_PRICE` solo
+  aparece en ventas anteriores a la spec 019).
   Si Commercial Relationship dice que la lista pedida no es aplicable, Sales consulta la lista:
   inexistente → `422 PRICE_LIST_NOT_FOUND`; existe → `409 PRICE_LIST_NOT_APPLICABLE`.
 - **Solo contado** (DP-01): no se acepta condición de pago ni fecha; `operation_date` es la fecha del

@@ -134,7 +134,7 @@ EXERCISES = {
     EX1: "Configuración de la empresa: organizaciones, personas, empresas, sucursales y usuarios operativos",
     EX2: "Relación comercial y precios: proveedor, cliente, productos, adopción, presentaciones y listas",
     EX3: "Compras e inventario: secuencias, compras, confirmación, entradas, saldos, kardex y capas",
-    EX4: "Ventas con los tres mecanismos de precio, rechazos, costo FIFO y margen",
+    EX4: "Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen",
     EX5: "Anulaciones y reversos",
     EX6: "Auditoría del recorrido",
     EX7: "Seguridad entre empresas y permisos",
@@ -383,7 +383,7 @@ def commercial_steps() -> list[Step]:
                     why="`base_quantity = 12`: una caja equivale a 12 unidades base (compras y ventas convierten con este factor).",
                 )
             )
-    for letter, price in (("a", "1600.00"), ("b", "7000.00")):
+    for letter in ("a", "b"):
         steps.append(
             Step(
                 f"C-11.producto_{letter}", f"Adoptar el producto {letter.upper()} en la empresa A", EX2, (6, 8), "admin.test",
@@ -393,7 +393,6 @@ def commercial_steps() -> list[Step]:
                     "internal_code": f"MVP-{letter.upper()}-{{run}}",
                     "display_name": f"Producto {letter.upper()} MVP {{run}} (dato ficticio)",
                     "currency_code": "COP",
-                    "sale_price": price,
                     "inventory_control_enabled": True,
                 },
                 save={f"producto_empresa_{letter}": "id", f"producto_empresa_{letter}_version": "version"},
@@ -401,7 +400,21 @@ def commercial_steps() -> list[Step]:
                     AuditSpec(cr, "ADOPT_COMPANY_PRODUCT", "CompanyProduct", f"{{producto_empresa_{letter}}}"),
                     AuditSpec(pc, "REGISTER_PRODUCT_FIRST_USE", "Product", f"{{producto_{letter}}}", PLATFORM, None, actor=CR_ACTOR),
                 ),
-                why="La adopción registra el primer uso del producto global en Product Catalog con la identidad técnica de Commercial Relationship; `sale_price` es el precio simple del producto.",
+                why="La adopción registra el primer uso del producto global en Product Catalog con la identidad técnica de Commercial Relationship. El producto de la empresa no tiene precio ni costo (spec 019): el precio se registra por presentación en las listas.",
+            )
+        )
+    for letter in ("a", "b"):
+        steps.append(
+            Step(
+                f"C-11.base_{letter}", f"Adoptar la presentación base (unidad) del producto {letter.upper()}", EX2, (7,), "admin.test",
+                _cr("company_product_presentations:create"), cr, "POST", "/companies/{empresa_a}/company-product-presentations", 201,
+                body={"company_product_id": f"{{producto_empresa_{letter}}}", "global_product_presentation_id": f"{{presentacion_base_{letter}}}", "sku": f"SKU-UND-{letter.upper()}-{{run}}"},
+                save={f"presentacion_base_empresa_{letter}": "id"},
+                audit=(
+                    AuditSpec(cr, "CREATE_COMPANY_PRODUCT_PRESENTATION", "CompanyProductPresentation", f"{{presentacion_base_empresa_{letter}}}"),
+                    AuditSpec(pc, "REGISTER_PRODUCT_FIRST_USE", "Product", f"{{producto_{letter}}}", PLATFORM, None, actor=CR_ACTOR),
+                ),
+                why="Toda venta indica una presentación (spec 019): la unidad base se vende con su presentación de factor 1.",
             )
         )
     steps.append(
@@ -430,11 +443,19 @@ def commercial_steps() -> list[Step]:
         )
     steps += [
         Step(
-            "C-12.item_general", "Precio por unidad del producto A en GENERAL", EX2, (8,), "admin.test",
+            "C-12.item_general", "Precio de la unidad del producto A en GENERAL", EX2, (8,), "admin.test",
             _cr("price_list_items:create"), cr, "POST", "/companies/{empresa_a}/price-list-items", 201,
-            body={"price_list_id": "{lista_general}", "company_product_id": "{producto_empresa_a}", "unit_price": "1500.00"},
+            body={"price_list_id": "{lista_general}", "company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_base_empresa_a}", "unit_price": "1500.00"},
             save={"item_general": "id", "item_general_version": "version"},
             audit=(AuditSpec(cr, "CREATE_PRICE_LIST_ITEM", "PriceListItem", "{item_general}"),),
+            why="Cada presentación vendible tiene su precio explícito (spec 019); no hay precios generales por producto.",
+        ),
+        Step(
+            "C-12.item_b", "Precio de la unidad del producto B en GENERAL", EX2, (8,), "admin.test",
+            _cr("price_list_items:create"), cr, "POST", "/companies/{empresa_a}/price-list-items", 201,
+            body={"price_list_id": "{lista_general}", "company_product_id": "{producto_empresa_b}", "company_product_presentation_id": "{presentacion_base_empresa_b}", "unit_price": "7000.00"},
+            save={"item_b": "id"},
+            audit=(AuditSpec(cr, "CREATE_PRICE_LIST_ITEM", "PriceListItem", "{item_b}"),),
         ),
         Step(
             "C-12.item_mayorista", "Precio de la caja del producto A en MAYORISTA", EX2, (8,), "admin.test",
@@ -543,17 +564,17 @@ INVENTORY_READS = [
 # --- ventas (data-model §3.3) --------------------------------------------------------------------
 SALE_LINES = {
     "1": [{"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_caja_empresa_a}", "price_list_id": "{lista_mayorista}", "quantity": "1"}],
-    "2": [{"company_product_id": "{producto_empresa_a}", "quantity": "20"}],
-    "3": [{"company_product_id": "{producto_empresa_b}", "quantity": "4"}],
-    "4": [{"company_product_id": "{producto_empresa_a}", "quantity": "100"}],
-    "5": [{"company_product_id": "{producto_empresa_a}", "quantity": "1"}],
-    "6": [{"company_product_id": "{producto_empresa_a}", "quantity": "1"}],
-    "7": [{"company_product_id": "{producto_empresa_b}", "quantity": "1"}],
+    "2": [{"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_base_empresa_a}", "quantity": "20"}],
+    "3": [{"company_product_id": "{producto_empresa_b}", "company_product_presentation_id": "{presentacion_base_empresa_b}", "quantity": "4"}],
+    "4": [{"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_base_empresa_a}", "quantity": "100"}],
+    "5": [{"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_base_empresa_a}", "quantity": "1"}],
+    "6": [{"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_base_empresa_a}", "quantity": "1"}],
+    "7": [{"company_product_id": "{producto_empresa_b}", "company_product_presentation_id": "{presentacion_base_empresa_b}", "quantity": "1"}],
 }
 SALE_PRICE_NOTES = {
     "1": "Lista indicada MAYORISTA: precio de la caja 16 000",
-    "2": "Sin lista: se aplica la predeterminada GENERAL, 1 500 por unidad",
-    "3": "Producto B sin precio en listas: `sale_price` 7 000",
+    "2": "Sin lista: se aplica la predeterminada GENERAL, 1 500 la unidad",
+    "3": "Producto B: precio de su unidad en la lista predeterminada GENERAL, 7 000",
     "4": "100 unidades (más de las existentes)",
     "5": "Lista predeterminada; su precio cambiará antes de confirmar",
     "6": "Borrador que se anulará",

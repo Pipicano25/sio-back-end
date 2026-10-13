@@ -1,4 +1,4 @@
-# Ejercicio 4 — Ventas con los tres mecanismos de precio, rechazos, costo FIFO y margen
+# Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen
 
 [← Recorrido completo](../README.md)
 

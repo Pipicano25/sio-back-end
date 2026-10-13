@@ -1,4 +1,4 @@
-# Paso 2. Agregar una caja con el precio simple
+# Paso 2. Agregar una caja con el precio de la lista predeterminada
 
 Ejercicio 2: Venta en borrador y precios.
 
@@ -13,15 +13,15 @@ Ejecuta: `ventas.test`.
 ```json
 {
   "company_product_id": "d15d0000-0000-4000-8000-000000000001",
-  "quantity": "1",
   "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000001",
+  "quantity": "1",
   "version": 1
 }
 ```
 
 ### Por qué
 
-- Sin lista, el precio simple es por unidad base: 1500 × 12 = 18000.0000 por caja (4 decimales, P-04).
+- Sin lista pedida se usa el precio explícito de la caja en la lista predeterminada GENERAL: 18000.0000 (spec 019: sin conversiones entre presentaciones).
 - Cada cambio de líneas exige la `version` vigente y la incrementa.
 
 ## Permiso
@@ -126,15 +126,15 @@ Estado `201`.
       "sale_id": "<VENTA>",
       "line_number": 2,
       "company_product_id": "d15d0000-0000-4000-8000-000000000002",
-      "company_product_presentation_id": null,
-      "price_list_id": null,
-      "price_list_item_id": null,
+      "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000003",
+      "price_list_id": "d15f0000-0000-4000-8000-000000000003",
+      "price_list_item_id": "d15f0000-0000-4000-8000-000000000014",
       "price_list_requested": false,
-      "price_source": "COMPANY_PRODUCT_SALE_PRICE",
+      "price_source": "PRICE_LIST_ITEM",
       "product_code_snapshot": "000046",
       "product_name_snapshot": "Aceite ficticio 1 L",
-      "presentation_code_snapshot": null,
-      "presentation_name_snapshot": null,
+      "presentation_code_snapshot": "UND",
+      "presentation_name_snapshot": "Unidad",
       "base_quantity_factor_snapshot": "1.00000000",
       "unit_code_snapshot": "UND",
       "quantity": "3.0000",
@@ -155,10 +155,10 @@ Estado `201`.
       "line_number": 3,
       "company_product_id": "d15d0000-0000-4000-8000-000000000001",
       "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000001",
-      "price_list_id": null,
-      "price_list_item_id": null,
+      "price_list_id": "d15f0000-0000-4000-8000-000000000003",
+      "price_list_item_id": "d15f0000-0000-4000-8000-000000000016",
       "price_list_requested": false,
-      "price_source": "COMPANY_PRODUCT_SALE_PRICE",
+      "price_source": "PRICE_LIST_ITEM",
       "product_code_snapshot": "000045",
       "product_name_snapshot": "Arroz ficticio 500 g",
       "presentation_code_snapshot": "CAJA12",

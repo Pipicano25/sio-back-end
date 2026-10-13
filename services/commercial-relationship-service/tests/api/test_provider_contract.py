@@ -26,7 +26,7 @@ PATH = {
 }
 GUARANTEED = {
     "product": {"id", "company_id", "global_product_id", "internal_code", "display_name", "currency_code",
-                "sale_price", "inventory_control_enabled", "lot_tracking_enabled", "expiration_tracking_enabled",
+                "inventory_control_enabled", "lot_tracking_enabled", "expiration_tracking_enabled",
                 "is_purchasable", "is_sellable", "status", "version"},
     "customer": {"id", "company_id", "customer_kind", "person_identity_id", "organization_identity_id",
                  "internal_code", "display_name", "status", "version"},
@@ -152,7 +152,7 @@ def test_batch_lookup_with_exemption(as_user, company, fake_catalog, resources, 
     items = response.json()["items"]
     assert [item["id"] for item in items] == [missing, first]  # orden de entrada, sin duplicados
     assert items[0]["found"] is False
-    assert items[1]["found"] is True and items[1]["sale_price"] == "0.00"
+    assert items[1]["found"] is True and "sale_price" not in items[1]  # spec 019
     assert GUARANTEED["product"] <= {k for k, v in items[1].items()}
     assert fake_oc.access_calls == []
 

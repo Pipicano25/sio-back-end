@@ -23,9 +23,7 @@ def product_update_body(current: dict[str, Any], **overrides: Any) -> dict[str, 
         "reference_code",
         "display_name",
         "short_name",
-        "sale_price",
         "currency_code",
-        "reference_cost",
         "inventory_control_enabled",
         "lot_tracking_enabled",
         "expiration_tracking_enabled",
@@ -190,7 +188,27 @@ def price_list_update_body(current: dict[str, Any], **overrides: Any) -> dict[st
     return {**{key: current[key] for key in keys}, **overrides}
 
 
-def create_price(client, company_id: UUID, price_list: dict[str, Any], product: dict[str, Any], **overrides: Any) -> dict[str, Any]:
+def sellable_presentation(client, company_id: UUID, product: dict[str, Any], fake_catalog=None) -> str:
+    """Presentación vendible del producto (spec 019: todo precio es de una presentación).
+
+    Usa la primera adoptada `ACTIVE` y vendible; si no hay y se pasa `fake_catalog`, adopta una.
+    """
+    listed = client.get(
+        f"/api/v1/companies/{company_id}/company-product-presentations", params={"company_product_id": product["id"]}
+    )
+    assert listed.status_code == 200, listed.text
+    for item in listed.json()["items"]:
+        if item["status"] == "ACTIVE" and item["is_sellable"]:
+            return item["id"]
+    assert fake_catalog is not None, "El producto no tiene presentación vendible: pase fake_catalog (spec 019)"
+    return adopt_presentation(client, company_id, fake_catalog, product)["id"]
+
+
+def create_price(client, company_id: UUID, price_list: dict[str, Any], product: dict[str, Any], fake_catalog=None,
+                 **overrides: Any) -> dict[str, Any]:
+    """Precio de una presentación (spec 019); sin `company_product_presentation_id` usa una vendible del producto."""
+    if "company_product_presentation_id" not in overrides:
+        overrides["company_product_presentation_id"] = sellable_presentation(client, company_id, product, fake_catalog)
     body = {"price_list_id": price_list["id"], "company_product_id": product["id"], "unit_price": "15000.00", **overrides}
     response = client.post(f"/api/v1/companies/{company_id}/price-list-items", json=body)
     assert response.status_code == 201, response.text

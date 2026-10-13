@@ -55,7 +55,7 @@ def adopted_product(client, company_id):
     assert presentation.status_code == 201, presentation.text
     adopted = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/company-products", json={
         "global_product_id": product_id, "internal_code": f"AUDB-{RUN_ID}",
-        "display_name": f"Producto ficticio de auditoría {RUN_ID}", "currency_code": "COP", "sale_price": "1200.00",
+        "display_name": f"Producto ficticio de auditoría {RUN_ID}", "currency_code": "COP",
     })
     assert adopted.status_code == 201, adopted.text
     return {"global_product_id": product_id, "company_product": adopted.json()}

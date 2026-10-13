@@ -56,7 +56,8 @@ class StrictModel(BaseModel):
 
 class LineIn(StrictModel):
     company_product_id: UUID
-    company_product_presentation_id: UUID | None = None
+    # Spec 019: toda línea indica su presentación (la de factor 1 para vender la unidad base).
+    company_product_presentation_id: UUID
     price_list_id: UUID | None = None
     quantity: DecimalIn
     discount_amount: DecimalIn = Decimal("0")

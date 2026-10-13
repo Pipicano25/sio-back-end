@@ -66,7 +66,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists
 
 **Auditoría que deja:** `CREATE_PRICE_LIST` (commercial-relationship)
 
-## 3. Precio por unidad del producto A en GENERAL
+## 3. Precio de la unidad del producto A en GENERAL
 
 Paso `C-12.item_general` · usuario **`admin.test`** · ítems de la FASE 10: 8
 
@@ -78,7 +78,39 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
 {
   "price_list_id": "<LISTA_GENERAL>",
   "company_product_id": "<PRODUCTO_EMPRESA_A>",
+  "company_product_presentation_id": "<PRESENTACION_BASE_EMPRESA_A>",
   "unit_price": "1500.00"
+}
+```
+
+**Permiso que exige la URL:** `perm:commercial-relationship:price_list_items:create`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+
+**Por qué se hace así**
+
+- Cada presentación vendible tiene su precio explícito (spec 019); no hay precios generales por producto.
+
+**Respuesta esperada:** `201`
+
+**Guardar:** `id` → `<ITEM_GENERAL>`, `version` → `<ITEM_GENERAL_VERSION>`
+
+**Auditoría que deja:** `CREATE_PRICE_LIST_ITEM` (commercial-relationship)
+
+## 4. Precio de la unidad del producto B en GENERAL
+
+Paso `C-12.item_b` · usuario **`admin.test`** · ítems de la FASE 10: 8
+
+```http
+POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
+```
+
+```json
+{
+  "price_list_id": "<LISTA_GENERAL>",
+  "company_product_id": "<PRODUCTO_EMPRESA_B>",
+  "company_product_presentation_id": "<PRESENTACION_BASE_EMPRESA_B>",
+  "unit_price": "7000.00"
 }
 ```
 
@@ -88,11 +120,11 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
 
 **Respuesta esperada:** `201`
 
-**Guardar:** `id` → `<ITEM_GENERAL>`, `version` → `<ITEM_GENERAL_VERSION>`
+**Guardar:** `id` → `<ITEM_B>`
 
 **Auditoría que deja:** `CREATE_PRICE_LIST_ITEM` (commercial-relationship)
 
-## 4. Precio de la caja del producto A en MAYORISTA
+## 5. Precio de la caja del producto A en MAYORISTA
 
 Paso `C-12.item_mayorista` · usuario **`admin.test`** · ítems de la FASE 10: 8
 

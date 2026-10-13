@@ -35,8 +35,8 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 | [04](04-rechazos.md) | 3. Adoptar un producto incompleto (rechazado) | `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [04](04-rechazos.md) | 4. Adoptar los pañales con un código ya usado (rechazado) | `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [04](04-rechazos.md) | 5. Adoptar los pañales con su código del Excel | `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [05](05-precio-y-moneda.md) | 1. Fijar un precio en pesos chilenos con decimales (rechazado) | `PUT /api/v1/company-products/{id}` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| [05](05-precio-y-moneda.md) | 2. Fijar el precio sin decimales | `PUT /api/v1/company-products/{id}` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [05](05-precio-y-moneda.md) | 1. Intentar fijar un precio en el producto (rechazado) | `PUT /api/v1/company-products/{id}` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [05](05-precio-y-moneda.md) | 2. Cambiar la moneda | `PUT /api/v1/company-products/{id}` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [06](06-consultar-y-estados.md) | 1. Listar los productos de la empresa | `GET /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [06](06-consultar-y-estados.md) | 2. Consultar varios productos por lotes | `POST /api/v1/company-products/batch-lookup` | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [06](06-consultar-y-estados.md) | 3. Inactivar el acetaminofén | `POST /api/v1/company-products/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_products:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |

@@ -260,16 +260,13 @@ def test_adoption_registers_first_use_in_product_catalog(client, company_id, glo
         "global_product_id": global_product_id,
         "internal_code": f"VAL-{RUN_ID}",
         "display_name": f"Producto ficticio adoptado {RUN_ID}",
-        "sale_price": "1500.00",
         "currency_code": "COP",
-        "reference_cost": "1000.5000",
     })
 
     assert response.status_code == 201, response.text
     body = response.json()
     assert body["status"] == "ACTIVE"
-    assert body["sale_price"] == "1500.00"
-    assert body["reference_cost"] == "1000.5000"
+    assert "sale_price" not in body and "reference_cost" not in body  # spec 019
 
     product = client.get(f"{PRODUCT_CATALOG}/products/{global_product_id}").json()
     assert product["first_used_at"] is not None
@@ -434,7 +431,7 @@ def adopted_product(client, company_id):
 
     adopted = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/company-products", json={
         "global_product_id": product_id, "internal_code": f"VALB-{RUN_ID}",
-        "display_name": f"Producto ficticio Fase B {RUN_ID}", "currency_code": "COP", "sale_price": "1200.00",
+        "display_name": f"Producto ficticio Fase B {RUN_ID}", "currency_code": "COP",
     })
     assert adopted.status_code == 201, adopted.text
     return {"global_product_id": product_id, "base_unit_id": unit,
@@ -501,13 +498,14 @@ def test_payment_conditions_with_real_payment_reference(client, company_id, phas
     assert "code" not in credit.json()
 
 
-def test_price_list_change_price_and_applicable_price(client, company_id, adopted_product):
+def test_price_list_change_price_and_applicable_price(client, company_id, adopted_product, adopted_presentation):
     price_list = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-lists", json={
         "code": f"LB-{RUN_ID}", "name": f"Lista ficticia {RUN_ID}", "currency_code": "COP", "is_default": True,
     })
     assert price_list.status_code == 201, price_list.text
     price = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-list-items", json={
         "price_list_id": price_list.json()["id"], "company_product_id": adopted_product["company_product"]["id"],
+        "company_product_presentation_id": adopted_presentation["id"],
         "unit_price": "1500", "valid_from": "2026-01-01T00:00:00Z",
     })
     assert price.status_code == 201, price.text
@@ -517,7 +515,8 @@ def test_price_list_change_price_and_applicable_price(client, company_id, adopte
     assert changed.status_code == 201, changed.text
 
     resolved = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/applicable-prices/resolve", json={
-        "at": "2027-01-01T00:00:00Z", "lines": [{"company_product_id": adopted_product["company_product"]["id"]}],
+        "at": "2027-01-01T00:00:00Z", "lines": [{"company_product_id": adopted_product["company_product"]["id"],
+                                                 "company_product_presentation_id": adopted_presentation["id"]}],
     })
     assert resolved.status_code == 200, resolved.text
     line = resolved.json()["items"][0]
@@ -568,7 +567,8 @@ def test_quickstart_presentations_default_swap_and_rejections(client, company_id
     assert duplicate.json()["code"] == "COMMERCIAL_RELATIONSHIP.DUPLICATE_PRESENTATION_ADOPTION"
 
 
-def test_quickstart_prices_in_effect_explicit_list_history_and_access(client, company_id, foreign_company_id, adopted_product):
+def test_quickstart_prices_in_effect_explicit_list_history_and_access(client, company_id, foreign_company_id, adopted_product,
+                                                                     adopted_presentation):
     """Escenarios 12, 14, 15, 16 y 17 con servicios reales."""
     product = adopted_product["company_product"]
     price_list = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-lists", json={
@@ -576,6 +576,7 @@ def test_quickstart_prices_in_effect_explicit_list_history_and_access(client, co
     }).json()
     price = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-list-items", json={
         "price_list_id": price_list["id"], "company_product_id": product["id"], "unit_price": "2000",
+        "company_product_presentation_id": adopted_presentation["id"],
         "valid_from": "2026-01-01T00:00:00Z", "valid_to": "2026-02-01T00:00:00Z",
     }).json()
 
@@ -585,11 +586,11 @@ def test_quickstart_prices_in_effect_explicit_list_history_and_access(client, co
     assert in_effect.json()["code"] == "COMMERCIAL_RELATIONSHIP.PRICE_IN_EFFECT_NOT_MODIFIABLE"
 
     resolve = f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/applicable-prices/resolve"
-    history = client.post(resolve, json={"at": "2026-01-15T00:00:00Z", "lines": [
-        {"company_product_id": product["id"], "price_list_id": price_list["id"]}]}).json()["items"][0]
+    line = {"company_product_id": product["id"], "company_product_presentation_id": adopted_presentation["id"],
+            "price_list_id": price_list["id"]}
+    history = client.post(resolve, json={"at": "2026-01-15T00:00:00Z", "lines": [line]}).json()["items"][0]
     assert (history["resolution"], history["unit_price"]) == ("PRICE_LIST_ITEM", "2000.00")
-    no_price = client.post(resolve, json={"at": "2027-01-01T00:00:00Z", "lines": [
-        {"company_product_id": product["id"], "price_list_id": price_list["id"]}]}).json()["items"][0]
+    no_price = client.post(resolve, json={"at": "2027-01-01T00:00:00Z", "lines": [line]}).json()["items"][0]
     assert no_price["resolution"] == "NO_PRICE_IN_LIST" and no_price["unit_price"] is None
 
     inventory = {"Authorization": f"Bearer {_password_token('inventario.test')}"}

@@ -13,6 +13,7 @@ Ejecuta: `ventas.test`.
 ```json
 {
   "company_product_id": "d15d0000-0000-4000-8000-000000000002",
+  "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000003",
   "quantity": "1",
   "price_list_id": "d15f0000-0000-4000-8000-000000000002",
   "version": 2
@@ -21,7 +22,7 @@ Ejecuta: `ventas.test`.
 
 ### Por qué
 
-- La lista existe pero no tiene precio para el aceite: `409 PRICE_NOT_IN_LIST` (sin respaldo en el precio simple).
+- La lista existe pero no tiene precio para el aceite: `409 PRICE_NOT_IN_LIST` (sin respaldo ni conversiones; spec 019).
 
 ## Permiso
 
@@ -69,7 +70,7 @@ Estado `409`.
   "errors": [
     {
       "field": "price_list_id",
-      "message": "La lista de precios indicada no tiene precio para el producto.",
+      "message": "La lista de precios no tiene precio vigente para la presentación.",
       "code": "PRICE_NOT_IN_LIST"
     }
   ]

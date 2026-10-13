@@ -19,8 +19,6 @@ def _insert_product(session, *, company_id, global_product_id=None, code="P-1", 
         "internal_code": code,
         "display_name": "Producto",
         "currency_code": "COP",
-        "sale_price": 0,
-        "reference_cost": 0,
         "inventory_control_enabled": True,
         "lot_tracking_enabled": False,
         "expiration_tracking_enabled": False,
@@ -114,8 +112,6 @@ def test_product_internal_code_case_insensitive(db_session):
 @pytest.mark.parametrize(
     ("overrides", "constraint"),
     [
-        ({"sale_price": -1}, "ck_company_products_sale_price_non_negative"),
-        ({"reference_cost": -0.0001}, "ck_company_products_reference_cost_non_negative"),
         ({"currency_code": "cop"}, "ck_company_products_currency_code_format"),
         (
             {"inventory_control_enabled": False, "lot_tracking_enabled": True},

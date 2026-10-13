@@ -45,9 +45,10 @@ def test_create_draft_with_resolved_prices(seller, world, fakes, clock) -> None:
     assert (box["subtotal"], box["tax_amount"], box["total"]) == ("32000.00", "5700.00", "37700.00")
     assert box["base_quantity_factor_snapshot"] == "12.00000000" and box["base_quantity"] == "24.0000"
     assert box["presentation_code_snapshot"] == "CAJA12" and box["unit_code_snapshot"] == "UND"
-    # Sin lista: precio simple del producto por unidad base.
-    assert oil["unit_price"] == "9000.0000" and oil["price_source"] == "COMPANY_PRODUCT_SALE_PRICE"
-    assert oil["price_list_id"] is None and oil["price_list_item_id"] is None and oil["price_list_requested"] is False
+    # Sin lista: precio explícito de su presentación unidad en la lista predeterminada (spec 019).
+    assert oil["unit_price"] == "9000.0000" and oil["price_source"] == "PRICE_LIST_ITEM"
+    assert oil["price_list_id"] == str(world.default_list) and oil["price_list_item_id"] == str(world.item_unit_2)
+    assert oil["price_list_requested"] is False and oil["base_quantity_factor_snapshot"] == "1.00000000"
     assert oil["subtotal"] == "27000.00" and oil["total"] == "26998.50"
     assert rice["unit_price"] == "1500.0000" and rice["subtotal"] == "2250.00" and rice["base_quantity"] == "1.5000"
     assert (sale["subtotal"], sale["discount_total"], sale["tax_total"], sale["total"]) == (

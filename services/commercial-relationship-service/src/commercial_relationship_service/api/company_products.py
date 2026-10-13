@@ -41,7 +41,6 @@ _BATCH_FIELDS = (
     "internal_code",
     "display_name",
     "currency_code",
-    "sale_price",
     "inventory_control_enabled",
     "lot_tracking_enabled",
     "expiration_tracking_enabled",

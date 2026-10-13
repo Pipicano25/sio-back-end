@@ -20,6 +20,7 @@ from commercial_relationship_service.application.exceptions import (
     VersionConflictError,
     PresentationInactiveError,
     PriceInEffectNotModifiableError,
+    PriceItemWithoutPresentationError,
 )
 from commercial_relationship_service.application.internal_references import (
     PRESENTATION_FIELD,
@@ -129,6 +130,10 @@ class PriceListItemService:
             raise InvalidStatusTransitionError(
                 f"La acción change-price no es válida desde el estado {current.status}."
             )
+
+        if current.company_product_presentation_id is None:
+            # Spec 019: un precio anterior sin presentación no se prolonga con un precio nuevo.
+            raise PriceItemWithoutPresentationError(field="company_product_presentation_id")
 
         price_list = require_active_price_list(self._lists, current.price_list_id, current.company_id)
         require_product(self._products, current.company_product_id, current.company_id)

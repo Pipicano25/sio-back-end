@@ -46,7 +46,7 @@ def test_line_changes_bump_version_and_recompute_totals(seller, world, make_draf
 def test_editing_a_line_resolves_its_price_again(seller, world, make_draft, fakes) -> None:
     """La forma de actualizar una línea tras `PRICES_CHANGED` (FR-006, DS-05)."""
     draft = make_draft(line(world.product, "2"))
-    fakes.cr.sale_prices[world.product] = (Decimal("1600.00"), "COP")
+    fakes.cr.set_unit_price(world.product, "1600.00")
     detail = draft["lines"][0]
     updated = seller.put(url(world, draft, f"/details/{detail['id']}"), json={**line(world.product, "2"), "version": 1})
     assert updated.status_code == 200, updated.text

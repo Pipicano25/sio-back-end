@@ -1457,11 +1457,15 @@ Representa la adopción y configuración privada de un producto global dentro de
 
 `GlobalProduct` define qué es el producto de manera global, mientras `CompanyProduct` indica que una empresa decidió incorporarlo a su catálogo y define la configuración general con la que lo administra.
 
-Dos empresas pueden adoptar el mismo `GlobalProduct` y mantener códigos internos, referencias, nombres visibles, precios de referencia, costos de referencia y configuraciones de inventario diferentes.
+Dos empresas pueden adoptar el mismo `GlobalProduct` y mantener códigos internos, referencias, nombres visibles y configuraciones de inventario diferentes.
 
 La entidad no representa una presentación física específica. Las presentaciones que una empresa decide comprar o vender pertenecen a `CompanyProductPresentation`.
 
-Para el MVP, `sale_price` representa el precio simple o predeterminado del producto. Cuando se utilicen listas de precios, los valores específicos pertenecen a `PriceList` y `PriceListItem`.
+`CompanyProduct` representa solo la asociación del producto global con la empresa: **no tiene precio ni costo** (spec 019). Los precios de venta pertenecen exclusivamente a `PriceList` y `PriceListItem`, por presentación; los costos provienen de las compras y de la valoración de Inventory Service.
+
+> **Reconciliación (2026-10-13, spec 019):** se eliminaron `sale_price` y `reference_cost` (migración `0004` de
+> Commercial Relationship). Una solicitud que los envíe responde `422`. `currency_code` se conserva y elige la lista
+> de precios predeterminada.
 
 No almacena stock actual, movimientos, lotes reales ni niveles de reposición por sucursal, ya que estos datos pertenecen a Inventory Service.
 
@@ -1476,9 +1480,7 @@ No almacena stock actual, movimientos, lotes reales ni niveles de reposición po
 | `reference_code`              | `VARCHAR(100)`  | nullable            | Referencia adicional del producto; no necesariamente única.                                   |
 | `display_name`                | `VARCHAR(200)`  | NN                  | Nombre visible dentro de la empresa.                                                          |
 | `short_name`                  | `VARCHAR(160)`  | nullable            | Nombre corto utilizado en interfaces o procesos internos.                                     |
-| `sale_price`                  | `NUMERIC(18,2)` | NN, DEFAULT `0`     | Precio simple o predeterminado utilizado cuando no aplica una lista de precios específica.    |
-| `currency_code`               | `CHAR(3)`       | NN                  | Moneda ISO 4217 del precio de referencia.                                                     |
-| `reference_cost`              | `NUMERIC(18,4)` | NN, DEFAULT `0`     | Costo privado de referencia; no reemplaza el costo histórico calculado por Inventory Service. |
+| `currency_code`               | `CHAR(3)`       | NN                  | Moneda ISO 4217 de venta del producto; elige la lista de precios predeterminada.              |
 | `inventory_control_enabled`   | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Indica si la empresa controla existencias del producto mediante Inventory Service.            |
 | `lot_tracking_enabled`        | `BOOLEAN`       | NN, DEFAULT `FALSE` | Indica si la empresa requiere controlar el producto por lotes.                                |
 | `expiration_tracking_enabled` | `BOOLEAN`       | NN, DEFAULT `FALSE` | Indica si los lotes del producto requieren fecha de vencimiento.                              |
@@ -1499,7 +1501,6 @@ No almacena stock actual, movimientos, lotes reales ni niveles de reposición po
 - `reference_code` no tiene obligación de ser único.
 - `global_product_id` es una referencia externa a Product Catalog Service y no utiliza una llave foránea física.
 - Solo un `GlobalProduct` activo puede utilizarse para crear una nueva adopción empresarial.
-- `sale_price` y `reference_cost` no pueden ser negativos.
 - `lot_tracking_enabled = TRUE` requiere `inventory_control_enabled = TRUE`.
 - `expiration_tracking_enabled = TRUE` requiere `lot_tracking_enabled = TRUE`.
 - Cuando `inventory_control_enabled = FALSE`, el producto no debe generar nuevos saldos, movimientos, políticas o lotes ordinarios en Inventory Service.
@@ -1841,13 +1842,13 @@ El lead time esperado es una condición de planificación y no reemplaza el lead
 
 Esta entidad no representa una lista de precios y no participa en el mecanismo básico de precios del MVP.
 
-Durante el MVP, los precios se administran mediante `CompanyProduct.sale_price` como precio simple de referencia y mediante `PriceList` y `PriceListItem` cuando se requiera una lista de precios.
+Los precios de venta se administran exclusivamente mediante `PriceList` y `PriceListItem`, con un precio explícito por presentación (spec 019).
 
 `ProductPricingPolicy` queda reservada para una etapa posterior en la que SIO implemente reglas de margen, control de rentabilidad, alertas comerciales o autorizaciones asociadas al precio.
 
 Representa la política comercial de márgenes que una empresa define para un producto empresarial.
 
-`CompanyProduct` conserva la configuración comercial básica del producto, como su código interno, nombre visible y precio de venta de referencia, mientras `ProductPricingPolicy` establece las reglas utilizadas por SIO para determinar si el margen generado por una venta es comercialmente aceptable.
+`CompanyProduct` conserva la configuración comercial básica del producto, como su código interno y su nombre visible (sin precio ni costo, spec 019), mientras `ProductPricingPolicy` establece las reglas utilizadas por SIO para determinar si el margen generado por una venta es comercialmente aceptable.
 
 La política permite definir un margen mínimo, un margen objetivo y un margen máximo para cada producto empresarial.
 
@@ -1870,7 +1871,7 @@ Donde:
 - `cost_amount` corresponde al costo histórico realmente aplicado al inventario vendido.
 - El impuesto no forma parte del cálculo del margen comercial.
 - El costo definitivo utilizado para evaluar y registrar el margen debe provenir del método de valoración aplicado por Inventory Service.
-- `CompanyProduct.reference_cost` puede utilizarse como referencia previa durante una cotización o borrador, pero no representa necesariamente el costo histórico definitivo de una venta confirmada.
+- No existe un costo de referencia en `CompanyProduct` (spec 019): el costo proviene de las compras y de la valoración de Inventory Service.
 
 La política también determina qué debe hacer SIO cuando una venta genera un margen inferior al mínimo permitido.
 
@@ -2152,14 +2153,14 @@ Esto permite que SIO detecte descuentos que reduzcan excesivamente la rentabilid
 
 La política no almacena el costo del producto.
 
-`CompanyProduct.reference_cost` representa únicamente un costo privado de referencia.
+`CompanyProduct` no tiene costo de referencia (spec 019); una referencia previa, si se necesita, se toma de las compras o de la valoración de Inventory Service.
 
 El costo histórico definitivo de una venta debe provenir del método de valoración aplicado por `Inventory Service`.
 
-Por ejemplo:
+Por ejemplo, el costo de la última compra:
 
 ```text
-CompanyProduct.reference_cost
+costo de la última compra
 = 70.000
 ```
 
@@ -2660,9 +2661,8 @@ La vigencia permite conservar diferentes versiones históricas de un precio sin 
 - No pueden existir periodos de vigencia solapados entre los precios `ACTIVE` de la misma combinación de lista, producto y presentación.
 - `price_list_id`, `company_product_id` y `company_product_presentation_id` son inmutables. `unit_price` y `valid_from` solo se modifican mientras `valid_from` esté en el futuro; un precio en vigencia solo admite fijar, adelantar o posponer `valid_to` a un instante futuro, o inactivarse.
 - Para cambiar un precio en vigencia se usa la acción "cambiar precio": en una sola transacción cierra el precio vigente en el instante de efecto y crea uno nuevo para la misma lista, producto y presentación desde ese instante y hasta el `valid_to` que tenía el anterior.
-- Si `company_product_presentation_id` es nulo, el precio aplica directamente al `CompanyProduct` de forma general.
-- Si `company_product_presentation_id` contiene un valor, el precio aplica exclusivamente a esa presentación empresarial.
-- Cuando no exista un `PriceListItem` aplicable, el MVP puede utilizar `CompanyProduct.sale_price` como precio simple o predeterminado según las reglas del proceso de venta.
+- `company_product_presentation_id` es obligatorio al registrar un precio (spec 019): el precio aplica exclusivamente a esa presentación empresarial, por unidad de esa presentación. No hay precios generales por producto ni conversiones automáticas entre presentaciones. La columna admite nulos solo para leer filas anteriores, que la resolución ignora; cambiar el precio de una de ellas responde `422 PRICE_ITEM_WITHOUT_PRESENTATION`.
+- Sin un `PriceListItem` vigente para la presentación no hay precio: la resolución informa `NO_PRICE_IN_LIST` o `NO_APPLICABLE_PRICE_LIST` y la presentación no puede venderse, aunque esté asociada a la empresa.
 - La moneda se obtiene desde `PriceList.currency_code`.
 - Los precios históricos utilizados en ventas no deben eliminarse físicamente.
 - El valor `0` representa un precio real igual a cero; la ausencia de configuración debe representarse mediante la inexistencia de un `PriceListItem`, no mediante un valor cero artificial.
@@ -2677,9 +2677,8 @@ La vigencia permite conservar diferentes versiones históricas de un precio sin 
 
 - Pertenece a una `PriceList`.
 - Pertenece a un `CompanyProduct`.
-- Puede pertenecer a una `CompanyProductPresentation`.
+- Pertenece a una `CompanyProductPresentation` (obligatoria desde la spec 019).
 - Puede ser referenciado desde `SaleDetail`.
-- Puede coexistir con `CompanyProduct.sale_price`, que funciona como precio simple o de referencia cuando no se utiliza una lista.
 
 ---
 
@@ -3339,11 +3338,11 @@ Representa cada producto vendido con cantidad, precio, descuento, impuesto, cost
 - Cantidad mayor que cero; montos no negativos; `discount_amount ≤ subtotal`; `total = subtotal − discount_amount + tax_amount`.
 - Sin presentación, `base_quantity_factor_snapshot = 1` y sin snapshots de presentación; con presentación, sus snapshots son obligatorios. La presentación pertenece al mismo `CompanyProduct`; el factor es mayor que cero.
 - La validación y la salida de inventario se hacen en la unidad base: `quantity × base_quantity_factor_snapshot` (≤ 4 decimales). Inventory no recibe costo.
-- `unit_price` lo resuelve Commercial Relationship (lista indicada, lista aplicable o `sale_price`); el usuario no lo envía. Con presentación, el precio por unidad base se convierte a la unidad de venta y se redondea a 4 decimales. Es el precio histórico definitivo.
+- Toda línea indica una presentación (spec 019), incluida la de factor 1 para vender la unidad base. `unit_price` lo resuelve Commercial Relationship: el precio explícito de esa presentación en la lista indicada o en la predeterminada; el usuario no lo envía. Se usa tal cual, sin conversiones. Sin precio vigente, la línea se rechaza. Es el precio histórico definitivo; las ventas anteriores a la spec 019 conservan su origen (`COMPANY_PRODUCT_SALE_PRICE`) para lectura.
 - `price_list_item_id` exige `price_list_id` (`ck_sale_details_price_list_item`) y corresponde a la misma lista, producto y presentación; `price_list_requested = true` exige `price_list_id` (`ck_sale_details_price_list_requested`). `price_list_id` y `price_list_item_id` son referencias externas sin FK física.
 - Costo (`ck_sale_details_cost_block`): `unit_cost_snapshot`, `cost_total` y `cost_known` son todos nulos (`DRAFT`) o todos no nulos (confirmada). `unit_cost_snapshot` es el costo por unidad base exactamente como lo informa Inventory; `cost_total` es el costo total que informa Inventory.
 - Margen (`ck_sale_details_margin_amount`, `ck_sale_details_margin_percentage`): con `cost_known = true`, `gross_margin_amount = (subtotal − discount_amount) − cost_total`; con `cost_known = false` ambos márgenes son nulos. `gross_margin_percentage = gross_margin_amount / (subtotal − discount_amount) × 100` (≤ 100) es nulo si el neto es cero o si el valor no es representable en `NUMERIC(7,4)`; nunca se satura ni se trunca. El motivo del nulo no se persiste.
-- Costo y margen se escriben una sola vez, en la transacción que confirma la venta; una venta histórica no recalcula sus márgenes cuando cambia `CompanyProduct.reference_cost` ni el costo de Inventory.
+- Costo y margen se escriben una sola vez, en la transacción que confirma la venta; una venta histórica no recalcula sus márgenes cuando cambia el costo de Inventory.
 - Solo se insertan, modifican o eliminan mientras la venta está en `DRAFT` (`tr_sale_details_draft_only`).
 
 ## 8.3 SaleSequence

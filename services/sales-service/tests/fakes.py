@@ -4,9 +4,10 @@
 sus llamadas y admite modos "no disponible" (lanza `DependencyUnavailableError` como el
 adaptador real) y "falla si se llama".
 
-- `FakeCommercial` resuelve el precio aplicable como el contrato 010 §6 (lista indicada,
-  lista predeterminada o `sale_price`; `NO_PRICE_IN_LIST`, `PRICE_LIST_NOT_APPLICABLE`,
-  `NOT_FOUND`; base `PRESENTATION` o `BASE_UNIT`).
+- `FakeCommercial` resuelve el precio aplicable como el contrato 010 §6 con la spec 019: solo el
+  precio explícito de la presentación en la lista indicada o en la predeterminada (base
+  `PRESENTATION`); `NO_PRICE_IN_LIST`, `NO_APPLICABLE_PRICE_LIST`, `PRICE_LIST_NOT_APPLICABLE`,
+  `NOT_FOUND`. Sin `sale_price` ni precios generales por producto.
 - `FakeInventory` reproduce el contrato de Inventory (012 + 013) para salidas: capas FIFO
   por sucursal y producto con costo conocido o desconocido, `409 INSUFFICIENT_STOCK` con
   `shortages`, idempotencia por `operation_key` (`409 OPERATION_KEY_CONFLICT` con otra
@@ -111,6 +112,28 @@ class World:
     price_list_2: UUID = field(default_factory=uuid4)
     item_box: UUID = field(default_factory=uuid4)
     item_product_2: UUID = field(default_factory=uuid4)
+    # Spec 019: cada producto se vende por presentación; la unidad base, con su presentación de factor 1.
+    unit_presentation: UUID = field(default_factory=uuid4)
+    unit_presentation_2: UUID = field(default_factory=uuid4)
+    unit_presentation_ni: UUID = field(default_factory=uuid4)
+    global_unit: UUID = field(default_factory=uuid4)
+    global_unit_2: UUID = field(default_factory=uuid4)
+    default_list: UUID = field(default_factory=uuid4)
+    item_unit: UUID = field(default_factory=uuid4)
+    item_unit_2: UUID = field(default_factory=uuid4)
+    item_unit_ni: UUID = field(default_factory=uuid4)
+    item_box_default: UUID = field(default_factory=uuid4)
+
+    def __post_init__(self) -> None:
+        UNIT_PRESENTATION_OF.update({
+            self.product: self.unit_presentation,
+            self.product_2: self.unit_presentation_2,
+            self.product_no_inventory: self.unit_presentation_ni,
+        })
+
+
+# Producto → su presentación de factor 1 (la usa `line()` de conftest cuando una prueba no indica presentación).
+UNIT_PRESENTATION_OF: dict[UUID, UUID] = {}
 
 
 class FakeOperationalContext:
@@ -229,25 +252,35 @@ class FakeCommercial:
         self.presentations = {
             world.presentation: CompanyPresentationInfo(
                 world.presentation, world.company, world.product, world.global_presentation, True, "ACTIVE"
-            )
-        }
-        # Precio simple por unidad base (sale_price) y su moneda.
-        self.sale_prices: dict[UUID, tuple[Decimal | None, str]] = {
-            world.product: (Decimal("1500.00"), "COP"),
-            world.product_2: (Decimal("9000.00"), "COP"),
-            world.product_no_inventory: (Decimal("50000.00"), "COP"),
+            ),
+            world.unit_presentation: CompanyPresentationInfo(
+                world.unit_presentation, world.company, world.product, world.global_unit, True, "ACTIVE"
+            ),
+            world.unit_presentation_2: CompanyPresentationInfo(
+                world.unit_presentation_2, world.company, world.product_2, world.global_unit_2, True, "ACTIVE"
+            ),
+            world.unit_presentation_ni: CompanyPresentationInfo(
+                world.unit_presentation_ni, world.company, world.product_no_inventory, world.global_unit_2, True, "ACTIVE"
+            ),
         }
         self.price_lists: dict[UUID, PriceListInfo] = {
+            world.default_list: PriceListInfo(world.default_list, world.company, "ACTIVE"),
             world.price_list: PriceListInfo(world.price_list, world.company, "ACTIVE"),
             world.price_list_2: PriceListInfo(world.price_list_2, world.company, "ACTIVE"),
         }
-        self.list_applicable: dict[UUID, bool] = {world.price_list: True, world.price_list_2: True}
-        # (lista, producto, presentación o None) → ítem. Con presentación: base PRESENTATION.
-        self.items: dict[tuple[UUID, UUID, UUID | None], ListItem] = {
+        self.list_applicable: dict[UUID, bool] = {world.default_list: True, world.price_list: True, world.price_list_2: True}
+        # (lista, producto, presentación) → ítem: siempre el precio explícito de una presentación (spec 019).
+        self.items: dict[tuple[UUID, UUID, UUID], ListItem] = {
+            (world.default_list, world.product, world.unit_presentation): ListItem(world.item_unit, Decimal("1500.00")),
+            (world.default_list, world.product_2, world.unit_presentation_2): ListItem(world.item_unit_2, Decimal("9000.00")),
+            (world.default_list, world.product_no_inventory, world.unit_presentation_ni): ListItem(world.item_unit_ni, Decimal("50000.00")),
+            # La caja también tiene su precio explícito en GENERAL (antes salía de 1500 × 12; spec 019: sin conversión).
+            (world.default_list, world.product, world.presentation): ListItem(world.item_box_default, Decimal("18000.00")),
             (world.price_list, world.product, world.presentation): ListItem(world.item_box, Decimal("16000.00")),
-            (world.price_list, world.product_2, None): ListItem(world.item_product_2, Decimal("8500.00")),
+            (world.price_list, world.product_2, world.unit_presentation_2): ListItem(world.item_product_2, Decimal("8500.00")),
         }
-        self.default_list: UUID | None = None
+        # Lista predeterminada vigente en la moneda del producto (`None`: no hay → NO_APPLICABLE_PRICE_LIST).
+        self.default_list: UUID | None = world.default_list
 
     def get_customer(self, customer_id: UUID) -> CustomerInfo | None:
         self.availability.hit("customer", customer_id)
@@ -265,17 +298,22 @@ class FakeCommercial:
         self.availability.hit("price_list", price_list_id)
         return self.price_lists.get(price_list_id)
 
-    def set_price(self, price_list: UUID, product: UUID, presentation: UUID | None, price: str, item: UUID | None = None) -> UUID:
+    def set_price(self, price_list: UUID, product: UUID, presentation: UUID, price: str, item: UUID | None = None,
+                  currency_code: str = "COP") -> UUID:
         item_id = item or uuid4()
-        self.items[(price_list, product, presentation)] = ListItem(item_id, Decimal(price))
+        self.items[(price_list, product, presentation)] = ListItem(item_id, Decimal(price), currency_code)
         return item_id
 
-    def _item(self, price_list: UUID, product: UUID, presentation: UUID | None) -> tuple[ListItem, str] | None:
-        if presentation is not None and (price_list, product, presentation) in self.items:
-            return self.items[(price_list, product, presentation)], "PRESENTATION"
-        if (price_list, product, None) in self.items:
-            return self.items[(price_list, product, None)], "BASE_UNIT"
-        return None
+    def set_unit_price(self, product: UUID, price: str | None, currency_code: str = "COP") -> UUID | None:
+        """Precio de la presentación de factor 1 del producto en la lista predeterminada (`None` lo retira)."""
+        key = (self.world.default_list, product, UNIT_PRESENTATION_OF[product])
+        if price is None:
+            self.items.pop(key, None)
+            return None
+        return self.set_price(*key, price, currency_code=currency_code)
+
+    def _item(self, price_list: UUID, product: UUID, presentation: UUID | None) -> ListItem | None:
+        return self.items.get((price_list, product, presentation)) if presentation is not None else None
 
     def resolve_prices(self, company_id: UUID, lines, at) -> dict[str, ResolvedPrice]:
         self.availability.hit("applicable_prices", tuple(lines))
@@ -305,26 +343,23 @@ class FakeCommercial:
                 ):
                     result[line.line_id] = ResolvedPrice(line.line_id, True, "PRICE_LIST_NOT_APPLICABLE", **empty)
                     continue
-                found = self._item(line.price_list_id, product.id, line.company_product_presentation_id)
-                if found is None:
+                item = self._item(line.price_list_id, product.id, line.company_product_presentation_id)
+                if item is None:
                     result[line.line_id] = ResolvedPrice(line.line_id, True, "NO_PRICE_IN_LIST", **empty)
                     continue
-                item, basis = found
                 result[line.line_id] = ResolvedPrice(
-                    line.line_id, True, "PRICE_LIST_ITEM", basis, item.unit_price, item.currency_code, line.price_list_id, item.id
+                    line.line_id, True, "PRICE_LIST_ITEM", "PRESENTATION", item.unit_price, item.currency_code, line.price_list_id, item.id
                 )
                 continue
-            if self.default_list is not None:
-                found = self._item(self.default_list, product.id, line.company_product_presentation_id)
-                if found is not None:
-                    item, basis = found
-                    result[line.line_id] = ResolvedPrice(
-                        line.line_id, True, "PRICE_LIST_ITEM", basis, item.unit_price, item.currency_code, self.default_list, item.id
-                    )
-                    continue
-            price, currency = self.sale_prices.get(product.id, (None, "COP"))
+            if self.default_list is None or not self.list_applicable.get(self.default_list, True):
+                result[line.line_id] = ResolvedPrice(line.line_id, True, "NO_APPLICABLE_PRICE_LIST", **empty)
+                continue
+            item = self._item(self.default_list, product.id, line.company_product_presentation_id)
+            if item is None:
+                result[line.line_id] = ResolvedPrice(line.line_id, True, "NO_PRICE_IN_LIST", **empty)
+                continue
             result[line.line_id] = ResolvedPrice(
-                line.line_id, True, "COMPANY_PRODUCT_SALE_PRICE", "BASE_UNIT", price, currency, None, None
+                line.line_id, True, "PRICE_LIST_ITEM", "PRESENTATION", item.unit_price, item.currency_code, self.default_list, item.id
             )
         return result
 
@@ -333,7 +368,9 @@ class FakeCatalog:
     def __init__(self, world: World) -> None:
         self.availability = Unavailable(PRODUCT_CATALOG)
         self.presentations = {
-            world.global_presentation: GlobalPresentationInfo(world.global_presentation, "CAJA12", "Caja x12", Decimal("12"))
+            world.global_presentation: GlobalPresentationInfo(world.global_presentation, "CAJA12", "Caja x12", Decimal("12")),
+            world.global_unit: GlobalPresentationInfo(world.global_unit, "UND", "Unidad", Decimal("1")),
+            world.global_unit_2: GlobalPresentationInfo(world.global_unit_2, "UND", "Unidad", Decimal("1")),
         }
         self.products = {
             world.global_product: GlobalProductInfo(world.global_product, world.unit),

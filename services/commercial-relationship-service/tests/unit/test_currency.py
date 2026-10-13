@@ -69,7 +69,7 @@ def test_accepts_price_scale(price, currency):
 def test_rejects_price_scale(price, currency):
     with pytest.raises(PriceScaleNotAllowedError) as error:
         validate_price_scale(Decimal(price), currency)
-    assert error.value.field == "sale_price"
+    assert error.value.field == "unit_price"  # spec 019: el precio es del ítem de lista
 
 
 # --------------------------------------------------------------------------

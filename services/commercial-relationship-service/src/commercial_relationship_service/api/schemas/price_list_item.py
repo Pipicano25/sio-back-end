@@ -22,12 +22,15 @@ from commercial_relationship_service.domain.currency import CURRENCY_DECIMALS, f
 
 
 class PriceListItemCreate(StrictModel):
-    """Registro (FR-050); `valid_from` por defecto es el instante del servidor."""
+    """Registro (FR-050); `valid_from` por defecto es el instante del servidor.
+
+    Spec 019: todo precio es de una presentación (`company_product_presentation_id` obligatorio).
+    """
 
     price_list_id: UUID
     company_product_id: UUID
     unit_price: UnitPrice
-    company_product_presentation_id: UUID | None = None
+    company_product_presentation_id: UUID
     valid_from: AwareDatetime | None = None
     valid_to: AwareDatetime | None = None
 
@@ -80,7 +83,7 @@ class PriceChangeResponse(BaseModel):
 class ApplicablePriceLine(StrictModel):
     line_id: str | None = Field(default=None, max_length=64)
     company_product_id: UUID
-    company_product_presentation_id: UUID | None = None
+    company_product_presentation_id: UUID  # spec 019: el precio siempre es de una presentación
     price_list_id: UUID | None = None
 
 

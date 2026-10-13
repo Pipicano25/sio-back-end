@@ -1,6 +1,6 @@
 # Ejercicio 2: Venta en borrador y precios
 
-El vendedor registra una venta en borrador: una línea en caja con la lista mayorista y otra con el precio simple del producto. El precio siempre lo resuelve el sistema: se rechazan el precio manual, una lista inexistente, una lista sin precio para el producto y un producto sin control de inventario.
+El vendedor registra una venta en borrador: una línea en caja con la lista mayorista y otra con el precio de su presentación en la lista predeterminada. El precio siempre lo resuelve el sistema: se rechazan el precio manual, una lista inexistente, una lista sin precio para el producto y un producto sin control de inventario.
 
 Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente: se ejecuta en una base nueva con el reloj fijo en el 5 de noviembre de 2026.
 

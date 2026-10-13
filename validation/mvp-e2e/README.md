@@ -2,7 +2,7 @@
 
 Suite E2E automatizada de la feature 017 (`specs/017-mvp-integral-validation/`). Con un solo comando
 verifica el entorno integrado y recorre, con los servicios reales y Keycloak real, el ciclo completo del
-MVP: configuración → compras → inventario → ventas (tres mecanismos de precio) → salida FIFO con costo y
+MVP: configuración → compras → inventario → ventas (precio por presentación: lista indicada y lista predeterminada; spec 019) → salida FIFO con costo y
 margen → anulaciones → auditoría. Además comprueba el aislamiento entre empresas y los permisos, provoca
 caídas controladas de dependencias restaurando siempre el entorno, valida la guía
 [`docs/validacion-mvp/`](../../docs/validacion-mvp/README.md) y ejecuta la regresión integral contra una

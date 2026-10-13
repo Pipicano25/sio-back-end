@@ -2,9 +2,9 @@
 
 - `base_quantity = quantity × factor`, exacta y con a lo sumo 4 decimales
   (Inventory exige cantidades en unidad base con ≤ 4 decimales).
-- Precio resuelto por Commercial Relationship (`basis`): `PRESENTATION` se usa tal cual;
-  `BASE_UNIT` en una línea con presentación se multiplica por el factor y se redondea
-  `ROUND_HALF_UP` a **4 decimales** (P-04, consistente con `unit_price NUMERIC(18,4)`).
+- Precio resuelto por Commercial Relationship (`basis`): solo `PRESENTATION`, que se usa tal cual
+  (redondeo `ROUND_HALF_UP` a 4 decimales, consistente con `unit_price NUMERIC(18,4)`). Desde la spec 019 no
+  hay precios por unidad base ni conversiones entre presentaciones: `BASE_UNIT` se rechaza.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from sales_service.domain.money import (
 DEFAULT_FACTOR = Decimal("1")
 PRESENTATION = "PRESENTATION"
 BASE_UNIT = "BASE_UNIT"
-PRICE_BASES = (PRESENTATION, BASE_UNIT)
+PRICE_BASES = (PRESENTATION,)  # spec 019; BASE_UNIT solo aparece en ventas anteriores (lectura)
 
 
 def check_factor(factor: Decimal) -> Decimal:
@@ -52,6 +52,4 @@ def sale_unit_price(price: Decimal, basis: str, factor: Decimal) -> Decimal:
     """Precio por unidad de venta a partir del precio resuelto y su base (DS-04, P-04)."""
     if basis == PRESENTATION:
         return price.quantize(QUANTITY_QUANTUM, rounding=ROUND_HALF_UP)
-    if basis == BASE_UNIT:
-        return (price * check_factor(factor)).quantize(QUANTITY_QUANTUM, rounding=ROUND_HALF_UP)
-    raise ValueError(f"Base de precio desconocida: {basis}")
+    raise ValueError(f"Base de precio no admitida: {basis} (spec 019: solo precio por presentación)")

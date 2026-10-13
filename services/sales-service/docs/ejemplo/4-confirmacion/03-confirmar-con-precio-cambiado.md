@@ -22,7 +22,7 @@ Situación simulada antes de la llamada: `price:1550.00` (en la prueba automáti
 
 ### Por qué
 
-- El precio simple del arroz pasó a 1550: `409 PRICES_CHANGED` con el valor guardado y el vigente.
+- El precio de la unidad de arroz en la lista predeterminada pasó a 1550: `409 PRICES_CHANGED` con el valor guardado y el vigente.
 - Sin salida, sin número y sin cambios en el borrador.
 
 ## Permiso
@@ -76,13 +76,13 @@ Estado `409`.
       "message": "El precio aplicable de la línea cambió desde que se guardó.",
       "stored": {
         "unit_price": "1500.0000",
-        "price_list_id": null,
-        "price_list_item_id": null
+        "price_list_id": "d15f0000-0000-4000-8000-000000000003",
+        "price_list_item_id": "d15f0000-0000-4000-8000-000000000013"
       },
       "current": {
         "unit_price": "1550.0000",
-        "price_list_id": null,
-        "price_list_item_id": null
+        "price_list_id": "d15f0000-0000-4000-8000-000000000003",
+        "price_list_item_id": "d15f0000-0000-4000-8000-000000000017"
       }
     }
   ]

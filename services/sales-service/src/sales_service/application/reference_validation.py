@@ -16,8 +16,13 @@ Si hay errores de ambas clases se informa primero el `422`.
 Precio (R-07): una llamada a `applicable-prices/resolve` con la intención original de cada
 línea (lista solo si el vendedor la pidió, P-02). `PRICE_LIST_NOT_APPLICABLE` se
 desambigua con la consulta de la lista (P-03): inexistente o de otra empresa → `422`;
-existente no aplicable → `409`; no disponible → `503`. El precio con base `BASE_UNIT` en una
-línea con presentación se convierte con el factor a 4 decimales (P-04).
+existente no aplicable → `409`; no disponible → `503`.
+
+Spec 019: toda línea indica su presentación (`422 PRESENTATION_REQUIRED` si un borrador anterior no la tiene) y
+solo se acepta el precio explícito de esa presentación (`PRICE_LIST_ITEM`, base `PRESENTATION`), tal cual, sin
+conversiones. Sin precio vigente → `409` (`PRICE_NOT_IN_LIST` o `PRICE_NOT_AVAILABLE`). Un resultado con
+`COMPANY_PRODUCT_SALE_PRICE` o base `BASE_UNIT` (versión anterior de Commercial Relationship) es una dependencia
+incompatible → `503`, nunca un precio.
 """
 
 from __future__ import annotations
@@ -57,8 +62,9 @@ from sales_service.domain.money import DomainRuleError
 ACTIVE = "ACTIVE"
 CUSTOMER_IDENTIFICATION_MAX = 100
 PRICE_LIST_ITEM = "PRICE_LIST_ITEM"
-COMPANY_PRODUCT_SALE_PRICE = "COMPANY_PRODUCT_SALE_PRICE"
+COMPANY_PRODUCT_SALE_PRICE = "COMPANY_PRODUCT_SALE_PRICE"  # solo ventas anteriores a la spec 019 (lectura)
 NO_PRICE_IN_LIST = "NO_PRICE_IN_LIST"
+NO_APPLICABLE_PRICE_LIST = "NO_APPLICABLE_PRICE_LIST"
 PRICE_LIST_NOT_APPLICABLE = "PRICE_LIST_NOT_APPLICABLE"
 NOT_FOUND = "NOT_FOUND"
 T = TypeVar("T")
@@ -281,6 +287,14 @@ class ReferenceResolver:
                 line_ok = False
 
             presentation = None
+            if line.company_product_presentation_id is None:  # borrador anterior a la spec 019
+                findings.bad(
+                    f"{prefix}company_product_presentation_id",
+                    "PRESENTATION_REQUIRED",
+                    "La línea debe indicar la presentación que se vende (spec 019).",
+                    number,
+                )
+                continue
             if line.company_product_presentation_id is not None:
                 presentation = presentations.get(line.company_product_presentation_id)
                 field_name = f"{prefix}company_product_presentation_id"
@@ -417,7 +431,20 @@ class ReferenceResolver:
             findings.bad(f"{prefix}company_product_id", "COMPANY_PRODUCT_NOT_FOUND", "El producto no existe en la empresa.", number)
             return None
         if price.resolution == NO_PRICE_IN_LIST:
-            findings.unfit(list_field, "PRICE_NOT_IN_LIST", "La lista de precios indicada no tiene precio para el producto.", number)
+            findings.unfit(
+                list_field if line.price_list_id is not None else f"{prefix}company_product_presentation_id",
+                "PRICE_NOT_IN_LIST",
+                "La lista de precios no tiene precio vigente para la presentación.",
+                number,
+            )
+            return None
+        if price.resolution == NO_APPLICABLE_PRICE_LIST:
+            findings.unfit(
+                f"{prefix}company_product_presentation_id",
+                "PRICE_NOT_AVAILABLE",
+                "No hay una lista de precios predeterminada vigente con precio para la presentación.",
+                number,
+            )
             return None
         if price.resolution == PRICE_LIST_NOT_APPLICABLE:
             price_list = price_lists.get(line.price_list_id)
@@ -431,7 +458,7 @@ class ReferenceResolver:
                     number,
                 )
             return None
-        if price.resolution not in (PRICE_LIST_ITEM, COMPANY_PRODUCT_SALE_PRICE):
+        if price.resolution != PRICE_LIST_ITEM:
             raise DependencyUnavailableError(
                 COMMERCIAL_RELATIONSHIP, operation="applicable_prices", cause=f"resolucion_desconocida={price.resolution}"
             )

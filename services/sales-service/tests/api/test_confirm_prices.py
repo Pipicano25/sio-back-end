@@ -46,7 +46,7 @@ def test_list_price_changed(seller, world, fakes, make_sequence, make_draft, con
 def test_item_replaced_with_the_same_price_is_a_change(seller, world, fakes, make_sequence, make_draft, confirm, test_engine) -> None:
     make_sequence()
     draft = make_draft(line(world.product_2, "1", price_list_id=world.price_list))
-    new_item = fakes.cr.set_price(world.price_list, world.product_2, None, "8500.00")
+    new_item = fakes.cr.set_price(world.price_list, world.product_2, world.unit_presentation_2, "8500.00")
     response = confirm(draft)
     assert response.status_code == 409 and response.json()["code"] == "SALES.PRICES_CHANGED"
     change = response.json()["errors"][0]
@@ -57,12 +57,12 @@ def test_item_replaced_with_the_same_price_is_a_change(seller, world, fakes, mak
 def test_default_list_changed_without_explicit_request(seller, world, fakes, make_sequence, make_draft, confirm, test_engine) -> None:
     """P-02: sin lista pedida, la confirmación vuelve a pedir la predeterminada y detecta el cambio."""
     make_sequence()
-    draft = make_draft(line(world.product_2, "1"))  # sale_price 9000, sin lista
-    fakes.cr.default_list = world.price_list  # ahora la predeterminada tiene 8500
+    draft = make_draft(line(world.product_2, "1"))  # predeterminada GENERAL: unidad a 9000, sin lista pedida
+    fakes.cr.default_list = world.price_list  # ahora la predeterminada es la que tiene la unidad a 8500
     response = confirm(draft)
     assert response.status_code == 409 and response.json()["code"] == "SALES.PRICES_CHANGED"
     change = response.json()["errors"][0]
-    assert change["stored"]["price_list_id"] is None and change["current"]["price_list_id"] == str(world.price_list)
+    assert change["stored"]["price_list_id"] == str(world.default_list) and change["current"]["price_list_id"] == str(world.price_list)
     assert_no_effects(fakes, test_engine, draft)
 
 
@@ -70,17 +70,17 @@ def test_explicit_list_is_kept_when_the_default_changes(seller, world, fakes, ma
     """P-02: con lista pedida, cambiar la predeterminada no afecta la línea (misma intención)."""
     make_sequence()
     draft = make_draft(line(world.product_2, "1", price_list_id=world.price_list))
-    fakes.cr.set_price(world.price_list_2, world.product_2, None, "7000.00")
+    fakes.cr.set_price(world.price_list_2, world.product_2, world.unit_presentation_2, "7000.00")
     fakes.cr.default_list = world.price_list_2
     response = confirm(draft)
     assert response.status_code == 200, response.text
     assert response.json()["lines"][0]["unit_price"] == "8500.0000"
 
 
-def test_simple_price_changed(seller, world, fakes, make_sequence, make_draft, confirm, test_engine) -> None:
+def test_default_list_presentation_price_changed(seller, world, fakes, make_sequence, make_draft, confirm, test_engine) -> None:
     make_sequence()
     draft = make_draft(line(world.product, "2"))
-    fakes.cr.sale_prices[world.product] = (Decimal("1550.00"), "COP")
+    fakes.cr.set_unit_price(world.product, "1550.00")
     response = confirm(draft)
     assert response.status_code == 409
     change = response.json()["errors"][0]
@@ -102,7 +102,7 @@ def test_explicit_list_inactivated_is_not_applicable(seller, world, fakes, make_
 def test_updating_the_line_then_confirming_uses_the_current_price(seller, world, fakes, make_sequence, make_draft, confirm) -> None:
     make_sequence()
     draft = make_draft(line(world.product, "2"))
-    fakes.cr.sale_prices[world.product] = (Decimal("1550.00"), "COP")
+    fakes.cr.set_unit_price(world.product, "1550.00")
     assert confirm(draft).status_code == 409
     detail = draft["lines"][0]
     updated = seller.put(
@@ -112,7 +112,7 @@ def test_updating_the_line_then_confirming_uses_the_current_price(seller, world,
     assert confirmed.status_code == 200, confirmed.text
     assert confirmed.json()["lines"][0]["unit_price"] == "1550.0000" and confirmed.json()["total"] == "3100.00"
     # Una vez confirmada, el precio no cambia aunque cambie el catálogo (RN-04).
-    fakes.cr.sale_prices[world.product] = (Decimal("9999.00"), "COP")
+    fakes.cr.set_unit_price(world.product, "9999.00")
     assert seller.get(f"{base(world)}/sales/{draft['id']}").json()["lines"][0]["unit_price"] == "1550.0000"
 
 

@@ -18,7 +18,6 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
   "internal_code": "MVP-A-<RUN_ID>",
   "display_name": "Producto A MVP <RUN_ID> (dato ficticio)",
   "currency_code": "COP",
-  "sale_price": "1600.00",
   "inventory_control_enabled": true
 }
 ```
@@ -29,7 +28,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
 
 **Por qué se hace así**
 
-- La adopción registra el primer uso del producto global en Product Catalog con la identidad técnica de Commercial Relationship; `sale_price` es el precio simple del producto.
+- La adopción registra el primer uso del producto global en Product Catalog con la identidad técnica de Commercial Relationship. El producto de la empresa no tiene precio ni costo (spec 019): el precio se registra por presentación en las listas.
 
 **Respuesta esperada:** `201`
 
@@ -51,7 +50,6 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
   "internal_code": "MVP-B-<RUN_ID>",
   "display_name": "Producto B MVP <RUN_ID> (dato ficticio)",
   "currency_code": "COP",
-  "sale_price": "7000.00",
   "inventory_control_enabled": true
 }
 ```
@@ -62,7 +60,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
 
 **Por qué se hace así**
 
-- La adopción registra el primer uso del producto global en Product Catalog con la identidad técnica de Commercial Relationship; `sale_price` es el precio simple del producto.
+- La adopción registra el primer uso del producto global en Product Catalog con la identidad técnica de Commercial Relationship. El producto de la empresa no tiene precio ni costo (spec 019): el precio se registra por presentación en las listas.
 
 **Respuesta esperada:** `201`
 
@@ -70,7 +68,67 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
 
 **Auditoría que deja:** `ADOPT_COMPANY_PRODUCT` (commercial-relationship), `REGISTER_PRODUCT_FIRST_USE` (product-catalog)
 
-## 3. Adoptar la presentación "Caja × 12" del producto A
+## 3. Adoptar la presentación base (unidad) del producto A
+
+Paso `C-11.base_a` · usuario **`admin.test`** · ítems de la FASE 10: 7
+
+```http
+POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presentations
+```
+
+```json
+{
+  "company_product_id": "<PRODUCTO_EMPRESA_A>",
+  "global_product_presentation_id": "<PRESENTACION_BASE_A>",
+  "sku": "SKU-UND-A-<RUN_ID>"
+}
+```
+
+**Permiso que exige la URL:** `perm:commercial-relationship:company_product_presentations:create`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+
+**Por qué se hace así**
+
+- Toda venta indica una presentación (spec 019): la unidad base se vende con su presentación de factor 1.
+
+**Respuesta esperada:** `201`
+
+**Guardar:** `id` → `<PRESENTACION_BASE_EMPRESA_A>`
+
+**Auditoría que deja:** `CREATE_COMPANY_PRODUCT_PRESENTATION` (commercial-relationship), `REGISTER_PRODUCT_FIRST_USE` (product-catalog)
+
+## 4. Adoptar la presentación base (unidad) del producto B
+
+Paso `C-11.base_b` · usuario **`admin.test`** · ítems de la FASE 10: 7
+
+```http
+POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presentations
+```
+
+```json
+{
+  "company_product_id": "<PRODUCTO_EMPRESA_B>",
+  "global_product_presentation_id": "<PRESENTACION_BASE_B>",
+  "sku": "SKU-UND-B-<RUN_ID>"
+}
+```
+
+**Permiso que exige la URL:** `perm:commercial-relationship:company_product_presentations:create`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+
+**Por qué se hace así**
+
+- Toda venta indica una presentación (spec 019): la unidad base se vende con su presentación de factor 1.
+
+**Respuesta esperada:** `201`
+
+**Guardar:** `id` → `<PRESENTACION_BASE_EMPRESA_B>`
+
+**Auditoría que deja:** `CREATE_COMPANY_PRODUCT_PRESENTATION` (commercial-relationship), `REGISTER_PRODUCT_FIRST_USE` (product-catalog)
+
+## 5. Adoptar la presentación "Caja × 12" del producto A
 
 Paso `C-11.caja_a` · usuario **`admin.test`** · ítems de la FASE 10: 7
 

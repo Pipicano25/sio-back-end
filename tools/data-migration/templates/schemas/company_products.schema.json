@@ -102,7 +102,7 @@
     {
       "name": "sale_price",
       "type": "number",
-      "description": "Precio de venta. VACÍO = DATO FALTANTE (la API usa 0 si se omite: no enviar 0 como precio real).",
+      "description": "OBSOLETA (spec 019): CompanyProduct ya no tiene precio; no se carga. El precio de venta va en price_list_items, por presentación.",
       "constraints": {
         "minimum": 0
       }
@@ -120,7 +120,7 @@
     {
       "name": "reference_cost",
       "type": "number",
-      "description": "Costo de referencia. VACÍO = DATO FALTANTE (no enviar 0 como costo real).",
+      "description": "OBSOLETA (spec 019): CompanyProduct ya no tiene costo; no se carga. Los costos provienen de las compras y de la valoración de Inventory.",
       "constraints": {
         "minimum": 0
       }

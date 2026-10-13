@@ -27,10 +27,7 @@ from commercial_relationship_service.application.exceptions import (
     GlobalProductNotFoundError,
 )
 from commercial_relationship_service.application.ports import ProductCatalogDirectory
-from commercial_relationship_service.domain.currency import (
-    validate_currency,
-    validate_price_scale,
-)
+from commercial_relationship_service.domain.currency import validate_currency
 from commercial_relationship_service.domain.rules import code_key, validate_inventory_flags
 from commercial_relationship_service.domain.status import DEACTIVATE, REACTIVATE, next_status
 
@@ -41,9 +38,7 @@ EDITABLE_FIELDS = (
     "reference_code",
     "display_name",
     "short_name",
-    "sale_price",
     "currency_code",
-    "reference_cost",
     "inventory_control_enabled",
     "lot_tracking_enabled",
     "expiration_tracking_enabled",
@@ -61,9 +56,8 @@ class BatchItem:
 
 
 def _validate_values(values: dict[str, Any]) -> dict[str, Any]:
-    """Moneda de la lista cerrada, decimales del precio y banderas (FR-014, RN-03)."""
+    """Moneda de la lista cerrada y banderas (FR-014, RN-03). Sin precio ni costo (spec 019)."""
     currency = validate_currency(values["currency_code"])
-    validate_price_scale(Decimal(values["sale_price"]), currency)
     validate_inventory_flags(
         inventory_control_enabled=values["inventory_control_enabled"],
         lot_tracking_enabled=values["lot_tracking_enabled"],

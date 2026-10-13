@@ -8,6 +8,7 @@ import pytest
 
 from tests.api.helpers import (
     adopt,
+    adopt_presentation,
     condition_update_body,
     create_condition,
     create_price,
@@ -91,12 +92,16 @@ def test_price_list_lifecycle(admin, company, outbox, clear_outbox) -> None:
 def test_price_list_item_lifecycle_and_change_price(admin, company, fake_catalog, outbox, clear_outbox) -> None:
     product = adopt(admin, company, fake_catalog)
     other_product = adopt(admin, company, fake_catalog, internal_code="000046")
+    presentation = adopt_presentation(admin, company, fake_catalog, product)  # spec 019: precio por presentación
+    other_presentation = adopt_presentation(admin, company, fake_catalog, other_product)
     price_list = create_price_list(admin, company)
     clear_outbox()
-    item = create_price(admin, company, price_list, product, valid_from=_iso(datetime.now(UTC) - timedelta(days=1)))
+    item = create_price(admin, company, price_list, product, valid_from=_iso(datetime.now(UTC) - timedelta(days=1)),
+                        company_product_presentation_id=presentation["id"])
     url = f"/api/v1/price-list-items/{item['id']}"
     future = create_price(admin, company, price_list, other_product, unit_price="17000.00",
-                          valid_from=_iso(datetime.now(UTC) + timedelta(days=30)))
+                          valid_from=_iso(datetime.now(UTC) + timedelta(days=30)),
+                          company_product_presentation_id=other_presentation["id"])
     edited = admin.put(f"/api/v1/price-list-items/{future['id']}", json=price_update_body(future, unit_price="17500.00"))
     assert edited.status_code == 200, edited.text
     changed = admin.post(f"{url}/change-price", json={"unit_price": "16000", "version": item["version"]})

@@ -21,7 +21,7 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | 02 | [02-adoptar-acetaminofen.md](02-adoptar-acetaminofen.md) | Adoptar el producto con lotes y vencimiento. | 1 | 01 |
 | 03 | [03-adoptar-aguja.md](03-adoptar-aguja.md) | Adoptar un segundo producto de la misma empresa. | 1 | 01 |
 | 04 | [04-rechazos.md](04-rechazos.md) | Ver los errores de elegibilidad y de unicidad. | 5 | 01 |
-| 05 | [05-precio-y-moneda.md](05-precio-y-moneda.md) | Mostrar los decimales de cada moneda (precio **ficticio**). | 2 | 03 |
+| 05 | [05-precio-y-moneda.md](05-precio-y-moneda.md) | El producto de la empresa no admite precio ni costo (spec 019); la moneda sí se cambia. | 2 | 03 |
 | 06 | [06-consultar-y-estados.md](06-consultar-y-estados.md) | Ver el listado, la consulta por lotes y el ciclo de vida. | 4 | 01, 02, 04 |
 | 07 | [07-resumen-de-empresas.md](07-resumen-de-empresas.md) | Recorrer, una por página, las empresas del usuario con sus conteos (FR-046). | 1 | — |
 

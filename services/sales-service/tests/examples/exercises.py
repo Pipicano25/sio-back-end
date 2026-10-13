@@ -10,7 +10,7 @@ Cada paso:
   sucursal) o `"consulta"` (permiso y membresía);
 - `headers`: cabeceras adicionales (`Idempotency-Key`);
 - `before`: cambios en los dobles antes del paso (`inventory_down`, `inventory_up`,
-  `price:<valor>` para el precio simple del arroz, `stock:<cantidad>` para las existencias del
+  `price:<valor>` para el precio de la unidad de arroz en la lista predeterminada, `stock:<cantidad>` para las existencias del
   arroz con costo conocido, `unknown_cost:<cantidad>` para existencias de apertura sin costo);
 - `save`: variables `<NOMBRE>` que se guardan de la respuesta y se usan después.
 """
@@ -42,6 +42,18 @@ LISTA = "d15f0000-0000-4000-8000-000000000001"
 LISTA_2 = "d15f0000-0000-4000-8000-000000000002"
 ITEM_CAJA = "d15f0000-0000-4000-8000-000000000011"
 ITEM_ACEITE = "d15f0000-0000-4000-8000-000000000012"
+# Spec 019: toda venta por presentación; la unidad base, con su presentación de factor 1.
+UNIDAD_ARROZ = "d15e0000-0000-4000-8000-000000000002"
+UNIDAD_ACEITE = "d15e0000-0000-4000-8000-000000000003"
+UNIDAD_SERVICIO = "d15e0000-0000-4000-8000-000000000004"
+GLOBAL_UNIDAD_ARROZ = "d15e0000-0000-4000-8000-000000000012"
+GLOBAL_UNIDAD_ACEITE = "d15e0000-0000-4000-8000-000000000013"
+LISTA_GENERAL = "d15f0000-0000-4000-8000-000000000003"
+ITEM_UNIDAD_ARROZ = "d15f0000-0000-4000-8000-000000000013"
+ITEM_UNIDAD_ACEITE = "d15f0000-0000-4000-8000-000000000014"
+ITEM_UNIDAD_SERVICIO = "d15f0000-0000-4000-8000-000000000015"
+ITEM_CAJA_GENERAL = "d15f0000-0000-4000-8000-000000000016"
+ITEM_UNIDAD_ARROZ_NUEVO = "d15f0000-0000-4000-8000-000000000017"
 MISSING = "d15f0000-0000-4000-8000-000000000404"
 
 ACCION = "accion"
@@ -52,11 +64,14 @@ COMMON_DATA = [
     ("Sucursal principal", BRANCH, "Almacén ficticio en Bogotá; todos los usuarios de prueba están asignados a ella."),
     ("Cliente persona", CUSTOMER, "Ana Ficticia Pérez (`ACTIVE`), identificada como CC 1020304050."),
     ("Cliente organización", CUSTOMER_ORG, "Tiendas Ficticias S.A.S. (`ACTIVE`), identificada como NIT 900123456."),
-    ("Arroz 500 g", ARROZ, "Vendible, con control de inventario; precio simple 1500 por unidad base; 1000 unidades a costo 1000."),
+    ("Arroz 500 g", ARROZ, "Vendible, con control de inventario; 1000 unidades a costo 1000."),
+    ("Unidad de arroz", UNIDAD_ARROZ, "Presentación de factor 1 del arroz (toda venta indica su presentación)."),
     ("Caja x12", CAJA, "Presentación de venta del arroz: 12 unidades base."),
-    ("Aceite 1 L", ACEITE, "Vendible, con control de inventario; precio simple 9000; 1000 unidades a costo 6000."),
+    ("Aceite 1 L", ACEITE, "Vendible, con control de inventario; 1000 unidades a costo 6000."),
+    ("Unidad de aceite", UNIDAD_ACEITE, "Presentación de factor 1 del aceite."),
     ("Servicio de instalación", SERVICIO, "Vendible pero **sin** control de inventario (no se puede vender en esta fase)."),
-    ("Lista de precios mayorista", LISTA, "Caja x12 del arroz a 16000; aceite a 8500."),
+    ("Lista de precios general (predeterminada)", LISTA_GENERAL, "Unidad de arroz a 1500, caja x12 a 18000 y unidad de aceite a 9000: cada presentación con su precio explícito."),
+    ("Lista de precios mayorista", LISTA, "Caja x12 del arroz a 16000; unidad de aceite a 8500."),
     ("Lista de precios temporada", LISTA_2, "Sin precios para estos productos."),
 ]
 
@@ -74,7 +89,9 @@ def draft(*lines: dict, **extra) -> dict:
 
 
 def ln(product: str, quantity: str, **extra) -> dict:
-    return {"company_product_id": product, "quantity": quantity, **extra}
+    """Línea de venta; sin presentación indicada usa la unidad (factor 1) del producto (spec 019)."""
+    presentation = extra.pop("company_product_presentation_id", {ARROZ: UNIDAD_ARROZ, ACEITE: UNIDAD_ACEITE, SERVICIO: UNIDAD_SERVICIO}.get(product))
+    return {"company_product_id": product, "company_product_presentation_id": presentation, "quantity": quantity, **extra}
 
 
 def key(name: str) -> dict:
@@ -184,7 +201,7 @@ EXERCISES = [
         "title": "Venta en borrador y precios",
         "purpose": (
             "El vendedor registra una venta en borrador: una línea en caja con la lista mayorista y otra con el "
-            "precio simple del producto. El precio siempre lo resuelve el sistema: se rechazan el precio manual, "
+            "precio de su presentación en la lista predeterminada. El precio siempre lo resuelve el sistema: se rechazan el precio manual, "
             "una lista inexistente, una lista sin precio para el producto y un producto sin control de inventario."
         ),
         "data": COMMON_DATA,
@@ -197,14 +214,14 @@ EXERCISES = [
                 "VENTA",
                 [
                     "La primera línea pide la lista mayorista: precio de la caja 16000 (`price_list_requested = true`).",
-                    "La segunda no pide lista: se usa el precio simple del aceite (9000 por unidad base).",
+                    "La segunda no pide lista: se usa el precio de la unidad de aceite en la lista predeterminada GENERAL (9000).",
                     "Solo contado: `CASH`, sin plazo, `due_date` = `operation_date` = hoy en la zona de la sucursal.",
                     "El borrador no afecta inventario y no tiene número.",
                 ],
             ),
             {
                 "file": "02-agregar-una-linea.md",
-                "title": "Agregar una caja con el precio simple",
+                "title": "Agregar una caja con el precio de la lista predeterminada",
                 "actor": "ventas.test",
                 "kind": ACCION,
                 "method": "POST",
@@ -212,7 +229,7 @@ EXERCISES = [
                 "body": {**ln(ARROZ, "1", company_product_presentation_id=CAJA), "version": 1},
                 "expect": 201,
                 "why": [
-                    "Sin lista, el precio simple es por unidad base: 1500 × 12 = 18000.0000 por caja (4 decimales, P-04).",
+                    "Sin lista pedida se usa el precio explícito de la caja en la lista predeterminada GENERAL: 18000.0000 (spec 019: sin conversiones entre presentaciones).",
                     "Cada cambio de líneas exige la `version` vigente y la incrementa.",
                 ],
             },
@@ -247,7 +264,7 @@ EXERCISES = [
                 "path": f"{P}/sales/<VENTA>/details",
                 "body": {**ln(ACEITE, "1", price_list_id=LISTA_2), "version": 2},
                 "expect": 409,
-                "why": ["La lista existe pero no tiene precio para el aceite: `409 PRICE_NOT_IN_LIST` (sin respaldo en el precio simple)."],
+                "why": ["La lista existe pero no tiene precio para el aceite: `409 PRICE_NOT_IN_LIST` (sin respaldo ni conversiones; spec 019)."],
             },
             {
                 "file": "06-producto-sin-control-de-inventario.md",
@@ -327,7 +344,7 @@ EXERCISES = [
                 "Crear la venta en borrador",
                 draft(ln(ARROZ, "4")),
                 "VENTA",
-                ["Precio simple del arroz: 1500."],
+                ["Precio de la unidad de arroz en la lista predeterminada: 1500."],
                 save={"LINEA": "lines[0].id"},
             ),
             confirm(
@@ -337,7 +354,7 @@ EXERCISES = [
                 1,
                 "confirmar-venta-0001",
                 [
-                    "El precio simple del arroz pasó a 1550: `409 PRICES_CHANGED` con el valor guardado y el vigente.",
+                    "El precio de la unidad de arroz en la lista predeterminada pasó a 1550: `409 PRICES_CHANGED` con el valor guardado y el vigente.",
                     "Sin salida, sin número y sin cambios en el borrador.",
                 ],
                 expect=409,

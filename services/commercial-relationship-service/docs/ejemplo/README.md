@@ -12,7 +12,7 @@ pago** y **listas de precios** (Fase B), y qué usuario de prueba puede hacer ca
 | [3 — Proveedores](3-proveedores/ORDEN.md) | Seleccionar proveedores; la misma organización como cliente y proveedor; bloquear con motivo; editar sin desbloquear; desbloquear e inactivar | Ficticios |
 | [4 — Presentaciones](4-presentaciones/ORDEN.md) | Adoptar presentaciones globales; predeterminada de compra y su cambio en la misma operación; presentación de otro producto y adopción repetida (rechazos); inactivar la predeterminada | Producto **real** (fila 40); presentaciones ficticias |
 | [5 — Proveedores por producto y condiciones](5-proveedores-por-producto-y-condiciones/ORDEN.md) | Relación general y por presentación; unidad distinta de la base y relación repetida (rechazos); contado con plazo (rechazo), contado con descuento y crédito predeterminado | Producto y `Nombre Proveedor` **reales** (fila 40); proveedor, costos y condiciones ficticios |
-| [6 — Listas de precios](6-listas-de-precios/ORDEN.md) | Lista predeterminada; precio real; solapamiento y precio en vigencia (rechazos); cambio de precio con vigencia futura; precio aplicable con respaldo y con lista explícita sin precio | `Precio Lista 10` **real** (fila 16577); el resto ficticio |
+| [6 — Listas de precios](6-listas-de-precios/ORDEN.md) | Lista predeterminada; precio real; solapamiento y precio en vigencia (rechazos); cambio de precio con vigencia futura; precio aplicable por presentación y presentación sin precio (sin respaldo, spec 019) | `Precio Lista 10` **real** (fila 16577); el resto ficticio |
 
 - [Usuarios y permisos](usuarios-y-permisos.md): cómo se evalúan los permisos y la membresía, los usuarios
   de prueba y la matriz de todas las URL.
@@ -48,7 +48,7 @@ Cada ejercicio es independiente: puede ejecutarse en una base nueva.
   no), por qué se hace así y la respuesta esperada (abreviada).
 - `USUARIOS.md`: resumen por usuario, permiso por URL y ejemplos con usuarios que pueden y que no.
 - Las variables `<NOMBRE>` se reemplazan por los `id` guardados en pasos anteriores.
-- Los importes (`sale_price`, `reference_cost`, `unit_price`, `credit_limit`, costos, cantidades y porcentajes)
+- Los importes (`unit_price`, `credit_limit`, costos, cantidades y porcentajes)
   se envían como número o texto y se **devuelven siempre como texto decimal** (por ejemplo `"1500.00"`), nunca
   como número JSON. `unit_price` y `credit_limit` usan los decimales de su moneda.
 

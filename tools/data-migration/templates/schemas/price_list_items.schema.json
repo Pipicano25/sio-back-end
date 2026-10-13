@@ -66,9 +66,10 @@
     {
       "name": "company_product_presentation_ref",
       "type": "string",
-      "description": "Presentación de empresa",
+      "description": "Presentación de empresa a la que pertenece el precio (obligatoria, spec 019: no hay precios generales por producto)",
       "constraints": {
-        "maxLength": 120
+        "maxLength": 120,
+        "required": true
       }
     },
     {

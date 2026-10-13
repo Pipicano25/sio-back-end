@@ -24,8 +24,6 @@ def test_update_all_fields(as_user, company, fake_catalog):
         display_name="Nuevo nombre",
         short_name="Corto",
         reference_code="REF-9",
-        sale_price="18900",
-        reference_cost="1000.5",
         is_sellable=False,
         lot_tracking_enabled=True,
         expiration_tracking_enabled=True,
@@ -35,7 +33,7 @@ def test_update_all_fields(as_user, company, fake_catalog):
     body = response.json()
     assert body["version"] == product["version"] + 1
     assert body["display_name"] == "Nuevo nombre" and body["is_sellable"] is False
-    assert body["sale_price"] == "18900.00" and body["reference_cost"] == "1000.5000"
+    assert "sale_price" not in body and "reference_cost" not in body  # spec 019
     assert body["updated_by"] == user_sub("supervisor.test")
     assert body["created_by"] == product["created_by"]
     assert body["status"] == "ACTIVE"
@@ -87,15 +85,20 @@ def test_internal_code_changes(as_user, company, fake_catalog):
     assert code_of(taken) == "DUPLICATE_INTERNAL_CODE"
 
 
-def test_currency_change_revalidates_price_scale(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog, sale_price="1500.50")
+def test_currency_change_without_price_spec_019(as_user, company, fake_catalog):
+    """Spec 019: la moneda se conserva y se valida; no hay precio que revalidar."""
+    product = adopt(as_user("admin.test"), company, fake_catalog)
     response = _put(as_user("admin.test"), product, currency_code="CLP")
-    assert response.status_code == 422
-    assert code_of(response) == "PRICE_SCALE_NOT_ALLOWED"
+    assert response.status_code == 200, response.text
+    assert response.json()["currency_code"] == "CLP"
+    assert code_of(_put(as_user("admin.test"), response.json(), currency_code="XYZ")) == "CURRENCY_NOT_SUPPORTED"
 
-    response = _put(as_user("admin.test"), product, currency_code="CLP", sale_price="1500")
-    assert response.status_code == 200
-    assert response.json()["sale_price"] == "1500.00"
+
+def test_put_with_price_or_cost_is_rejected_spec_019(as_user, company, fake_catalog):
+    product = adopt(as_user("admin.test"), company, fake_catalog)
+    for field in ("sale_price", "reference_cost"):
+        response = _put(as_user("admin.test"), product, **{field: "0"})
+        assert response.status_code == 422 and code_of(response) == "VALIDATION_ERROR", response.text
 
 
 def test_invalid_flags_on_update(as_user, company, fake_catalog):

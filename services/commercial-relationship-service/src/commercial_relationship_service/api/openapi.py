@@ -112,10 +112,11 @@ OPENAPI_TAGS = [
     {
         "name": TAG_APPLICABLE_PRICES,
         "description": (
-            "**Solo consulta, no guarda nada.** Dadas hasta 100 líneas (producto, presentación opcional y "
-            "lista opcional) y un instante, responde qué precio usar: el de la lista indicada o la "
-            "predeterminada; si no hay lista aplicable, el `sale_price` del producto empresarial. Lo "
-            "usarán Ventas y Compras al armar un documento."
+            "**Solo consulta, no guarda nada.** Dadas hasta 100 líneas (producto, presentación obligatoria y "
+            "lista opcional) y un instante, responde el precio explícito de esa presentación en la lista "
+            "indicada o en la predeterminada vigente. Sin precio: `NO_PRICE_IN_LIST` o "
+            "`NO_APPLICABLE_PRICE_LIST` (spec 019: sin precios generales, respaldos ni conversiones). "
+            "Lo usa Ventas al armar un documento."
         ),
     },
 ]

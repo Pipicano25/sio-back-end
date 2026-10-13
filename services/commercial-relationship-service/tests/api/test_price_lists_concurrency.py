@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from tests.api.concurrency import race
-from tests.api.helpers import adopt, create_price, create_price_list, price_list_update_body
+from tests.api.helpers import adopt, adopt_presentation, create_price, create_price_list, price_list_update_body
 
 TOMORROW = (datetime.now(UTC) + timedelta(days=1)).isoformat()
 
@@ -28,8 +28,10 @@ def test_two_simultaneous_default_lists_leave_one(app, user_token, as_user, comp
 def test_two_simultaneous_overlapping_prices(app, user_token, as_user, company, fake_catalog):
     admin = as_user("admin.test")
     product = adopt(admin, company, fake_catalog)
+    presentation = adopt_presentation(admin, company, fake_catalog, product)  # spec 019
     price_list = create_price_list(admin, company)
-    body = {"price_list_id": price_list["id"], "company_product_id": product["id"], "unit_price": "1"}
+    body = {"price_list_id": price_list["id"], "company_product_id": product["id"], "unit_price": "1",
+            "company_product_presentation_id": presentation["id"]}
 
     results = race(app, user_token("admin.test"), [("POST", f"/api/v1/companies/{company}/price-list-items", body)] * 2)
 
@@ -42,7 +44,7 @@ def test_two_simultaneous_change_price_on_same_price(app, user_token, as_user, c
     admin = as_user("admin.test")
     product = adopt(admin, company, fake_catalog)
     price_list = create_price_list(admin, company)
-    current = create_price(admin, company, price_list, product)
+    current = create_price(admin, company, price_list, product, fake_catalog)
     url = f"/api/v1/price-list-items/{current['id']}/change-price"
 
     results = race(

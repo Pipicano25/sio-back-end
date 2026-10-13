@@ -71,7 +71,7 @@ def test_net_zero_keeps_amount_and_leaves_percentage_null(supervisor, world, mak
 def test_out_of_range_percentage_is_null_never_saturated(supervisor, world, fakes, make_sequence, make_draft, confirm, caplog) -> None:
     """P-01: margen tan negativo que el porcentaje no cabe en NUMERIC(7,4) → nulo; el monto se guarda."""
     make_sequence()
-    fakes.cr.sale_prices[world.product] = (fakes.cr.sale_prices[world.product][0].__class__("1.00"), "COP")
+    fakes.cr.set_unit_price(world.product, "1.00")
     fakes.inventory.layers.clear()
     fakes.inventory.stock(world.branch, world.product, "5", "5000")
     draft = make_draft(line(world.product, "1"))

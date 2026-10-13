@@ -1,6 +1,6 @@
 # Paso 03 de 08 — Confirmar las ventas
 
-Ejercicio 4 — Ventas con los tres mecanismos de precio, rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
+Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
 
 ---
 

@@ -234,7 +234,7 @@ def _readme(index_rows: list[str]) -> str:
             "# Recorrido del MVP de SIO — guía de validación",
             "",
             "Recorrido completo del MVP con los servicios reales: configuración de la empresa → relación comercial y",
-            "precios → compras e inventario → ventas con los tres mecanismos de precio → anulaciones → auditoría →",
+            "precios → compras e inventario → ventas con precio por presentación → anulaciones → auditoría →",
             "seguridad entre empresas. Cada paso indica el usuario de prueba, el permiso que exige la URL, la petición y",
             "la respuesta esperada (Principio XXII, feature 017).",
             "",

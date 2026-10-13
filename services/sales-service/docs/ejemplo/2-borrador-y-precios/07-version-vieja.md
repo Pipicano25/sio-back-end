@@ -13,6 +13,7 @@ Ejecuta: `ventas.test`.
 ```json
 {
   "company_product_id": "d15d0000-0000-4000-8000-000000000002",
+  "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000003",
   "quantity": "1",
   "version": 1
 }
