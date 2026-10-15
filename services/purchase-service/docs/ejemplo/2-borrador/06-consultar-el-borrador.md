@@ -1,4 +1,4 @@
-# Paso 6. Consultar el borrador
+# Paso 9. Consultar el borrador
 
 Ejercicio 2: Compra en borrador.
 
@@ -53,9 +53,12 @@ Estado `200`.
   "branch_id": "d14b0000-0000-4000-8000-000000000001",
   "company_supplier_id": "d14c0000-0000-4000-8000-000000000001",
   "supplier_payment_condition_id": "d14c0000-0000-4000-8000-000000000003",
-  "payment_condition_code_snapshot": "CREDIT",
-  "payment_terms_days_snapshot": 30,
-  "due_date": "2026-12-04",
+  "payment_condition_code_snapshot": "CASH",
+  "payment_terms_days_snapshot": 0,
+  "due_date": "2026-11-04",
+  "payment_method_id": "d14c0000-0000-4000-8000-000000000011",
+  "payment_method_code_snapshot": "CASH",
+  "payment_method_name_snapshot": "Efectivo",
   "purchase_sequence_id": null,
   "number": null,
   "sequence_value": null,
@@ -72,6 +75,9 @@ Estado `200`.
   "tax_total": "45600.00",
   "total": "343600.00",
   "inventory_operation_id": null,
+  "receipt_status": null,
+  "received_at": null,
+  "received_by_user_id": null,
   "created_by_user_id": "d14f1000-0000-4000-8000-000000000003",
   "cancelled_by_user_id": null,
   "cancelled_at": null,
@@ -115,13 +121,13 @@ Estado `200`.
       "purchase_id": "<COMPRA>",
       "line_number": 2,
       "company_product_id": "d14d0000-0000-4000-8000-000000000002",
-      "company_product_presentation_id": null,
+      "company_product_presentation_id": "0e2be67b-ba11-51b8-9dd7-04739ec7d8d4",
       "supplier_product_id": null,
       "supplier_lead_time_snapshot_hours": null,
       "product_code_snapshot": "000046",
       "product_name_snapshot": "Aceite ficticio 1 L",
-      "presentation_code_snapshot": null,
-      "presentation_name_snapshot": null,
+      "presentation_code_snapshot": "UND",
+      "presentation_name_snapshot": "Unidad",
       "base_quantity_factor_snapshot": "1.00000000",
       "unit_code_snapshot": "UND",
       "quantity": "6.0000",

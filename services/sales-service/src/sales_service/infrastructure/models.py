@@ -106,6 +106,9 @@ class Sale(AuditColumns, Base):
     total: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False, server_default=text("0"))
     has_unknown_cost: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
     inventory_operation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    payment_method_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    payment_method_code_snapshot: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    payment_method_name_snapshot: Mapped[str | None] = mapped_column(String(120), nullable=True)
     created_by_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     cancelled_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -124,6 +127,13 @@ class Sale(AuditColumns, Base):
             name="payment_terms",
         ),
         CheckConstraint(SALES_CASH_ONLY, name="cash_only"),
+        CheckConstraint(
+            "(payment_method_id IS NULL AND payment_method_code_snapshot IS NULL AND payment_method_name_snapshot IS NULL) "
+            "OR (payment_method_id IS NOT NULL AND payment_method_code_snapshot IS NOT NULL "
+            "AND payment_method_name_snapshot IS NOT NULL)",
+            name="payment_method_snapshot",
+        ),
+        CheckConstraint("status = 'DRAFT' OR payment_method_id IS NOT NULL", name="payment_method_required"),
         CheckConstraint("status <> 'DRAFT' OR has_unknown_cost IS FALSE", name="draft_unknown_cost"),
         CheckConstraint("sequence_value IS NULL OR sequence_value > 0", name="sequence_value"),
         CheckConstraint("currency_code ~ '^[A-Z]{3}$'", name="currency_code"),
@@ -196,6 +206,7 @@ class SaleDetail(AuditColumns, Base):
         CheckConstraint("tax_amount >= 0", name="tax_amount"),
         CheckConstraint("subtotal >= 0", name="subtotal"),
         CheckConstraint("discount_amount >= 0 AND discount_amount <= subtotal", name="discount_amount"),
+        CheckConstraint("discount_amount = 0", name="no_discount"),  # spec 020
         CheckConstraint("total = subtotal - discount_amount + tax_amount", name="total"),
         CheckConstraint("base_quantity_factor_snapshot > 0", name="factor"),
         CheckConstraint(

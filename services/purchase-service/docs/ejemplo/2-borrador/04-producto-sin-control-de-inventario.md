@@ -13,6 +13,7 @@ Ejecuta: `compras.test`.
 ```json
 {
   "company_product_id": "d14d0000-0000-4000-8000-000000000003",
+  "company_product_presentation_id": "72733938-77e9-54a8-8ee3-060d5656abdc",
   "quantity": "1",
   "unit_cost": "50000",
   "version": 2
@@ -21,7 +22,7 @@ Ejecuta: `compras.test`.
 
 ### Por qué
 
-- El producto existe, pero su configuración impide comprarlo: toda compra confirmada genera entrada en Inventory (P-01). Existe pero no es apto → `409`.
+- El producto existe, pero su configuración impide comprarlo: toda compra recibida genera entrada en Inventory (P-01). Existe pero no es apto → `409`.
 
 ## Permiso
 

@@ -1,4 +1,4 @@
-# Paso 10. Consultar la línea de tiempo
+# Paso 12. Consultar la línea de tiempo
 
 Ejercicio 6: Hitos logísticos.
 

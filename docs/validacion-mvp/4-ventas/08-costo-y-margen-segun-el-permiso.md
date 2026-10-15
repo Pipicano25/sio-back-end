@@ -1,4 +1,4 @@
-# Paso 07 de 08 — Costo y margen según el permiso
+# Paso 08 de 09 — Costo y margen según el permiso
 
 Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
 

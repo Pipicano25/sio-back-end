@@ -160,11 +160,3 @@ class GlobalPaymentMethodRepository(Protocol):
             Entidad persistida.
         """
         ...
-
-    def delete(self, payment_method_id: UUID) -> None:
-        """Elimina físicamente un método de pago.
-
-        Args:
-            payment_method_id: Identificador del registro.
-        """
-        ...

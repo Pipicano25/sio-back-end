@@ -35,3 +35,23 @@ GET http://127.0.0.1:8105/global-payment-condition-types?page_size=100
 **Respuesta esperada:** `200`
 
 **Guardar:** `items[code=CREDIT].id` → `<TIPO_CREDITO>`
+
+## 3. Consultar el método de pago Efectivo en Payment Reference
+
+Paso `C-00.7` · usuario **`admin.test`** · ítems de la FASE 10: 4
+
+```http
+GET http://127.0.0.1:8105/global-payment-methods?page_size=100
+```
+
+**Permiso que exige la URL:** `perm:payment-reference:global_payment_methods:read`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:payment-reference:global_payment_methods:read`), `reportes.test` (por `perm:payment-reference:global_payment_methods:read`)
+
+**Por qué se hace así**
+
+- Spec 020: compras y ventas declaran un único medio de pago activo (referencia, no un pago).
+
+**Respuesta esperada:** `200`
+
+**Guardar:** `items[code=CASH].id` → `<METODO_EFECTIVO>`

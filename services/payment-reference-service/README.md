@@ -4,6 +4,11 @@ Microservicio de SIO que administra los **catálogos maestros globales de pago**
 pago (`CASH`, `CREDIT`, `FINANCING`) y métodos de pago (`CASH`, `BANK_TRANSFER`, `DEBIT_CARD`,
 `CREDIT_CARD`, `DIGITAL_WALLET`, `CHECK`, `OTHER`). No guarda datos de ninguna empresa.
 
+Spec 020: Purchase y Sales guardan el método declarado, así que los métodos **no se borran
+físicamente** (sin `DELETE`; trigger `tr_global_payment_methods_no_delete`); se inactivan con `PUT`
+(`status = INACTIVE`). GAP-PR-18 queda parcialmente resuelto (`version` sigue diferida). El catálogo no
+registra pagos ni administra cartera.
+
 - Corrección acotada y contrato vigente: `specs/008-payment-reference-condition-type-contract/`
 - Contrato Provider (consulta de `GlobalPaymentConditionType` por UUID):
   `specs/008-payment-reference-condition-type-contract/contracts/payment-condition-type-provider.md`
@@ -103,7 +108,7 @@ concurrencia optimista, cuerpos estrictos, contrato Provider, base caída (`503`
   - Versión desactualizada → `409 {"detail": …, "code": "PAYMENT_REFERENCE.VERSION_CONFLICT"}`; transición
     inválida → `409 {"detail": …, "code": "PAYMENT_REFERENCE.INVALID_STATUS_TRANSITION"}`; código duplicado →
     `409 {"detail": …}`.
-- **`/global-payment-methods`**: `GET`, `POST`, `PUT`, `DELETE` como antes (su ciclo de vida sigue pendiente,
+- **`/global-payment-methods`**: `GET`, `POST` y `PUT` (spec 020: sin `DELETE`, `405`) (su ciclo de vida sigue pendiente,
   GAP-PR-18).
 - Disponibilidad: si PostgreSQL no está disponible, `/health/live` sigue en `200`, `/health/ready` responde
   `503` y los endpoints con base responden `503 {"detail": …}` en tiempo acotado (conexión con tiempo de
@@ -121,7 +126,7 @@ concurrencia optimista, cuerpos estrictos, contrato Provider, base caída (`503`
 | --- | --- |
 | Consultar tipos de condición | `perm:payment-reference:global_payment_condition_types:read` |
 | Crear / modificar y reactivar / inactivar | `…:create` / `…:update` / `…:delete` |
-| Métodos de pago | `perm:payment-reference:global_payment_methods:{read,create,update,delete}` |
+| Métodos de pago | `perm:payment-reference:global_payment_methods:{read,create,update}` (spec 020: sin `delete`) |
 
 ## Brechas abiertas
 

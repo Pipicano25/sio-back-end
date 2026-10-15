@@ -1054,6 +1054,11 @@ No representa el medio por el cual se mueve el dinero por ejemplo una venta pued
 
 Representa el instrumento utilizado para registrar un pago o recaudo.
 
+> **Spec 020 (vigente):** Purchase y Sales guardan el método **declarado** de cada operación
+> (`payment_method_id` con copia de código y nombre). Es una referencia declarativa: SIO no registra ni
+> comprueba pagos. Por eso un método no se elimina físicamente (sin `DELETE`; trigger
+> `tr_global_payment_methods_no_delete`): se inactiva con `status = INACTIVE`.
+
 Se mantiene separado de la condición de pago. Una operación `CREDIT` puede liquidarse posteriormente mediante transferencia, efectivo u otro medio.
 
 ### Atributos
@@ -2973,6 +2978,15 @@ Representa la cabecera de una compra.
 
 Comienza en `DRAFT` y no afecta inventario. Al confirmar se revalidan proveedor, condición, productos y presentaciones, se congelan los snapshots, Inventory aplica una entrada con todas las líneas (cantidad en unidad base y costo por unidad base sin impuestos) y, en la misma transacción local que la confirma, se asigna el número del período. Si algo falla la compra no queda confirmada ni consume número.
 
+> **Spec 020 (prevalece sobre el párrafo anterior):** confirmar es local: asigna el número y deja la compra
+> `CONFIRMED` **pendiente de recepción**, sin entrada en Inventory. La entrada se aplica al confirmar la
+> **recepción física completa** (operación `RECEIVE`), que registra `received_at`, `received_by_user_id` e
+> `inventory_operation_id` una sola vez (`ck_purchases_receipt`); `receipt_status` (`PENDING`/`RECEIVED`) se
+> deriva en la API. Solo contado (`ck_purchases_cash_only`); `payment_method_id`,
+> `payment_method_code_snapshot` y `payment_method_name_snapshot` obligatorios fuera de `DRAFT`. Anular una
+> compra confirmada sin recibir es local; anular una recibida revierte su entrada. El cargue inicial de
+> inventario usa compras normales identificadas con `observations`.
+
 ### Atributos
 
 | Atributo | Tipo | Regla | Descripción |
@@ -3028,6 +3042,10 @@ Comienza en `DRAFT` y no afecta inventario. Al confirmar se revalidan proveedor,
 **Tabla:** `purchase_details`  
 **Naturaleza:** transaccional y privada.  
 **Servicio propietario:** Purchase Service.
+
+> **Spec 020:** presentación obligatoria (`ck_purchase_details_presentation_required`), `unit_cost > 0` y
+> `discount_amount < subtotal` (`ck_purchase_details_net_cost`); el costo por unidad base redondeado también debe
+> ser mayor que cero (validación de la aplicación).
 
 ### Descripción
 
@@ -3114,6 +3132,10 @@ Controla la numeración oficial de compras. El frontend no decide el número. El
 **Tabla:** `purchase_operations`  
 **Naturaleza:** coordinación técnica y funcional.  
 **Servicio propietario:** Purchase Service.
+
+> **Spec 020:** `operation_type` admite `RECEIVE`. `CONFIRM` es local (`SUCCEEDED` sin entrada); `RECEIVE` y
+> la anulación de una compra recibida son las operaciones distribuidas con Inventory. No hay compensación por
+> numeración.
 
 ### Descripción
 
@@ -3232,6 +3254,9 @@ del usuario (T100).
 **Naturaleza:** transaccional y privada.  
 **Servicio propietario:** Sales Service.
 
+> **Spec 020:** `payment_method_id` con copia de código y nombre (`ck_sales_payment_method_*`), obligatorio fuera
+> de `DRAFT`; medio declarativo, no un pago. Solo contado (vigente).
+
 ### Descripción
 
 Representa la cabecera de una venta: empresa, sucursal, cliente privado (persona u organización), totales, estado, número oficial, snapshots del cliente y usuarios responsables.
@@ -3293,6 +3318,8 @@ Comienza en `DRAFT` y no descuenta inventario. Al confirmar se revalidan cliente
 **Tabla:** `sale_details`  
 **Naturaleza:** transaccional y privada.  
 **Servicio propietario:** Sales Service.
+
+> **Spec 020:** sin descuentos en el MVP: `discount_amount` solo admite `0` (`ck_sale_details_no_discount`).
 
 ### Descripción
 

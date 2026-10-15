@@ -20,6 +20,7 @@ from tests.integration.support import (
     PURCHASE,
     draft_body,
     new_key,
+    unit_line,
     user_client,
 )
 
@@ -46,6 +47,15 @@ def confirm(buyer, world, purchase, key=None):
     return buyer.post(
         url(world, f"/purchases/{purchase['id']}/confirmation"),
         json={"version": purchase["version"]},
+        headers={"Idempotency-Key": key or new_key()},
+    )
+
+
+def receive(buyer, world, purchase, key=None):
+    """Spec 020: la recepción física completa aplica la entrada en Inventory."""
+    return buyer.post(
+        url(world, f"/purchases/{purchase['id']}/receipt"),
+        json={"version": purchase["version"], "full_receipt_confirmed": True},
         headers={"Idempotency-Key": key or new_key()},
     )
 
@@ -77,15 +87,21 @@ def test_draft_confirm_inventory_and_cancel(admin, buyer, real_world, sequence) 
     assert draft["lines"][0]["base_quantity_factor_snapshot"] == "12.00000000"
     assert draft["lines"][0]["presentation_code_snapshot"].startswith("CJ12-")
     assert draft["lines"][0]["supplier_lead_time_snapshot_hours"] == "48.50"
-    assert draft["payment_condition_code_snapshot"] == "CREDIT"
-    assert draft["due_date"] == (date.fromisoformat(draft["operation_date"]) + timedelta(days=30)).isoformat()
+    assert draft["payment_condition_code_snapshot"] == "CASH" and draft["due_date"] == draft["operation_date"]
+    assert draft["payment_method_code_snapshot"] == "CASH"
+
+    confirmed = confirm(buyer, world, draft)
+    assert confirmed.status_code == 200, confirmed.text
+    assert confirmed.json()["status"] == "CONFIRMED" and confirmed.json()["receipt_status"] == "PENDING"
+    number = confirmed.json()["number"]
+    assert re.fullmatch(rf"CP-{date.fromisoformat(draft['operation_date']):%Y%m}-\d{{6}}", number), number
+    assert balance(admin, world, world.product.company_product) == before  # spec 020: confirmar no mueve inventario
 
     key = new_key()
-    confirmed = confirm(buyer, world, draft, key)
-    assert confirmed.status_code == 200, confirmed.text
-    body = confirmed.json()
-    assert body["status"] == "CONFIRMED"
-    assert re.fullmatch(rf"CP-{date.fromisoformat(body['operation_date']):%Y%m}-\d{{6}}", body["number"]), body["number"]
+    received = receive(buyer, world, confirmed.json(), key)
+    assert received.status_code == 200, received.text
+    body = received.json()
+    assert body["receipt_status"] == "RECEIVED" and body["number"] == number
     assert balance(admin, world, world.product.company_product) == before + 24
 
     operation = admin.get(f"{INVENTORY}/companies/{world.company}/inventory-operations/{body['inventory_operation_id']}")
@@ -95,7 +111,7 @@ def test_draft_confirm_inventory_and_cancel(admin, buyer, real_world, sequence) 
     assert movement["quantity"] == "24.0000" and movement["unit_cost"] == "10000.0000"  # sin IVA (DS-04)
     assert operation.json()["origin_type"] == "PURCHASE" and operation.json()["origin_id"] == draft["id"]
 
-    again = confirm(buyer, world, draft, key)  # repetición idempotente con Inventory real
+    again = receive(buyer, world, confirmed.json(), key)  # repetición idempotente con Inventory real
     assert again.status_code == 200 and again.json()["inventory_operation_id"] == body["inventory_operation_id"]
     assert balance(admin, world, world.product.company_product) == before + 24
 
@@ -112,8 +128,8 @@ def test_draft_confirm_inventory_and_cancel(admin, buyer, real_world, sequence) 
 
 def test_cancel_after_consumption_is_rejected(admin, buyer, operator, real_world, sequence) -> None:
     world = real_world
-    draft = create(buyer, world, {"company_product_id": world.product_2.company_product, "quantity": "5", "unit_cost": "800"})
-    confirmed = confirm(buyer, world, draft).json()
+    draft = create(buyer, world, unit_line(world.product_2, "5", "800"))
+    confirmed = receive(buyer, world, confirm(buyer, world, draft).json()).json()
     # FIFO consume primero las capas más antiguas: se vende todo el saldo para consumir la de esta compra.
     stock = str(balance(admin, world, world.product_2.company_product))
     sale = operator.post(f"{INVENTORY}/inventory-outputs", json={
@@ -128,10 +144,20 @@ def test_cancel_after_consumption_is_rejected(admin, buyer, operator, real_world
     assert current["status"] == "CONFIRMED"
 
 
+def test_credit_condition_is_not_available_in_the_mvp(buyer, real_world) -> None:
+    """Spec 020 (FR-020-08): la condición CREDIT existe en Commercial Relationship, pero no se puede usar."""
+    response = buyer.post(
+        url(real_world, "/purchases"),
+        json=draft_body(real_world, unit_line(real_world.product_2, "1", "700"), supplier_payment_condition_id=real_world.credit_condition),
+    )
+    assert response.status_code == 409, response.text
+    assert response.json()["errors"][0]["code"] == "PAYMENT_CONDITION_NOT_AVAILABLE"
+
+
 def test_product_without_inventory_control_is_409(buyer, real_world) -> None:
     response = buyer.post(
         url(real_world, "/purchases"),
-        json=draft_body(real_world, {"company_product_id": real_world.no_control.company_product, "quantity": "1", "unit_cost": "100"}),
+        json=draft_body(real_world, unit_line(real_world.no_control, "1", "100")),
     )
     assert response.status_code == 409, response.text
     assert response.json()["errors"][0]["code"] == "PRODUCT_NOT_INVENTORY_CONTROLLED"
@@ -183,7 +209,7 @@ def test_commercial_relationship_platform_lookup_with_real_client(purchase_techn
 def test_lifecycle_events_real(buyer, real_world, sequence) -> None:
     from datetime import UTC, datetime
 
-    draft = create(buyer, real_world, {"company_product_id": real_world.product_2.company_product, "quantity": "1", "unit_cost": "800"})
+    draft = create(buyer, real_world, unit_line(real_world.product_2, "1", "800"))
     now = datetime.now(UTC)
     for event, hours in (("ORDERED", 10), ("ARRIVED", 2)):
         response = buyer.post(

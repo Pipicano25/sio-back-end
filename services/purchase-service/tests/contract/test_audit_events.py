@@ -11,18 +11,24 @@ def events(test_engine) -> list[dict]:
     return [row["payload"] for row in fetch(test_engine, "SELECT payload FROM audit_outbox ORDER BY created_at")]
 
 
-def test_every_action_writes_exactly_one_event(buyer, world, fakes, make_draft, confirm, cancel, test_engine) -> None:
+def test_every_action_writes_exactly_one_event(buyer, world, fakes, make_draft, confirm, receive, cancel, test_engine) -> None:
     sequence = buyer.post(f"{base(world)}/purchase-sequences", json=sequence_body()).json()
     draft = make_draft()
     url = f"{base(world)}/purchases/{draft['id']}"
     added = buyer.post(f"{url}/details", json={**line(world.product_2), "version": 1}).json()
     updated = buyer.put(f"{url}/details/{added['lines'][1]['id']}", json={**line(world.product_2, "2"), "version": 2}).json()
     deleted = buyer.delete(f"{url}/details/{added['lines'][1]['id']}", params={"version": updated["version"]}).json()
-    header = {"branch_id": str(world.branch), "company_supplier_id": str(world.supplier), "operation_date": draft["operation_date"]}
+    header = {
+        "branch_id": str(world.branch),
+        "company_supplier_id": str(world.supplier),
+        "operation_date": draft["operation_date"],
+        "payment_method_id": str(world.payment_method),
+    }
     edited = buyer.put(url, json={**header, "version": deleted["version"]}).json()
     buyer.post(f"{url}/lifecycle-events", json={"event_type": "ORDERED", "occurred_at": (datetime.now(UTC) - timedelta(hours=1)).isoformat(), "source": "USER"})
     confirmed = confirm(edited).json()
-    cancel(confirmed)
+    received = receive(confirmed).json()
+    cancel(received)
     seq_url = f"{base(world)}/purchase-sequences/{sequence['id']}"
     changed = buyer.put(seq_url, json={**sequence_body(maximum_number=99), "version": 1}).json()
     off = buyer.post(f"{seq_url}/deactivate", json={"version": changed["version"]}).json()
@@ -32,7 +38,7 @@ def test_every_action_writes_exactly_one_event(buyer, world, fakes, make_draft, 
     assert sorted(actions) == sorted([
         "CREATE_PURCHASE_SEQUENCE", "CREATE_PURCHASE", "ADD_PURCHASE_DETAIL", "UPDATE_PURCHASE_DETAIL",
         "DELETE_PURCHASE_DETAIL", "UPDATE_PURCHASE", "RECORD_PURCHASE_LIFECYCLE_EVENT", "CONFIRM_PURCHASE",
-        "CANCEL_PURCHASE", "UPDATE_PURCHASE_SEQUENCE", "DEACTIVATE_PURCHASE_SEQUENCE", "REACTIVATE_PURCHASE_SEQUENCE",
+        "RECEIVE_PURCHASE", "CANCEL_PURCHASE", "UPDATE_PURCHASE_SEQUENCE", "DEACTIVATE_PURCHASE_SEQUENCE", "REACTIVATE_PURCHASE_SEQUENCE",
     ])
     for event in events(test_engine):
         assert event["company_id"] == str(world.company)
@@ -62,11 +68,13 @@ def test_rejections_before_effects_write_no_event(buyer, world, make_draft, conf
     assert count_rows(test_engine, "audit_outbox") == before
 
 
-def test_failures_with_registered_operation_are_audited_as_failure(world, fakes, make_sequence, make_draft, confirm, test_engine) -> None:
+def test_failures_with_registered_operation_are_audited_as_failure(world, fakes, make_sequence, make_draft, confirm, receive, test_engine) -> None:
+    """Spec 020: la recepción es la operación con Inventory; su rechazo se audita como fallo."""
     make_sequence()
+    confirmed = confirm(make_draft()).json()
     fakes.inventory.reject_entry = (422, "VALIDATION_ERROR")
-    confirm(make_draft())
-    failure = [event for event in events(test_engine) if event["action"] == "CONFIRM_PURCHASE"]
+    receive(confirmed)
+    failure = [event for event in events(test_engine) if event["action"] == "RECEIVE_PURCHASE"]
     assert len(failure) == 1 and failure[0]["result"] == "FAILURE"
 
 

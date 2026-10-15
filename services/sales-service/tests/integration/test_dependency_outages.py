@@ -1,12 +1,14 @@
 """Dependencias reales detenidas (Principio X, FR-030; RC-06; T080).
 
-Ejecutar con `pytest -m integration`. Detiene y vuelve a iniciar contenedores compartidos del
-entorno integrado (cada uno en un `finally`). Si la prueba se interrumpe: `docker start <contenedor>`.
+Ejecutar con `pytest -m integration`. Detiene y vuelve a iniciar contenedores del
+entorno aislado (cada uno en un `finally`). Si la prueba se interrumpe: `docker start <contenedor>`.
+Solo actúa sobre contenedores aislados (`support.container`: prefijo `SIO_INTEGRATION_CONTAINER_PREFIX` y
+etiqueta `sio.integration.isolated=true`); ante un contenedor persistente la prueba se omite.
 
 1. Cada dependencia detenida → `503` con su nombre y sin efectos.
 2. Inventory detenido al confirmar → operación `PENDING`, venta en borrador; al volver, el reintento
    con la misma clave confirma una sola vez.
-3. Inventory detenido al confirmar → al volver, el **conciliador real** (`sio-sales-reconciler`)
+3. Inventory detenido al confirmar → al volver, el **conciliador real** (aislado)
    consulta por clave y cierra la operación (`FAILED`, nunca aplicada) sin intervención manual.
 """
 
@@ -24,6 +26,7 @@ from tests.integration.support import (
     PARTY_IDENTITY,
     PRODUCT_CATALOG,
     SALES,
+    container,
     docker,
     draft_body,
     new_key,
@@ -48,15 +51,16 @@ def docker_available():
 
 
 def stopped(name: str):
-    container, health = CONTAINERS[name]
+    base_name, health = CONTAINERS[name]
+    target = container(base_name)
 
     class _Stopped:
         def __enter__(self):
-            docker("stop", container)
+            docker("stop", target)
 
         def __exit__(self, *exc):
-            docker("start", container)
-            wait_until(lambda: httpx.get(health, timeout=5).status_code == 200, 120, f"{container} no volvió")
+            docker("start", target)
+            wait_until(lambda: httpx.get(health, timeout=5).status_code == 200, 120, f"{target} no volvió")
 
     return _Stopped()
 
@@ -113,7 +117,7 @@ def test_real_reconciler_closes_pending_operation(seller, real_world, sequence) 
         operation_id = response.json()["operation_id"]
     # Envejece la operación para no esperar el umbral de 300 s; el conciliador corre cada 60 s.
     docker(
-        "exec", "sio-sales-db", "sh", "-c",
+        "exec", container("sio-sales-db"), "sh", "-c",
         "psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -c "
         f"\"UPDATE sale_operations SET updated_at = now() - interval '10 minutes' WHERE id = '{operation_id}'\"",
     )

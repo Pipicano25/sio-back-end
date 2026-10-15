@@ -125,6 +125,7 @@ def test_price_changed_with_real_commercial_relationship(admin, seller, real_wor
     world = real_world
     item = admin.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{world.company}/price-list-items", json={
         "price_list_id": world.price_list, "company_product_id": world.product_2.company_product,
+        "company_product_presentation_id": world.product_2.unit_presentation,  # spec 019: precio por presentación
         "unit_price": "8500.00", "valid_from": "2026-01-01T00:00:00Z",
     })
     assert item.status_code == 201, item.text

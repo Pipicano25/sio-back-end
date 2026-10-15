@@ -9,7 +9,7 @@ sucursal con su costo FIFO y su número oficial, y anula revirtiendo exactamente
 | Tabla | Rol |
 | --- | --- |
 | `sales` | Cabecera: cliente, sucursal, fecha de negocio (la del día en que se confirma), solo contado (`CASH`, `due_date = operation_date`), moneda (la `default_currency` de la empresa), totales, número, estado `DRAFT`/`CONFIRMED`/`CANCELLED`, `inventory_operation_id`, `has_unknown_cost` |
-| `sale_details` | Líneas (1–100): producto empresarial, presentación opcional, precio resuelto (`unit_price`, `price_list_id`, `price_list_item_id`, `price_list_requested`), cantidad, descuento, impuesto, snapshots, costo FIFO (`unit_cost_snapshot` por unidad base, `cost_total`, `cost_known`) y margen |
+| `sale_details` | Líneas (1–100): producto empresarial, presentación (obligatoria, spec 019), precio resuelto (`unit_price`, `price_list_id`, `price_list_item_id`, `price_list_requested`), cantidad, descuento, impuesto, snapshots, costo FIFO (`unit_cost_snapshot` por unidad base, `cost_total`, `cost_known`) y margen |
 | `sale_sequences` | Numeración por empresa o sucursal; a lo sumo una activa por empresa, sucursal y tipo |
 | `sale_sequence_counters` | Contador independiente por período (`''` continuo, `YYYY`, `YYYYMM`) |
 | `sale_operations` | Confirmación o anulación distribuida (`PENDING`/`SUCCEEDED`/`FAILED`), clave de idempotencia, `inventory_operation_id`, usuario operativo que la inició y motivo (inmutables; `error_details` solo errores) |
@@ -33,6 +33,11 @@ confirmada no se recalculan nunca (RN-04).
   inexistente → `422 PRICE_LIST_NOT_FOUND`; existe → `409 PRICE_LIST_NOT_APPLICABLE`.
 - **Solo contado** (DP-01): no se acepta condición de pago ni fecha; `operation_date` es la fecha del
   día en la zona horaria de la sucursal y se fija al confirmar.
+- **Medio de pago** (spec 020, FR-020-09): `payment_method_id` obligatorio, un único método `ACTIVE` de
+  Payment Reference (`PAYMENT_METHOD_NOT_FOUND` `422`, `PAYMENT_METHOD_INACTIVE` `409`), con copia de su
+  código y nombre que se refresca y congela al confirmar. Es **declarativo**: no registra ni comprueba pagos.
+- **Sin descuentos** (spec 020, FR-020-13): `discount_amount` se conserva por compatibilidad y solo admite
+  `0` (`422 DISCOUNT_NOT_ALLOWED`); la base lo garantiza (`ck_sale_details_no_discount`).
 - **Costo y margen** (R-10): el costo FIFO lo informa Inventory en la salida y se copia sin convertir
   ni recalcular. Margen = (subtotal − descuento) − costo; porcentaje nulo si el neto es 0 o si no cabe en
   `NUMERIC(7,4)`; con costo desconocido (`cost_known = false`) los márgenes quedan nulos y la cabecera
@@ -80,7 +85,9 @@ en un entorno local cargado esa importación tarda de 6 a 10 s; con 5 s el conte
 
 ## Dependencias
 
-Ver `specs/015-sales-core/contracts/dependencies.md`. Un único adaptador real por dependencia, sin
+Ver `specs/015-sales-core/contracts/dependencies.md`. Spec 020: Payment Reference
+(`GET /global-payment-methods/{id}`, `PAYMENT_REFERENCE_SERVICE_BASE_URL` **sin** `/api/v1`, permiso técnico
+`perm:payment-reference:global_payment_methods:read`). Un único adaptador real por dependencia, sin
 modos de entorno; las pruebas inyectan dobles por DI. Identidad técnica: cliente `sales-service`
 (`client_credentials`, secreto `SALES_SERVICE_CLIENT_SECRET` solo en `infrastructure/.env`), renovado en
 segundo plano antes de expirar. `operational-access` siempre con el token del usuario.
@@ -96,6 +103,9 @@ solo vende de contado.
 docker compose --file ../../infrastructure/services/sales-service.yaml --env-file ../../infrastructure/.env up -d sales-db
 alembic upgrade head            # en el contenedor: docker exec sio-sales-service alembic upgrade head
 ```
+
+Migración `0002` (spec 020): medio de pago (columnas, `ck_sales_payment_method_*`), ventas sin descuento y
+trigger de inmutabilidad reemplazado; se detiene sin cambios si hay descuentos o ventas fuera de `DRAFT`.
 
 Migración `0001`: tablas, restricciones nombradas (incluida `ck_sales_cash_only`), índices únicos
 parciales (número por empresa, una secuencia activa por alcance, una operación `PENDING` por venta) y
@@ -125,7 +135,8 @@ confirmar y anular exige además asignación a la sucursal. Ver `docs/ejemplo/us
 ## Fuera de alcance
 
 Crédito, financiación y perfil crediticio del cliente (POST-MVP), publicación a Finance (la venta
-conserva `due_date`), multimoneda, precio manual, promociones, reservas de existencias, devoluciones y
+conserva `due_date`), multimoneda, precio manual, descuentos y políticas de descuento (spec 020), pagos
+registrados, pagos divididos, cartera, promociones, reservas de existencias, devoluciones y
 notas crédito.
 
 ## Entorno

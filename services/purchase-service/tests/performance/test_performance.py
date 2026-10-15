@@ -43,9 +43,15 @@ def test_confirmation_of_100_lines(buyer, world, fakes, make_sequence) -> None:
             json={"version": draft.json()["version"]},
             headers={"Idempotency-Key": new_key()},
         )
-        samples.append(time.perf_counter() - started)
         assert response.status_code == 200, response.text
-    print(f"\nconfirmación de 100 líneas: p95={p95(samples):.3f}s mediana={statistics.median(samples):.3f}s")
+        received = buyer.post(  # spec 020: la recepción es la que aplica la entrada en Inventory
+            f"{base(world)}/purchases/{draft.json()['id']}/receipt",
+            json={"version": response.json()["version"], "full_receipt_confirmed": True},
+            headers={"Idempotency-Key": new_key()},
+        )
+        samples.append(time.perf_counter() - started)
+        assert received.status_code == 200, received.text
+    print(f"\nconfirmación y recepción de 100 líneas: p95={p95(samples):.3f}s mediana={statistics.median(samples):.3f}s")
     assert p95(samples) <= 3.0
 
 
@@ -53,32 +59,41 @@ def test_fifty_concurrent_confirmations(test_client, user_token, world, fakes, m
     make_sequence()
     drafts = [make_draft() for _ in range(50)]
     barrier = threading.Barrier(50)
-    numbers: list[str] = []
+    confirmed: list[dict] = []
+    received: list[dict] = []
     errors: list[str] = []
     lock = threading.Lock()
     token = user_token("compras.test")
 
-    def run(draft) -> None:
+    def run(purchase, action: str, body: dict, results: list) -> None:
         barrier.wait(30)
         response = test_client.post(
-            f"{base(world)}/purchases/{draft['id']}/confirmation",
-            json={"version": draft["version"]},
+            f"{base(world)}/purchases/{purchase['id']}/{action}",
+            json=body,
             headers={"Authorization": f"Bearer {token}", "Idempotency-Key": new_key()},
         )
         with lock:
             if response.status_code == 200:
-                numbers.append(response.json()["number"])
+                results.append(response.json())
             else:
                 errors.append(response.text)
 
-    threads = [threading.Thread(target=run, args=(draft,)) for draft in drafts]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join(120)
+    def concurrently(purchases, action: str, body, results: list) -> None:
+        threads = [threading.Thread(target=run, args=(item, action, body(item), results)) for item in purchases]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(120)
+
+    concurrently(drafts, "confirmation", lambda draft: {"version": draft["version"]}, confirmed)
     assert not errors, errors[:3]
-    assert sorted(numbers) == [f"CP-{value:06d}" for value in range(1, 51)]
-    assert len(fakes.inventory.entries()) == 50
+    assert sorted(item["number"] for item in confirmed) == [f"CP-{value:06d}" for value in range(1, 51)]
+    assert fakes.inventory.entries() == []  # spec 020: confirmar no mueve inventario
+
+    barrier = threading.Barrier(50)
+    concurrently(confirmed, "receipt", lambda item: {"version": item["version"], "full_receipt_confirmed": True}, received)
+    assert not errors, errors[:3]
+    assert len(received) == 50 and len(fakes.inventory.entries()) == 50
 
 
 def seed_purchases(engine, world, count: int, application_user) -> None:

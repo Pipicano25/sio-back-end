@@ -1,4 +1,4 @@
-# Paso 02 de 08 — Consultar la disponibilidad
+# Paso 03 de 09 — Consultar la disponibilidad
 
 Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
 

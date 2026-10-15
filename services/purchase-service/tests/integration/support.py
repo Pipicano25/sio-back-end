@@ -106,6 +106,26 @@ def docker(*args: str) -> str:
     return subprocess.run(["docker", *args], capture_output=True, text=True, check=True).stdout.strip()
 
 
+ISOLATION_LABEL = "sio.integration.isolated"
+CONTAINER_PREFIX = os.environ.get("SIO_INTEGRATION_CONTAINER_PREFIX", "sio-")
+
+
+def container(name: str) -> str:
+    """Contenedor aislado equivalente a `name` (`sio-purchase-db` → `<prefijo>purchase-db`).
+
+    Las pruebas que detienen o alteran contenedores solo actúan sobre los que llevan la etiqueta
+    `sio.integration.isolated=true`; un contenedor persistente nunca se detiene: la prueba se omite.
+    """
+    resolved = CONTAINER_PREFIX + name.removeprefix("sio-")
+    try:
+        label = docker("inspect", "-f", f'{{{{index .Config.Labels "{ISOLATION_LABEL}"}}}}', resolved)
+    except (OSError, subprocess.CalledProcessError):
+        pytest.skip(f"Contenedor aislado no disponible: {resolved}")
+    if label != "true":
+        pytest.skip(f"{resolved} no lleva {ISOLATION_LABEL}=true: no se detienen contenedores persistentes.")
+    return resolved
+
+
 def wait_until(predicate, timeout: float, message: str) -> None:
     started = time.monotonic()
     while time.monotonic() - started < timeout:
@@ -194,6 +214,8 @@ class Product:
     global_product: str
     unit: str
     box_presentation: str | None = None
+    unit_presentation: str | None = None
+    """Presentación de empresa de factor 1 (spec 020: toda línea de compra indica su presentación)."""
 
 
 def _adopt(client, company: str, label: str, *, inventory_control: bool, with_box: bool) -> Product:
@@ -212,9 +234,10 @@ def _adopt(client, company: str, label: str, *, inventory_control: bool, with_bo
     assert client.post(
         f"{PRODUCT_CATALOG}/products/{product_id}/categories", json={"global_category_id": category.json()["id"]}
     ).status_code == 201
-    assert client.post(f"{PRODUCT_CATALOG}/products/{product_id}/presentations", json={
+    unit_global = client.post(f"{PRODUCT_CATALOG}/products/{product_id}/presentations", json={
         "code": f"UND-{label}-{RUN_ID}", "name": "Unidad (dato ficticio)", "is_base": True,
-    }).status_code == 201
+    })
+    assert unit_global.status_code == 201, unit_global.text
     box_global = None
     if with_box:
         box = client.post(f"{PRODUCT_CATALOG}/products/{product_id}/presentations", json={
@@ -232,6 +255,11 @@ def _adopt(client, company: str, label: str, *, inventory_control: bool, with_bo
     })
     assert adopted.status_code == 201, adopted.text
     company_product = adopted.json()["id"]
+    unit_presentation = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company}/company-product-presentations", json={
+        "company_product_id": company_product, "global_product_presentation_id": unit_global.json()["id"],
+        "sku": f"SKU-UND-{label}-{RUN_ID}",
+    })
+    assert unit_presentation.status_code == 201, unit_presentation.text
     box_presentation = None
     if box_global:
         presentation = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company}/company-product-presentations", json={
@@ -240,7 +268,7 @@ def _adopt(client, company: str, label: str, *, inventory_control: bool, with_bo
         })
         assert presentation.status_code == 201, presentation.text
         box_presentation = presentation.json()["id"]
-    return Product(company_product, product_id, unit, box_presentation)
+    return Product(company_product, product_id, unit, box_presentation, unit_presentation.json()["id"])
 
 
 @dataclass(frozen=True)
@@ -253,6 +281,8 @@ class RealWorld:
     organization: str
     identification: str
     condition: str
+    credit_condition: str
+    payment_method: str
     product: Product
     product_2: Product
     no_control: Product
@@ -261,7 +291,11 @@ class RealWorld:
 
 
 def build_world(admin: httpx.Client) -> RealWorld:
-    """Empresa COP con sucursal, `compras.test` y `admin.test` asignados, proveedor, condición CREDIT 30 y productos."""
+    """Empresa COP con sucursal, `compras.test` y `admin.test` asignados, proveedor, condiciones y productos.
+
+    Spec 020: `condition` es de contado (la única admitida) y `credit_condition` (CREDIT 30) existe para
+    comprobar su rechazo; `payment_method` es el método `CASH` activo de Payment Reference.
+    """
     colombia = _first_id(admin, f"{GEOGRAPHY}/global-countries", iso3_code="COL")
     organization, _ = _organization(admin, colombia, "EMPRESA ")
     company = admin.post(f"{OPERATIONAL_CONTEXT}/companies", json={"organization_identity_id": organization})
@@ -296,12 +330,20 @@ def build_world(admin: httpx.Client) -> RealWorld:
 
     types = admin.get(f"{PAYMENT_REFERENCE}/global-payment-condition-types", params={"page_size": 100})
     assert types.status_code == 200, types.text
-    credit = next(item["id"] for item in types.json()["items"] if item["code"] == "CREDIT" and item["status"] == "ACTIVE")
+    type_ids = {item["code"]: item["id"] for item in types.json()["items"] if item["status"] == "ACTIVE"}
     condition = admin.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/supplier-payment-conditions", json={
-        "company_supplier_id": supplier.json()["id"], "payment_condition_type_id": credit, "currency_code": "COP",
-        "payment_terms_days": 30, "valid_from": "2026-01-01T00:00:00Z",
+        "company_supplier_id": supplier.json()["id"], "payment_condition_type_id": type_ids["CASH"], "currency_code": "COP",
+        "payment_terms_days": 0, "valid_from": "2026-01-01T00:00:00Z",
     })
     assert condition.status_code == 201, condition.text
+    credit_condition = admin.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/supplier-payment-conditions", json={
+        "company_supplier_id": supplier.json()["id"], "payment_condition_type_id": type_ids["CREDIT"], "currency_code": "COP",
+        "payment_terms_days": 30, "valid_from": "2026-01-01T00:00:00Z",
+    })
+    assert credit_condition.status_code == 201, credit_condition.text
+    methods = admin.get(f"{PAYMENT_REFERENCE}/global-payment-methods", params={"page_size": 100})
+    assert methods.status_code == 200, methods.text
+    payment_method = next(item["id"] for item in methods.json()["items"] if item["code"] == "CASH" and item["status"] == "ACTIVE")
 
     product = _adopt(admin, company_id, "A", inventory_control=True, with_box=True)
     product_2 = _adopt(admin, company_id, "B", inventory_control=True, with_box=False)
@@ -326,6 +368,8 @@ def build_world(admin: httpx.Client) -> RealWorld:
         organization=supplier_org,
         identification=f"NIT {supplier_number}",
         condition=condition.json()["id"],
+        credit_condition=credit_condition.json()["id"],
+        payment_method=payment_method,
         product=product,
         product_2=product_2,
         no_control=no_control,
@@ -337,9 +381,25 @@ def build_world(admin: httpx.Client) -> RealWorld:
 def draft_body(world: RealWorld, *lines: dict, **extra) -> dict:
     from datetime import date
 
-    body = {"branch_id": world.branch, "company_supplier_id": world.supplier, "operation_date": date.today().isoformat(), "lines": list(lines)}
+    body = {
+        "branch_id": world.branch,
+        "company_supplier_id": world.supplier,
+        "operation_date": date.today().isoformat(),
+        "payment_method_id": world.payment_method,  # spec 020
+        "lines": list(lines),
+    }
     body.update(extra)
     return body
+
+
+def unit_line(product: Product, quantity: str, unit_cost: str) -> dict:
+    """Línea por la presentación de factor 1 (spec 020: toda línea indica su presentación)."""
+    return {
+        "company_product_id": product.company_product,
+        "company_product_presentation_id": product.unit_presentation,
+        "quantity": quantity,
+        "unit_cost": unit_cost,
+    }
 
 
 def new_key() -> str:

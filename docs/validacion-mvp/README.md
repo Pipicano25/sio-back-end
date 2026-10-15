@@ -35,9 +35,9 @@ impuestos para que costos y márgenes sean exactos (`specs/017-mvp-integral-vali
 | Ejercicio | Llamadas |
 | --- | --- |
 | [1 — Configuración de la empresa: organizaciones, personas, empresas, sucursales y usuarios operativos](1-configuracion/ORDEN.md) | 36 |
-| [2 — Relación comercial y precios: proveedor, cliente, productos, adopción, presentaciones y listas](2-relacion-comercial-y-precios/ORDEN.md) | 23 |
-| [3 — Compras e inventario: secuencias, compras, confirmación, entradas, saldos, kardex y capas](3-compras-e-inventario/ORDEN.md) | 14 |
-| [4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen](4-ventas/ORDEN.md) | 29 |
+| [2 — Relación comercial y precios: proveedor, cliente, productos, adopción, presentaciones y listas](2-relacion-comercial-y-precios/ORDEN.md) | 24 |
+| [3 — Compras e inventario: secuencias, compras de contado, confirmación, recepción física (entradas), saldos, kardex y capas](3-compras-e-inventario/ORDEN.md) | 18 |
+| [4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen](4-ventas/ORDEN.md) | 31 |
 | [5 — Anulaciones y reversos](5-anulaciones/ORDEN.md) | 14 |
 | [6 — Auditoría del recorrido](6-auditoria/ORDEN.md) | 3 |
 | [7 — Seguridad entre empresas y permisos](7-seguridad/ORDEN.md) | 65 |

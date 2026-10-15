@@ -11,12 +11,18 @@ Cada paso:
 - `headers`: cabeceras adicionales (`Idempotency-Key`);
 - `before`: cambios en los dobles antes del paso (`inventory_down`, `inventory_up`,
   `consume:<VARIABLE>`), para mostrar fallas de Inventory sin servicios reales;
-- `save`: variables `<NOMBRE>` que se guardan de la respuesta y se usan después.
+- `save`: variables `<NOMBRE>` que se guardan de la respuesta y se usan después (en la ruta o como
+  valor completo de un campo del cuerpo, p. ej. `"version": "<VERSION_COMPRA>"`).
+
+Spec 020: toda compra declara un medio de pago y toda línea su presentación (la de factor 1 para la
+unidad); solo contado; confirmar no mueve inventario y la recepción física completa aplica la entrada.
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
+
+from tests.fakes import unit_presentation_of
 
 NOW = datetime(2026, 11, 5, 15, 0, tzinfo=UTC)
 """Reloj de los ejercicios: 5 de noviembre de 2026 (10:00 en Bogotá)."""
@@ -29,6 +35,12 @@ SUPPLIER = "d14c0000-0000-4000-8000-000000000001"
 ORGANIZATION = "d14c0000-0000-4000-8000-000000000002"
 CONDITION = "d14c0000-0000-4000-8000-000000000003"
 CREDIT_TYPE = "d14c0000-0000-4000-8000-000000000004"
+CASH_TYPE = "d14c0000-0000-4000-8000-000000000005"
+CREDIT_CONDITION = "d14c0000-0000-4000-8000-000000000006"
+FINANCING_CONDITION = "d14c0000-0000-4000-8000-000000000007"
+FINANCING_TYPE = "d14c0000-0000-4000-8000-000000000008"
+PAYMENT_METHOD = "d14c0000-0000-4000-8000-000000000011"
+INACTIVE_PAYMENT_METHOD = "d14c0000-0000-4000-8000-000000000012"
 ARROZ = "d14d0000-0000-4000-8000-000000000001"
 ACEITE = "d14d0000-0000-4000-8000-000000000002"
 SERVICIO = "d14d0000-0000-4000-8000-000000000003"
@@ -47,9 +59,13 @@ COMMON_DATA = [
     ("Empresa", COMPANY, "Empresa ficticia (moneda COP); todos los usuarios de prueba son miembros `ACTIVE`."),
     ("Sucursal principal", BRANCH, "Bodega ficticia; todos los usuarios de prueba están asignados a ella."),
     ("Proveedor", SUPPLIER, "Distribuidora Ficticia S.A.S. (`ACTIVE`), identificada como NIT 900123456."),
-    ("Condición de pago", CONDITION, "Crédito a 30 días en COP del proveedor."),
+    ("Condición de pago", CONDITION, "Contado (`CASH`) en COP del proveedor: la única admitida en el MVP (spec 020)."),
+    ("Condición a crédito", CREDIT_CONDITION, "Crédito a 30 días del proveedor: existe, pero no se puede usar en el MVP."),
+    ("Medio de pago", PAYMENT_METHOD, "Efectivo (`CASH`, `ACTIVE`) en Payment Reference: referencia declarativa, no un pago."),
     ("Arroz 500 g", ARROZ, "Producto con control de inventario (código 000045); unidad base `UND`."),
     ("Caja x12", CAJA, "Presentación de compra del arroz: 12 unidades base."),
+    ("Unidad del arroz", str(unit_presentation_of(ARROZ)), "Presentación de factor 1 del arroz (toda línea indica su presentación)."),
+    ("Unidad del aceite", str(unit_presentation_of(ACEITE)), "Presentación de factor 1 del aceite."),
     ("Aceite 1 L", ACEITE, "Producto con control de inventario (código 000046)."),
     ("Servicio de transporte", SERVICIO, "Producto **sin** control de inventario (no se puede comprar en esta fase)."),
 ]
@@ -58,13 +74,25 @@ P = f"/api/v1/companies/{COMPANY}"
 
 
 def draft(operation_date: str, *lines: dict, **extra) -> dict:
-    body = {"branch_id": BRANCH, "company_supplier_id": SUPPLIER, "operation_date": operation_date, "lines": list(lines)}
+    body = {
+        "branch_id": BRANCH,
+        "company_supplier_id": SUPPLIER,
+        "operation_date": operation_date,
+        "payment_method_id": PAYMENT_METHOD,
+        "lines": list(lines),
+    }
     body.update(extra)
     return body
 
 
 def ln(product: str, quantity: str, unit_cost: str, **extra) -> dict:
-    return {"company_product_id": product, "quantity": quantity, "unit_cost": unit_cost, **extra}
+    body = {
+        "company_product_id": product,
+        "company_product_presentation_id": str(unit_presentation_of(product)),
+        "quantity": quantity,
+        "unit_cost": unit_cost,
+    }
+    return {**body, **extra}
 
 
 def key(name: str) -> dict:
@@ -104,6 +132,27 @@ def create_draft(file: str, title: str, body: dict, variable: str, why: list[str
     }
     if expect == 201:
         step["save"] = {variable: "id"}
+    return step
+
+
+def receive(file: str, title: str, variable: str, version, idempotency: str, why: list[str], expect: int = 200, save=None, before=None) -> dict:
+    """Recepción física completa (spec 020): la única operación que ingresa la mercancía en Inventory."""
+    step = {
+        "file": file,
+        "title": title,
+        "actor": "compras.test",
+        "kind": ACCION,
+        "method": "POST",
+        "path": f"{P}/purchases/<{variable}>/receipt",
+        "body": {"version": version, "full_receipt_confirmed": True},
+        "headers": key(idempotency),
+        "expect": expect,
+        "why": why,
+    }
+    if save:
+        step["save"] = save
+    if before:
+        step["before"] = before
     return step
 
 
@@ -220,7 +269,7 @@ EXERCISES = [
                 "body": {**ln(SERVICIO, "1", "50000"), "version": 2},
                 "expect": 409,
                 "why": [
-                    "El producto existe, pero su configuración impide comprarlo: toda compra confirmada genera "
+                    "El producto existe, pero su configuración impide comprarlo: toda compra recibida genera "
                     "entrada en Inventory (P-01). Existe pero no es apto → `409`.",
                 ],
             },
@@ -230,6 +279,33 @@ EXERCISES = [
                 {**draft("2026-11-04"), "company_supplier_id": MISSING},
                 "",
                 ["Referencia inexistente o no resoluble → `422` (P-03)."],
+                expect=422,
+            ),
+            create_draft(
+                "05a-compra-a-credito.md",
+                "Crear una compra a crédito",
+                draft("2026-11-04", ln(ACEITE, "1", "9800"), supplier_payment_condition_id=CREDIT_CONDITION),
+                "",
+                [
+                    "Spec 020: durante el MVP solo hay compras de contado. La condición existe, pero no es apta → `409` "
+                    "con `PAYMENT_CONDITION_NOT_AVAILABLE`.",
+                ],
+                expect=409,
+            ),
+            create_draft(
+                "05b-linea-sin-presentacion.md",
+                "Crear una compra con una línea sin presentación",
+                draft("2026-11-04", {"company_product_id": ACEITE, "quantity": "1", "unit_cost": "9800"}),
+                "",
+                ["Spec 020: toda línea indica su presentación, también la de factor 1 para la unidad → `422`."],
+                expect=422,
+            ),
+            create_draft(
+                "05c-costo-cero.md",
+                "Crear una compra con costo cero",
+                draft("2026-11-04", ln(ACEITE, "1", "0")),
+                "",
+                ["Spec 020: el costo de adquisición debe ser mayor que cero (`UNIT_COST_NOT_POSITIVE`) → `422`."],
                 expect=422,
             ),
             {
@@ -247,11 +323,12 @@ EXERCISES = [
     {
         "number": 3,
         "folder": "3-confirmacion",
-        "title": "Confirmación idempotente",
+        "title": "Confirmación y recepción idempotente",
         "purpose": (
-            "La confirmación ingresa la mercancía en Inventory y asigna el número del período. Inventory no responde "
-            "en el primer intento: la operación queda pendiente y el reintento con la misma clave la completa sin "
-            "duplicar la entrada; repetirla de nuevo devuelve el mismo resultado."
+            "Spec 020: confirmar asigna el número del período y deja la compra pendiente de recepción, **sin** mover "
+            "inventario. La recepción física completa ingresa la mercancía en Inventory: Inventory no responde en el "
+            "primer intento, la operación queda pendiente y el reintento con la misma clave la completa sin duplicar "
+            "la entrada; repetirla de nuevo devuelve el mismo resultado."
         ),
         "data": COMMON_DATA,
         "steps": [
@@ -264,48 +341,65 @@ EXERCISES = [
                 ["Compra de contado (sin condición): `due_date` = fecha de la compra."],
             ),
             confirm(
-                "03-confirmar-con-inventory-caido.md",
-                "Confirmar mientras Inventory no responde",
+                "03-confirmar.md",
+                "Confirmar la compra",
                 "COMPRA",
                 1,
                 "confirmar-compra-0001",
                 [
-                    "La operación queda `PENDING` (el `operation_id` se informa) y la compra sigue en borrador sin número.",
+                    "La compra queda `CONFIRMED` con `CP-202611-000001` y `receipt_status = PENDING`.",
+                    "No hay entrada en Inventory (`inventory_operation_id` nulo): la mercancía aún no se recibió.",
+                ],
+                save={"VERSION_CONFIRMADA": "version"},
+            ),
+            receive(
+                "04-recibir-con-inventory-caido.md",
+                "Confirmar la recepción mientras Inventory no responde",
+                "COMPRA",
+                "<VERSION_CONFIRMADA>",
+                "recibir-compra-0001",
+                [
+                    "`full_receipt_confirmed = true`: el usuario declara que recibió **toda** la mercancía.",
+                    "La operación de recepción queda `PENDING` (el `operation_id` se informa) y la compra sigue pendiente.",
                     "Repetir con la **misma** clave completa la operación; el conciliador también lo haría.",
                 ],
                 expect=503,
                 before=["inventory_down"],
             ),
-            confirm(
-                "04-reintentar-con-la-misma-clave.md",
-                "Reintentar con la misma clave",
+            receive(
+                "05-reintentar-con-la-misma-clave.md",
+                "Reintentar la recepción con la misma clave",
                 "COMPRA",
-                1,
-                "confirmar-compra-0001",
+                "<VERSION_CONFIRMADA>",
+                "recibir-compra-0001",
                 [
-                    "Inventory recibe la misma clave de operación: aplica la entrada una sola vez.",
-                    "La compra queda `CONFIRMED` con `CP-202611-000001`.",
+                    "Inventory recibe la misma clave de operación: aplica la entrada una sola vez (24 unidades base a "
+                    "10000 cada una) y crea su capa FIFO.",
+                    "La compra queda `receipt_status = RECEIVED`, con la fecha y el usuario de la recepción.",
                 ],
                 save={"ENTRADA": "inventory_operation_id"},
                 before=["inventory_up"],
             ),
-            confirm(
-                "05-repetir-la-confirmacion.md",
-                "Repetir la confirmación (respuesta perdida)",
+            receive(
+                "06-repetir-la-recepcion.md",
+                "Repetir la recepción (respuesta perdida)",
                 "COMPRA",
-                1,
-                "confirmar-compra-0001",
-                ["Misma clave: mismo resultado, sin una segunda entrada ni un segundo número."],
+                "<VERSION_CONFIRMADA>",
+                "recibir-compra-0001",
+                ["Misma clave: mismo resultado, sin una segunda entrada."],
             ),
             {
-                "file": "06-consultar-las-operaciones.md",
+                "file": "07-consultar-las-operaciones.md",
                 "title": "Consultar las operaciones de la compra",
                 "actor": "compras.test",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{P}/purchases/<COMPRA>/operations",
                 "expect": 200,
-                "why": ["La clave de idempotencia nunca se expone; `inventory_operation_id` identifica la entrada."],
+                "why": [
+                    "La confirmación (`CONFIRM`, sin Inventory) y la recepción (`RECEIVE`, con su entrada).",
+                    "La clave de idempotencia nunca se expone; `inventory_operation_id` identifica la entrada.",
+                ],
             },
         ],
     },
@@ -338,8 +432,9 @@ EXERCISES = [
         "folder": "5-anulacion",
         "title": "Anulación",
         "purpose": (
-            "Anular un borrador es local; anular una compra confirmada revierte exactamente su entrada en Inventory; "
-            "si esas unidades ya se consumieron, la anulación se rechaza y la compra sigue confirmada."
+            "Anular un borrador o una compra confirmada **pendiente de recepción** es local (spec 020: no hay entrada "
+            "que revertir); anular una compra recibida revierte exactamente su entrada en Inventory; si esas unidades "
+            "ya se consumieron, la anulación se rechaza y la compra sigue confirmada."
         ),
         "data": COMMON_DATA,
         "steps": [
@@ -357,34 +452,69 @@ EXERCISES = [
                 "expect": 200,
                 "why": ["Un borrador se anula sin Inventory; no se borra físicamente."],
             },
-            create_draft("04-compra-a-anular.md", "Compra que se confirmará y anulará", draft("2026-11-04", ln(ARROZ, "1", "120000", company_product_presentation_id=CAJA)), "COMPRA", ["Una caja de 12 unidades."]),
-            confirm("05-confirmar.md", "Confirmar la compra", "COMPRA", 1, "anular-0002", ["Ingresa 12 unidades del arroz."], save={"ENTRADA": "inventory_operation_id"}),
+            create_draft("04-compra-sin-recibir.md", "Compra que no llegará", draft("2026-11-04", ln(ACEITE, "2", "9800")), "PENDIENTE", ["El proveedor no despachará."]),
+            confirm("05-confirmar-sin-recibir.md", "Confirmar la compra", "PENDIENTE", 1, "anular-0002", ["Queda pendiente de recepción, sin entrada en Inventory."], save={"VERSION_PENDIENTE": "version"}),
             {
-                "file": "06-anular-la-compra-confirmada.md",
-                "title": "Anular la compra confirmada",
+                "file": "06-anular-sin-recibir.md",
+                "title": "Anular la compra confirmada sin recibir",
+                "actor": "compras.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{P}/purchases/<PENDIENTE>/cancellation",
+                "body": {"version": "<VERSION_PENDIENTE>", "reason": "Proveedor no despachó"},
+                "headers": key("anular-0003"),
+                "expect": 200,
+                "why": [
+                    "Spec 020: sin recepción no hay entrada en Inventory; la anulación es local.",
+                    "La compra conserva su número y queda `CANCELLED`.",
+                ],
+            },
+            create_draft("07-compra-a-anular.md", "Compra que se recibirá y anulará", draft("2026-11-04", ln(ARROZ, "1", "120000", company_product_presentation_id=CAJA)), "COMPRA", ["Una caja de 12 unidades."]),
+            confirm("08-confirmar.md", "Confirmar la compra", "COMPRA", 1, "anular-0004", ["Queda pendiente de recepción."], save={"VERSION_COMPRA": "version"}),
+            receive(
+                "09-recibir.md",
+                "Recibir la compra",
+                "COMPRA",
+                "<VERSION_COMPRA>",
+                "anular-0005",
+                ["Ingresa 12 unidades del arroz."],
+                save={"ENTRADA": "inventory_operation_id", "VERSION_RECIBIDA": "version"},
+            ),
+            {
+                "file": "10-anular-la-compra-recibida.md",
+                "title": "Anular la compra recibida",
                 "actor": "compras.test",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/cancellation",
-                "body": {"version": 3, "reason": "Mercancía rechazada"},
-                "headers": key("anular-0003"),
+                "body": {"version": "<VERSION_RECIBIDA>", "reason": "Mercancía rechazada"},
+                "headers": key("anular-0006"),
                 "expect": 200,
                 "why": [
                     "Purchase pide a Inventory el reverso de exactamente `inventory_operation_id`.",
-                    "La compra conserva su número y queda `CANCELLED`.",
+                    "La compra conserva su número y su recepción, y queda `CANCELLED`.",
                 ],
             },
-            create_draft("07-compra-vendida.md", "Otra compra", draft("2026-11-04", ln(ACEITE, "3", "9800")), "VENDIDA", ["Sus unidades se venderán antes de anular."]),
-            confirm("08-confirmar-la-otra.md", "Confirmar la otra compra", "VENDIDA", 1, "anular-0004", ["Ingresa 3 unidades del aceite."], save={"ENTRADA_VENDIDA": "inventory_operation_id"}),
+            create_draft("11-compra-vendida.md", "Otra compra", draft("2026-11-04", ln(ACEITE, "3", "9800")), "VENDIDA", ["Sus unidades se venderán antes de anular."]),
+            confirm("12-confirmar-la-otra.md", "Confirmar la otra compra", "VENDIDA", 1, "anular-0007", ["Queda pendiente de recepción."], save={"VERSION_VENDIDA": "version"}),
+            receive(
+                "13-recibir-la-otra.md",
+                "Recibir la otra compra",
+                "VENDIDA",
+                "<VERSION_VENDIDA>",
+                "anular-0008",
+                ["Ingresa 3 unidades del aceite."],
+                save={"ENTRADA_VENDIDA": "inventory_operation_id", "VERSION_VENDIDA_RECIBIDA": "version"},
+            ),
             {
-                "file": "09-anular-con-inventario-consumido.md",
+                "file": "14-anular-con-inventario-consumido.md",
                 "title": "Anular cuando sus unidades ya se vendieron",
                 "actor": "compras.test",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<VENDIDA>/cancellation",
-                "body": {"version": 3, "reason": "Error de precio"},
-                "headers": key("anular-0005"),
+                "body": {"version": "<VERSION_VENDIDA_RECIBIDA>", "reason": "Error de precio"},
+                "headers": key("anular-0009"),
                 "before": ["consume:ENTRADA_VENDIDA"],
                 "expect": 409,
                 "why": [
@@ -425,7 +555,26 @@ EXERCISES = [
                     ("06-llegada.md", "Registrar la llegada", "ARRIVED", "2026-11-03T14:00:00Z", "USER", 201, ["Mercancía en el punto de recepción."]),
                 ]
             ],
-            confirm("07-confirmar.md", "Confirmar la compra", "COMPRA", 1, "hitos-0001", ["La recepción y la disponibilidad exigen una compra confirmada."]),
+            confirm("07-confirmar.md", "Confirmar la compra", "COMPRA", 1, "hitos-0001", ["La recepción y la disponibilidad exigen una compra confirmada."], save={"VERSION_COMPRA": "version"}),
+            {
+                "file": "07a-hito-sin-recepcion.md",
+                "title": "Registrar el hito de recepción antes de recibir",
+                "actor": "compras.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{P}/purchases/<COMPRA>/lifecycle-events",
+                "body": {"event_type": "RECEIVED", "occurred_at": "2026-11-03T16:00:00Z", "source": "USER"},
+                "expect": 409,
+                "why": ["Spec 020: el hito `RECEIVED` exige la recepción física confirmada (`PURCHASE_NOT_RECEIVED`)."],
+            },
+            receive(
+                "07b-recibir.md",
+                "Confirmar la recepción física completa",
+                "COMPRA",
+                "<VERSION_COMPRA>",
+                "hitos-0002",
+                ["Ingresa la mercancía en Inventory; los hitos siguen siendo informativos."],
+            ),
             {
                 "file": "08-recepcion.md",
                 "title": "Registrar la recepción",

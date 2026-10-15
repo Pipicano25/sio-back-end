@@ -35,6 +35,7 @@ SALES_CLIENT_ROLES = {
     "perm:product-catalog:units-of-measure:read",
     "perm:party-identity:person_identities:read",
     "perm:party-identity:organization_identities:read",
+    "perm:payment-reference:global_payment_methods:read",  # spec 020: medio de pago declarado
     "perm:inventory:outputs:create",
     "perm:inventory:balances:read",
     "perm:inventory:movements:read",

@@ -1,20 +1,21 @@
-# Paso 8. Confirmar la otra compra
+# Paso 13. Recibir la otra compra
 
 Ejercicio 5: Anulación.
 
 ## Llamada
 
-`POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/confirmation`
+`POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/receipt`
 
 Ejecuta: `compras.test`.
 
-Cabeceras: `Idempotency-Key: anular-0004`.
+Cabeceras: `Idempotency-Key: anular-0008`.
 
 ### Solicitud
 
 ```json
 {
-  "version": 1
+  "version": "<VERSION_VENDIDA>",
+  "full_receipt_confirmed": true
 }
 ```
 
@@ -46,7 +47,7 @@ Respuesta sin permiso (`403`), que no revela el permiso exigido:
   "title": "Acceso denegado",
   "status": 403,
   "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
-  "instance": "/api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/confirmation",
+  "instance": "/api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/receipt",
   "code": "PURCHASE.FORBIDDEN",
   "trace_id": "<asignado por el servicio>"
 }
@@ -66,9 +67,12 @@ Estado `200`.
   "payment_condition_code_snapshot": "CASH",
   "payment_terms_days_snapshot": 0,
   "due_date": "2026-11-04",
+  "payment_method_id": "d14c0000-0000-4000-8000-000000000011",
+  "payment_method_code_snapshot": "CASH",
+  "payment_method_name_snapshot": "Efectivo",
   "purchase_sequence_id": "<SECUENCIA>",
-  "number": "CP-202611-000002",
-  "sequence_value": 2,
+  "number": "CP-202611-000003",
+  "sequence_value": 3,
   "status": "CONFIRMED",
   "operation_date": "2026-11-04",
   "promised_delivery_at": null,
@@ -82,6 +86,9 @@ Estado `200`.
   "tax_total": "0.00",
   "total": "29400.00",
   "inventory_operation_id": "<ENTRADA_VENDIDA>",
+  "receipt_status": "RECEIVED",
+  "received_at": "2026-11-05T15:00:00.024000Z",
+  "received_by_user_id": "d14f1000-0000-4000-8000-000000000003",
   "created_by_user_id": "d14f1000-0000-4000-8000-000000000003",
   "cancelled_by_user_id": null,
   "cancelled_at": null,
@@ -98,13 +105,13 @@ Estado `200`.
       "purchase_id": "<VENDIDA>",
       "line_number": 1,
       "company_product_id": "d14d0000-0000-4000-8000-000000000002",
-      "company_product_presentation_id": null,
+      "company_product_presentation_id": "0e2be67b-ba11-51b8-9dd7-04739ec7d8d4",
       "supplier_product_id": null,
       "supplier_lead_time_snapshot_hours": null,
       "product_code_snapshot": "000046",
       "product_name_snapshot": "Aceite ficticio 1 L",
-      "presentation_code_snapshot": null,
-      "presentation_name_snapshot": null,
+      "presentation_code_snapshot": "UND",
+      "presentation_name_snapshot": "Unidad",
       "base_quantity_factor_snapshot": "1.00000000",
       "unit_code_snapshot": "UND",
       "quantity": "3.0000",
@@ -127,3 +134,4 @@ Estado `200`.
 ## Variables que se guardan
 
 - `<ENTRADA_VENDIDA>` = `inventory_operation_id` de la respuesta.
+- `<VERSION_VENDIDA_RECIBIDA>` = `version` de la respuesta.

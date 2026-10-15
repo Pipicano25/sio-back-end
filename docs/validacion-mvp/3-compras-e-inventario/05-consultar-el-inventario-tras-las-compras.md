@@ -1,6 +1,6 @@
-# Paso 04 de 04 — Consultar el inventario tras las compras
+# Paso 05 de 05 — Consultar el inventario tras las compras
 
-Ejercicio 3 — Compras e inventario: secuencias, compras, confirmación, entradas, saldos, kardex y capas · [Orden del ejercicio](ORDEN.md)
+Ejercicio 3 — Compras e inventario: secuencias, compras de contado, confirmación, recepción física (entradas), saldos, kardex y capas · [Orden del ejercicio](ORDEN.md)
 
 ---
 

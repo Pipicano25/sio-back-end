@@ -1,6 +1,6 @@
 # Paso 1. Crear la secuencia mensual de la empresa
 
-Ejercicio 3: Confirmación idempotente.
+Ejercicio 3: Confirmación y recepción idempotente.
 
 ## Llamada
 

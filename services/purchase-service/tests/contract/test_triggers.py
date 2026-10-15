@@ -22,34 +22,65 @@ def fails(engine, sql: str, params: dict, fragment: str = "") -> None:
     assert fragment in str(error.value)
 
 
-def setup_confirmed(engine):
+def setup_confirmed(engine, *, received: bool = True):
+    """Compra confirmada; con `received`, además recibida (spec 020: la recepción aplica la entrada)."""
     with engine.begin() as connection:
         sequence = insert_sequence(connection)
         purchase = insert_purchase(connection)
         insert_detail(connection, purchase)
         connection.execute(
-            text(
-                "UPDATE purchases SET status='CONFIRMED', number='CP-1', sequence_value=1, "
-                "purchase_sequence_id=:s, inventory_operation_id=:i WHERE id=:p"
-            ),
-            {"s": sequence, "i": uuid4(), "p": purchase},
+            text("UPDATE purchases SET status='CONFIRMED', number='CP-1', sequence_value=1, purchase_sequence_id=:s WHERE id=:p"),
+            {"s": sequence, "p": purchase},
         )
+        if received:
+            receive(connection, purchase)
     return purchase
 
 
-def test_confirmed_purchase_only_admits_cancellation(engine) -> None:
+def receive(connection, purchase) -> None:
+    connection.execute(
+        text("UPDATE purchases SET inventory_operation_id=:i, received_at=now(), received_by_user_id=:u WHERE id=:p"),
+        {"i": uuid4(), "u": uuid4(), "p": purchase},
+    )
+
+
+def test_confirmed_purchase_admits_one_complete_receipt(engine) -> None:
+    """Spec 020 (RC-MVP-1): la recepción se registra una sola vez y completa (entrada, fecha y usuario)."""
+    purchase = setup_confirmed(engine, received=False)
+    fails(engine, "UPDATE purchases SET observations='x' WHERE id=:p", {"p": purchase}, "solo admite su recepci")
+    fails(engine, "UPDATE purchases SET inventory_operation_id=:i WHERE id=:p", {"p": purchase, "i": uuid4()}, "ck_purchases_receipt")
+    fails(
+        engine,
+        "UPDATE purchases SET inventory_operation_id=:i, received_at=now(), received_by_user_id=:u, payment_method_name_snapshot='x' "
+        "WHERE id=:p",
+        {"p": purchase, "i": uuid4(), "u": uuid4()},
+        "solo admite su recepci",
+    )
+    with engine.begin() as connection:
+        receive(connection, purchase)
+    fails(engine, "UPDATE purchases SET inventory_operation_id=:i WHERE id=:p", {"p": purchase, "i": uuid4()}, "una sola vez")
+    fails(engine, "UPDATE purchases SET received_at=now() - interval '1 day' WHERE id=:p", {"p": purchase}, "una sola vez")
+
+
+def test_confirmed_purchase_only_admits_receipt_or_cancellation(engine) -> None:
     purchase = setup_confirmed(engine)
-    fails(engine, "UPDATE purchases SET observations='x' WHERE id=:p", {"p": purchase}, "no admite cambios")
+    fails(engine, "UPDATE purchases SET observations='x' WHERE id=:p", {"p": purchase}, "solo admite su recepci")
     fails(
         engine,
         "UPDATE purchases SET status='CANCELLED', observations='x', cancelled_by_user_id=:u, cancelled_at=now(), "
         "cancellation_reason='x' WHERE id=:p",
         {"p": purchase, "u": uuid4()},
-        "solo admite su anulaci",
+        "solo admite su recepci",
+    )
+    fails(
+        engine,
+        "UPDATE purchases SET status='CANCELLED', inventory_operation_id=NULL, received_at=NULL, received_by_user_id=NULL, "
+        "cancelled_by_user_id=:u, cancelled_at=now(), cancellation_reason='x' WHERE id=:p",
+        {"p": purchase, "u": uuid4()},
+        "una sola vez",  # anular no borra la recepción
     )
     fails(engine, "UPDATE purchases SET number='CP-2' WHERE id=:p", {"p": purchase})
-    fails(engine, "UPDATE purchases SET inventory_operation_id=:i WHERE id=:p", {"p": purchase, "i": uuid4()})
-    fails(engine, "UPDATE purchases SET status='DRAFT', number=NULL WHERE id=:p", {"p": purchase})
+    fails(engine, "UPDATE purchases SET status='DRAFT', number=NULL WHERE id=:p", {"p": purchase}, "no admite cambios")
     with engine.begin() as connection:
         connection.execute(
             text(
@@ -59,6 +90,18 @@ def test_confirmed_purchase_only_admits_cancellation(engine) -> None:
             {"u": uuid4(), "p": purchase},
         )
     fails(engine, "UPDATE purchases SET cancellation_reason='y' WHERE id=:p", {"p": purchase}, "no admite cambios")
+
+
+def test_confirmed_pending_receipt_can_be_cancelled(engine) -> None:
+    purchase = setup_confirmed(engine, received=False)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE purchases SET status='CANCELLED', cancelled_by_user_id=:u, cancelled_at=now(), "
+                "cancellation_reason='x' WHERE id=:p"
+            ),
+            {"u": uuid4(), "p": purchase},
+        )
 
 
 def test_purchases_are_never_deleted(engine) -> None:

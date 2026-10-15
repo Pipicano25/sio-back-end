@@ -1,4 +1,4 @@
-# Paso 06 de 08 — Rechazo por producto inactivo
+# Paso 07 de 09 — Rechazo por producto inactivo
 
 Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
 

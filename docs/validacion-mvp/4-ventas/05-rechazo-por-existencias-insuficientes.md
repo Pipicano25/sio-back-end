@@ -1,4 +1,4 @@
-# Paso 04 de 08 — Rechazo por existencias insuficientes
+# Paso 05 de 09 — Rechazo por existencias insuficientes
 
 Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
 

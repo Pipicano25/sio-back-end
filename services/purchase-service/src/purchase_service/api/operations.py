@@ -1,11 +1,13 @@
-"""Confirmación, anulación y operaciones (`contracts/rest-api.md` rutas 9–12).
+"""Confirmación, recepción, anulación y operaciones (`contracts/rest-api.md` rutas 9–12; spec 020).
 
 El usuario humano se resuelve antes que las cabeceras: un token técnico recibe `403`
 antes de cualquier validación (RC-05).
 
-Confirmar y anular exigen `Idempotency-Key`; la misma clave repetida devuelve el
+Confirmar, recibir y anular exigen `Idempotency-Key`; la misma clave repetida devuelve el
 resultado de la primera solicitud (o la reanuda si quedó `PENDING`), nunca una segunda
-entrada ni un segundo reverso en Inventory (RC-01).
+entrada ni un segundo reverso en Inventory (RC-01, RC-MVP-2).
+
+Spec 020: confirmar **no** mueve inventario; la recepción física completa aplica la entrada.
 """
 
 from __future__ import annotations
@@ -18,7 +20,7 @@ from sio_auth import SIOAuth
 from purchase_service.api.dependencies import ActorDep, CompanyReader, CorrelationId, IdempotencyKey, ServicesDep
 from purchase_service.api.identity import SERVICE
 from purchase_service.api.openapi import OPERATION_RESPONSES, READ_RESPONSES, TAG_OPERATIONS
-from purchase_service.api.schemas.purchases import CancelIn, OperationResponse, PurchaseResponse, VersionIn
+from purchase_service.api.schemas.purchases import CancelIn, OperationResponse, PurchaseResponse, ReceiptIn, VersionIn
 
 
 def build_router(auth: SIOAuth) -> APIRouter:
@@ -27,7 +29,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
     @router.post(
         "/companies/{company_id}/purchases/{purchase_id}/confirmation",
         response_model=PurchaseResponse,
-        summary="Confirmar la compra e ingresar la mercancía en Inventory",
+        summary="Confirmar la compra (queda pendiente de recepción; no mueve inventario)",
         responses=OPERATION_RESPONSES,
         dependencies=[auth.permission(SERVICE, "purchases", "update")],
     )
@@ -44,9 +46,30 @@ def build_router(auth: SIOAuth) -> APIRouter:
         return PurchaseResponse.of(view)
 
     @router.post(
+        "/companies/{company_id}/purchases/{purchase_id}/receipt",
+        response_model=PurchaseResponse,
+        summary="Confirmar la recepción física completa e ingresar la mercancía en Inventory",
+        responses=OPERATION_RESPONSES,
+        dependencies=[auth.permission(SERVICE, "purchases", "update")],
+    )
+    def receive_purchase(
+        company_id: UUID,
+        purchase_id: UUID,
+        body: ReceiptIn,
+        actor: ActorDep,
+        key: IdempotencyKey,
+        correlation: CorrelationId,
+        services: ServicesDep,
+    ) -> PurchaseResponse:
+        view = services.receipts().receive(
+            company_id, purchase_id, body.version, body.full_receipt_confirmed, key, correlation, actor
+        )
+        return PurchaseResponse.of(view)
+
+    @router.post(
         "/companies/{company_id}/purchases/{purchase_id}/cancellation",
         response_model=PurchaseResponse,
-        summary="Anular la compra (revierte la entrada en Inventory si estaba confirmada)",
+        summary="Anular la compra (revierte la entrada en Inventory si estaba recibida)",
         responses=OPERATION_RESPONSES,
         dependencies=[auth.permission(SERVICE, "purchases", "delete")],
     )
@@ -67,7 +90,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
     @router.get(
         "/companies/{company_id}/purchases/{purchase_id}/operations",
         response_model=list[OperationResponse],
-        summary="Operaciones de confirmación y anulación de una compra",
+        summary="Operaciones de confirmación, recepción y anulación de una compra",
         responses=READ_RESPONSES,
         dependencies=[auth.permission(SERVICE, "purchase_operations", "read")],
     )

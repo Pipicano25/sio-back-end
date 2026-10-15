@@ -1,6 +1,6 @@
 # Paso 2. Crear la compra en borrador
 
-Ejercicio 3: Confirmación idempotente.
+Ejercicio 3: Confirmación y recepción idempotente.
 
 ## Llamada
 
@@ -15,12 +15,13 @@ Ejecuta: `compras.test`.
   "branch_id": "d14b0000-0000-4000-8000-000000000001",
   "company_supplier_id": "d14c0000-0000-4000-8000-000000000001",
   "operation_date": "2026-11-04",
+  "payment_method_id": "d14c0000-0000-4000-8000-000000000011",
   "lines": [
     {
       "company_product_id": "d14d0000-0000-4000-8000-000000000001",
+      "company_product_presentation_id": "d14e0000-0000-4000-8000-000000000001",
       "quantity": "2",
       "unit_cost": "120000",
-      "company_product_presentation_id": "d14e0000-0000-4000-8000-000000000001",
       "tax_amount": "45600"
     }
   ]
@@ -75,6 +76,9 @@ Estado `201`.
   "payment_condition_code_snapshot": "CASH",
   "payment_terms_days_snapshot": 0,
   "due_date": "2026-11-04",
+  "payment_method_id": "d14c0000-0000-4000-8000-000000000011",
+  "payment_method_code_snapshot": "CASH",
+  "payment_method_name_snapshot": "Efectivo",
   "purchase_sequence_id": null,
   "number": null,
   "sequence_value": null,
@@ -91,6 +95,9 @@ Estado `201`.
   "tax_total": "45600.00",
   "total": "285600.00",
   "inventory_operation_id": null,
+  "receipt_status": null,
+  "received_at": null,
+  "received_by_user_id": null,
   "created_by_user_id": "d14f1000-0000-4000-8000-000000000003",
   "cancelled_by_user_id": null,
   "cancelled_at": null,

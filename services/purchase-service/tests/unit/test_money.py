@@ -18,7 +18,10 @@ def test_line_subtotal_and_total() -> None:
 def test_subtotal_rounds_half_up_to_cents() -> None:
     assert line_amounts(D("3"), D("0.3335"), D("0"), D("0")).subtotal == D("1.00")  # 1.0005 → 1.00
     assert line_amounts(D("1"), D("0.0050"), D("0"), D("0")).subtotal == D("0.01")
-    assert line_amounts(D("1"), D("0.0049"), D("0"), D("0")).subtotal == D("0.00")
+    # Spec 020: un subtotal que redondea a 0,00 deja el costo neto en 0 → rechazado.
+    with pytest.raises(DomainRuleError) as error:
+        line_amounts(D("1"), D("0.0049"), D("0"), D("0"))
+    assert error.value.code == "NET_COST_NOT_POSITIVE"
 
 
 def test_total_subtracts_discount_and_adds_tax() -> None:
@@ -33,7 +36,8 @@ def test_total_subtracts_discount_and_adds_tax() -> None:
         (D("-1"), D("1"), D("0"), D("0"), "QUANTITY_NOT_POSITIVE", "quantity"),
         (D("1.00001"), D("1"), D("0"), D("0"), "TOO_MANY_DECIMALS", "quantity"),
         (D("100000000000000"), D("1"), D("0"), D("0"), "AMOUNT_OUT_OF_RANGE", "quantity"),
-        (D("1"), D("-0.01"), D("0"), D("0"), "AMOUNT_OUT_OF_RANGE", "unit_cost"),
+        (D("1"), D("-0.01"), D("0"), D("0"), "UNIT_COST_NOT_POSITIVE", "unit_cost"),
+        (D("1"), D("0"), D("0"), D("0"), "UNIT_COST_NOT_POSITIVE", "unit_cost"),
         (D("1"), D("1.00001"), D("0"), D("0"), "TOO_MANY_DECIMALS", "unit_cost"),
         (D("1"), D("10"), D("-1"), D("0"), "AMOUNT_OUT_OF_RANGE", "discount_amount"),
         (D("1"), D("10"), D("0.001"), D("0"), "TOO_MANY_DECIMALS", "discount_amount"),
@@ -49,8 +53,15 @@ def test_line_rejections(quantity, unit_cost, discount, tax, code, field) -> Non
     assert error.value.field == f"lines[0].{field}"
 
 
-def test_discount_equal_to_subtotal_is_allowed() -> None:
-    assert line_amounts(D("1"), D("10"), D("10"), D("0")).total == D("0.00")
+def test_discount_equal_to_subtotal_is_rejected() -> None:
+    """Spec 020 (FR-020-12): el costo neto debe ser mayor que cero."""
+    with pytest.raises(DomainRuleError) as error:
+        line_amounts(D("1"), D("10"), D("10"), D("0"))
+    assert (error.value.code, error.value.field) == ("NET_COST_NOT_POSITIVE", "discount_amount")
+
+
+def test_discount_just_below_subtotal_is_allowed() -> None:
+    assert line_amounts(D("1"), D("10"), D("9.99"), D("0")).total == D("0.01")
 
 
 def test_header_totals() -> None:

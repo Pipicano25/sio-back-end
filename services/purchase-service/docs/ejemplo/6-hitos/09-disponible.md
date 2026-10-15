@@ -1,4 +1,4 @@
-# Paso 9. Registrar la disponibilidad para la venta
+# Paso 11. Registrar la disponibilidad para la venta
 
 Ejercicio 6: Hitos logísticos.
 

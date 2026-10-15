@@ -8,6 +8,7 @@ Todos los datos son **ficticios** y sus identificadores son fijos para que la do
 | Sucursal principal | `d15b0000-0000-4000-8000-000000000001` | Almacén ficticio en Bogotá; todos los usuarios de prueba están asignados a ella. |
 | Cliente persona | `d15c0000-0000-4000-8000-000000000001` | Ana Ficticia Pérez (`ACTIVE`), identificada como CC 1020304050. |
 | Cliente organización | `d15c0000-0000-4000-8000-000000000002` | Tiendas Ficticias S.A.S. (`ACTIVE`), identificada como NIT 900123456. |
+| Medio de pago | `d15c0000-0000-4000-8000-000000000021` | Efectivo (`CASH`, `ACTIVE`) en Payment Reference: referencia declarativa, no un pago (spec 020). |
 | Arroz 500 g | `d15d0000-0000-4000-8000-000000000001` | Vendible, con control de inventario; 1000 unidades a costo 1000. |
 | Unidad de arroz | `d15e0000-0000-4000-8000-000000000002` | Presentación de factor 1 del arroz (toda venta indica su presentación). |
 | Caja x12 | `d15e0000-0000-4000-8000-000000000001` | Presentación de venta del arroz: 12 unidades base. |

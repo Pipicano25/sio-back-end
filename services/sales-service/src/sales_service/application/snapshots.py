@@ -23,6 +23,10 @@ from sales_service.infrastructure.models import Sale, SaleDetail
 def apply_header(sale: Sale, snapshot: HeaderSnapshot) -> None:
     sale.customer_name_snapshot = snapshot.customer_name
     sale.customer_identification_snapshot = snapshot.customer_identification
+    # Spec 020 (FR-020-09): medio de pago declarado y su copia (refrescada y congelada al confirmar).
+    sale.payment_method_id = snapshot.payment_method_id
+    sale.payment_method_code_snapshot = snapshot.payment_method_code
+    sale.payment_method_name_snapshot = snapshot.payment_method_name
 
 
 def apply_business_date(sale: Sale, business_date: date) -> None:

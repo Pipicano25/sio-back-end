@@ -57,10 +57,11 @@ def test_unknown_cost_confirms_with_null_margins(supervisor, world, fakes, make_
     assert row["has_unknown_cost"] is True
 
 
-def test_net_zero_keeps_amount_and_leaves_percentage_null(supervisor, world, make_sequence, make_draft, confirm, caplog) -> None:
-    """P-01: descuento total → margen = −costo; porcentaje no definido."""
+def test_net_zero_keeps_amount_and_leaves_percentage_null(supervisor, world, fakes, make_sequence, make_draft, confirm, caplog) -> None:
+    """P-01: neto 0 (spec 020: sin descuentos, solo con precio de lista 0) → margen = −costo; porcentaje no definido."""
     make_sequence()
-    draft = make_draft(line(world.product, "2", discount_amount="3000"))
+    fakes.cr.set_unit_price(world.product, "0.00")
+    draft = make_draft(line(world.product, "2"))
     with caplog.at_level(logging.INFO, logger="sales_service"):
         assert confirm(draft).status_code == 200
     detail = lines_of(supervisor, world, draft)["lines"][0]

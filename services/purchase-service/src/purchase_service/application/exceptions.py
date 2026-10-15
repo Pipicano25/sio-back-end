@@ -243,6 +243,29 @@ class OperationNotAppliedError(PurchaseError):
         )
 
 
+class PurchaseAlreadyReceivedError(PurchaseError):
+    """Spec 020 (FR-020-02, RC-MVP-1): una compra se recibe una sola vez (`409`)."""
+
+    code = "PURCHASE_ALREADY_RECEIVED"
+    title = "Compra ya recibida"
+
+    def __init__(self) -> None:
+        super().__init__("La compra ya fue recibida: su entrada en Inventory existe y no se repite.")
+
+
+class PurchaseNotReceivedError(PurchaseError):
+    """Spec 020 (FR-020-07): los hitos de recepción exigen la recepción física registrada (`409`)."""
+
+    code = "PURCHASE_NOT_RECEIVED"
+    title = "Compra pendiente de recepción"
+
+    def __init__(self, event_type: str) -> None:
+        super().__init__(
+            f"El hito {event_type} exige que la recepción física de la compra esté confirmada.",
+            context={"event_type": event_type},
+        )
+
+
 class EventNotAllowedInStatusError(PurchaseError):
     code = "EVENT_NOT_ALLOWED_IN_STATUS"
     title = "Hito no permitido"

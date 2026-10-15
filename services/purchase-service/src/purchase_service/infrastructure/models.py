@@ -3,7 +3,7 @@
 Toda columna REF es un UUID validado contra su dueño (research.md R-06), sin FK
 física hacia otros servicios. Las restricciones llevan nombre explícito por la
 convención de `Base` (Principio VIII). Las reglas de ciclo de vida e inmutabilidad
-también viven en triggers de la migración `0001`.
+también viven en triggers de las migraciones `0001` y `0002` (spec 020).
 """
 
 from __future__ import annotations
@@ -41,14 +41,23 @@ PURCHASE_LIFECYCLE = (
     "(status = 'DRAFT' AND number IS NULL AND sequence_value IS NULL AND purchase_sequence_id IS NULL "
     "AND inventory_operation_id IS NULL AND cancelled_by_user_id IS NULL AND cancelled_at IS NULL "
     "AND cancellation_reason IS NULL) "
-    "OR (status = 'CONFIRMED' AND number IS NOT NULL AND sequence_value IS NOT NULL "
-    "AND purchase_sequence_id IS NOT NULL AND inventory_operation_id IS NOT NULL "
+    "OR (status = 'CONFIRMED' AND number IS NOT NULL AND sequence_value IS NOT NULL AND purchase_sequence_id IS NOT NULL "
     "AND cancelled_by_user_id IS NULL AND cancelled_at IS NULL AND cancellation_reason IS NULL) "
     "OR (status = 'CANCELLED' AND cancelled_by_user_id IS NOT NULL AND cancelled_at IS NOT NULL "
-    "AND cancellation_reason IS NOT NULL AND ("
-    "(number IS NULL AND sequence_value IS NULL AND purchase_sequence_id IS NULL AND inventory_operation_id IS NULL) "
-    "OR (number IS NOT NULL AND sequence_value IS NOT NULL AND purchase_sequence_id IS NOT NULL "
-    "AND inventory_operation_id IS NOT NULL)))"
+    "AND cancellation_reason IS NOT NULL AND ((number IS NULL AND sequence_value IS NULL AND purchase_sequence_id IS NULL "
+    "AND inventory_operation_id IS NULL) OR (number IS NOT NULL AND sequence_value IS NOT NULL "
+    "AND purchase_sequence_id IS NOT NULL)))"
+)
+"""Spec 020 (migración `0002`): una compra `CONFIRMED` puede estar pendiente de recepción (sin entrada)."""
+
+PURCHASE_RECEIPT = (
+    "(received_at IS NULL AND received_by_user_id IS NULL AND inventory_operation_id IS NULL) "
+    "OR (received_at IS NOT NULL AND received_by_user_id IS NOT NULL AND inventory_operation_id IS NOT NULL)"
+)
+PAYMENT_METHOD_SNAPSHOT = (
+    "(payment_method_id IS NULL AND payment_method_code_snapshot IS NULL AND payment_method_name_snapshot IS NULL) "
+    "OR (payment_method_id IS NOT NULL AND payment_method_code_snapshot IS NOT NULL "
+    "AND payment_method_name_snapshot IS NOT NULL)"
 )
 
 
@@ -92,6 +101,11 @@ class Purchase(AuditColumns, Base):
     tax_total: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False, server_default=text("0"))
     total: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False, server_default=text("0"))
     inventory_operation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    payment_method_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    payment_method_code_snapshot: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    payment_method_name_snapshot: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    received_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     created_by_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     cancelled_by_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -103,6 +117,13 @@ class Purchase(AuditColumns, Base):
     __table_args__ = (
         CheckConstraint("status IN ('DRAFT','CONFIRMED','CANCELLED')", name="status"),
         CheckConstraint(PURCHASE_LIFECYCLE, name="lifecycle"),
+        CheckConstraint(PURCHASE_RECEIPT, name="receipt"),
+        CheckConstraint(
+            "payment_condition_code_snapshot = 'CASH' AND payment_terms_days_snapshot = 0 AND due_date = operation_date",
+            name="cash_only",
+        ),
+        CheckConstraint(PAYMENT_METHOD_SNAPSHOT, name="payment_method_snapshot"),
+        CheckConstraint("status = 'DRAFT' OR payment_method_id IS NOT NULL", name="payment_method_required"),
         CheckConstraint("payment_condition_code_snapshot IN ('CASH','CREDIT','FINANCING')", name="payment_code"),
         CheckConstraint(
             "payment_terms_days_snapshot >= 0 AND "
@@ -162,7 +183,9 @@ class PurchaseDetail(AuditColumns, Base):
         UniqueConstraint("purchase_id", "line_number", name="uq_purchase_details_line_number"),
         CheckConstraint("line_number BETWEEN 1 AND 100", name="line_number"),
         CheckConstraint("quantity > 0", name="quantity"),
-        CheckConstraint("unit_cost >= 0", name="unit_cost"),
+        CheckConstraint("unit_cost > 0", name="unit_cost"),
+        CheckConstraint("discount_amount < subtotal", name="net_cost"),
+        CheckConstraint("company_product_presentation_id IS NOT NULL", name="presentation_required"),
         CheckConstraint("tax_amount >= 0", name="tax_amount"),
         CheckConstraint("subtotal >= 0", name="subtotal"),
         CheckConstraint("discount_amount >= 0 AND discount_amount <= subtotal", name="discount_amount"),
@@ -252,7 +275,7 @@ class PurchaseSequenceCounter(AuditColumns, Base):
 
 
 class PurchaseOperation(Base):
-    """Seguimiento de confirmación o anulación distribuida (§7.4; BR-14, P-05)."""
+    """Confirmación, recepción o anulación (§7.4; BR-14, P-05; spec 020: `RECEIVE` aplica la entrada en Inventory)."""
 
     __tablename__ = "purchase_operations"
 
@@ -277,12 +300,12 @@ class PurchaseOperation(Base):
 
     __table_args__ = (
         UniqueConstraint("idempotency_key", name="uq_purchase_operations_idempotency_key"),
-        CheckConstraint("operation_type IN ('CONFIRM','CANCEL')", name="operation_type"),
+        CheckConstraint("operation_type IN ('CONFIRM','CANCEL','RECEIVE')", name="operation_type"),
         CheckConstraint("status IN ('PENDING','SUCCEEDED','FAILED')", name="status"),
         CheckConstraint("status <> 'FAILED' OR error_code IS NOT NULL", name="failed_code"),
         CheckConstraint("(status = 'PENDING') = (completed_at IS NULL)", name="completed_at"),
         CheckConstraint(
-            "status <> 'SUCCEEDED' OR operation_type = 'CANCEL' OR inventory_operation_id IS NOT NULL",
+            "status <> 'SUCCEEDED' OR operation_type <> 'RECEIVE' OR inventory_operation_id IS NOT NULL",
             name="inventory_operation",
         ),
         CheckConstraint("char_length(idempotency_key) BETWEEN 1 AND 150", name="idempotency_key"),

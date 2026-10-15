@@ -1,14 +1,14 @@
 # Usuarios del ejercicio 3
 
-| Usuario | Paso 1 | Paso 2 | Paso 3 | Paso 4 | Paso 5 | Paso 6 |
-| --- | --- | --- | --- | --- | --- | --- |
-| `admin.test` | `—` | `—` | `—` | `—` | `—` | `200` |
-| `supervisor.test` | `—` | `—` | `—` | `—` | `—` | `200` |
-| `compras.test` | `201` | `201` | `503` | `200` | `200` | `200` |
-| `ventas.test` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `inventario.test` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `reportes.test` | `403` | `403` | `403` | `403` | `403` | `200` |
-| `consulta.test` | `403` | `403` | `403` | `403` | `403` | `200` |
+| Usuario | Paso 1 | Paso 2 | Paso 3 | Paso 4 | Paso 5 | Paso 6 | Paso 7 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `admin.test` | `—` | `—` | `—` | `—` | `—` | `—` | `200` |
+| `supervisor.test` | `—` | `—` | `—` | `—` | `—` | `—` | `200` |
+| `compras.test` | `201` | `201` | `200` | `503` | `200` | `200` | `200` |
+| `ventas.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `inventario.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `reportes.test` | `403` | `403` | `403` | `403` | `403` | `403` | `200` |
+| `consulta.test` | `403` | `403` | `403` | `403` | `403` | `403` | `200` |
 
 ## Permiso por URL
 
@@ -17,9 +17,10 @@
 | 1 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchase-sequences` | `perm:purchase:purchase_sequences:create` |
 | 2 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `perm:purchase:purchases:create` |
 | 3 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `perm:purchase:purchases:update` |
-| 4 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `perm:purchase:purchases:update` |
-| 5 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `perm:purchase:purchases:update` |
-| 6 | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/operations` | `perm:purchase:purchase_operations:read` |
+| 4 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `perm:purchase:purchases:update` |
+| 5 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `perm:purchase:purchases:update` |
+| 6 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `perm:purchase:purchases:update` |
+| 7 | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/operations` | `perm:purchase:purchase_operations:read` |
 
 ## Ejemplos
 

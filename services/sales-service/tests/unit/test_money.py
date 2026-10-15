@@ -22,9 +22,10 @@ def test_subtotal_rounds_half_up_to_cents() -> None:
     assert line_amounts(D("1"), D("0.0049"), D("0"), D("0")).subtotal == D("0.00")
 
 
-def test_total_subtracts_discount_and_adds_tax() -> None:
-    amounts = line_amounts(D("10"), D("100"), D("150.50"), D("19.99"))
-    assert amounts.total == D("1000.00") - D("150.50") + D("19.99")
+def test_total_adds_tax_without_discount() -> None:
+    """Spec 020: sin descuentos, `total = subtotal + impuesto`."""
+    amounts = line_amounts(D("10"), D("100"), D("0"), D("19.99"))
+    assert (amounts.subtotal, amounts.discount_amount, amounts.total) == (D("1000.00"), D("0.00"), D("1019.99"))
 
 
 @pytest.mark.parametrize(
@@ -36,7 +37,8 @@ def test_total_subtracts_discount_and_adds_tax() -> None:
         (D("100000000000000"), D("1"), D("0"), D("0"), "AMOUNT_OUT_OF_RANGE", "quantity"),
         (D("1"), D("10"), D("-1"), D("0"), "AMOUNT_OUT_OF_RANGE", "discount_amount"),
         (D("1"), D("10"), D("0.001"), D("0"), "TOO_MANY_DECIMALS", "discount_amount"),
-        (D("1"), D("10"), D("10.01"), D("0"), "DISCOUNT_EXCEEDS_SUBTOTAL", "discount_amount"),
+        (D("1"), D("10"), D("10.01"), D("0"), "DISCOUNT_NOT_ALLOWED", "discount_amount"),  # spec 020
+        (D("1"), D("10"), D("0.01"), D("0"), "DISCOUNT_NOT_ALLOWED", "discount_amount"),
         (D("1"), D("10"), D("0"), D("-1"), "AMOUNT_OUT_OF_RANGE", "tax_amount"),
         (D("99999999999999"), D("99999"), D("0"), D("0"), "AMOUNT_OUT_OF_RANGE", "quantity"),
     ],
@@ -63,8 +65,13 @@ def test_inputs_are_checked_before_the_price_is_known(quantity, discount, tax, c
     assert (error.value.code, error.value.field) == (code, f"lines[1].{field}")
 
 
-def test_discount_equal_to_subtotal_is_allowed() -> None:
-    assert line_amounts(D("1"), D("10"), D("10"), D("0")).total == D("0.00")
+def test_any_discount_is_rejected_and_zero_is_accepted() -> None:
+    """Spec 020 (FR-020-13, RC-MVP-6): `discount_amount` solo admite 0."""
+    for discount in ("10", "0.01", "5"):
+        with pytest.raises(DomainRuleError) as error:
+            line_amounts(D("1"), D("10"), D(discount), D("0"))
+        assert error.value.code == "DISCOUNT_NOT_ALLOWED"
+    assert line_amounts(D("1"), D("10"), D("0.00"), D("0")).total == D("10.00")
 
 
 def test_header_totals() -> None:

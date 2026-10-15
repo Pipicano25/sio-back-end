@@ -1,4 +1,4 @@
-# Paso 03 de 08 — Confirmar las ventas
+# Paso 04 de 09 — Confirmar las ventas
 
 Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
 

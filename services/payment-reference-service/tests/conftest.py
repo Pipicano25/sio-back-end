@@ -76,9 +76,20 @@ def alembic_config() -> Config:
     return config
 
 
+NO_DELETE_TRIGGERS = (
+    ("global_payment_methods", "tr_global_payment_methods_no_delete"),
+    ("global_payment_methods", "tr_global_payment_methods_no_truncate"),
+)
+
+
 def truncate_all() -> None:
+    """Limpia entre pruebas; desactiva en la misma transacción los triggers sin borrado (spec 020)."""
     with engine.begin() as connection:
+        for table, trigger in NO_DELETE_TRIGGERS:
+            connection.execute(text(f"ALTER TABLE {table} DISABLE TRIGGER {trigger}"))
         connection.execute(text(f"TRUNCATE TABLE {', '.join(FUNCTIONAL_TABLES)}"))
+        for table, trigger in NO_DELETE_TRIGGERS:
+            connection.execute(text(f"ALTER TABLE {table} ENABLE TRIGGER {trigger}"))
 
 
 class LocalJWKSClient:

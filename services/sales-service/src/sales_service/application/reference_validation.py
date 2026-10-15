@@ -13,6 +13,9 @@ Regla P-03 (uniforme en borrador y confirmación):
 
 Si hay errores de ambas clases se informa primero el `422`.
 
+Spec 020: medio de pago declarado y activo de Payment Reference (`PAYMENT_METHOD_NOT_FOUND` `422` /
+`PAYMENT_METHOD_INACTIVE` `409`); es una referencia declarativa, no un pago.
+
 Precio (R-07): una llamada a `applicable-prices/resolve` con la intención original de cada
 línea (lista solo si el vendedor la pidió, P-02). `PRICE_LIST_NOT_APPLICABLE` se
 desambigua con la consulta de la lista (P-03): inexistente o de otra empresa → `422`;
@@ -53,6 +56,7 @@ from sales_service.application.ports import (
     CompanyPresentationInfo,
     CompanyProductInfo,
     Directories,
+    PaymentMethodInfo,
     PriceRequestLine,
     ResolvedPrice,
 )
@@ -74,6 +78,7 @@ T = TypeVar("T")
 class HeaderInput:
     branch_id: UUID
     company_customer_id: UUID
+    payment_method_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +87,9 @@ class HeaderSnapshot:
     customer_name: str
     customer_identification: str
     branch_timezone: str
+    payment_method_id: UUID | None = None
+    payment_method_code: str | None = None
+    payment_method_name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,6 +192,9 @@ class ReferenceResolver:
             "branch": lambda: oc.get_branch(header.branch_id),
             "customer": lambda: commercial.get_customer(header.company_customer_id),
         }
+        if header.payment_method_id is not None:
+            method_id = header.payment_method_id
+            tasks["method"] = lambda: self._dirs.payment_reference.get_payment_method(method_id)
         results = self._parallel(lambda name: tasks[name](), tasks)
 
         branch = results["branch"]
@@ -231,13 +242,35 @@ class ReferenceResolver:
                     f"{identity.identification_type} {identity.identification_number}"
                 )[:CUSTOMER_IDENTIFICATION_MAX]
 
+        method = self._payment_method(header.payment_method_id, results.get("method"), findings)
+
         findings.raise_if_any()
         return HeaderSnapshot(
             currency_code=company.default_currency,
             customer_name=customer_name,
             customer_identification=customer_identification,
             branch_timezone=timezone,
+            payment_method_id=header.payment_method_id,
+            payment_method_code=method.code if method else None,
+            payment_method_name=method.name if method else None,
         )
+
+    @staticmethod
+    def _payment_method(
+        method_id: UUID | None, method: PaymentMethodInfo | None, findings: Findings
+    ) -> PaymentMethodInfo | None:
+        """Medio de pago declarado (spec 020, FR-020-09): uno solo, existente y `ACTIVE`; no es un pago."""
+        field_name = "payment_method_id"
+        if method_id is None:
+            findings.bad(field_name, "PAYMENT_METHOD_REQUIRED", "La venta debe indicar un medio de pago.")
+            return None
+        if method is None:
+            findings.bad(field_name, "PAYMENT_METHOD_NOT_FOUND", "El medio de pago no existe en Payment Reference.")
+            return None
+        if method.status != ACTIVE:
+            findings.unfit(field_name, "PAYMENT_METHOD_INACTIVE", f"El medio de pago {method.code} no está activo.")
+            return None
+        return method
 
     # ----------------------------------------------------------------- líneas
 

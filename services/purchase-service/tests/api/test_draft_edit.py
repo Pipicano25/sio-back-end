@@ -16,6 +16,7 @@ def header(world, purchase, **changes):
         "branch_id": purchase["branch_id"],
         "company_supplier_id": purchase["company_supplier_id"],
         "operation_date": purchase["operation_date"],
+        "payment_method_id": purchase["payment_method_id"],
         "version": purchase["version"],
     }
     body.update({key: str(value) if hasattr(value, "hex") else value for key, value in changes.items()})
@@ -65,8 +66,8 @@ def test_update_header_refreshes_snapshots(buyer, world, make_draft) -> None:
     )
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["version"] == 2 and body["payment_condition_code_snapshot"] == "CREDIT"
-    assert body["due_date"] == (date.fromisoformat(yesterday) + timedelta(days=30)).isoformat()
+    assert body["version"] == 2 and body["payment_condition_code_snapshot"] == "CASH"
+    assert body["due_date"] == yesterday  # spec 020: solo contado
     assert body["observations"] == "Nota"
 
 

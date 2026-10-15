@@ -15,9 +15,11 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 | 5 | [05-despacho.md](05-despacho.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
 | 6 | [06-llegada.md](06-llegada.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
 | 7 | [07-confirmar.md](07-confirmar.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `compras.test` | `200` |
-| 8 | [08-recepcion.md](08-recepcion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
-| 9 | [09-disponible.md](09-disponible.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
-| 10 | [10-linea-de-tiempo.md](10-linea-de-tiempo.md) | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `200` |
+| 8 | [07a-hito-sin-recepcion.md](07a-hito-sin-recepcion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `409` |
+| 9 | [07b-recibir.md](07b-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `compras.test` | `200` |
+| 10 | [08-recepcion.md](08-recepcion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
+| 11 | [09-disponible.md](09-disponible.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
+| 12 | [10-linea-de-tiempo.md](10-linea-de-tiempo.md) | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `200` |
 
 ## Por qué este orden
 
@@ -28,4 +30,5 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 | Variable | Se guarda en | Se usa en |
 | --- | --- | --- |
 | `<SECUENCIA>` | paso 1 (`id`) | pasos — |
-| `<COMPRA>` | paso 2 (`id`) | pasos 3, 4, 5, 6, 7, 8, 9, 10 |
+| `<COMPRA>` | paso 2 (`id`) | pasos 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 |
+| `<VERSION_COMPRA>` | paso 7 (`version`) | pasos 9 |

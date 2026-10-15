@@ -5,6 +5,8 @@
   (`created_at`, `id`). Un registro nuevo se valida contra los vigentes de los demás tipos.
 - `occurred_at` no puede ser futuro (tolerancia de 5 minutos).
 - `RECEIVED` y `AVAILABLE_FOR_SALE` solo en compras `CONFIRMED`; ninguno en `CANCELLED`.
+- Spec 020 (FR-020-07): `RECEIVED` y `AVAILABLE_FOR_SALE` exigen además la recepción física
+  confirmada (la que aplica la entrada en Inventory); los hitos siguen siendo informativos.
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ AVAILABLE_FOR_SALE = "AVAILABLE_FOR_SALE"
 EVENT_ORDER = (ORDERED, SUPPLIER_DISPATCHED, ARRIVED, RECEIVED, AVAILABLE_FOR_SALE)
 SOURCES = ("USER", "SUPPLIER", "INTEGRATION", "SYSTEM")
 FUTURE_TOLERANCE = timedelta(minutes=5)
+REQUIRES_RECEIPT = (RECEIVED, AVAILABLE_FOR_SALE)
 
 ALLOWED_STATUSES = {
     ORDERED: (DRAFT, CONFIRMED),

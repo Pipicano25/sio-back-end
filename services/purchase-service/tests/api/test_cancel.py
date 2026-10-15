@@ -1,4 +1,4 @@
-"""Anulación (Historia 3; FR-026 a FR-030; RC-03; T053)."""
+"""Anulación (Historia 3; FR-026 a FR-030; RC-03; T053; spec 020 FR-020-06)."""
 
 from __future__ import annotations
 
@@ -20,15 +20,31 @@ def test_cancel_draft_is_local(world, fakes, make_draft, cancel, test_engine) ->
     assert (operation["operation_type"], operation["status"], operation["inventory_operation_id"]) == ("CANCEL", "SUCCEEDED", None)
 
 
-def test_cancel_confirmed_reverses_exactly_its_entry(world, fakes, make_sequence, make_draft, confirm, cancel, test_engine) -> None:
+def test_cancel_confirmed_pending_receipt_is_local_and_keeps_the_number(world, fakes, make_sequence, make_draft, confirm, cancel, test_engine) -> None:
+    """Spec 020 (FR-020-06): sin entrada en Inventory no hay nada que revertir."""
     make_sequence()
-    other = confirm(make_draft()).json()  # otra compra confirmada en la misma sucursal
     confirmed = confirm(make_draft()).json()
+    fakes.inventory.availability.fail_if_called = True
+    response = cancel(confirmed, reason="Proveedor no despachó")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "CANCELLED" and body["number"] == confirmed["number"]
+    assert body["inventory_operation_id"] is None and body["receipt_status"] is None
+    operation = fetch(test_engine, "SELECT * FROM purchase_operations WHERE operation_type = 'CANCEL'")[0]
+    assert (operation["status"], operation["inventory_operation_id"]) == ("SUCCEEDED", None)
+    assert fakes.inventory.entries() == []
+
+
+def test_cancel_received_reverses_exactly_its_entry(world, fakes, make_sequence, make_draft, confirm, receive, cancel, test_engine) -> None:
+    make_sequence()
+    other = receive(confirm(make_draft()).json()).json()  # otra compra recibida en la misma sucursal
+    confirmed = receive(confirm(make_draft()).json()).json()
     response = cancel(confirmed, reason="Mercancía rechazada")
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["status"] == "CANCELLED" and body["number"] == confirmed["number"]  # conserva el número
     assert body["inventory_operation_id"] == confirmed["inventory_operation_id"]
+    assert body["receipt_status"] == "RECEIVED"  # la recepción ocurrió aunque se haya anulado
 
     reversal = fakes.inventory.by_id[fakes.inventory.by_key[next(k for k, v in fakes.inventory.by_key.items() if v.kind == "ENTRY_REVERSAL")].ref.id]
     assert str(reversal.ref.reverses_operation_id) == confirmed["inventory_operation_id"]  # reverso exacto
@@ -40,9 +56,9 @@ def test_cancel_confirmed_reverses_exactly_its_entry(world, fakes, make_sequence
     assert other["status"] == "CONFIRMED"
 
 
-def test_consumed_inventory_is_409_and_stays_confirmed(world, fakes, make_sequence, make_draft, confirm, cancel, test_engine) -> None:
+def test_consumed_inventory_is_409_and_stays_confirmed(world, fakes, make_sequence, make_draft, confirm, receive, cancel, test_engine) -> None:
     make_sequence()
-    confirmed = confirm(make_draft()).json()
+    confirmed = receive(confirm(make_draft()).json()).json()
     from uuid import UUID
 
     fakes.inventory.consumed.add(UUID(confirmed["inventory_operation_id"]))
@@ -64,9 +80,9 @@ def test_rejections(buyer, world, make_draft, cancel) -> None:
     assert again.status_code == 409 and again.json()["code"] == "PURCHASE.INVALID_STATUS"
 
 
-def test_inventory_unavailable_then_same_key_completes_once(world, fakes, make_sequence, make_draft, confirm, cancel, test_engine) -> None:
+def test_inventory_unavailable_then_same_key_completes_once(world, fakes, make_sequence, make_draft, confirm, receive, cancel, test_engine) -> None:
     make_sequence()
-    confirmed = confirm(make_draft()).json()
+    confirmed = receive(confirm(make_draft()).json()).json()
     key = new_key()
     fakes.inventory.availability.down = True
     response = cancel(confirmed, key)

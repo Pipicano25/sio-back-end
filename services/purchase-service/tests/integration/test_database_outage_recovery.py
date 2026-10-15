@@ -1,10 +1,12 @@
 """Caída y recuperación de PostgreSQL de Purchase en el entorno integrado (Principio X; T075).
 
-1. **Caída prolongada** (`docker stop sio-purchase-db`): `live` `200`, `ready` `503`, rutas `503`
+1. **Caída prolongada** (`docker stop` de la base aislada): `live` `200`, `ready` `503`, rutas `503`
    controlado en tiempo acotado; al volver la base, todo responde sin reiniciar la aplicación.
 2. **Caída inesperada** (`pg_ctl stop -m immediate`): Docker reinicia la base y el servicio vuelve a `ready`.
 
-Si la prueba se interrumpe con la base detenida: `docker start sio-purchase-db`.
+Si la prueba se interrumpe con la base detenida: `docker start <base aislada>`.
+Solo actúa sobre contenedores aislados (`support.container`: prefijo `SIO_INTEGRATION_CONTAINER_PREFIX` y
+etiqueta `sio.integration.isolated=true`); ante un contenedor persistente la prueba se omite.
 """
 
 from __future__ import annotations
@@ -16,12 +18,19 @@ import time
 import httpx
 import pytest
 
-from tests.integration.support import PURCHASE, PURCHASE_ROOT, docker, draft_body, wait_until
+from tests.integration.support import PURCHASE, PURCHASE_ROOT, container, docker, draft_body, wait_until
 
 pytestmark = pytest.mark.integration
 
-DB_CONTAINER = "sio-purchase-db"
-APP_CONTAINER = "sio-purchase-service"
+
+@pytest.fixture(scope="module")
+def db_container() -> str:
+    return container("sio-purchase-db")
+
+
+@pytest.fixture(scope="module")
+def app_container() -> str:
+    return container("sio-purchase-service")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -37,10 +46,10 @@ def status(client, method: str, url: str, **kwargs) -> int:
         return 0
 
 
-def test_prolonged_outage_and_recovery_without_restart(buyer, real_world) -> None:
-    started_at = docker("inspect", "-f", "{{.State.StartedAt}}", APP_CONTAINER)
+def test_prolonged_outage_and_recovery_without_restart(buyer, real_world, db_container, app_container) -> None:
+    started_at = docker("inspect", "-f", "{{.State.StartedAt}}", app_container)
     base = f"{PURCHASE}/companies/{real_world.company}"
-    docker("stop", DB_CONTAINER)
+    docker("stop", db_container)
     try:
         assert httpx.get(f"{PURCHASE_ROOT}/health/live", timeout=10).status_code == 200
         assert httpx.get(f"{PURCHASE_ROOT}/health/ready", timeout=15).status_code == 503
@@ -55,16 +64,16 @@ def test_prolonged_outage_and_recovery_without_restart(buyer, real_world) -> Non
             assert response.json()["dependency"] == "database"
             assert time.monotonic() - begin < 15
     finally:
-        docker("start", DB_CONTAINER)
+        docker("start", db_container)
 
     wait_until(lambda: httpx.get(f"{PURCHASE_ROOT}/health/ready", timeout=5).status_code == 200, 90, "ready no volvió")
     wait_until(lambda: status(buyer, "GET", f"{base}/purchases") == 200, 60, "las consultas no volvieron")
-    assert docker("inspect", "-f", "{{.State.StartedAt}}", APP_CONTAINER) == started_at  # sin reinicio
+    assert docker("inspect", "-f", "{{.State.StartedAt}}", app_container) == started_at  # sin reinicio
 
 
-def test_unexpected_crash_is_restarted_by_docker(buyer, real_world) -> None:
+def test_unexpected_crash_is_restarted_by_docker(buyer, real_world, db_container, app_container) -> None:
     subprocess.run(
-        ["docker", "exec", "-u", "postgres", DB_CONTAINER, "sh", "-c", 'pg_ctl -D "$PGDATA" stop -m immediate'],
+        ["docker", "exec", "-u", "postgres", db_container, "sh", "-c", 'pg_ctl -D "$PGDATA" stop -m immediate'],
         capture_output=True,
     )
     wait_until(lambda: httpx.get(f"{PURCHASE_ROOT}/health/ready", timeout=5).status_code == 200, 120, "la base no se reinició")

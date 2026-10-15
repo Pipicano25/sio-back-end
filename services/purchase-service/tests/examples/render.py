@@ -69,7 +69,8 @@ def _json(value: Any) -> str:
 
 
 def _reverse(ctx: dict[str, str]) -> dict[str, str]:
-    return {str(value): f"<{name}>" for name, value in ctx.items()}
+    """Identificadores guardados → `<NOMBRE>`; los enteros (p. ej. versiones) no se enmascaran dentro del texto."""
+    return {str(value): f"<{name}>" for name, value in ctx.items() if not isinstance(value, int)}
 
 
 def render_step(exercise: dict, index: int, record: dict) -> str:

@@ -29,6 +29,9 @@ def insert_purchase(connection: Connection, **overrides: Any) -> UUID:
         "discount_total": 0,
         "tax_total": 0,
         "total": 0,
+        "payment_method_id": uuid4(),  # spec 020: obligatorio fuera de DRAFT
+        "payment_method_code_snapshot": "CASH",
+        "payment_method_name_snapshot": "Efectivo",
         "created_by_user_id": uuid4(),
         "created_by": ACTOR,
         "updated_by": ACTOR,
@@ -46,6 +49,9 @@ def insert_detail(connection: Connection, purchase_id: UUID, **overrides: Any) -
         "purchase_id": purchase_id,
         "line_number": 1,
         "company_product_id": uuid4(),
+        "company_product_presentation_id": uuid4(),  # spec 020: presentación obligatoria
+        "presentation_code_snapshot": "UND",
+        "presentation_name_snapshot": "Unidad",
         "product_code_snapshot": "001",
         "product_name_snapshot": "Producto",
         "base_quantity_factor_snapshot": 1,
@@ -111,11 +117,21 @@ def insert_operation(connection: Connection, purchase_id: UUID, company_id: UUID
     return values["id"]
 
 
-def confirmed_overrides(sequence_id: UUID) -> dict[str, Any]:
+def pending_receipt_overrides(sequence_id: UUID) -> dict[str, Any]:
+    """Compra confirmada pendiente de recepción (spec 020): sin entrada en Inventory."""
     return {
         "status": "CONFIRMED",
         "number": f"CP-{uuid4().hex[:6]}",
         "sequence_value": 1,
         "purchase_sequence_id": sequence_id,
+    }
+
+
+def confirmed_overrides(sequence_id: UUID) -> dict[str, Any]:
+    """Compra confirmada y recibida (spec 020): con la entrada, la fecha y el usuario de la recepción."""
+    return {
+        **pending_receipt_overrides(sequence_id),
         "inventory_operation_id": uuid4(),
+        "received_at": "2026-10-06T12:00:00Z",
+        "received_by_user_id": uuid4(),
     }

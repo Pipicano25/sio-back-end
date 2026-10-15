@@ -6,7 +6,7 @@ from decimal import Decimal as D
 
 import pytest
 
-from purchase_service.domain.conversion import base_quantity, inventory_unit_cost
+from purchase_service.domain.conversion import base_quantity, check_base_unit_cost, inventory_unit_cost
 from purchase_service.domain.money import DomainRuleError, line_amounts
 
 
@@ -43,5 +43,15 @@ def test_inventory_unit_cost_subtracts_discount_and_rounds_half_up() -> None:
     assert inventory_unit_cost(D("0.20"), D("0"), D("3")) == D("0.0667")
 
 
-def test_total_discount_gives_zero_cost() -> None:
-    assert inventory_unit_cost(D("50.00"), D("50.00"), D("5")) == D("0.0000")
+def test_base_unit_cost_must_be_positive_after_rounding() -> None:
+    """Spec 020 (FR-020-12, RC-MVP-5): 0,01 entre 1 000 unidades base redondea a 0,0000 → rechazado."""
+    with pytest.raises(DomainRuleError) as error:
+        check_base_unit_cost(D("0.01"), D("0"), D("1000"), field="lines[0].unit_cost")
+    assert (error.value.code, error.value.field) == ("BASE_UNIT_COST_NOT_POSITIVE", "lines[0].unit_cost")
+
+
+def test_base_unit_cost_is_the_inventory_cost_when_positive() -> None:
+    # 3 cajas x 10 a 12 000: (36 000 − 0) / 30 = 1 200 por unidad base.
+    assert check_base_unit_cost(D("36000.00"), D("0"), D("30")) == D("1200.0000")
+    # El menor costo representable: 0,0001 por unidad base.
+    assert check_base_unit_cost(D("0.01"), D("0"), D("100")) == D("0.0001")

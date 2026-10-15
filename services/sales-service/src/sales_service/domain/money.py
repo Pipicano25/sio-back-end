@@ -86,10 +86,21 @@ class LineInputs:
 def check_line_inputs(
     quantity: Decimal, discount_amount: Decimal, tax_amount: Decimal, *, prefix: str = ""
 ) -> LineInputs:
-    """Formato de lo que envía el vendedor, antes de conocer el precio (R-07)."""
+    """Formato de lo que envía el vendedor, antes de conocer el precio (R-07).
+
+    Spec 020 (FR-020-13, RC-MVP-6): sin descuentos en el MVP; `discount_amount` solo admite `0`
+    (omitido = `0`). El precio es el de la lista y no puede reducirse por ningún campo de la API.
+    """
+    discount_amount = check_amount(discount_amount, field=f"{prefix}discount_amount")
+    if discount_amount != 0:
+        raise DomainRuleError(
+            "DISCOUNT_NOT_ALLOWED",
+            "Las ventas del MVP no admiten descuentos: el precio es el de la lista de precios.",
+            field=f"{prefix}discount_amount",
+        )
     return LineInputs(
         check_quantity(quantity, field=f"{prefix}quantity"),
-        check_amount(discount_amount, field=f"{prefix}discount_amount"),
+        discount_amount,
         check_amount(tax_amount, field=f"{prefix}tax_amount"),
     )
 

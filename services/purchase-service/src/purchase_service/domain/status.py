@@ -7,7 +7,13 @@ PURCHASE_STATUSES = (DRAFT, CONFIRMED, CANCELLED)
 
 CONFIRM = "CONFIRM"
 CANCEL = "CANCEL"
-OPERATION_TYPES = (CONFIRM, CANCEL)
+RECEIVE = "RECEIVE"
+"""Spec 020: la recepción física completa aplica la entrada en Inventory (la confirmación ya no)."""
+OPERATION_TYPES = (CONFIRM, CANCEL, RECEIVE)
+
+RECEIPT_PENDING = "PENDING"
+RECEIPT_RECEIVED = "RECEIVED"
+"""`receipt_status` derivado (spec 020, FR-020-05): confirmada sin recibir / recibida."""
 
 PENDING = "PENDING"
 SUCCEEDED = "SUCCEEDED"
@@ -25,5 +31,3 @@ MAX_LINES = 100
 RECONCILER_ACTOR = "system:purchase-reconciler"
 """Identidad técnica del conciliador para `created_by`/`updated_by` (D1, D22)."""
 
-COMPENSATION_PENDING = "COMPENSATION_PENDING"
-NOT_APPLIED_AFTER_RECONCILIATION = "NOT_APPLIED_AFTER_RECONCILIATION"

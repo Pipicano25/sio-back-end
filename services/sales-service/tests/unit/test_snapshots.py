@@ -17,7 +17,7 @@ def resolver(fakes, concurrency: int = 4) -> ReferenceResolver:
 def test_header_snapshot_for_a_person() -> None:
     fakes = build_fakes()
     world = fakes.world
-    snapshot = resolver(fakes).resolve_header(fakes.oc.companies[world.company], HeaderInput(world.branch, world.customer))
+    snapshot = resolver(fakes).resolve_header(fakes.oc.companies[world.company], HeaderInput(world.branch, world.customer, world.payment_method))
     assert snapshot.customer_name == "Ana Ficticia Pérez"
     assert snapshot.customer_identification == "CC 1020304050"
     assert snapshot.currency_code == "COP" and snapshot.branch_timezone == "America/Bogota"
@@ -27,7 +27,7 @@ def test_header_snapshot_for_a_person() -> None:
 def test_header_snapshot_for_an_organization() -> None:
     fakes = build_fakes()
     world = fakes.world
-    snapshot = resolver(fakes).resolve_header(fakes.oc.companies[world.company], HeaderInput(world.branch, world.customer_org))
+    snapshot = resolver(fakes).resolve_header(fakes.oc.companies[world.company], HeaderInput(world.branch, world.customer_org, world.payment_method))
     assert (snapshot.customer_name, snapshot.customer_identification) == ("Tiendas Ficticias S.A.S.", "NIT 900123456")
 
 
@@ -36,7 +36,7 @@ def test_identification_and_name_are_truncated() -> None:
     world = fakes.world
     fakes.party.persons[world.person] = replace(fakes.party.persons[world.person], identification_number="9" * 120)
     fakes.cr.customers[world.customer] = replace(fakes.cr.customers[world.customer], display_name="N" * 250)
-    snapshot = resolver(fakes).resolve_header(fakes.oc.companies[world.company], HeaderInput(world.branch, world.customer))
+    snapshot = resolver(fakes).resolve_header(fakes.oc.companies[world.company], HeaderInput(world.branch, world.customer, world.payment_method))
     assert len(snapshot.customer_identification) == 100 and len(snapshot.customer_name) == 200
 
 
@@ -78,4 +78,16 @@ def test_sequential_and_parallel_lookups_give_the_same_snapshots() -> None:
     ]
     assert resolver(fakes, 1).resolve_lines(world.company, "COP", lines) == resolver(fakes, 8).resolve_lines(
         world.company, "COP", lines
+    )
+
+
+def test_header_snapshot_copies_the_payment_method() -> None:
+    """Spec 020 (FR-020-09): código y nombre del medio de pago declarado."""
+    fakes = build_fakes()
+    world = fakes.world
+    snapshot = resolver(fakes).resolve_header(
+        fakes.oc.companies[world.company], HeaderInput(world.branch, world.customer, world.payment_method)
+    )
+    assert (snapshot.payment_method_id, snapshot.payment_method_code, snapshot.payment_method_name) == (
+        world.payment_method, "CASH", "Efectivo"
     )

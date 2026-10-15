@@ -18,7 +18,8 @@ RECONCILER_THRESHOLD_FACTOR = 10
 class Settings:
     """Configuración del microservicio.
 
-    Las URL incluyen `/api/v1`. Sin Payment Reference: el MVP solo vende de contado (DP-01).
+    Las URL incluyen `/api/v1`, salvo Payment Reference (sin `/api/v1`, brecha del proveedor). Spec 020:
+    Payment Reference valida el medio de pago declarado; el MVP solo vende de contado (DP-01).
     """
 
     docs_enabled: bool
@@ -27,6 +28,7 @@ class Settings:
     commercial_relationship_base_url: str
     product_catalog_base_url: str
     party_identity_base_url: str
+    payment_reference_base_url: str
     inventory_base_url: str
     keycloak_token_url: str
     client_id: str
@@ -35,6 +37,7 @@ class Settings:
     commercial_relationship_timeout_seconds: float = 5.0
     product_catalog_timeout_seconds: float = 5.0
     party_identity_timeout_seconds: float = 5.0
+    payment_reference_timeout_seconds: float = 5.0
     inventory_timeout_seconds: float = 10.0
     lookup_concurrency: int = 8
     lock_timeout_seconds: float = 5.0
@@ -72,6 +75,7 @@ def load_settings() -> Settings:
         commercial_relationship_base_url=_required_text("COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL"),
         product_catalog_base_url=_required_text("PRODUCT_CATALOG_SERVICE_BASE_URL"),
         party_identity_base_url=_required_text("PARTY_IDENTITY_SERVICE_BASE_URL"),
+        payment_reference_base_url=_required_text("PAYMENT_REFERENCE_SERVICE_BASE_URL"),  # sin /api/v1 (spec 020)
         inventory_base_url=_required_text("INVENTORY_SERVICE_BASE_URL"),
         keycloak_token_url=_required_text("KEYCLOAK_TOKEN_URL"),
         client_id=_read_text("SALES_CLIENT_ID", default="sales-service"),
@@ -80,6 +84,7 @@ def load_settings() -> Settings:
         commercial_relationship_timeout_seconds=_read_positive_float("COMMERCIAL_RELATIONSHIP_TIMEOUT_SECONDS", 5.0),
         product_catalog_timeout_seconds=_read_positive_float("PRODUCT_CATALOG_TIMEOUT_SECONDS", 5.0),
         party_identity_timeout_seconds=_read_positive_float("PARTY_IDENTITY_TIMEOUT_SECONDS", 5.0),
+        payment_reference_timeout_seconds=_read_positive_float("PAYMENT_REFERENCE_TIMEOUT_SECONDS", 5.0),
         inventory_timeout_seconds=_read_positive_float("INVENTORY_TIMEOUT_SECONDS", 10.0),
         lookup_concurrency=int(_read_positive_float("SALES_LOOKUP_CONCURRENCY", 8)),
         lock_timeout_seconds=_read_positive_float("SALES_LOCK_TIMEOUT_SECONDS", 5.0),

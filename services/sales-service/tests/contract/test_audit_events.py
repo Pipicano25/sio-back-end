@@ -16,7 +16,7 @@ def test_every_action_writes_exactly_one_event(seller, world, fakes, make_draft,
     added = seller.post(f"{url}/details", json={**line(world.product_2), "version": 1}).json()
     updated = seller.put(f"{url}/details/{added['lines'][1]['id']}", json={**line(world.product_2, "2"), "version": 2}).json()
     deleted = seller.delete(f"{url}/details/{added['lines'][1]['id']}", params={"version": updated["version"]}).json()
-    header = {"branch_id": str(world.branch), "company_customer_id": str(world.customer)}
+    header = {"branch_id": str(world.branch), "company_customer_id": str(world.customer), "payment_method_id": str(world.payment_method)}
     edited = seller.put(url, json={**header, "version": deleted["version"]}).json()
     confirmed = confirm(edited).json()
     cancel(confirmed)

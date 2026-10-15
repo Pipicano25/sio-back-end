@@ -270,8 +270,23 @@ class InventoryGateway(Protocol):
 
 
 @dataclass(frozen=True, slots=True)
+class PaymentMethodInfo:
+    """Método global de pago (spec 020): referencia declarativa, no un pago registrado."""
+
+    id: UUID
+    code: str
+    name: str
+    status: str
+
+
+class PaymentReferenceDirectory(Protocol):
+    def get_payment_method(self, method_id: UUID) -> PaymentMethodInfo | None: ...
+
+
+@dataclass(frozen=True, slots=True)
 class Directories:
     operational_context: OperationalContextDirectory
     commercial: CommercialDirectory
     catalog: CatalogDirectory
     party: PartyDirectory
+    payment_reference: PaymentReferenceDirectory

@@ -20,7 +20,10 @@ OPENAPI_TAGS = [
             "Ventas en borrador con hasta 100 líneas. Solo **usuarios humanos**: una cuenta de servicio recibe "
             "`403`. Escribir exige el permiso, membresía `ACTIVE` y asignación `ACTIVE` a la sucursal de la venta; "
             "leer, el permiso y la membresía. Referencia inexistente o no resoluble → `422`; existente pero no apta "
-            "→ `409`. Costo y margen solo con `perm:sales:sales:read-profitability`; sin él se omiten."
+            "→ `409`. Costo y margen solo con `perm:sales:sales:read-profitability`; sin él se omiten. Spec 020: "
+            "solo contado; `payment_method_id` obligatorio (un único medio de pago activo de Payment Reference, "
+            "declarativo: no registra pagos); sin descuentos (`discount_amount` solo admite `0`, "
+            "`DISCOUNT_NOT_ALLOWED`)."
         ),
     },
     {
@@ -30,7 +33,9 @@ OPENAPI_TAGS = [
             "(cantidad en unidad base), guarda el costo FIFO que informa Inventory y el margen, fija la fecha del "
             "día y asigna el número del período; anular revierte exactamente esa salida. Exigen "
             "`Idempotency-Key`: repetir la clave devuelve el mismo resultado sin duplicar movimientos. Con "
-            "Inventory no disponible la operación queda `PENDING` y se completa con el reintento o el conciliador."
+            "Inventory no disponible la operación queda `PENDING` y se completa con el reintento o el conciliador. "
+            "Solo hay existencias de compras **recibidas** (spec 020): una compra confirmada sin recibir no permite "
+            "vender (`409 INSUFFICIENT_STOCK`)."
         ),
     },
     {

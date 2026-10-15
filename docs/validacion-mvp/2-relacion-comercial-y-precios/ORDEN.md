@@ -10,7 +10,7 @@ Ejecute los archivos en este orden; cada paso usa los `id` guardados en los ante
 
 | Paso | Archivo | Qué hace | Llamadas | Deja guardado |
 | --- | --- | --- | --- | --- |
-| 01 | [01-consultar-los-datos-de-referencia.md](01-consultar-los-datos-de-referencia.md) | Consultar los datos de referencia | 2 | `<TIPO_CREDITO>`, `<UNIDAD_UND>` |
+| 01 | [01-consultar-los-datos-de-referencia.md](01-consultar-los-datos-de-referencia.md) | Consultar los datos de referencia | 3 | `<METODO_EFECTIVO>`, `<TIPO_CREDITO>`, `<UNIDAD_UND>` |
 | 02 | [02-seleccionar-el-proveedor-y-su-condicion-de-pago.md](02-seleccionar-el-proveedor-y-su-condicion-de-pago.md) | Seleccionar el proveedor y su condición de pago | 2 | `<CONDICION_CREDITO>`, `<PROVEEDOR>` |
 | 03 | [03-incorporar-el-cliente.md](03-incorporar-el-cliente.md) | Incorporar el cliente | 1 | `<CLIENTE>` |
 | 04 | [04-crear-los-productos-globales.md](04-crear-los-productos-globales.md) | Crear los productos globales | 8 | `<CATEGORIA>`, `<CATEGORIA_PRODUCTO_A>`, `<CATEGORIA_PRODUCTO_B>`, `<PRESENTACION_BASE_A>`, `<PRESENTACION_BASE_B>`, `<PRESENTACION_CAJA_A>`, `<PRODUCTO_A>`, `<PRODUCTO_B>` |

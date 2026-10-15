@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import copy
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Mapping
 
 from sio_mvp.auth import ApiResponse, Clients
@@ -133,7 +133,7 @@ EX7 = "7-seguridad"
 EXERCISES = {
     EX1: "Configuración de la empresa: organizaciones, personas, empresas, sucursales y usuarios operativos",
     EX2: "Relación comercial y precios: proveedor, cliente, productos, adopción, presentaciones y listas",
-    EX3: "Compras e inventario: secuencias, compras, confirmación, entradas, saldos, kardex y capas",
+    EX3: "Compras e inventario: secuencias, compras de contado, confirmación, recepción física (entradas), saldos, kardex y capas",
     EX4: "Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen",
     EX5: "Anulaciones y reversos",
     EX6: "Auditoría del recorrido",
@@ -192,6 +192,13 @@ def reference_steps() -> list[Step]:
             "perm:payment-reference:global_payment_condition_types:read", "payment-reference", "GET",
             "/global-payment-condition-types", 200, params={"page_size": 100},
             save={"tipo_credito": "items[code=CREDIT].id"},
+        ),
+        Step(
+            "C-00.7", "Consultar el método de pago Efectivo en Payment Reference", EX2, (4,), "admin.test",
+            "perm:payment-reference:global_payment_methods:read", "payment-reference", "GET",
+            "/global-payment-methods", 200, params={"page_size": 100},
+            save={"metodo_efectivo": "items[code=CASH].id"},
+            why="Spec 020: compras y ventas declaran un único medio de pago activo (referencia, no un pago).",
         ),
     ]
 
@@ -489,12 +496,13 @@ CONFIGURATION = reference_steps() + identity_steps() + company_steps() + commerc
 PURCHASE_LINES = {
     "1": [
         {"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_caja_empresa_a}", "quantity": "2", "unit_cost": "12000"},
-        {"company_product_id": "{producto_empresa_b}", "quantity": "10", "unit_cost": "5000"},
+        {"company_product_id": "{producto_empresa_b}", "company_product_presentation_id": "{presentacion_base_empresa_b}", "quantity": "10", "unit_cost": "5000"},
     ],
-    "2": [{"company_product_id": "{producto_empresa_a}", "quantity": "26", "unit_cost": "1200"}],
-    "3": [{"company_product_id": "{producto_empresa_a}", "quantity": "5", "unit_cost": "1300"}],
-    "4": [{"company_product_id": "{producto_empresa_a}", "quantity": "1", "unit_cost": "1000"}],
+    "2": [{"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_base_empresa_a}", "quantity": "26", "unit_cost": "1200"}],
+    "3": [{"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_base_empresa_a}", "quantity": "5", "unit_cost": "1300"}],
+    "4": [{"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_base_empresa_a}", "quantity": "1", "unit_cost": "1000"}],
 }
+"""Spec 020: toda línea indica su presentación (la de factor 1 para la unidad)."""
 
 
 def purchase_create(number: str) -> Step:
@@ -506,6 +514,7 @@ def purchase_create(number: str) -> Step:
             "branch_id": "{sucursal_a1}",
             "company_supplier_id": "{proveedor}",
             "operation_date": "{fecha_negocio}",
+            "payment_method_id": "{metodo_efectivo}",
             "supplier_document_number": f"FP{number}-{{run}}",
             "lines": PURCHASE_LINES[number],
         },
@@ -520,18 +529,50 @@ def purchase_confirm(number: str) -> Step:
         f"P-02.P{number}", f"Confirmar la compra P{number}", EX3, (10,), "compras.test",
         "perm:purchase:purchases:update", "purchase", "POST", f"/companies/{{empresa_a}}/purchases/{{compra_{number}}}/confirmation", 200,
         body={"version": f"{{compra_{number}_version}}"},
-        save={f"compra_{number}_version": "version", f"compra_{number}_numero": "number", f"compra_{number}_operacion": "inventory_operation_id"},
-        audit=(
-            AuditSpec("purchase", "CONFIRM_PURCHASE", "Purchase", f"{{compra_{number}}}", correlated=True),
-            AuditSpec("inventory", "APPLY_INVENTORY_ENTRY", "InventoryOperation", f"{{compra_{number}_operacion}}", correlated=True),
-        ),
+        save={f"compra_{number}_version": "version", f"compra_{number}_numero": "number"},
+        audit=(AuditSpec("purchase", "CONFIRM_PURCHASE", "Purchase", f"{{compra_{number}}}", correlated=True),),
         idempotent=True,
-        why="La confirmación asigna el número oficial y registra la entrada en Inventory una sola vez (Idempotency-Key).",
-        expected_note="`status` = `CONFIRMED`, `number` asignado, `inventory_operation_id`",
+        why="Spec 020: la confirmación asigna el número oficial y deja la compra pendiente de recepción; no mueve inventario.",
+        expected_note="`status` = `CONFIRMED`, `number` asignado, `receipt_status` = `PENDING`, `inventory_operation_id` nulo",
     )
 
 
-PURCHASES = [purchase_create(number) for number in ("1", "2", "3", "4")] + [purchase_confirm(number) for number in ("1", "2", "3")]
+def purchase_receive(number: str) -> Step:
+    return Step(
+        f"P-02R.P{number}", f"Confirmar la recepción física completa de la compra P{number}", EX3, (10, 11), "compras.test",
+        "perm:purchase:purchases:update", "purchase", "POST", f"/companies/{{empresa_a}}/purchases/{{compra_{number}}}/receipt", 200,
+        body={"version": f"{{compra_{number}_version}}", "full_receipt_confirmed": True},
+        save={f"compra_{number}_version": "version", f"compra_{number}_operacion": "inventory_operation_id"},
+        audit=(
+            AuditSpec("purchase", "RECEIVE_PURCHASE", "Purchase", f"{{compra_{number}}}", correlated=True),
+            AuditSpec("inventory", "APPLY_INVENTORY_ENTRY", "InventoryOperation", f"{{compra_{number}_operacion}}", correlated=True),
+        ),
+        idempotent=True,
+        why="Spec 020: solo la recepción completa registra la entrada en Inventory, una sola vez (Idempotency-Key), y crea las capas FIFO.",
+        expected_note="`receipt_status` = `RECEIVED`, `received_at`, `received_by_user_id`, `inventory_operation_id`",
+    )
+
+
+PURCHASE_CREDIT_REJECTED = Step(
+    "P-01.credito", "Intentar una compra a crédito", EX3, (9,), "compras.test",
+    "perm:purchase:purchases:create", "purchase", "POST", "/companies/{empresa_a}/purchases", 409,
+    body={
+        "branch_id": "{sucursal_a1}",
+        "company_supplier_id": "{proveedor}",
+        "operation_date": "{fecha_negocio}",
+        "payment_method_id": "{metodo_efectivo}",
+        "supplier_payment_condition_id": "{condicion_credito}",
+        "lines": PURCHASE_LINES["4"],
+    },
+    why="Spec 020: solo contado en el MVP; la condición CREDIT existe pero no es apta (`PAYMENT_CONDITION_NOT_AVAILABLE`).",
+)
+
+PURCHASES = (
+    [purchase_create(number) for number in ("1", "2", "3", "4")]
+    + [PURCHASE_CREDIT_REJECTED]
+    + [purchase_confirm(number) for number in ("1", "2", "3")]
+)
+PURCHASE_RECEIPTS = [purchase_receive(number) for number in ("1", "2", "3")]
 
 INVENTORY_READS = [
     Step(
@@ -563,6 +604,7 @@ INVENTORY_READS = [
 
 # --- ventas (data-model §3.3) --------------------------------------------------------------------
 SALE_LINES = {
+    "0": [{"company_product_id": "{producto_empresa_b}", "company_product_presentation_id": "{presentacion_base_empresa_b}", "quantity": "1"}],
     "1": [{"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_caja_empresa_a}", "price_list_id": "{lista_mayorista}", "quantity": "1"}],
     "2": [{"company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_base_empresa_a}", "quantity": "20"}],
     "3": [{"company_product_id": "{producto_empresa_b}", "company_product_presentation_id": "{presentacion_base_empresa_b}", "quantity": "4"}],
@@ -572,6 +614,7 @@ SALE_LINES = {
     "7": [{"company_product_id": "{producto_empresa_b}", "company_product_presentation_id": "{presentacion_base_empresa_b}", "quantity": "1"}],
 }
 SALE_PRICE_NOTES = {
+    "0": "Spec 020: producto B con la compra P1 confirmada pero aún no recibida",
     "1": "Lista indicada MAYORISTA: precio de la caja 16 000",
     "2": "Sin lista: se aplica la predeterminada GENERAL, 1 500 la unidad",
     "3": "Producto B: precio de su unidad en la lista predeterminada GENERAL, 7 000",
@@ -586,7 +629,7 @@ def sale_create(number: str) -> Step:
     return Step(
         f"V-01.V{number}", f"Registrar la venta V{number} en borrador", EX4, (13,), "ventas.test",
         "perm:sales:sales:create + perm:sales:sale_details:create", "sales", "POST", "/companies/{empresa_a}/sales", 201,
-        body={"branch_id": "{sucursal_a1}", "company_customer_id": "{cliente}", "lines": SALE_LINES[number]},
+        body={"branch_id": "{sucursal_a1}", "company_customer_id": "{cliente}", "payment_method_id": "{metodo_efectivo}", "lines": SALE_LINES[number]},
         save={f"venta_{number}": "id", f"venta_{number}_version": "version"},
         audit=(AuditSpec("sales", "CREATE_SALE", "Sale", f"{{venta_{number}}}"),),
         why=SALE_PRICE_NOTES[number],
@@ -610,6 +653,8 @@ def sale_confirm(number: str, expect: int = 200, items: tuple[int, ...] = (15,),
 
 
 SALES_DRAFTS = [sale_create(number) for number in ("1", "2", "3", "4", "5", "6", "7")]
+SALE_BEFORE_RECEIPT = [replace(sale_create("0"), id="V-00.V0-borrador"), sale_confirm("0", expect=409, items=(14, 15), family="V-00")]
+"""Spec 020: una compra confirmada pero no recibida no crea existencias vendibles (`409 INSUFFICIENT_STOCK`)."""
 SALES_CONFIRMATIONS = [sale_confirm(number) for number in ("1", "2", "3")]
 SALE_AVAILABILITY = [
     Step(
@@ -811,6 +856,8 @@ AUDIT_STEPS = [
 RECORRIDO = (
     CONFIGURATION
     + PURCHASES
+    + SALE_BEFORE_RECEIPT
+    + PURCHASE_RECEIPTS
     + INVENTORY_READS
     + SALES_DRAFTS
     + SALE_AVAILABILITY

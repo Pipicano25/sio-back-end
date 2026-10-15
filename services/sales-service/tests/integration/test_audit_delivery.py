@@ -1,6 +1,8 @@
 """Entrega real de la auditoría por `sales-audit-outbox-worker` (FR-031; SC-007; DS-12; T082).
 
-La segunda prueba detiene `sio-audit-service` durante una confirmación y lo vuelve a iniciar.
+La segunda prueba detiene el Audit aislado durante una confirmación y lo vuelve a iniciar.
+Solo actúa sobre contenedores aislados (`support.container`: prefijo `SIO_INTEGRATION_CONTAINER_PREFIX` y
+etiqueta `sio.integration.isolated=true`); ante un contenedor persistente la prueba se omite.
 """
 
 from __future__ import annotations
@@ -10,11 +12,10 @@ import time
 import httpx
 import pytest
 
-from tests.integration.support import AUDIT, SALES, docker, draft_body, new_key, wait_until
+from tests.integration.support import AUDIT, SALES, container, docker, draft_body, new_key, wait_until
 
 pytestmark = pytest.mark.integration
 
-AUDIT_CONTAINER = "sio-audit-service"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -68,15 +69,16 @@ def test_confirmation_and_cancellation_reach_audit_once(admin, seller, real_worl
 
 
 def test_audit_down_does_not_block_confirmation(admin, seller, real_world, sequence) -> None:
+    audit_container = container("sio-audit-service")
     base = f"{SALES}/companies/{real_world.company}/sales"
     draft = seller.post(base, json=draft_body(real_world, line(real_world))).json()
-    docker("stop", AUDIT_CONTAINER)
+    docker("stop", audit_container)
     try:
         response = seller.post(f"{base}/{draft['id']}/confirmation", json={"version": 1}, headers={"Idempotency-Key": new_key()})
         assert response.status_code == 200, response.text
         time.sleep(6)
     finally:
-        docker("start", AUDIT_CONTAINER)
+        docker("start", audit_container)
     wait_until(lambda: httpx.get(f"{AUDIT.removesuffix('/api/v1')}/health/ready", timeout=5).status_code == 200, 90, "Audit no volvió")
     wait_events(admin, real_world.company, draft["id"], "CONFIRM_SALE", timeout=360)
     time.sleep(5)

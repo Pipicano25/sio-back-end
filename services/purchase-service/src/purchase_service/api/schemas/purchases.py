@@ -1,7 +1,8 @@
 """Esquemas de compras, líneas, confirmación y anulación (`contracts/rest-api.md` rutas 1–12).
 
 Entradas con `extra="forbid"` (campo desconocido → `422 UNKNOWN_FIELD`); totales y
-snapshots nunca se aceptan en el cuerpo. Decimales como cadena en las respuestas:
+snapshots nunca se aceptan en el cuerpo. Spec 020: presentación obligatoria en toda línea,
+`payment_method_id` obligatorio en la cabecera y recepción física completa (`ReceiptIn`). Decimales como cadena en las respuestas:
 cantidades y costos unitarios con 4 decimales, montos con 2, factor con 8.
 """
 
@@ -17,7 +18,7 @@ from pydantic_core import PydanticCustomError
 
 from purchase_service.application.purchase_service import HeaderData, LineData, PurchaseView
 from purchase_service.application.snapshots import line_base_quantity, line_inventory_cost
-from purchase_service.domain.status import MAX_LINES
+from purchase_service.domain.status import CONFIRMED, MAX_LINES, RECEIPT_PENDING, RECEIPT_RECEIVED
 from purchase_service.infrastructure.models import PurchaseDetail, PurchaseOperation
 
 QUANTITY = Decimal("0.0001")
@@ -44,7 +45,7 @@ class StrictModel(BaseModel):
 
 class LineIn(StrictModel):
     company_product_id: UUID
-    company_product_presentation_id: UUID | None = None
+    company_product_presentation_id: UUID
     supplier_product_id: UUID | None = None
     quantity: DecimalIn
     unit_cost: DecimalIn
@@ -68,6 +69,7 @@ class HeaderIn(StrictModel):
     company_supplier_id: UUID
     operation_date: date
     supplier_payment_condition_id: UUID | None = None
+    payment_method_id: UUID
     promised_delivery_at: AwareDatetime | None = None
     supplier_document_number: Annotated[str, Field(min_length=1, max_length=100)] | None = None
     observations: Annotated[str, Field(max_length=2000)] | None = None
@@ -81,6 +83,7 @@ class HeaderIn(StrictModel):
             promised_delivery_at=self.promised_delivery_at,
             supplier_document_number=self.supplier_document_number,
             observations=self.observations,
+            payment_method_id=self.payment_method_id,
         )
 
 
@@ -105,6 +108,13 @@ class LineCreateIn(LineIn):
 
 class VersionIn(StrictModel):
     version: Annotated[int, Field(ge=1)]
+
+
+class ReceiptIn(StrictModel):
+    """Recepción física completa (spec 020, FR-020-02): el usuario confirma que recibió **toda** la compra."""
+
+    version: Annotated[int, Field(ge=1)]
+    full_receipt_confirmed: bool
 
 
 class CancelIn(StrictModel):
@@ -180,6 +190,14 @@ class PurchaseDetailResponse(BaseModel):
         )
 
 
+def receipt_status(status: str, received_at: datetime | None) -> str | None:
+    """Spec 020 (FR-020-05): `RECEIVED` si se recibió (aunque luego se anule); `PENDING` si está
+    confirmada sin recibir; nulo en borrador o anulada sin recibir."""
+    if received_at is not None:
+        return RECEIPT_RECEIVED
+    return RECEIPT_PENDING if status == CONFIRMED else None
+
+
 class PurchaseResponse(BaseModel):
     id: UUID
     company_id: UUID
@@ -189,6 +207,9 @@ class PurchaseResponse(BaseModel):
     payment_condition_code_snapshot: str
     payment_terms_days_snapshot: int
     due_date: date
+    payment_method_id: UUID | None
+    payment_method_code_snapshot: str | None
+    payment_method_name_snapshot: str | None
     purchase_sequence_id: UUID | None
     number: str | None
     sequence_value: int | None
@@ -205,6 +226,9 @@ class PurchaseResponse(BaseModel):
     tax_total: str
     total: str
     inventory_operation_id: UUID | None
+    receipt_status: str | None
+    received_at: datetime | None
+    received_by_user_id: UUID | None
     created_by_user_id: UUID
     cancelled_by_user_id: UUID | None
     cancelled_at: datetime | None
@@ -229,6 +253,9 @@ class PurchaseResponse(BaseModel):
             payment_condition_code_snapshot=purchase.payment_condition_code_snapshot,
             payment_terms_days_snapshot=purchase.payment_terms_days_snapshot,
             due_date=purchase.due_date,
+            payment_method_id=purchase.payment_method_id,
+            payment_method_code_snapshot=purchase.payment_method_code_snapshot,
+            payment_method_name_snapshot=purchase.payment_method_name_snapshot,
             purchase_sequence_id=purchase.purchase_sequence_id,
             number=purchase.number,
             sequence_value=purchase.sequence_value,
@@ -245,6 +272,9 @@ class PurchaseResponse(BaseModel):
             tax_total=fmt(purchase.tax_total, MONEY),
             total=fmt(purchase.total, MONEY),
             inventory_operation_id=purchase.inventory_operation_id,
+            receipt_status=receipt_status(purchase.status, purchase.received_at),
+            received_at=purchase.received_at,
+            received_by_user_id=purchase.received_by_user_id,
             created_by_user_id=purchase.created_by_user_id,
             cancelled_by_user_id=purchase.cancelled_by_user_id,
             cancelled_at=purchase.cancelled_at,

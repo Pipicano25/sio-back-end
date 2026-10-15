@@ -6,9 +6,9 @@ from tests.conftest import fetch, new_key
 from tests.contract.reconciler_support import age_pending, run_reconciler
 
 
-def pending_cancellation(fakes, make_sequence, make_draft, confirm, cancel, *, lose_response: bool):
+def pending_cancellation(fakes, make_sequence, make_draft, confirm, receive, cancel, *, lose_response: bool):
     make_sequence()
-    confirmed = confirm(make_draft()).json()
+    confirmed = receive(confirm(make_draft()).json()).json()  # spec 020: solo una compra recibida revierte
     if lose_response:
         fakes.inventory.lose_response = 1
     else:
@@ -18,8 +18,8 @@ def pending_cancellation(fakes, make_sequence, make_draft, confirm, cancel, *, l
     return confirmed
 
 
-def test_applied_reversal_completes_cancellation(world, fakes, make_sequence, make_draft, confirm, cancel, test_engine) -> None:
-    confirmed = pending_cancellation(fakes, make_sequence, make_draft, confirm, cancel, lose_response=True)
+def test_applied_reversal_completes_cancellation(world, fakes, make_sequence, make_draft, confirm, receive, cancel, test_engine) -> None:
+    confirmed = pending_cancellation(fakes, make_sequence, make_draft, confirm, receive, cancel, lose_response=True)
     age_pending(test_engine)
     result = run_reconciler(test_engine, fakes.inventory)
     assert len(result.completed) == 1
@@ -31,8 +31,8 @@ def test_applied_reversal_completes_cancellation(world, fakes, make_sequence, ma
     assert operation["status"] == "SUCCEEDED" and operation["inventory_operation_id"] == reversal.ref.id
 
 
-def test_unapplied_reversal_fails_and_purchase_stays_confirmed(world, fakes, make_sequence, make_draft, confirm, cancel, test_engine) -> None:
-    pending_cancellation(fakes, make_sequence, make_draft, confirm, cancel, lose_response=False)
+def test_unapplied_reversal_fails_and_purchase_stays_confirmed(world, fakes, make_sequence, make_draft, confirm, receive, cancel, test_engine) -> None:
+    pending_cancellation(fakes, make_sequence, make_draft, confirm, receive, cancel, lose_response=False)
     age_pending(test_engine)
     result = run_reconciler(test_engine, fakes.inventory)
     assert len(result.failed) == 1

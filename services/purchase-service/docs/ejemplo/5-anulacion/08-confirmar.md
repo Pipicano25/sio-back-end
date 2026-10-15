@@ -1,6 +1,6 @@
-# Paso 4. Reintentar con la misma clave
+# Paso 8. Confirmar la compra
 
-Ejercicio 3: Confirmación idempotente.
+Ejercicio 5: Anulación.
 
 ## Llamada
 
@@ -8,9 +8,7 @@ Ejercicio 3: Confirmación idempotente.
 
 Ejecuta: `compras.test`.
 
-Cabeceras: `Idempotency-Key: confirmar-compra-0001`.
-
-Situación simulada antes de la llamada: `inventory_up` (en la prueba automática, sobre el doble de Inventory).
+Cabeceras: `Idempotency-Key: anular-0004`.
 
 ### Solicitud
 
@@ -22,8 +20,7 @@ Situación simulada antes de la llamada: `inventory_up` (en la prueba automátic
 
 ### Por qué
 
-- Inventory recibe la misma clave de operación: aplica la entrada una sola vez.
-- La compra queda `CONFIRMED` con `CP-202611-000001`.
+- Queda pendiente de recepción.
 
 ## Permiso
 
@@ -69,9 +66,12 @@ Estado `200`.
   "payment_condition_code_snapshot": "CASH",
   "payment_terms_days_snapshot": 0,
   "due_date": "2026-11-04",
+  "payment_method_id": "d14c0000-0000-4000-8000-000000000011",
+  "payment_method_code_snapshot": "CASH",
+  "payment_method_name_snapshot": "Efectivo",
   "purchase_sequence_id": "<SECUENCIA>",
-  "number": "CP-202611-000001",
-  "sequence_value": 1,
+  "number": "CP-202611-000002",
+  "sequence_value": 2,
   "status": "CONFIRMED",
   "operation_date": "2026-11-04",
   "promised_delivery_at": null,
@@ -80,17 +80,20 @@ Estado `200`.
   "supplier_identification_snapshot": "NIT 900123456",
   "currency_code": "COP",
   "observations": null,
-  "subtotal": "240000.00",
+  "subtotal": "120000.00",
   "discount_total": "0.00",
-  "tax_total": "45600.00",
-  "total": "285600.00",
-  "inventory_operation_id": "<ENTRADA>",
+  "tax_total": "0.00",
+  "total": "120000.00",
+  "inventory_operation_id": null,
+  "receipt_status": "PENDING",
+  "received_at": null,
+  "received_by_user_id": null,
   "created_by_user_id": "d14f1000-0000-4000-8000-000000000003",
   "cancelled_by_user_id": null,
   "cancelled_at": null,
   "cancellation_reason": null,
   "pending_operation_id": null,
-  "version": 3,
+  "version": 2,
   "created_at": "<asignado por el servicio>",
   "updated_at": "<asignado por el servicio>",
   "created_by": "compras.test",
@@ -110,13 +113,13 @@ Estado `200`.
       "presentation_name_snapshot": "Caja x12",
       "base_quantity_factor_snapshot": "12.00000000",
       "unit_code_snapshot": "UND",
-      "quantity": "2.0000",
+      "quantity": "1.0000",
       "unit_cost": "120000.0000",
       "discount_amount": "0.00",
-      "tax_amount": "45600.00",
-      "subtotal": "240000.00",
-      "total": "285600.00",
-      "base_quantity": "24.0000",
+      "tax_amount": "0.00",
+      "subtotal": "120000.00",
+      "total": "120000.00",
+      "base_quantity": "12.0000",
       "inventory_unit_cost": "10000.0000",
       "created_at": "<asignado por el servicio>",
       "updated_at": "<asignado por el servicio>",
@@ -129,4 +132,4 @@ Estado `200`.
 
 ## Variables que se guardan
 
-- `<ENTRADA>` = `inventory_operation_id` de la respuesta.
+- `<VERSION_COMPRA>` = `version` de la respuesta.

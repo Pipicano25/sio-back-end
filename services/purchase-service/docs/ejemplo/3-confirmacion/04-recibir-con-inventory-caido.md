@@ -1,14 +1,14 @@
-# Paso 3. Confirmar mientras Inventory no responde
+# Paso 4. Confirmar la recepción mientras Inventory no responde
 
-Ejercicio 3: Confirmación idempotente.
+Ejercicio 3: Confirmación y recepción idempotente.
 
 ## Llamada
 
-`POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation`
+`POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt`
 
 Ejecuta: `compras.test`.
 
-Cabeceras: `Idempotency-Key: confirmar-compra-0001`.
+Cabeceras: `Idempotency-Key: recibir-compra-0001`.
 
 Situación simulada antes de la llamada: `inventory_down` (en la prueba automática, sobre el doble de Inventory).
 
@@ -16,13 +16,15 @@ Situación simulada antes de la llamada: `inventory_down` (en la prueba automát
 
 ```json
 {
-  "version": 1
+  "version": "<VERSION_CONFIRMADA>",
+  "full_receipt_confirmed": true
 }
 ```
 
 ### Por qué
 
-- La operación queda `PENDING` (el `operation_id` se informa) y la compra sigue en borrador sin número.
+- `full_receipt_confirmed = true`: el usuario declara que recibió **toda** la mercancía.
+- La operación de recepción queda `PENDING` (el `operation_id` se informa) y la compra sigue pendiente.
 - Repetir con la **misma** clave completa la operación; el conciliador también lo haría.
 
 ## Permiso
@@ -49,7 +51,7 @@ Respuesta sin permiso (`403`), que no revela el permiso exigido:
   "title": "Acceso denegado",
   "status": 403,
   "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
-  "instance": "/api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation",
+  "instance": "/api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt",
   "code": "PURCHASE.FORBIDDEN",
   "trace_id": "<asignado por el servicio>"
 }
@@ -65,7 +67,7 @@ Estado `503`.
   "title": "Dependencia no disponible",
   "status": 503,
   "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
-  "instance": "/api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation",
+  "instance": "/api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt",
   "code": "PURCHASE.DEPENDENCY_UNAVAILABLE",
   "trace_id": "<asignado por el servicio>",
   "operation_id": "<asignado por el servicio>",

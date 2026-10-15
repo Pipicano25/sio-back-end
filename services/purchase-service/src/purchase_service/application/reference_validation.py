@@ -12,6 +12,11 @@ Regla P-03 (uniforme en borrador y confirmación):
   moneda).
 
 Si hay errores de ambas clases se informa primero el `422`.
+
+Spec 020: solo contado (una condición de pago cuyo tipo no es `CASH` → `409
+PAYMENT_CONDITION_NOT_AVAILABLE`); medio de pago declarado y activo de Payment Reference
+(`PAYMENT_METHOD_NOT_FOUND` `422` / `PAYMENT_METHOD_INACTIVE` `409`); presentación obligatoria
+(`PRESENTATION_REQUIRED`) y costo por unidad base mayor que cero (`BASE_UNIT_COST_NOT_POSITIVE`).
 """
 
 from __future__ import annotations
@@ -38,9 +43,10 @@ from purchase_service.application.ports import (
     CompanyPresentationInfo,
     CompanyProductInfo,
     Directories,
+    PaymentMethodInfo,
     SupplierProductInfo,
 )
-from purchase_service.domain.conversion import DEFAULT_FACTOR, base_quantity
+from purchase_service.domain.conversion import base_quantity, check_base_unit_cost
 from purchase_service.domain.money import DomainRuleError
 from purchase_service.domain.status import CASH, PAYMENT_CODES
 
@@ -55,6 +61,7 @@ class HeaderInput:
     company_supplier_id: UUID
     operation_date: date
     supplier_payment_condition_id: UUID | None
+    payment_method_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +72,9 @@ class HeaderSnapshot:
     payment_condition_code: str
     payment_terms_days: int
     due_date: date
+    payment_method_id: UUID | None = None
+    payment_method_code: str | None = None
+    payment_method_name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +87,8 @@ class LineInput:
     quantity: Decimal
     field_prefix: str = ""
     line_number: int | None = None
+    net_cost: Decimal | None = None
+    """`subtotal − descuento` de la línea: con él se comprueba el costo por unidad base (spec 020)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,6 +176,9 @@ class ReferenceResolver:
         if header.supplier_payment_condition_id is not None:
             condition_id = header.supplier_payment_condition_id
             tasks["condition"] = lambda: commercial.get_payment_condition(condition_id)
+        if header.payment_method_id is not None:
+            method_id = header.payment_method_id
+            tasks["method"] = lambda: self._dirs.payment_reference.get_payment_method(method_id)
         results = self._parallel(lambda name: tasks[name](), tasks)
 
         branch = results["branch"]
@@ -261,9 +276,16 @@ class ReferenceResolver:
                     "PAYMENT_CONDITION_TYPE_INACTIVE",
                     "El tipo de la condición de pago no está activo o no es CASH, CREDIT ni FINANCING.",
                 )
-            else:
-                payment_code = condition_type.code
-                terms_days = 0 if payment_code == CASH else condition.payment_terms_days
+            elif condition_type.code != CASH:
+                # Spec 020 (FR-020-08, RC-MVP-3): solo contado durante el MVP.
+                findings.unfit(
+                    "supplier_payment_condition_id",
+                    "PAYMENT_CONDITION_NOT_AVAILABLE",
+                    f"Las compras con condición {condition_type.code} no están disponibles en el MVP: "
+                    "solo se admiten compras de contado (CASH).",
+                )
+
+        method = self._payment_method(header.payment_method_id, results.get("method"), findings)
 
         findings.raise_if_any()
         due_date = header.operation_date + timedelta(days=terms_days)
@@ -273,10 +295,29 @@ class ReferenceResolver:
             supplier_identification=supplier_identification,
             payment_condition_code=payment_code,
             payment_terms_days=terms_days,
+            payment_method_id=header.payment_method_id,
+            payment_method_code=method.code if method else None,
+            payment_method_name=method.name if method else None,
             due_date=due_date,
         )
 
     # ----------------------------------------------------------------- líneas
+
+    def _payment_method(
+        self, method_id: UUID | None, method: PaymentMethodInfo | None, findings: Findings
+    ) -> PaymentMethodInfo | None:
+        """Medio de pago declarado (spec 020, FR-020-09): uno solo, existente y `ACTIVE`."""
+        field_name = "payment_method_id"
+        if method_id is None:
+            findings.bad(field_name, "PAYMENT_METHOD_REQUIRED", "La compra debe indicar un medio de pago.")
+            return None
+        if method is None:
+            findings.bad(field_name, "PAYMENT_METHOD_NOT_FOUND", "El medio de pago no existe en Payment Reference.")
+            return None
+        if method.status != ACTIVE:
+            findings.unfit(field_name, "PAYMENT_METHOD_INACTIVE", f"El medio de pago {method.code} no está activo.")
+            return None
+        return method
 
     def resolve_lines(
         self, company_id: UUID, supplier_id: UUID, lines: Sequence[LineInput]
@@ -326,6 +367,15 @@ class ReferenceResolver:
                 line_ok = False
 
             presentation = None
+            if line.company_product_presentation_id is None:
+                # Spec 020 (FR-020-11): toda línea indica su presentación (borradores anteriores).
+                findings.bad(
+                    f"{prefix}company_product_presentation_id",
+                    "PRESENTATION_REQUIRED",
+                    "Toda línea de compra indica su presentación, también la de factor 1.",
+                    number,
+                )
+                continue
             if line.company_product_presentation_id is not None:
                 presentation = presentations.get(line.company_product_presentation_id)
                 field_name = f"{prefix}company_product_presentation_id"
@@ -400,24 +450,24 @@ class ReferenceResolver:
                 )
                 continue
 
-            factor = DEFAULT_FACTOR
-            presentation_code = presentation_name = None
-            if presentation is not None:
-                global_presentation = global_presentations.get(presentation.global_product_presentation_id)
-                if global_presentation is None or global_presentation.base_quantity <= 0:
-                    findings.bad(
-                        f"{prefix}company_product_presentation_id",
-                        "PRESENTATION_NOT_FOUND",
-                        "La presentación global no existe en Product Catalog.",
-                        number,
-                    )
-                    continue
-                factor = global_presentation.base_quantity
-                presentation_code = global_presentation.code[:80]
-                presentation_name = global_presentation.name[:160]
+            global_presentation = global_presentations.get(presentation.global_product_presentation_id)
+            if global_presentation is None or global_presentation.base_quantity <= 0:
+                findings.bad(
+                    f"{prefix}company_product_presentation_id",
+                    "PRESENTATION_NOT_FOUND",
+                    "La presentación global no existe en Product Catalog.",
+                    number,
+                )
+                continue
+            factor = global_presentation.base_quantity
+            presentation_code = global_presentation.code[:80]
+            presentation_name = global_presentation.name[:160]
 
             try:
-                base_quantity(line.quantity, factor, field=f"{prefix}quantity")
+                base_qty = base_quantity(line.quantity, factor, field=f"{prefix}quantity")
+                if line.net_cost is not None:
+                    # Spec 020 (FR-020-12, RC-MVP-5): nunca una capa FIFO con costo 0.
+                    check_base_unit_cost(line.net_cost, Decimal("0"), base_qty, field=f"{prefix}unit_cost")
             except DomainRuleError as error:
                 findings.bad(error.field or f"{prefix}quantity", error.code, error.message, number)
                 continue

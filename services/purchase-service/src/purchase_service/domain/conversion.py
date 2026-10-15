@@ -4,6 +4,8 @@
   (Inventory exige cantidades en unidad base con ≤ 4 decimales).
 - `inventory_unit_cost = ROUND_HALF_UP((subtotal − descuento) / base_quantity, 4)`,
   **sin impuestos** (se consideran recuperables).
+- Spec 020 (FR-020-12, RC-MVP-5): ese costo redondeado debe ser mayor que cero; un costo positivo
+  que al convertirse a unidad base queda en `0` se rechaza (nunca una capa FIFO con costo `0`).
 """
 
 from __future__ import annotations
@@ -47,3 +49,15 @@ def base_quantity(quantity: Decimal, factor: Decimal, *, field: str = "quantity"
 def inventory_unit_cost(subtotal: Decimal, discount_amount: Decimal, base_qty: Decimal) -> Decimal:
     """Costo por unidad base que Purchase informa a Inventory (DS-04)."""
     return ((subtotal - discount_amount) / base_qty).quantize(QUANTITY_QUANTUM, rounding=ROUND_HALF_UP)
+
+
+def check_base_unit_cost(subtotal: Decimal, discount_amount: Decimal, base_qty: Decimal, *, field: str = "unit_cost") -> Decimal:
+    """Costo por unidad base (el que recibirá Inventory) estrictamente mayor que cero."""
+    cost = inventory_unit_cost(subtotal, discount_amount, base_qty)
+    if cost <= 0:
+        raise DomainRuleError(
+            "BASE_UNIT_COST_NOT_POSITIVE",
+            "El costo por unidad base, redondeado a 4 decimales, debe ser mayor que cero.",
+            field=field,
+        )
+    return cost

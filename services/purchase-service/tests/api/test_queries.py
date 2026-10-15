@@ -16,7 +16,12 @@ def test_list_with_filters_and_stable_order(buyer, as_user, world, make_sequence
     admin = as_user("admin.test")
     other_branch = admin.post(
         f"{base(world)}/purchases",
-        json={"branch_id": str(world.branch_b), "company_supplier_id": str(world.supplier), "operation_date": date.today().isoformat()},
+        json={
+            "branch_id": str(world.branch_b),
+            "company_supplier_id": str(world.supplier),
+            "operation_date": date.today().isoformat(),
+            "payment_method_id": str(world.payment_method),
+        },
     ).json()
 
     page = buyer.get(f"{base(world)}/purchases").json()

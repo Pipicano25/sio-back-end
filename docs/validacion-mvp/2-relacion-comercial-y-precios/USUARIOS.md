@@ -8,6 +8,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | [01](01-consultar-los-datos-de-referencia.md) | `C-00.5` | `GET /units-of-measure` | `perm:product-catalog:units-of-measure:read` | `admin.test` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [01](01-consultar-los-datos-de-referencia.md) | `C-00.6` | `GET /global-payment-condition-types` | `perm:payment-reference:global_payment_condition_types:read` | `admin.test` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| [01](01-consultar-los-datos-de-referencia.md) | `C-00.7` | `GET /global-payment-methods` | `perm:payment-reference:global_payment_methods:read` | `admin.test` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | [02](02-seleccionar-el-proveedor-y-su-condicion-de-pago.md) | `C-08.proveedor` | `POST /companies/<EMPRESA_A>/company-suppliers` | `perm:commercial-relationship:company_suppliers:create` | `admin.test` | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | [02](02-seleccionar-el-proveedor-y-su-condicion-de-pago.md) | `C-08.condicion` | `POST /companies/<EMPRESA_A>/supplier-payment-conditions` | `perm:commercial-relationship:supplier_payment_conditions:create` | `admin.test` | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | [03](03-incorporar-el-cliente.md) | `C-09.cliente` | `POST /companies/<EMPRESA_A>/company-customers` | `perm:commercial-relationship:company_customers:create` | `admin.test` | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |

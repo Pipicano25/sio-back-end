@@ -13,6 +13,7 @@ Ejecuta: `compras.test`.
 ```json
 {
   "company_product_id": "d14d0000-0000-4000-8000-000000000002",
+  "company_product_presentation_id": "0e2be67b-ba11-51b8-9dd7-04739ec7d8d4",
   "quantity": "1",
   "unit_cost": "9800",
   "version": 1

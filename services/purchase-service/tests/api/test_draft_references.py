@@ -129,7 +129,7 @@ def test_payment_condition_rules(buyer, world, fakes) -> None:
     fakes.cr.conditions[world.condition] = replace(condition, currency_code="USD")
     assert_error(create(buyer, world, supplier_payment_condition_id=world.condition), 409, "PAYMENT_CONDITION_CURRENCY_MISMATCH")
     fakes.cr.conditions[world.condition] = condition
-    fakes.pr.types[world.credit_type] = replace(fakes.pr.types[world.credit_type], status="INACTIVE")
+    fakes.pr.types[world.cash_type] = replace(fakes.pr.types[world.cash_type], status="INACTIVE")
     assert_error(create(buyer, world, supplier_payment_condition_id=world.condition), 409, "PAYMENT_CONDITION_TYPE_INACTIVE")
     fakes.pr.types.clear()  # D-08: tipo inexistente en Payment Reference → `422`
     assert_error(create(buyer, world, supplier_payment_condition_id=world.condition), 422, "PAYMENT_CONDITION_TYPE_NOT_FOUND")

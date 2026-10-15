@@ -27,7 +27,12 @@ def responses_for(client, world, fakes, make_draft, confirm, cancel, username):
     sale = created.json()
     out = {"create": created}
     out["update"] = client.put(
-        f"{url}/{sale['id']}", json={"branch_id": str(world.branch), "company_customer_id": str(world.customer), "version": 1}
+        f"{url}/{sale['id']}", json={
+            "branch_id": str(world.branch),
+            "company_customer_id": str(world.customer),
+            "payment_method_id": str(world.payment_method),
+            "version": 1,
+        }
     )
     added = client.post(f"{url}/{sale['id']}/details", json={**line(world.product_2), "version": 2})
     out["add_line"] = added

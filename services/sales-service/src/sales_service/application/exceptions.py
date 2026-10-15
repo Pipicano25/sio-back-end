@@ -17,6 +17,7 @@ COMMERCIAL_RELATIONSHIP = "commercial-relationship"
 PRODUCT_CATALOG = "product-catalog"
 PARTY_IDENTITY = "party-identity"
 INVENTORY = "inventory"
+PAYMENT_REFERENCE = "payment-reference"
 
 
 def field_error(field: str, code: str, message: str, *, line_number: int | None = None) -> dict[str, Any]:

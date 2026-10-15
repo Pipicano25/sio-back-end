@@ -1,4 +1,4 @@
-# Paso 9. Anular cuando sus unidades ya se vendieron
+# Paso 14. Anular cuando sus unidades ya se vendieron
 
 Ejercicio 5: Anulación.
 
@@ -8,7 +8,7 @@ Ejercicio 5: Anulación.
 
 Ejecuta: `compras.test`.
 
-Cabeceras: `Idempotency-Key: anular-0005`.
+Cabeceras: `Idempotency-Key: anular-0009`.
 
 Situación simulada antes de la llamada: `consume:ENTRADA_VENDIDA` (en la prueba automática, sobre el doble de Inventory).
 
@@ -16,7 +16,7 @@ Situación simulada antes de la llamada: `consume:ENTRADA_VENDIDA` (en la prueba
 
 ```json
 {
-  "version": 3,
+  "version": "<VERSION_VENDIDA_RECIBIDA>",
   "reason": "Error de precio"
 }
 ```

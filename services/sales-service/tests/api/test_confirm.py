@@ -18,7 +18,7 @@ def test_confirmation_applies_output_copies_fifo_cost_and_assigns_number(
     draft = make_draft(
         line(world.product, "2", company_product_presentation_id=world.presentation, price_list_id=world.price_list,
              tax_amount="5700"),
-        line(world.product_2, "3", discount_amount="300"),
+        line(world.product_2, "3"),
     )
     response = confirm(draft)
     assert response.status_code == 200, response.text
@@ -55,8 +55,8 @@ def test_confirmation_applies_output_copies_fifo_cost_and_assigns_number(
     assert (box["unit_cost_snapshot"], box["cost_total"], box["cost_known"]) == ("1000.0000", "24000.00", True)
     assert (box["gross_margin_amount"], box["gross_margin_percentage"]) == ("8000.00", "25.0000")
     assert (oil["unit_cost_snapshot"], oil["cost_total"]) == ("6000.0000", "18000.00")
-    # neto = 27000 − 300 = 26700; margen = 8700; 8700 / 26700 × 100 = 32.5843 (impuestos excluidos)
-    assert (oil["gross_margin_amount"], oil["gross_margin_percentage"]) == ("8700.00", "32.5843")
+    # spec 020, sin descuento: neto = 27000; margen = 9000; 9000 / 27000 × 100 = 33.3333 (impuestos excluidos)
+    assert (oil["gross_margin_amount"], oil["gross_margin_percentage"]) == ("9000.00", "33.3333")
     assert seen["has_unknown_cost"] is False
 
 

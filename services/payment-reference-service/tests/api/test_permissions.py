@@ -27,7 +27,6 @@ ROUTES = [
     ("POST", METHODS, PM, "create"),
     ("GET", f"{METHODS}/{ANY_ID}", PM, "read"),
     ("PUT", f"{METHODS}/{ANY_ID}", PM, "update"),
-    ("DELETE", f"{METHODS}/{ANY_ID}", PM, "delete"),
 ]
 IDS = [f"{method} {path}" for method, path, _, _ in ROUTES]
 

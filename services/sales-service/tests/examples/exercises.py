@@ -38,6 +38,8 @@ GLOBAL_ACEITE = "d15d0000-0000-4000-8000-000000000012"
 CAJA = "d15e0000-0000-4000-8000-000000000001"
 GLOBAL_CAJA = "d15e0000-0000-4000-8000-000000000011"
 UNIT = "d15e0000-0000-4000-8000-000000000031"
+PAYMENT_METHOD = "d15c0000-0000-4000-8000-000000000021"
+INACTIVE_PAYMENT_METHOD = "d15c0000-0000-4000-8000-000000000022"
 LISTA = "d15f0000-0000-4000-8000-000000000001"
 LISTA_2 = "d15f0000-0000-4000-8000-000000000002"
 ITEM_CAJA = "d15f0000-0000-4000-8000-000000000011"
@@ -64,6 +66,7 @@ COMMON_DATA = [
     ("Sucursal principal", BRANCH, "Almacén ficticio en Bogotá; todos los usuarios de prueba están asignados a ella."),
     ("Cliente persona", CUSTOMER, "Ana Ficticia Pérez (`ACTIVE`), identificada como CC 1020304050."),
     ("Cliente organización", CUSTOMER_ORG, "Tiendas Ficticias S.A.S. (`ACTIVE`), identificada como NIT 900123456."),
+    ("Medio de pago", PAYMENT_METHOD, "Efectivo (`CASH`, `ACTIVE`) en Payment Reference: referencia declarativa, no un pago (spec 020)."),
     ("Arroz 500 g", ARROZ, "Vendible, con control de inventario; 1000 unidades a costo 1000."),
     ("Unidad de arroz", UNIDAD_ARROZ, "Presentación de factor 1 del arroz (toda venta indica su presentación)."),
     ("Caja x12", CAJA, "Presentación de venta del arroz: 12 unidades base."),
@@ -83,7 +86,7 @@ PROFITABILITY_NOTE = (
 
 
 def draft(*lines: dict, **extra) -> dict:
-    body = {"branch_id": BRANCH, "company_customer_id": CUSTOMER, "lines": list(lines)}
+    body = {"branch_id": BRANCH, "company_customer_id": CUSTOMER, "payment_method_id": PAYMENT_METHOD, "lines": list(lines)}
     body.update(extra)
     return body
 
@@ -210,7 +213,7 @@ EXERCISES = [
                 "01-crear-el-borrador.md",
                 "Crear la venta en borrador",
                 draft(ln(ARROZ, "2", company_product_presentation_id=CAJA, price_list_id=LISTA, tax_amount="5700"),
-                      ln(ACEITE, "3", discount_amount="300")),
+                      ln(ACEITE, "3")),
                 "VENTA",
                 [
                     "La primera línea pide la lista mayorista: precio de la caja 16000 (`price_list_requested = true`).",

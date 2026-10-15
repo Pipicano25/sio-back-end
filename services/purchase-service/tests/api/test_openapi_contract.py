@@ -9,6 +9,7 @@ from purchase_service.api.errors import _STATUS_BY_CODE
 from tests.api.routes import ROUTES
 
 SPEC = Path(__file__).resolve().parents[4] / "specs" / "014-purchase-core" / "contracts"
+SPEC_020 = Path(__file__).resolve().parents[4] / "specs" / "020-mvp-commercial-rules" / "contracts" / "purchase.md"
 DOCUMENTED_EXTRA: set[str] = set()  # D-01 incorporado al catálogo (2026-10-07)
 
 
@@ -40,7 +41,7 @@ def test_every_route_documents_auth_and_problem_responses(test_client) -> None:
 
 
 def test_error_codes_match_the_catalog() -> None:
-    catalog = (SPEC / "errors.md").read_text(encoding="utf-8")
+    catalog = (SPEC / "errors.md").read_text(encoding="utf-8") + SPEC_020.read_text(encoding="utf-8")
     documented = dict(re.findall(r"^\| `([A-Z_]+)` \| (\d{3}) \|", catalog, re.M))
     assert documented, "catálogo vacío"
     for code, status in documented.items():
@@ -55,3 +56,5 @@ def test_contract_route_table_lists_the_same_routes() -> None:
     paths = {(method, path.split("?")[0].split(" ·")[0]) for method, path in rows}
     assert ("POST", "/companies/{c}/purchases/{id}/confirmation") in paths
     assert ("DELETE", "/companies/{c}/purchases/{id}/details/{detail_id}") in paths
+    additions = re.findall(r"^\| \d+ \| `(GET|POST|PUT|DELETE) ([^`]+)`", SPEC_020.read_text(encoding="utf-8"), re.M)
+    assert additions == [("POST", "/companies/{c}/purchases/{id}/receipt")]  # spec 020

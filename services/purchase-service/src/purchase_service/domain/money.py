@@ -1,5 +1,9 @@
 """Cálculos monetarios de las líneas y de la compra (FR-006, FR-007; research.md R-11).
 
+Spec 020 (FR-020-12, RC-MVP-5): el costo unitario y el costo neto de la línea
+(`subtotal − descuento`) son estrictamente mayores que cero; el costo por unidad base se
+comprueba al conocer el factor (`domain/conversion.check_base_unit_cost`).
+
 `Decimal` con `ROUND_HALF_UP`. Las cantidades y costos unitarios caben en
 `NUMERIC(18,4)` (< 10^14) y los montos en `NUMERIC(18,2)` (< 10^16).
 """
@@ -57,8 +61,10 @@ def check_quantity(value: Decimal, *, field: str = "quantity") -> Decimal:
 
 
 def check_unit_cost(value: Decimal, *, field: str = "unit_cost") -> Decimal:
-    if value < 0:
-        raise DomainRuleError("AMOUNT_OUT_OF_RANGE", "El costo unitario no puede ser negativo.", field=field)
+    if value <= 0:
+        raise DomainRuleError(
+            "UNIT_COST_NOT_POSITIVE", "El costo unitario de adquisición debe ser mayor que cero.", field=field
+        )
     if decimal_places(value) > 4:
         raise DomainRuleError("TOO_MANY_DECIMALS", "El costo unitario admite a lo sumo 4 decimales.", field=field)
     if value >= MAX_QUANTITY:
@@ -104,6 +110,12 @@ def line_amounts(
         raise DomainRuleError(
             "DISCOUNT_EXCEEDS_SUBTOTAL",
             "El descuento no puede ser mayor que el subtotal de la línea.",
+            field=f"{prefix}discount_amount",
+        )
+    if discount_amount == subtotal:
+        raise DomainRuleError(
+            "NET_COST_NOT_POSITIVE",
+            "El costo neto de la línea (subtotal menos descuento) debe ser mayor que cero.",
             field=f"{prefix}discount_amount",
         )
 

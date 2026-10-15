@@ -14,6 +14,7 @@ Ejecuta: `ventas.test`.
 {
   "branch_id": "d15b0000-0000-4000-8000-000000000001",
   "company_customer_id": "d15c0000-0000-4000-8000-000000000001",
+  "payment_method_id": "d15c0000-0000-4000-8000-000000000021",
   "lines": [
     {
       "company_product_id": "d15d0000-0000-4000-8000-000000000001",
@@ -25,8 +26,7 @@ Ejecuta: `ventas.test`.
     {
       "company_product_id": "d15d0000-0000-4000-8000-000000000002",
       "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000003",
-      "quantity": "3",
-      "discount_amount": "300"
+      "quantity": "3"
     }
   ]
 }
@@ -81,6 +81,9 @@ Estado `201`.
   "company_customer_id": "d15c0000-0000-4000-8000-000000000001",
   "customer_payment_condition_id": null,
   "payment_condition_code_snapshot": "CASH",
+  "payment_method_id": "d15c0000-0000-4000-8000-000000000021",
+  "payment_method_code_snapshot": "CASH",
+  "payment_method_name_snapshot": "Efectivo",
   "payment_terms_days_snapshot": 0,
   "due_date": "2026-11-05",
   "sale_sequence_id": null,
@@ -93,9 +96,9 @@ Estado `201`.
   "currency_code": "COP",
   "observations": null,
   "subtotal": "59000.00",
-  "discount_total": "300.00",
+  "discount_total": "0.00",
   "tax_total": "5700.00",
-  "total": "64400.00",
+  "total": "64700.00",
   "inventory_operation_id": null,
   "created_by_user_id": "d15f1000-0000-4000-8000-000000000004",
   "cancelled_by_user_id": null,
@@ -155,10 +158,10 @@ Estado `201`.
       "quantity": "3.0000",
       "base_quantity": "3.0000",
       "unit_price": "9000.0000",
-      "discount_amount": "300.00",
+      "discount_amount": "0.00",
       "tax_amount": "0.00",
       "subtotal": "27000.00",
-      "total": "26700.00",
+      "total": "27000.00",
       "created_at": "<asignado por el servicio>",
       "updated_at": "<asignado por el servicio>",
       "created_by": "ventas.test",

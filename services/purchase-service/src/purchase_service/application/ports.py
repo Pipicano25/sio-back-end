@@ -196,8 +196,20 @@ class PaymentConditionTypeInfo:
     status: str
 
 
+@dataclass(frozen=True, slots=True)
+class PaymentMethodInfo:
+    """Método global de pago (spec 020): referencia declarativa, no un pago registrado."""
+
+    id: UUID
+    code: str
+    name: str
+    status: str
+
+
 class PaymentReferenceDirectory(Protocol):
     def get_condition_type(self, type_id: UUID) -> PaymentConditionTypeInfo | None: ...
+
+    def get_payment_method(self, method_id: UUID) -> PaymentMethodInfo | None: ...
 
 
 # Inventory -----------------------------------------------------------------

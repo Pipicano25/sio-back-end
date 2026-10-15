@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import jwt
 
@@ -44,6 +44,7 @@ from purchase_service.application.ports import (
     OrganizationInfo,
     PaymentConditionInfo,
     PaymentConditionTypeInfo,
+    PaymentMethodInfo,
     SupplierInfo,
     SupplierProductInfo,
     UnitInfo,
@@ -79,9 +80,26 @@ def subject_of(authorization: str | None) -> str | None:
     return claims.get("sub")
 
 
+UNIT_NAMESPACE = uuid5(NAMESPACE_URL, "sio:purchase-tests:unit-presentation")
+
+
+def unit_presentation_of(product: UUID | str) -> UUID:
+    """Presentación de empresa de factor 1 de un producto ficticio (spec 020: toda línea con presentación)."""
+    return uuid5(UNIT_NAMESPACE, f"company:{product}")
+
+
+def global_unit_presentation_of(product: UUID | str) -> UUID:
+    return uuid5(UNIT_NAMESPACE, f"global:{product}")
+
+
 @dataclass
 class World:
-    """Datos ficticios coherentes (empresa COP, sucursales A y B, proveedor, productos)."""
+    """Datos ficticios coherentes (empresa COP, sucursales A y B, proveedor, productos).
+
+    Spec 020: `condition` es de contado (la única admitida); `credit_condition` y
+    `financing_condition` existen para comprobar su rechazo. Cada producto tiene su presentación
+    de factor 1 (`unit_presentation_of`) y hay un medio de pago activo y otro inactivo.
+    """
 
     company: UUID = field(default_factory=uuid4)
     other_company: UUID = field(default_factory=uuid4)
@@ -90,7 +108,13 @@ class World:
     supplier: UUID = field(default_factory=uuid4)
     organization: UUID = field(default_factory=uuid4)
     condition: UUID = field(default_factory=uuid4)
+    credit_condition: UUID = field(default_factory=uuid4)
+    financing_condition: UUID = field(default_factory=uuid4)
+    cash_type: UUID = field(default_factory=uuid4)
     credit_type: UUID = field(default_factory=uuid4)
+    financing_type: UUID = field(default_factory=uuid4)
+    payment_method: UUID = field(default_factory=uuid4)
+    inactive_payment_method: UUID = field(default_factory=uuid4)
     product: UUID = field(default_factory=uuid4)
     product_2: UUID = field(default_factory=uuid4)
     product_no_inventory: UUID = field(default_factory=uuid4)
@@ -190,8 +214,14 @@ class FakeCommercial:
         self.suppliers = {world.supplier: SupplierInfo(world.supplier, world.company, world.organization, "Distribuidora Ficticia S.A.S.", "ACTIVE")}
         self.conditions = {
             world.condition: PaymentConditionInfo(
-                world.condition, world.company, world.supplier, world.credit_type, "COP", 30, None, None, "ACTIVE"
-            )
+                world.condition, world.company, world.supplier, world.cash_type, "COP", 0, None, None, "ACTIVE"
+            ),
+            world.credit_condition: PaymentConditionInfo(
+                world.credit_condition, world.company, world.supplier, world.credit_type, "COP", 30, None, None, "ACTIVE"
+            ),
+            world.financing_condition: PaymentConditionInfo(
+                world.financing_condition, world.company, world.supplier, world.financing_type, "COP", 60, None, None, "ACTIVE"
+            ),
         }
         self.products = {
             world.product: CompanyProductInfo(
@@ -209,6 +239,11 @@ class FakeCommercial:
                 world.presentation, world.company, world.product, world.global_presentation, True, "ACTIVE"
             )
         }
+        for product in (world.product, world.product_2, world.product_no_inventory):
+            unit = unit_presentation_of(product)
+            self.presentations[unit] = CompanyPresentationInfo(
+                unit, world.company, product, global_unit_presentation_of(product), True, "ACTIVE"
+            )
         self.supplier_products = {
             world.supplier_product: SupplierProductInfo(
                 world.supplier_product, world.company, world.supplier, world.product, None, Decimal("48.50"), "ACTIVE"
@@ -242,6 +277,9 @@ class FakeCatalog:
         self.presentations = {
             world.global_presentation: GlobalPresentationInfo(world.global_presentation, "CAJA12", "Caja x12", Decimal("12"))
         }
+        for product in (world.product, world.product_2, world.product_no_inventory):
+            unit = global_unit_presentation_of(product)
+            self.presentations[unit] = GlobalPresentationInfo(unit, "UND", "Unidad", Decimal("1"))
         self.products = {
             world.global_product: GlobalProductInfo(world.global_product, world.unit),
             world.global_product_2: GlobalProductInfo(world.global_product_2, world.unit),
@@ -271,14 +309,30 @@ class FakeParty:
         return self.organizations.get(organization_id)
 
 
+def build_methods(world: World) -> dict[UUID, PaymentMethodInfo]:
+    return {
+        world.payment_method: PaymentMethodInfo(world.payment_method, "CASH", "Efectivo", "ACTIVE"),
+        world.inactive_payment_method: PaymentMethodInfo(world.inactive_payment_method, "CHECK", "Cheque", "INACTIVE"),
+    }
+
+
 class FakePaymentReference:
     def __init__(self, world: World) -> None:
         self.availability = Unavailable(PAYMENT_REFERENCE)
-        self.types = {world.credit_type: PaymentConditionTypeInfo(world.credit_type, "CREDIT", "ACTIVE")}
+        self.types = {
+            world.cash_type: PaymentConditionTypeInfo(world.cash_type, "CASH", "ACTIVE"),
+            world.credit_type: PaymentConditionTypeInfo(world.credit_type, "CREDIT", "ACTIVE"),
+            world.financing_type: PaymentConditionTypeInfo(world.financing_type, "FINANCING", "ACTIVE"),
+        }
+        self.methods = build_methods(world)
 
     def get_condition_type(self, type_id: UUID):
         self.availability.hit("condition_type", type_id)
         return self.types.get(type_id)
+
+    def get_payment_method(self, method_id: UUID):
+        self.availability.hit("payment_method", method_id)
+        return self.methods.get(method_id)
 
 
 def _canonical(payload: dict[str, Any]) -> Any:

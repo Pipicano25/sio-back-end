@@ -1,4 +1,4 @@
-# Paso 8. Registrar la recepción
+# Paso 10. Registrar la recepción
 
 Ejercicio 6: Hitos logísticos.
 

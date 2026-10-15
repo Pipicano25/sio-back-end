@@ -175,15 +175,3 @@ class GlobalPaymentMethodService:
         )
 
         return self._repository.update(updated)
-
-    def delete(self, payment_method_id: UUID) -> None:
-        """Elimina físicamente un método global de pago.
-
-        Args:
-            payment_method_id: Identificador del registro.
-
-        Raises:
-            GlobalPaymentMethodNotFoundError: Si el registro no existe.
-        """
-        self.get_by_id(payment_method_id)
-        self._repository.delete(payment_method_id)

@@ -18,13 +18,14 @@ def record(client, world, purchase, event_type: str, hours_ago: float, source: s
     )
 
 
-def test_full_timeline_with_intervals(buyer, world, fakes, make_sequence, make_draft, confirm) -> None:
+def test_full_timeline_with_intervals(buyer, world, fakes, make_sequence, make_draft, confirm, receive) -> None:
     make_sequence()
     draft = make_draft()
     assert record(buyer, world, draft, "ORDERED", 72).status_code == 201
     assert record(buyer, world, draft, "SUPPLIER_DISPATCHED", 48, source="SUPPLIER").status_code == 201
     confirmed = confirm(draft).json()
     assert record(buyer, world, confirmed, "ARRIVED", 24).status_code == 201
+    confirmed = receive(confirmed).json()  # spec 020: el hito RECEIVED exige la recepción física
     received = record(buyer, world, confirmed, "RECEIVED", 22, notes="Recibido conforme")
     assert received.status_code == 201
     event = received.json()
@@ -113,3 +114,13 @@ def test_events_are_audited(buyer, world, make_draft, test_engine) -> None:
     record(buyer, world, draft, "ORDERED", 1)
     actions = [row["payload"]["action"] for row in fetch(test_engine, "SELECT payload FROM audit_outbox")]
     assert actions.count("RECORD_PURCHASE_LIFECYCLE_EVENT") == 1
+
+
+def test_receipt_milestones_require_the_physical_receipt(buyer, world, make_sequence, make_draft, confirm) -> None:
+    """Spec 020 (FR-020-07): RECEIVED y AVAILABLE_FOR_SALE solo en compras recibidas."""
+    make_sequence()
+    confirmed = confirm(make_draft()).json()
+    for event_type in ("RECEIVED", "AVAILABLE_FOR_SALE"):
+        response = record(buyer, world, confirmed, event_type, 1)
+        assert response.status_code == 409 and response.json()["code"] == "PURCHASE.PURCHASE_NOT_RECEIVED"
+    assert record(buyer, world, confirmed, "ARRIVED", 1).status_code == 201

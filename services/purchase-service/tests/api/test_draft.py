@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime
 
 from tests.conftest import base, line, purchase_body, user_sub
 
@@ -29,6 +29,9 @@ def test_create_draft_with_lines(buyer, world, fakes) -> None:
     assert purchase["due_date"] == purchase["operation_date"]
     assert purchase["supplier_name_snapshot"] == "Distribuidora Ficticia S.A.S."
     assert purchase["supplier_identification_snapshot"] == "NIT 900123456"
+    assert purchase["payment_method_id"] == str(world.payment_method)
+    assert (purchase["payment_method_code_snapshot"], purchase["payment_method_name_snapshot"]) == ("CASH", "Efectivo")
+    assert purchase["receipt_status"] is None and purchase["received_at"] is None
     assert [item["line_number"] for item in purchase["lines"]] == [1, 2, 3]
 
     first, second, third = purchase["lines"]
@@ -38,7 +41,7 @@ def test_create_draft_with_lines(buyer, world, fakes) -> None:
     assert first["presentation_code_snapshot"] == "CAJA12" and first["unit_code_snapshot"] == "UND"
     assert first["supplier_lead_time_snapshot_hours"] == "48.50"
     assert second["subtotal"] == "15001.50" and second["total"] == "15000.00"
-    assert second["presentation_code_snapshot"] is None and second["base_quantity_factor_snapshot"] == "1.00000000"
+    assert second["presentation_code_snapshot"] == "UND" and second["base_quantity_factor_snapshot"] == "1.00000000"
     assert third["base_quantity"] == "1.5000"
     assert purchase["subtotal"] == "258001.50"
     assert purchase["discount_total"] == "1.50"
@@ -52,12 +55,13 @@ def test_draft_without_lines_is_allowed(buyer, world) -> None:
     assert response.json()["lines"] == [] and response.json()["total"] == "0.00"
 
 
-def test_credit_condition_sets_due_date(buyer, world) -> None:
+def test_cash_condition_keeps_due_date_on_operation_date(buyer, world) -> None:
+    """Spec 020 (FR-020-08): la única condición admitida es de contado."""
     response = buyer.post(f"{base(world)}/purchases", json=purchase_body(world, supplier_payment_condition_id=world.condition))
     purchase = response.json()
     assert response.status_code == 201, response.text
-    assert purchase["payment_condition_code_snapshot"] == "CREDIT" and purchase["payment_terms_days_snapshot"] == 30
-    assert date.fromisoformat(purchase["due_date"]) == date.fromisoformat(purchase["operation_date"]) + timedelta(days=30)
+    assert purchase["payment_condition_code_snapshot"] == "CASH" and purchase["payment_terms_days_snapshot"] == 0
+    assert purchase["due_date"] == purchase["operation_date"]
 
 
 def test_operation_date_in_future_is_422(buyer, world, clock) -> None:
@@ -97,8 +101,10 @@ def test_amount_validation(buyer, world) -> None:
     cases = [
         (line(world.product, quantity="0"), "QUANTITY_NOT_POSITIVE"),
         (line(world.product, quantity="1.00001"), "TOO_MANY_DECIMALS"),
-        (line(world.product, unit_cost="-1"), "AMOUNT_OUT_OF_RANGE"),
+        (line(world.product, unit_cost="-1"), "UNIT_COST_NOT_POSITIVE"),
+        (line(world.product, unit_cost="0"), "UNIT_COST_NOT_POSITIVE"),
         (line(world.product, unit_cost="10", discount_amount="20.01", quantity="2"), "DISCOUNT_EXCEEDS_SUBTOTAL"),
+        (line(world.product, unit_cost="10", discount_amount="20", quantity="2"), "NET_COST_NOT_POSITIVE"),
         (line(world.product, quantity="0.0001", company_product_presentation_id=world.presentation), None),
     ]
     for item, code in cases:

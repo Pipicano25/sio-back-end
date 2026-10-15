@@ -40,7 +40,9 @@ from sales_service.application.exceptions import (
     SaleWithoutLinesError,
     SequenceExhaustedError,
     SequenceNotConfiguredError,
+    ValidationFailedError,
     VersionConflictError,
+    field_error,
 )
 from sales_service.application.operation_engine import OperationEngine
 from sales_service.application.ports import CompanyInfo, InventoryGateway
@@ -198,6 +200,19 @@ class ConfirmationService:
         if not lines:
             raise SaleWithoutLinesError()
         self._repo.end_read()
+        # Spec 020 (FR-020-13, RC-MVP-6): un borrador anterior con descuento no se confirma.
+        discounted = [
+            field_error(
+                f"lines[{index}].discount_amount",
+                "DISCOUNT_NOT_ALLOWED",
+                "Las ventas del MVP no admiten descuentos: el precio es el de la lista de precios.",
+                line_number=line.line_number,
+            )
+            for index, line in enumerate(lines)
+            if line.discount_amount != 0
+        ]
+        if discounted:
+            raise ValidationFailedError(discounted)
 
         company = self._resolver.company(company_id)
         company = CompanyInfo(company.id, company.status, sale.currency_code)
@@ -208,7 +223,9 @@ class ConfirmationService:
             resolved = pool.submit(
                 copy_context().run,
                 resolve_together,
-                lambda: self._resolver.resolve_header(company, HeaderInput(sale.branch_id, sale.company_customer_id)),
+                lambda: self._resolver.resolve_header(
+                    company, HeaderInput(sale.branch_id, sale.company_customer_id, sale.payment_method_id)
+                ),
                 lambda: self._resolver.resolve_lines(
                     company_id,
                     sale.currency_code,

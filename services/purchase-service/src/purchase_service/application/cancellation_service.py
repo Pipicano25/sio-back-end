@@ -1,10 +1,12 @@
 """Anulación de compras (Historia 3; FR-026 a FR-030; research.md R-09).
 
-- `DRAFT` → `CANCELLED` en una transacción local, sin Inventory; la operación `CANCEL`
-  queda `SUCCEEDED` como traza y para la idempotencia.
-- `CONFIRMED` → operación `CANCEL` `PENDING` (T1); reverso en Inventory de **exactamente**
-  `inventory_operation_id` con la clave = `id` de la operación; T2 `CANCELLED` (conserva el
-  número) y `SUCCEEDED` con el `id` del reverso, o `FAILED` y la compra sigue `CONFIRMED`.
+- `DRAFT`, o `CONFIRMED` **pendiente de recepción** (spec 020, FR-020-06: no hay entrada en
+  Inventory) → `CANCELLED` en una transacción local, sin Inventory; conserva el número si lo
+  tiene; la operación `CANCEL` queda `SUCCEEDED` como traza y para la idempotencia.
+- `CONFIRMED` **recibida** → operación `CANCEL` `PENDING` (T1); reverso en Inventory de
+  **exactamente** `inventory_operation_id` con la clave = `id` de la operación; T2 `CANCELLED`
+  (conserva el número y la recepción) y `SUCCEEDED` con el `id` del reverso, o `FAILED` y la
+  compra sigue `CONFIRMED` (`INVENTORY_ALREADY_CONSUMED` si la mercancía ya se consumió).
 - La anulación no revalida proveedor ni productos (pueden estar inactivos).
 """
 
@@ -107,8 +109,9 @@ class CancellationService:
                 updated_by=actor.subject,
             )
 
-            if locked.status == DRAFT:
-                # Borrador: anulación local, sin Inventory; la operación queda como traza (R-09).
+            previous_status = locked.status
+            if locked.status == DRAFT or (locked.status == CONFIRMED and locked.inventory_operation_id is None):
+                # Borrador o confirmada sin recibir: anulación local, sin Inventory (R-09; spec 020).
                 operation.status = SUCCEEDED
                 operation.completed_at = now
                 locked.status = CANCELLED
@@ -128,8 +131,8 @@ class CancellationService:
                     application_user_id=operator.application_user_id,
                     correlation_id=operation.correlation_id,
                     reason=reason,
-                    previous_values={"status": DRAFT},
-                    new_values={"status": CANCELLED, "operation_id": operation.id},
+                    previous_values={"status": previous_status},
+                    new_values={"status": CANCELLED, "number": locked.number, "operation_id": operation.id},
                 )
                 self._repo.commit()
                 return PurchaseView(locked, self._repo.lines(locked.id), None)

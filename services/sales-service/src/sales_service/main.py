@@ -27,6 +27,7 @@ from sales_service.infrastructure.operational_context_directory import (
     HTTPOperationalContextDirectory,
 )
 from sales_service.infrastructure.party_identity_directory import HTTPPartyDirectory
+from sales_service.infrastructure.payment_reference_directory import HTTPPaymentReferenceDirectory
 from sales_service.infrastructure.product_catalog_directory import HTTPCatalogDirectory
 from sales_service.observability import configure_logging
 
@@ -72,6 +73,11 @@ def build_directories(settings: Settings, tokens: TokenProvider) -> DirectoriesF
             party=HTTPPartyDirectory(
                 base_url=settings.party_identity_base_url,
                 timeout_seconds=settings.party_identity_timeout_seconds,
+                tokens=tokens,
+            ),
+            payment_reference=HTTPPaymentReferenceDirectory(
+                base_url=settings.payment_reference_base_url,
+                timeout_seconds=settings.payment_reference_timeout_seconds,
                 tokens=tokens,
             ),
         )

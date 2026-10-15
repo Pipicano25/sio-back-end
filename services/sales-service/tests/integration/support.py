@@ -42,6 +42,12 @@ PRODUCT_CATALOG = _base("PRODUCT_CATALOG_INTEGRATION_BASE_URL", "http://localhos
 PARTY_IDENTITY = _base("PARTY_IDENTITY_INTEGRATION_BASE_URL", "http://localhost:8101/api/v1")
 GEOGRAPHY = _base("GEOGRAPHY_INTEGRATION_BASE_URL", "http://localhost:8102")
 AUDIT = _base("AUDIT_INTEGRATION_BASE_URL", "http://localhost:8110/api/v1")
+PAYMENT_REFERENCE = _base("PAYMENT_REFERENCE_INTEGRATION_BASE_URL", "http://localhost:8105")  # sin /api/v1
+
+UNIT_PRESENTATION: dict[str, str] = {}
+"""Producto de empresa → su presentación de factor 1 (spec 019: toda línea de venta indica su presentación)."""
+DEFAULT_PRICE_LIST: dict[str, str] = {}
+"""Empresa → su lista de precios predeterminada (spec 019: el precio es por presentación, no del producto)."""
 TOKEN_URL = _base("KEYCLOAK_TOKEN_URL", "http://localhost:8081/realms/sio/protocol/openid-connect/token")
 
 
@@ -108,6 +114,26 @@ def require_services() -> None:
 
 def docker(*args: str) -> str:
     return subprocess.run(["docker", *args], capture_output=True, text=True, check=True).stdout.strip()
+
+
+ISOLATION_LABEL = "sio.integration.isolated"
+CONTAINER_PREFIX = os.environ.get("SIO_INTEGRATION_CONTAINER_PREFIX", "sio-")
+
+
+def container(name: str) -> str:
+    """Contenedor aislado equivalente a `name` (`sio-purchase-db` → `<prefijo>purchase-db`).
+
+    Las pruebas que detienen o alteran contenedores solo actúan sobre los que llevan la etiqueta
+    `sio.integration.isolated=true`; un contenedor persistente nunca se detiene: la prueba se omite.
+    """
+    resolved = CONTAINER_PREFIX + name.removeprefix("sio-")
+    try:
+        label = docker("inspect", "-f", f'{{{{index .Config.Labels "{ISOLATION_LABEL}"}}}}', resolved)
+    except (OSError, subprocess.CalledProcessError):
+        pytest.skip(f"Contenedor aislado no disponible: {resolved}")
+    if label != "true":
+        pytest.skip(f"{resolved} no lleva {ISOLATION_LABEL}=true: no se detienen contenedores persistentes.")
+    return resolved
 
 
 def wait_until(predicate, timeout: float, message: str) -> None:
@@ -198,6 +224,7 @@ class Product:
     global_product: str
     unit: str
     box_presentation: str | None = None
+    unit_presentation: str | None = None
 
 
 def _adopt(client, company: str, label: str, *, sale_price: str, inventory_control: bool, with_box: bool) -> Product:
@@ -216,9 +243,10 @@ def _adopt(client, company: str, label: str, *, sale_price: str, inventory_contr
     assert client.post(
         f"{PRODUCT_CATALOG}/products/{product_id}/categories", json={"global_category_id": category.json()["id"]}
     ).status_code == 201
-    assert client.post(f"{PRODUCT_CATALOG}/products/{product_id}/presentations", json={
+    unit_global = client.post(f"{PRODUCT_CATALOG}/products/{product_id}/presentations", json={
         "code": f"UND-{label}-{RUN_ID}", "name": "Unidad (dato ficticio)", "is_base": True,
-    }).status_code == 201
+    })
+    assert unit_global.status_code == 201, unit_global.text
     box_global = None
     if with_box:
         box = client.post(f"{PRODUCT_CATALOG}/products/{product_id}/presentations", json={
@@ -232,11 +260,23 @@ def _adopt(client, company: str, label: str, *, sale_price: str, inventory_contr
         "internal_code": f"SAL-{label}-{RUN_ID}",
         "display_name": f"Producto ficticio VENTAS {label} {RUN_ID}",
         "currency_code": "COP",
-        "sale_price": sale_price,
         "inventory_control_enabled": inventory_control,
     })
     assert adopted.status_code == 201, adopted.text
     company_product = adopted.json()["id"]
+    unit_presentation = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company}/company-product-presentations", json={
+        "company_product_id": company_product, "global_product_presentation_id": unit_global.json()["id"],
+        "sku": f"SKU-UND-{label}-{RUN_ID}",
+    })
+    assert unit_presentation.status_code == 201, unit_presentation.text
+    UNIT_PRESENTATION[company_product] = unit_presentation.json()["id"]
+    # Spec 019: el antiguo `sale_price` es ahora el precio explícito de la unidad en la lista predeterminada.
+    unit_item = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company}/price-list-items", json={
+        "price_list_id": DEFAULT_PRICE_LIST[company], "company_product_id": company_product,
+        "company_product_presentation_id": unit_presentation.json()["id"], "unit_price": sale_price,
+        "valid_from": "2026-01-01T00:00:00Z",
+    })
+    assert unit_item.status_code == 201, unit_item.text
     box_presentation = None
     if box_global:
         presentation = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company}/company-product-presentations", json={
@@ -245,7 +285,7 @@ def _adopt(client, company: str, label: str, *, sale_price: str, inventory_contr
         })
         assert presentation.status_code == 201, presentation.text
         box_presentation = presentation.json()["id"]
-    return Product(company_product, product_id, unit, box_presentation)
+    return Product(company_product, product_id, unit, box_presentation, unit_presentation.json()["id"])
 
 
 @dataclass(frozen=True)
@@ -265,6 +305,7 @@ class RealWorld:
     box_item: str
     supplier: str
     foreign_company: str
+    payment_method: str
 
 
 def build_world(admin: httpx.Client) -> RealWorld:
@@ -307,6 +348,16 @@ def build_world(admin: httpx.Client) -> RealWorld:
         "internal_code": f"CLI-O-{RUN_ID}", "display_name": f"Cliente organización ficticio VENTAS {RUN_ID}",
     })
     assert customer_org.status_code == 201, customer_org.text
+
+    default_list = admin.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-lists", json={
+        "code": f"DEF-{RUN_ID}", "name": f"Lista predeterminada ficticia VENTAS {RUN_ID}", "currency_code": "COP",
+        "valid_from": "2026-01-01T00:00:00Z", "is_default": True,
+    })
+    assert default_list.status_code == 201, default_list.text
+    DEFAULT_PRICE_LIST[company_id] = default_list.json()["id"]
+    methods = admin.get(f"{PAYMENT_REFERENCE}/global-payment-methods", params={"page_size": 100})
+    assert methods.status_code == 200, methods.text
+    payment_method = next(item["id"] for item in methods.json()["items"] if item["code"] == "CASH" and item["status"] == "ACTIVE")
 
     product = _adopt(admin, company_id, "A", sale_price="1500.00", inventory_control=True, with_box=True)
     product_2 = _adopt(admin, company_id, "B", sale_price="9000.00", inventory_control=True, with_box=False)
@@ -351,13 +402,14 @@ def build_world(admin: httpx.Client) -> RealWorld:
         box_item=box_item.json()["id"],
         supplier=supplier.json()["id"],
         foreign_company=foreign.json()["id"],
+        payment_method=payment_method,
     )
     stock_with_purchase(admin, world, [(product, "200", "1000"), (product_2, "200", "6000")])
     return world
 
 
 def stock_with_purchase(admin: httpx.Client, world: RealWorld, lines: list[tuple[Product, str, str]]) -> dict:
-    """Ingresa existencias con una compra real confirmada en Purchase (costo por unidad base, sin impuestos)."""
+    """Ingresa existencias con una compra real de contado, confirmada y **recibida** en Purchase (spec 020)."""
     sequences = admin.get(f"{PURCHASE}/companies/{world.company}/purchase-sequences").raise_for_status().json()["items"]
     if not any(item["is_active"] for item in sequences):
         created = admin.post(f"{PURCHASE}/companies/{world.company}/purchase-sequences", json={
@@ -369,8 +421,14 @@ def stock_with_purchase(admin: httpx.Client, world: RealWorld, lines: list[tuple
         "branch_id": world.branch,
         "company_supplier_id": world.supplier,
         "operation_date": date.today().isoformat(),
+        "payment_method_id": world.payment_method,
         "lines": [
-            {"company_product_id": product.company_product, "quantity": quantity, "unit_cost": unit_cost}
+            {
+                "company_product_id": product.company_product,
+                "company_product_presentation_id": product.unit_presentation,
+                "quantity": quantity,
+                "unit_cost": unit_cost,
+            }
             for product, quantity, unit_cost in lines
         ],
     })
@@ -381,7 +439,13 @@ def stock_with_purchase(admin: httpx.Client, world: RealWorld, lines: list[tuple
         headers={"Idempotency-Key": new_key()},
     )
     assert confirmed.status_code == 200, confirmed.text
-    return confirmed.json()
+    received = admin.post(  # spec 020: solo la recepción física ingresa la mercancía
+        f"{PURCHASE}/companies/{world.company}/purchases/{draft.json()['id']}/receipt",
+        json={"version": confirmed.json()["version"], "full_receipt_confirmed": True},
+        headers={"Idempotency-Key": new_key()},
+    )
+    assert received.status_code == 200, received.text
+    return received.json()
 
 
 def balance(client: httpx.Client, world: RealWorld, product: Product) -> Decimal:
@@ -392,7 +456,18 @@ def balance(client: httpx.Client, world: RealWorld, product: Product) -> Decimal
 
 
 def draft_body(world: RealWorld, *lines: dict, **extra) -> dict:
-    body = {"branch_id": world.branch, "company_customer_id": world.customer, "lines": list(lines)}
+    """Spec 019: una línea sin presentación usa la de factor 1; spec 020: medio de pago declarado."""
+    lines = tuple(
+        line if "company_product_presentation_id" in line
+        else {**line, "company_product_presentation_id": UNIT_PRESENTATION[line["company_product_id"]]}
+        for line in lines
+    )
+    body = {
+        "branch_id": world.branch,
+        "company_customer_id": world.customer,
+        "payment_method_id": world.payment_method,
+        "lines": list(lines),
+    }
     body.update(extra)
     return body
 

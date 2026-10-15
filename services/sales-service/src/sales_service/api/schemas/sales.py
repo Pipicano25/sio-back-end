@@ -60,6 +60,7 @@ class LineIn(StrictModel):
     company_product_presentation_id: UUID
     price_list_id: UUID | None = None
     quantity: DecimalIn
+    # Spec 020 (FR-020-13): se conserva por compatibilidad; solo admite 0 (sin descuentos en el MVP).
     discount_amount: DecimalIn = Decimal("0")
     tax_amount: DecimalIn = Decimal("0")
     unit_price: NotAllowed = None
@@ -87,6 +88,7 @@ _PAYMENT_NOT_ALLOWED = _reject(
 class HeaderIn(StrictModel):
     branch_id: UUID
     company_customer_id: UUID
+    payment_method_id: UUID  # spec 020: medio de pago declarado (uno solo); no es un pago registrado
     observations: Annotated[str, Field(max_length=2000)] | None = None
     operation_date: NotAllowed = None
     due_date: NotAllowed = None
@@ -106,6 +108,7 @@ class HeaderIn(StrictModel):
             branch_id=self.branch_id,
             company_customer_id=self.company_customer_id,
             observations=self.observations,
+            payment_method_id=self.payment_method_id,
         )
 
 
@@ -226,6 +229,9 @@ class SaleResponse(BaseModel):
     company_customer_id: UUID
     customer_payment_condition_id: UUID | None
     payment_condition_code_snapshot: str
+    payment_method_id: UUID | None
+    payment_method_code_snapshot: str | None
+    payment_method_name_snapshot: str | None
     payment_terms_days_snapshot: int
     due_date: date
     sale_sequence_id: UUID | None
@@ -265,6 +271,9 @@ class SaleResponse(BaseModel):
             company_customer_id=sale.company_customer_id,
             customer_payment_condition_id=sale.customer_payment_condition_id,
             payment_condition_code_snapshot=sale.payment_condition_code_snapshot,
+            payment_method_id=sale.payment_method_id,
+            payment_method_code_snapshot=sale.payment_method_code_snapshot,
+            payment_method_name_snapshot=sale.payment_method_name_snapshot,
             payment_terms_days_snapshot=sale.payment_terms_days_snapshot,
             due_date=sale.due_date,
             sale_sequence_id=sale.sale_sequence_id,

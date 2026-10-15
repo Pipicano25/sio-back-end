@@ -63,6 +63,7 @@ class HeaderData:
     branch_id: UUID
     company_customer_id: UUID
     observations: str | None
+    payment_method_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +139,8 @@ def header_values(sale: Sale) -> dict:
         "operation_date": sale.operation_date,
         "due_date": sale.due_date,
         "payment_condition_code_snapshot": sale.payment_condition_code_snapshot,
+        "payment_method_id": sale.payment_method_id,
+        "payment_method_code_snapshot": sale.payment_method_code_snapshot,
         "currency_code": sale.currency_code,
         "subtotal": sale.subtotal,
         "discount_total": sale.discount_total,
@@ -217,7 +220,9 @@ class SaleService:
         inputs = check_inputs(lines, prefix=lambda index: f"lines[{index}].")
         company = self._resolver.company(company_id)
         header_snapshot, line_snapshots = resolve_together(
-            lambda: self._resolver.resolve_header(company, HeaderInput(header.branch_id, header.company_customer_id)),
+            lambda: self._resolver.resolve_header(
+                company, HeaderInput(header.branch_id, header.company_customer_id, header.payment_method_id)
+            ),
             lambda: self._resolver.resolve_lines(company_id, company.default_currency, line_inputs(lines, inputs)),
         )
         amounts = compute_amounts(inputs, line_snapshots, prefix=lambda index: f"lines[{index}].")
@@ -291,7 +296,7 @@ class SaleService:
             require_branch_access(actor.access, company_id, header.branch_id)
         self._precheck(current, version)
         header_snapshot = self._resolver.resolve_header(
-            self._company_for(current), HeaderInput(header.branch_id, header.company_customer_id)
+            self._company_for(current), HeaderInput(header.branch_id, header.company_customer_id, header.payment_method_id)
         )
 
         try:

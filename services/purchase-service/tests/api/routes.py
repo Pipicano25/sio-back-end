@@ -17,6 +17,7 @@ ROUTES: list[tuple[str, str, str]] = [
     ("DELETE", P + "/details/{detail}?version=1", "perm:purchase:purchase_details:delete"),
     ("GET", P + "/details", "perm:purchase:purchase_details:read"),
     ("POST", P + "/confirmation", "perm:purchase:purchases:update"),
+    ("POST", P + "/receipt", "perm:purchase:purchases:update"),  # spec 020
     ("POST", P + "/cancellation", "perm:purchase:purchases:delete"),
     ("GET", P + "/operations", "perm:purchase:purchase_operations:read"),
     ("GET", C + "/purchase-operations/{operation}", "perm:purchase:purchase_operations:read"),

@@ -50,6 +50,7 @@ class HeaderData:
     promised_delivery_at: datetime | None
     supplier_document_number: str | None
     observations: str | None
+    payment_method_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,6 +96,8 @@ def header_values(purchase: Purchase) -> dict:
         "operation_date": purchase.operation_date,
         "due_date": purchase.due_date,
         "payment_condition_code_snapshot": purchase.payment_condition_code_snapshot,
+        "payment_method_id": purchase.payment_method_id,
+        "payment_method_code_snapshot": purchase.payment_method_code_snapshot,
         "currency_code": purchase.currency_code,
         "subtotal": purchase.subtotal,
         "discount_total": purchase.discount_total,
@@ -184,6 +187,7 @@ class PurchaseService:
                         amount.quantity,
                         field_prefix=f"lines[{index}].",
                         line_number=index + 1,
+                        net_cost=amount.subtotal - amount.discount_amount,
                     )
                     for index, (line, amount) in enumerate(zip(lines, amounts, strict=True))
                 ],
@@ -306,6 +310,7 @@ class PurchaseService:
                     line.company_product_presentation_id,
                     line.supplier_product_id,
                     amount.quantity,
+                    net_cost=amount.subtotal - amount.discount_amount,
                 )
             ],
         )[0]
@@ -430,4 +435,5 @@ def _header_input(header: HeaderData) -> HeaderInput:
         company_supplier_id=header.company_supplier_id,
         operation_date=header.operation_date,
         supplier_payment_condition_id=header.supplier_payment_condition_id,
+        payment_method_id=header.payment_method_id,
     )

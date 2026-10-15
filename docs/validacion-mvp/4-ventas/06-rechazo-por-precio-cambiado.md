@@ -1,4 +1,4 @@
-# Paso 05 de 08 — Rechazo por precio cambiado
+# Paso 06 de 09 — Rechazo por precio cambiado
 
 Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
 

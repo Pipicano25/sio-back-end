@@ -29,6 +29,9 @@ def insert_sale(connection: Connection, **overrides: Any) -> UUID:
         "discount_total": 0,
         "tax_total": 0,
         "total": 0,
+        "payment_method_id": uuid4(),  # spec 020: obligatorio fuera de DRAFT
+        "payment_method_code_snapshot": "CASH",
+        "payment_method_name_snapshot": "Efectivo",
         "created_by_user_id": uuid4(),
         "created_by": ACTOR,
         "updated_by": ACTOR,

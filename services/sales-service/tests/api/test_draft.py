@@ -18,7 +18,7 @@ def test_create_draft_with_resolved_prices(seller, world, fakes, clock) -> None:
         world,
         line(world.product, "2", company_product_presentation_id=world.presentation, price_list_id=world.price_list,
              tax_amount="5700"),
-        line(world.product_2, "3", discount_amount="1.50"),
+        line(world.product_2, "3"),
         line(world.product, "1.5"),
         observations="Venta de mostrador (ficticia)",
     )
@@ -35,6 +35,7 @@ def test_create_draft_with_resolved_prices(seller, world, fakes, clock) -> None:
     assert sale["operation_date"] == "2026-10-07" and sale["due_date"] == "2026-10-07"
     assert sale["customer_name_snapshot"] == "Ana Ficticia Pérez"
     assert sale["customer_identification_snapshot"] == "CC 1020304050"
+    assert (sale["payment_method_code_snapshot"], sale["payment_method_name_snapshot"]) == ("CASH", "Efectivo")
     assert [item["line_number"] for item in sale["lines"]] == [1, 2, 3]
 
     box, oil, rice = sale["lines"]
@@ -49,10 +50,10 @@ def test_create_draft_with_resolved_prices(seller, world, fakes, clock) -> None:
     assert oil["unit_price"] == "9000.0000" and oil["price_source"] == "PRICE_LIST_ITEM"
     assert oil["price_list_id"] == str(world.default_list) and oil["price_list_item_id"] == str(world.item_unit_2)
     assert oil["price_list_requested"] is False and oil["base_quantity_factor_snapshot"] == "1.00000000"
-    assert oil["subtotal"] == "27000.00" and oil["total"] == "26998.50"
+    assert oil["subtotal"] == "27000.00" and oil["discount_amount"] == "0.00" and oil["total"] == "27000.00"
     assert rice["unit_price"] == "1500.0000" and rice["subtotal"] == "2250.00" and rice["base_quantity"] == "1.5000"
     assert (sale["subtotal"], sale["discount_total"], sale["tax_total"], sale["total"]) == (
-        "61250.00", "1.50", "5700.00", "66948.50",
+        "61250.00", "0.00", "5700.00", "66950.00",
     )
     # ventas.test no tiene read-profitability: los campos se omiten (no se envían como null).
     assert "has_unknown_cost" not in sale
@@ -132,7 +133,12 @@ def test_add_line_101_is_422(seller, world) -> None:
 
 @pytest.mark.parametrize(
     ("quantity", "discount", "code"),
-    [("0", "0", "QUANTITY_NOT_POSITIVE"), ("1.00001", "0", "TOO_MANY_DECIMALS"), ("1", "1500.01", "DISCOUNT_EXCEEDS_SUBTOTAL")],
+    [
+        ("0", "0", "QUANTITY_NOT_POSITIVE"),
+        ("1.00001", "0", "TOO_MANY_DECIMALS"),
+        ("1", "1500.01", "DISCOUNT_NOT_ALLOWED"),  # spec 020: sin descuentos
+        ("1", "0.01", "DISCOUNT_NOT_ALLOWED"),
+    ],
 )
 def test_line_amount_rules(seller, world, quantity, discount, code) -> None:
     response = seller.post(

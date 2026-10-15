@@ -44,6 +44,9 @@ class _DeniedPermissions(logging.Handler):
 
 def substitute(value, ctx):
     if isinstance(value, str):
+        whole = PLACEHOLDER.fullmatch(value)
+        if whole is not None:
+            return ctx[whole.group(1)]  # conserva el tipo (p. ej. una `version` entera guardada de una respuesta)
         return PLACEHOLDER.sub(lambda match: str(ctx[match.group(1)]), value)
     if isinstance(value, dict):
         return {key: substitute(item, ctx) for key, item in value.items()}

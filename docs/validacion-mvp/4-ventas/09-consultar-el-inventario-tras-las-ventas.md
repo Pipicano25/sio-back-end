@@ -1,4 +1,4 @@
-# Paso 08 de 08 — Consultar el inventario tras las ventas
+# Paso 09 de 09 — Consultar el inventario tras las ventas
 
 Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
 

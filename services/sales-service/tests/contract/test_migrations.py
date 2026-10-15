@@ -32,6 +32,8 @@ UNIQUE_INDEXES = {
     "uq_sale_operations_pending",
 }
 CHECKS = {
+    "ck_sales_payment_method_required",  # spec 020
+    "ck_sale_details_no_discount",  # spec 020
     "ck_sales_lifecycle",
     "ck_sales_status",
     "ck_sales_totals",

@@ -24,6 +24,7 @@ from purchase_service.application.operation_engine import OperationEngine
 from purchase_service.application.ports import AccessDirectory, Directories, InventoryGateway
 from purchase_service.application.purchase_service import Actor, PurchaseService
 from purchase_service.application.query_service import QueryService
+from purchase_service.application.receipt_service import ReceiptService
 from purchase_service.application.reference_validation import ReferenceResolver
 from purchase_service.application.sequence_service import SequenceService
 from purchase_service.infrastructure.database import Database
@@ -68,13 +69,16 @@ class Services:
         return ReferenceResolver(self.directories, concurrency=settings.lookup_concurrency, clock=self._clock)
 
     def engine(self) -> OperationEngine:
-        return OperationEngine(self.repository, self.sequences, self.inventory, clock=self._clock)
+        return OperationEngine(self.repository, self.inventory, clock=self._clock)
 
     def purchases(self) -> PurchaseService:
         return PurchaseService(self.repository, self.resolver(), clock=self._clock)
 
     def confirmations(self) -> ConfirmationService:
         return ConfirmationService(self.repository, self.sequences, self.resolver(), self.engine(), clock=self._clock)
+
+    def receipts(self) -> ReceiptService:
+        return ReceiptService(self.repository, self.confirmations(), self.resolver(), self.engine(), clock=self._clock)
 
     def cancellations(self) -> CancellationService:
         return CancellationService(self.repository, self.confirmations(), self.engine(), clock=self._clock)

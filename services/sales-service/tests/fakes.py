@@ -32,6 +32,7 @@ from sales_service.application.exceptions import (
     INVENTORY,
     OPERATIONAL_CONTEXT,
     PARTY_IDENTITY,
+    PAYMENT_REFERENCE,
     PRODUCT_CATALOG,
     DependencyUnavailableError,
 )
@@ -51,6 +52,7 @@ from sales_service.application.ports import (
     InventoryOperationRef,
     InventoryRejection,
     MovementCost,
+    PaymentMethodInfo,
     PriceListInfo,
     ResolvedPrice,
     UnitInfo,
@@ -123,6 +125,9 @@ class World:
     item_unit_2: UUID = field(default_factory=uuid4)
     item_unit_ni: UUID = field(default_factory=uuid4)
     item_box_default: UUID = field(default_factory=uuid4)
+    # Spec 020: medio de pago declarado (activo e inactivo) de Payment Reference.
+    payment_method: UUID = field(default_factory=uuid4)
+    inactive_payment_method: UUID = field(default_factory=uuid4)
 
     def __post_init__(self) -> None:
         UNIT_PRESENTATION_OF.update({
@@ -406,6 +411,23 @@ class FakeParty:
         return self.organizations.get(organization_id)
 
 
+class FakePaymentReference:
+    def __init__(self, world: World) -> None:
+        self.availability = Unavailable(PAYMENT_REFERENCE)
+        self.methods = build_methods(world)
+
+    def get_payment_method(self, method_id: UUID):
+        self.availability.hit("payment_method", method_id)
+        return self.methods.get(method_id)
+
+
+def build_methods(world: World) -> dict[UUID, PaymentMethodInfo]:
+    return {
+        world.payment_method: PaymentMethodInfo(world.payment_method, "CASH", "Efectivo", "ACTIVE"),
+        world.inactive_payment_method: PaymentMethodInfo(world.inactive_payment_method, "CHECK", "Cheque", "INACTIVE"),
+    }
+
+
 def _canonical(payload: dict[str, Any]) -> Any:
     def norm(value):
         if isinstance(value, dict):
@@ -608,9 +630,10 @@ class Fakes:
     catalog: FakeCatalog
     party: FakeParty
     inventory: FakeInventory
+    pr: FakePaymentReference
 
     def directories(self) -> Directories:
-        return Directories(self.oc, self.cr, self.catalog, self.party)
+        return Directories(self.oc, self.cr, self.catalog, self.party, self.pr)
 
     def all_availability(self) -> list[Unavailable]:
         return [
@@ -619,6 +642,7 @@ class Fakes:
             self.catalog.availability,
             self.party.availability,
             self.inventory.availability,
+            self.pr.availability,
         ]
 
 
@@ -635,6 +659,7 @@ def build_fakes(world: World | None = None) -> Fakes:
         catalog=FakeCatalog(world),
         party=FakeParty(world),
         inventory=inventory,
+        pr=FakePaymentReference(world),
     )
 
 

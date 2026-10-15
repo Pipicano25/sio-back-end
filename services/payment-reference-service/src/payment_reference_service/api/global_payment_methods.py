@@ -1,9 +1,13 @@
-"""Endpoints HTTP para métodos globales de pago."""
+"""Endpoints HTTP para métodos globales de pago.
+
+Sin borrado físico (D7; spec 020, GAP-PR-18): un método usado en compras o ventas no puede
+desaparecer. Se inactiva con `PUT` (`status = INACTIVE`).
+"""
 
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sio_auth import CurrentSubject
 
@@ -264,42 +268,3 @@ def update_global_payment_method(
         ) from exc
 
     return _to_response(entity)
-
-
-@router.delete(
-    "/{payment_method_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Eliminar un método global de pago",
-    dependencies=[
-        auth.permission(
-            SERVICE_PERMISSION,
-            RESOURCE_PERMISSION,
-            "delete",
-        )
-    ],
-)
-def delete_global_payment_method(
-    payment_method_id: UUID,
-    service: Annotated[GlobalPaymentMethodService, Depends(_get_service)],
-) -> Response:
-    """Elimina físicamente un método global de pago.
-
-    Args:
-        payment_method_id: Identificador del registro.
-        service: Servicio de aplicación.
-
-    Returns:
-        Respuesta HTTP sin contenido.
-
-    Raises:
-        HTTPException: Si el método no existe.
-    """
-    try:
-        service.delete(payment_method_id)
-    except GlobalPaymentMethodNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-
-    return Response(status_code=status.HTTP_204_NO_CONTENT)

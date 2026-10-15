@@ -1,6 +1,6 @@
-# Paso 6. Consultar las operaciones de la compra
+# Paso 7. Consultar las operaciones de la compra
 
-Ejercicio 3: Confirmación idempotente.
+Ejercicio 3: Confirmación y recepción idempotente.
 
 ## Llamada
 
@@ -10,6 +10,7 @@ Ejecuta: `compras.test`.
 
 ### Por qué
 
+- La confirmación (`CONFIRM`, sin Inventory) y la recepción (`RECEIVE`, con su entrada).
 - La clave de idempotencia nunca se expone; `inventory_operation_id` identifica la entrada.
 
 ## Permiso
@@ -52,6 +53,19 @@ Estado `200`.
     "id": "<asignado por el servicio>",
     "purchase_id": "<COMPRA>",
     "operation_type": "CONFIRM",
+    "status": "SUCCEEDED",
+    "correlation_id": "<asignado por el servicio>",
+    "error_code": null,
+    "error_details": null,
+    "inventory_operation_id": null,
+    "started_at": "<asignado por el servicio>",
+    "updated_at": "<asignado por el servicio>",
+    "completed_at": "<asignado por el servicio>"
+  },
+  {
+    "id": "<asignado por el servicio>",
+    "purchase_id": "<COMPRA>",
+    "operation_type": "RECEIVE",
     "status": "SUCCEEDED",
     "correlation_id": "<asignado por el servicio>",
     "error_code": null,

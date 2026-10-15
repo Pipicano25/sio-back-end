@@ -38,7 +38,9 @@ FAMILY_TITLES = {
     "C-13": "Crear las secuencias de numeración",
     "P-01": "Registrar las compras",
     "P-02": "Confirmar las compras",
+    "P-02R": "Confirmar la recepción física de las compras",
     "P-03": "Consultar el inventario tras las compras",
+    "V-00": "Rechazo de una venta antes de recibir la compra",
     "V-01": "Registrar las ventas",
     "V-02": "Consultar la disponibilidad",
     "V-03": "Confirmar las ventas",
@@ -317,7 +319,10 @@ def _users(realm) -> str:
 
 
 def write(pages: dict[str, str], directory: Path = GUIDE_DIR) -> None:
+    """Escribe la guía generada y elimina las páginas `.md` que ya no se generan (p. ej. pasos renombrados)."""
     directory.mkdir(parents=True, exist_ok=True)
+    for stale in set(read(directory)) - set(pages):
+        (directory / stale).unlink()
     for relative, content in pages.items():
         path = directory / relative
         path.parent.mkdir(parents=True, exist_ok=True)

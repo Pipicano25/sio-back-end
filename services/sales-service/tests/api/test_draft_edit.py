@@ -17,6 +17,7 @@ def header(world, sale, **changes):
     body = {
         "branch_id": sale["branch_id"],
         "company_customer_id": sale["company_customer_id"],
+        "payment_method_id": sale["payment_method_id"],
         "version": sale["version"],
     }
     body.update({key: str(value) if hasattr(value, "hex") else value for key, value in changes.items()})

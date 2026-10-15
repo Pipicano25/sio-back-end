@@ -4,11 +4,14 @@ Cada ciclo toma, con `FOR UPDATE SKIP LOCKED`, las operaciones `PENDING` cuyo
 `updated_at` es anterior al umbral, les pone una **marca** (`updated_at` nuevo) y libera el
 bloqueo; luego, por cada una, consulta Inventory **por clave** (nunca vuelve a aplicar):
 
-- existe → completa como la solicitud original (número, `CONFIRMED` / `CANCELLED`, `SUCCEEDED`);
-- no existe → `FAILED` `NOT_APPLIED_AFTER_RECONCILIATION`, solo si nadie tocó la operación
-  desde la marca (un reintento del cliente la renueva antes de llamar a Inventory);
-- Inventory no disponible → sin cambios hasta el siguiente ciclo;
-- `COMPENSATION_PENDING` → reintenta el reverso compensatorio.
+- existe → completa como la solicitud original (recepción: compra recibida; anulación:
+  `CANCELLED`; `SUCCEEDED`);
+- no existe → `FAILED` `OPERATION_NOT_APPLIED`, solo si nadie tocó la operación desde la marca
+  (un reintento del cliente la renueva antes de llamar a Inventory);
+- Inventory no disponible → sin cambios hasta el siguiente ciclo.
+
+Spec 020: las operaciones distribuidas son `RECEIVE` y `CANCEL` (la confirmación es local y no
+hay compensación, DS-03).
 """
 
 from __future__ import annotations
@@ -21,7 +24,7 @@ from uuid import UUID
 from purchase_service.application.exceptions import DependencyUnavailableError, OperationNotAppliedError, PurchaseError
 from purchase_service.application.operation_engine import OperationEngine
 from purchase_service.application.ports import InventoryGateway
-from purchase_service.domain.status import CONFIRM, COMPENSATION_PENDING, PENDING, RECONCILER_ACTOR
+from purchase_service.domain.status import PENDING, RECEIVE, RECONCILER_ACTOR
 from purchase_service.infrastructure.models import PurchaseOperation
 from purchase_service.infrastructure.repository import PurchaseRepository
 from purchase_service.observability import SERVICE_LOGGER
@@ -35,7 +38,6 @@ class CycleResult:
     claimed: int = 0
     completed: list[UUID] = field(default_factory=list)
     failed: list[UUID] = field(default_factory=list)
-    compensated: list[UUID] = field(default_factory=list)
     unchanged: list[UUID] = field(default_factory=list)
 
 
@@ -78,14 +80,6 @@ class ReconciliationService:
             result.unchanged.append(operation_id)
             return
 
-        if operation.error_code == COMPENSATION_PENDING:
-            try:
-                self._engine.compensate(operation_id, RECONCILER_ACTOR)
-            except PurchaseError:
-                pass  # el resultado queda en la operación: FAILED si el reverso se aplicó, PENDING si no
-            (result.compensated if self._status(operation_id) != PENDING else result.unchanged).append(operation_id)
-            return
-
         try:
             found = self._inventory.find_by_key(operation.company_id, operation.id)
         except DependencyUnavailableError:
@@ -102,12 +96,12 @@ class ReconciliationService:
             return
 
         try:
-            if operation.operation_type == CONFIRM:
-                self._engine.complete_confirmation(operation_id, found.id, RECONCILER_ACTOR)
+            if operation.operation_type == RECEIVE:
+                self._engine.complete_receipt(operation_id, found.id, RECONCILER_ACTOR)
             else:
                 self._engine.complete_cancellation(operation_id, found.id, RECONCILER_ACTOR)
         except PurchaseError:
-            # Compensación iniciada o aplicada (número imposible): queda registrada en la operación.
+            # El resultado queda registrado en la operación.
             pass
         status = self._status(operation_id)
         (result.completed if status != PENDING else result.unchanged).append(operation_id)

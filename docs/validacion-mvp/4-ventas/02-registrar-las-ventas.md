@@ -1,4 +1,4 @@
-# Paso 01 de 08 — Registrar las ventas
+# Paso 02 de 09 — Registrar las ventas
 
 Ejercicio 4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen · [Orden del ejercicio](ORDEN.md)
 
@@ -16,6 +16,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 {
   "branch_id": "<SUCURSAL_A1>",
   "company_customer_id": "<CLIENTE>",
+  "payment_method_id": "<METODO_EFECTIVO>",
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_A>",
@@ -53,6 +54,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 {
   "branch_id": "<SUCURSAL_A1>",
   "company_customer_id": "<CLIENTE>",
+  "payment_method_id": "<METODO_EFECTIVO>",
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_A>",
@@ -89,6 +91,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 {
   "branch_id": "<SUCURSAL_A1>",
   "company_customer_id": "<CLIENTE>",
+  "payment_method_id": "<METODO_EFECTIVO>",
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_B>",
@@ -125,6 +128,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 {
   "branch_id": "<SUCURSAL_A1>",
   "company_customer_id": "<CLIENTE>",
+  "payment_method_id": "<METODO_EFECTIVO>",
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_A>",
@@ -161,6 +165,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 {
   "branch_id": "<SUCURSAL_A1>",
   "company_customer_id": "<CLIENTE>",
+  "payment_method_id": "<METODO_EFECTIVO>",
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_A>",
@@ -197,6 +202,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 {
   "branch_id": "<SUCURSAL_A1>",
   "company_customer_id": "<CLIENTE>",
+  "payment_method_id": "<METODO_EFECTIVO>",
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_A>",
@@ -233,6 +239,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 {
   "branch_id": "<SUCURSAL_A1>",
   "company_customer_id": "<CLIENTE>",
+  "payment_method_id": "<METODO_EFECTIVO>",
   "lines": [
     {
       "company_product_id": "<PRODUCTO_EMPRESA_B>",

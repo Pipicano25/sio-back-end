@@ -39,7 +39,7 @@ from sqlalchemy.exc import SQLAlchemyError  # noqa: E402
 
 from purchase_service.config import Settings  # noqa: E402
 from purchase_service.main import create_app  # noqa: E402
-from tests.fakes import Fakes, build_fakes  # noqa: E402
+from tests.fakes import Fakes, build_fakes, unit_presentation_of  # noqa: E402
 
 TEST_ISSUER = "https://keycloak.test/realms/sio"
 TEST_AUDIENCE = "sio-api"
@@ -396,6 +396,7 @@ def purchase_body(world, *lines: dict[str, Any], **header: Any) -> dict[str, Any
         "branch_id": str(world.branch),
         "company_supplier_id": str(world.supplier),
         "operation_date": date.today().isoformat(),
+        "payment_method_id": str(world.payment_method),
         "lines": list(lines),
     }
     body.update({key: str(value) if hasattr(value, "hex") else value for key, value in header.items()})
@@ -403,7 +404,12 @@ def purchase_body(world, *lines: dict[str, Any], **header: Any) -> dict[str, Any
 
 
 def line(product, quantity: str = "2", unit_cost: str = "1000", **extra: Any) -> dict[str, Any]:
-    body: dict[str, Any] = {"company_product_id": str(product), "quantity": quantity, "unit_cost": unit_cost}
+    body: dict[str, Any] = {
+        "company_product_id": str(product),
+        "company_product_presentation_id": str(unit_presentation_of(product)),
+        "quantity": quantity,
+        "unit_cost": unit_cost,
+    }
     body.update({key: str(value) if hasattr(value, "hex") else value for key, value in extra.items()})
     return body
 
@@ -449,6 +455,20 @@ def confirm(buyer, world):
         )
 
     return _confirm
+
+
+@pytest.fixture
+def receive(buyer, world):
+    """Recepción física completa (spec 020): la única operación que ingresa la mercancía en Inventory."""
+
+    def _receive(purchase: dict[str, Any], key: str | None = None, client=None, version: int | None = None, full: bool = True):
+        return (client or buyer).post(
+            f"{base(world)}/purchases/{purchase['id']}/receipt",
+            json={"version": version if version is not None else purchase["version"], "full_receipt_confirmed": full},
+            headers={"Idempotency-Key": key or new_key()},
+        )
+
+    return _receive
 
 
 @pytest.fixture

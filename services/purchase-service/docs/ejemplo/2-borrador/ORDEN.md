@@ -13,7 +13,10 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 | 3 | [03-version-vieja.md](03-version-vieja.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `compras.test` | `409` |
 | 4 | [04-producto-sin-control-de-inventario.md](04-producto-sin-control-de-inventario.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `compras.test` | `409` |
 | 5 | [05-proveedor-inexistente.md](05-proveedor-inexistente.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `422` |
-| 6 | [06-consultar-el-borrador.md](06-consultar-el-borrador.md) | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>` | `compras.test` | `200` |
+| 6 | [05a-compra-a-credito.md](05a-compra-a-credito.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `409` |
+| 7 | [05b-linea-sin-presentacion.md](05b-linea-sin-presentacion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `422` |
+| 8 | [05c-costo-cero.md](05c-costo-cero.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `422` |
+| 9 | [06-consultar-el-borrador.md](06-consultar-el-borrador.md) | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>` | `compras.test` | `200` |
 
 ## Por qué este orden
 
@@ -23,4 +26,4 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Variable | Se guarda en | Se usa en |
 | --- | --- | --- |
-| `<COMPRA>` | paso 1 (`id`) | pasos 2, 3, 4, 6 |
+| `<COMPRA>` | paso 1 (`id`) | pasos 2, 3, 4, 9 |

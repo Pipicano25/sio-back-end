@@ -10,8 +10,8 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from purchase_service.application.reference_validation import HeaderSnapshot, LineSnapshot
-from purchase_service.domain.conversion import base_quantity, inventory_unit_cost
-from purchase_service.domain.money import LineAmounts, header_totals
+from purchase_service.domain.conversion import base_quantity, check_base_unit_cost, inventory_unit_cost
+from purchase_service.domain.money import LineAmounts, header_totals, line_amounts
 from purchase_service.infrastructure.models import Purchase, PurchaseDetail
 
 
@@ -21,6 +21,10 @@ def apply_header(purchase: Purchase, snapshot: HeaderSnapshot) -> None:
     purchase.payment_condition_code_snapshot = snapshot.payment_condition_code
     purchase.payment_terms_days_snapshot = snapshot.payment_terms_days
     purchase.due_date = snapshot.due_date
+    # Spec 020 (FR-020-09): medio de pago declarado y su copia (refrescada y congelada al confirmar).
+    purchase.payment_method_id = snapshot.payment_method_id
+    purchase.payment_method_code_snapshot = snapshot.payment_method_code
+    purchase.payment_method_name_snapshot = snapshot.payment_method_name
 
 
 def apply_line(detail: PurchaseDetail, snapshot: LineSnapshot) -> None:
@@ -62,6 +66,12 @@ def line_base_quantity(detail: PurchaseDetail):
 def line_inventory_cost(detail: PurchaseDetail):
     """Costo por unidad base sin impuestos que se informa a Inventory (DS-04)."""
     return inventory_unit_cost(detail.subtotal, detail.discount_amount, line_base_quantity(detail))
+
+
+def check_line_costs(detail: PurchaseDetail, *, prefix: str) -> None:
+    """Revalida los costos congelados de una línea (spec 020, FR-020-12): costo, neto y por unidad base > 0."""
+    line_amounts(detail.quantity, detail.unit_cost, detail.discount_amount, detail.tax_amount, prefix=prefix)
+    check_base_unit_cost(detail.subtotal, detail.discount_amount, line_base_quantity(detail), field=f"{prefix}unit_cost")
 
 
 def due_date_of(snapshot: HeaderSnapshot) -> date:

@@ -45,6 +45,8 @@ RESULTS: dict[int, list[dict]] = {}
 def fixed_world() -> World:
     return World(
         company=UUID(data.COMPANY),
+        payment_method=UUID(data.PAYMENT_METHOD),
+        inactive_payment_method=UUID(data.INACTIVE_PAYMENT_METHOD),
         other_company=UUID(data.OTHER_COMPANY),
         branch=UUID(data.BRANCH),
         branch_b=UUID(data.BRANCH_B),

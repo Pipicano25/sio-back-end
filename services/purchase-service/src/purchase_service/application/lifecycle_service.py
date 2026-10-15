@@ -17,12 +17,14 @@ from purchase_service.application import audit_events as audit
 from purchase_service.application.branch_access import require_branch_access
 from purchase_service.application.exceptions import (
     EventNotAllowedInStatusError,
+    PurchaseNotReceivedError,
     NotFoundError,
     ValidationFailedError,
     field_error,
 )
 from purchase_service.application.purchase_service import Actor
 from purchase_service.domain.lifecycle import (
+    REQUIRES_RECEIPT,
     EventInFutureError,
     EventNotAllowedError,
     EventOrderError,
@@ -32,6 +34,7 @@ from purchase_service.domain.lifecycle import (
     current_events,
     intervals,
 )
+from purchase_service.domain.status import CONFIRMED
 from purchase_service.infrastructure.models import PurchaseLifecycleEvent
 from purchase_service.infrastructure.repository import PurchaseRepository
 
@@ -75,6 +78,8 @@ class LifecycleService:
             if locked is None:
                 raise NotFoundError()
             now = self._clock()
+            if locked.status == CONFIRMED and event_type in REQUIRES_RECEIPT and locked.inventory_operation_id is None:
+                raise PurchaseNotReceivedError(event_type)
             try:
                 check_new_event(locked.status, event_type, occurred_at, _records(self._repo.events(locked.id)), now)
             except EventNotAllowedError:

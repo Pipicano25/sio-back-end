@@ -25,7 +25,6 @@ from purchase_service.application.reconciliation_service import CycleResult, Rec
 from purchase_service.config import Settings, load_settings
 from purchase_service.infrastructure.database import Database
 from purchase_service.infrastructure.repository import PurchaseRepository
-from purchase_service.infrastructure.sequence_repository import SequenceRepository
 from purchase_service.observability import SERVICE_LOGGER, configure_logging
 
 logger = logging.getLogger(SERVICE_LOGGER)
@@ -35,7 +34,7 @@ def run_cycle(database: Database, inventory: InventoryGateway, settings: Setting
     with database.session_factory() as session:
         repository = PurchaseRepository(session, lock_timeout_ms=database.lock_timeout_ms)
         clock = lambda: datetime.now(UTC)  # noqa: E731
-        engine = OperationEngine(repository, SequenceRepository(session), inventory, clock=clock)
+        engine = OperationEngine(repository, inventory, clock=clock)
         service = ReconciliationService(
             repository, engine, inventory, threshold_seconds=settings.reconciler_threshold_seconds
         )
@@ -73,11 +72,10 @@ def main(argv: list[str] | None = None) -> int:
             result = run_cycle(database, inventory, settings)
             if result.claimed:
                 logger.info(
-                    "Ciclo de conciliación tomadas=%s completadas=%s fallidas=%s compensadas=%s sin_cambios=%s",
+                    "Ciclo de conciliación tomadas=%s completadas=%s fallidas=%s sin_cambios=%s",
                     result.claimed,
                     len(result.completed),
                     len(result.failed),
-                    len(result.compensated),
                     len(result.unchanged),
                 )
         except Exception:  # noqa: BLE001 — el proceso no muere por un ciclo fallido

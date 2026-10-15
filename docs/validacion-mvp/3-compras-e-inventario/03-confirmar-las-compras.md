@@ -1,6 +1,6 @@
-# Paso 03 de 04 — Confirmar las compras
+# Paso 03 de 05 — Confirmar las compras
 
-Ejercicio 3 — Compras e inventario: secuencias, compras, confirmación, entradas, saldos, kardex y capas · [Orden del ejercicio](ORDEN.md)
+Ejercicio 3 — Compras e inventario: secuencias, compras de contado, confirmación, recepción física (entradas), saldos, kardex y capas · [Orden del ejercicio](ORDEN.md)
 
 ---
 
@@ -26,13 +26,13 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Por qué se hace así**
 
-- La confirmación asigna el número oficial y registra la entrada en Inventory una sola vez (Idempotency-Key).
+- Spec 020: la confirmación asigna el número oficial y deja la compra pendiente de recepción; no mueve inventario.
 
-**Respuesta esperada:** `200` — `status` = `CONFIRMED`, `number` asignado, `inventory_operation_id`
+**Respuesta esperada:** `200` — `status` = `CONFIRMED`, `number` asignado, `receipt_status` = `PENDING`, `inventory_operation_id` nulo
 
-**Guardar:** `version` → `<COMPRA_1_VERSION>`, `number` → `<COMPRA_1_NUMERO>`, `inventory_operation_id` → `<COMPRA_1_OPERACION>`
+**Guardar:** `version` → `<COMPRA_1_VERSION>`, `number` → `<COMPRA_1_NUMERO>`
 
-**Auditoría que deja:** `CONFIRM_PURCHASE` (purchase), `APPLY_INVENTORY_ENTRY` (inventory)
+**Auditoría que deja:** `CONFIRM_PURCHASE` (purchase)
 
 ## 2. Confirmar la compra P2
 
@@ -56,13 +56,13 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Por qué se hace así**
 
-- La confirmación asigna el número oficial y registra la entrada en Inventory una sola vez (Idempotency-Key).
+- Spec 020: la confirmación asigna el número oficial y deja la compra pendiente de recepción; no mueve inventario.
 
-**Respuesta esperada:** `200` — `status` = `CONFIRMED`, `number` asignado, `inventory_operation_id`
+**Respuesta esperada:** `200` — `status` = `CONFIRMED`, `number` asignado, `receipt_status` = `PENDING`, `inventory_operation_id` nulo
 
-**Guardar:** `version` → `<COMPRA_2_VERSION>`, `number` → `<COMPRA_2_NUMERO>`, `inventory_operation_id` → `<COMPRA_2_OPERACION>`
+**Guardar:** `version` → `<COMPRA_2_VERSION>`, `number` → `<COMPRA_2_NUMERO>`
 
-**Auditoría que deja:** `CONFIRM_PURCHASE` (purchase), `APPLY_INVENTORY_ENTRY` (inventory)
+**Auditoría que deja:** `CONFIRM_PURCHASE` (purchase)
 
 ## 3. Confirmar la compra P3
 
@@ -86,10 +86,10 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Por qué se hace así**
 
-- La confirmación asigna el número oficial y registra la entrada en Inventory una sola vez (Idempotency-Key).
+- Spec 020: la confirmación asigna el número oficial y deja la compra pendiente de recepción; no mueve inventario.
 
-**Respuesta esperada:** `200` — `status` = `CONFIRMED`, `number` asignado, `inventory_operation_id`
+**Respuesta esperada:** `200` — `status` = `CONFIRMED`, `number` asignado, `receipt_status` = `PENDING`, `inventory_operation_id` nulo
 
-**Guardar:** `version` → `<COMPRA_3_VERSION>`, `number` → `<COMPRA_3_NUMERO>`, `inventory_operation_id` → `<COMPRA_3_OPERACION>`
+**Guardar:** `version` → `<COMPRA_3_VERSION>`, `number` → `<COMPRA_3_NUMERO>`
 
-**Auditoría que deja:** `CONFIRM_PURCHASE` (purchase), `APPLY_INVENTORY_ENTRY` (inventory)
+**Auditoría que deja:** `CONFIRM_PURCHASE` (purchase)

@@ -15,6 +15,7 @@ Ejecuta: `compras.test`.
   "branch_id": "d14b0000-0000-4000-8000-000000000001",
   "company_supplier_id": "d14f0000-0000-4000-8000-000000000404",
   "operation_date": "2026-11-04",
+  "payment_method_id": "d14c0000-0000-4000-8000-000000000011",
   "lines": []
 }
 ```

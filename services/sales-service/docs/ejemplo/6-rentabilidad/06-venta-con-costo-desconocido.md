@@ -16,6 +16,7 @@ Situación simulada antes de la llamada: `unknown_cost:10` (en la prueba automá
 {
   "branch_id": "d15b0000-0000-4000-8000-000000000001",
   "company_customer_id": "d15c0000-0000-4000-8000-000000000001",
+  "payment_method_id": "d15c0000-0000-4000-8000-000000000021",
   "lines": [
     {
       "company_product_id": "d15d0000-0000-4000-8000-000000000001",
@@ -72,6 +73,9 @@ Estado `201`.
   "company_customer_id": "d15c0000-0000-4000-8000-000000000001",
   "customer_payment_condition_id": null,
   "payment_condition_code_snapshot": "CASH",
+  "payment_method_id": "d15c0000-0000-4000-8000-000000000021",
+  "payment_method_code_snapshot": "CASH",
+  "payment_method_name_snapshot": "Efectivo",
   "payment_terms_days_snapshot": 0,
   "due_date": "2026-11-05",
   "sale_sequence_id": null,

@@ -1,4 +1,4 @@
-"""Migración `0001` (data-model.md; T010)."""
+"""Migraciones `0001` y `0002` hasta `head` (data-model.md; T010; spec 020)."""
 
 from __future__ import annotations
 
@@ -54,6 +54,9 @@ CHECKS = {
     "ck_purchase_operations_completed_at",
     "ck_purchase_operations_inventory_operation",
     "ck_purchase_lifecycle_events_event_type",
+    "ck_purchases_cash_only",
+    "ck_purchases_receipt",
+    "ck_purchases_payment_method_required",
 }
 
 

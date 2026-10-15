@@ -1,6 +1,6 @@
 # Ejemplos de uso de purchase-service
 
-Ejercicios validados (Constitución, Principio XXII) que muestran cómo registrar, confirmar y anular
+Ejercicios validados (Constitución, Principio XXII) que muestran cómo registrar, confirmar, recibir (spec 020) y anular
 compras, cómo funciona la numeración por período y cómo se registran los hitos logísticos.
 
 - Los datos son **ficticios** y están marcados como tales; los identificadores y el reloj (5 de
@@ -36,9 +36,9 @@ compras, cómo funciona la numeración por período y cómo se registran los hit
 | Carpeta | Contenido |
 | --- | --- |
 | [1-secuencias](1-secuencias/ORDEN.md) | Secuencia mensual, contadores por período, una sola activa por alcance |
-| [2-borrador](2-borrador/ORDEN.md) | Borrador con caja de 12, línea adicional, versión vieja, `409` vs `422` |
-| [3-confirmacion](3-confirmacion/ORDEN.md) | Inventory caído, reintento con la misma clave, repetición idempotente |
+| [2-borrador](2-borrador/ORDEN.md) | Borrador con caja de 12, línea adicional, versión vieja, `409` vs `422`; crédito, línea sin presentación y costo cero rechazados (spec 020) |
+| [3-confirmacion](3-confirmacion/ORDEN.md) | Confirmación sin inventario; recepción con Inventory caído, reintento con la misma clave, repetición idempotente |
 | [4-compra-retroactiva](4-compra-retroactiva/ORDEN.md) | Compra de octubre confirmada en noviembre: contador de octubre |
-| [5-anulacion](5-anulacion/ORDEN.md) | Anular borrador, anular confirmada (reverso exacto), rechazo por consumo |
-| [6-hitos](6-hitos/ORDEN.md) | Hitos, rechazo fuera de orden, línea de tiempo y lead time |
+| [5-anulacion](5-anulacion/ORDEN.md) | Anular borrador, confirmada sin recibir (local), recibida (reverso exacto), rechazo por consumo |
+| [6-hitos](6-hitos/ORDEN.md) | Hitos, rechazo fuera de orden, `RECEIVED` exige la recepción física, línea de tiempo y lead time |
 | [7-consultas](7-consultas/ORDEN.md) | Listado filtrado y aislamiento por empresa |

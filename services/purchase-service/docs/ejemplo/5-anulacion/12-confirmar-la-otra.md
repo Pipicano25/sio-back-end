@@ -1,14 +1,14 @@
-# Paso 5. Confirmar la compra
+# Paso 12. Confirmar la otra compra
 
 Ejercicio 5: Anulación.
 
 ## Llamada
 
-`POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation`
+`POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/confirmation`
 
 Ejecuta: `compras.test`.
 
-Cabeceras: `Idempotency-Key: anular-0002`.
+Cabeceras: `Idempotency-Key: anular-0007`.
 
 ### Solicitud
 
@@ -20,7 +20,7 @@ Cabeceras: `Idempotency-Key: anular-0002`.
 
 ### Por qué
 
-- Ingresa 12 unidades del arroz.
+- Queda pendiente de recepción.
 
 ## Permiso
 
@@ -46,7 +46,7 @@ Respuesta sin permiso (`403`), que no revela el permiso exigido:
   "title": "Acceso denegado",
   "status": 403,
   "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
-  "instance": "/api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation",
+  "instance": "/api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/confirmation",
   "code": "PURCHASE.FORBIDDEN",
   "trace_id": "<asignado por el servicio>"
 }
@@ -58,7 +58,7 @@ Estado `200`.
 
 ```json
 {
-  "id": "<COMPRA>",
+  "id": "<VENDIDA>",
   "company_id": "d14a0000-0000-4000-8000-000000000001",
   "branch_id": "d14b0000-0000-4000-8000-000000000001",
   "company_supplier_id": "d14c0000-0000-4000-8000-000000000001",
@@ -66,9 +66,12 @@ Estado `200`.
   "payment_condition_code_snapshot": "CASH",
   "payment_terms_days_snapshot": 0,
   "due_date": "2026-11-04",
+  "payment_method_id": "d14c0000-0000-4000-8000-000000000011",
+  "payment_method_code_snapshot": "CASH",
+  "payment_method_name_snapshot": "Efectivo",
   "purchase_sequence_id": "<SECUENCIA>",
-  "number": "CP-202611-000001",
-  "sequence_value": 1,
+  "number": "CP-202611-000003",
+  "sequence_value": 3,
   "status": "CONFIRMED",
   "operation_date": "2026-11-04",
   "promised_delivery_at": null,
@@ -77,17 +80,20 @@ Estado `200`.
   "supplier_identification_snapshot": "NIT 900123456",
   "currency_code": "COP",
   "observations": null,
-  "subtotal": "120000.00",
+  "subtotal": "29400.00",
   "discount_total": "0.00",
   "tax_total": "0.00",
-  "total": "120000.00",
-  "inventory_operation_id": "<ENTRADA>",
+  "total": "29400.00",
+  "inventory_operation_id": null,
+  "receipt_status": "PENDING",
+  "received_at": null,
+  "received_by_user_id": null,
   "created_by_user_id": "d14f1000-0000-4000-8000-000000000003",
   "cancelled_by_user_id": null,
   "cancelled_at": null,
   "cancellation_reason": null,
   "pending_operation_id": null,
-  "version": 3,
+  "version": 2,
   "created_at": "<asignado por el servicio>",
   "updated_at": "<asignado por el servicio>",
   "created_by": "compras.test",
@@ -95,26 +101,26 @@ Estado `200`.
   "lines": [
     {
       "id": "<asignado por el servicio>",
-      "purchase_id": "<COMPRA>",
+      "purchase_id": "<VENDIDA>",
       "line_number": 1,
-      "company_product_id": "d14d0000-0000-4000-8000-000000000001",
-      "company_product_presentation_id": "d14e0000-0000-4000-8000-000000000001",
+      "company_product_id": "d14d0000-0000-4000-8000-000000000002",
+      "company_product_presentation_id": "0e2be67b-ba11-51b8-9dd7-04739ec7d8d4",
       "supplier_product_id": null,
       "supplier_lead_time_snapshot_hours": null,
-      "product_code_snapshot": "000045",
-      "product_name_snapshot": "Arroz ficticio 500 g",
-      "presentation_code_snapshot": "CAJA12",
-      "presentation_name_snapshot": "Caja x12",
-      "base_quantity_factor_snapshot": "12.00000000",
+      "product_code_snapshot": "000046",
+      "product_name_snapshot": "Aceite ficticio 1 L",
+      "presentation_code_snapshot": "UND",
+      "presentation_name_snapshot": "Unidad",
+      "base_quantity_factor_snapshot": "1.00000000",
       "unit_code_snapshot": "UND",
-      "quantity": "1.0000",
-      "unit_cost": "120000.0000",
+      "quantity": "3.0000",
+      "unit_cost": "9800.0000",
       "discount_amount": "0.00",
       "tax_amount": "0.00",
-      "subtotal": "120000.00",
-      "total": "120000.00",
-      "base_quantity": "12.0000",
-      "inventory_unit_cost": "10000.0000",
+      "subtotal": "29400.00",
+      "total": "29400.00",
+      "base_quantity": "3.0000",
+      "inventory_unit_cost": "9800.0000",
       "created_at": "<asignado por el servicio>",
       "updated_at": "<asignado por el servicio>",
       "created_by": "compras.test",
@@ -126,4 +132,4 @@ Estado `200`.
 
 ## Variables que se guardan
 
-- `<ENTRADA>` = `inventory_operation_id` de la respuesta.
+- `<VERSION_VENDIDA>` = `version` de la respuesta.

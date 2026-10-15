@@ -212,28 +212,6 @@ class SqlAlchemyGlobalPaymentMethodRepository:
 
         return self._to_domain(model)
 
-    def delete(self, payment_method_id: UUID) -> None:
-        """Elimina físicamente un método de pago.
-
-        Args:
-            payment_method_id: Identificador del registro.
-
-        Raises:
-            GlobalPaymentMethodNotFoundError: Si el registro no existe.
-        """
-        model = self._session.get(
-            GlobalPaymentMethodModel,
-            payment_method_id,
-        )
-
-        if model is None:
-            raise GlobalPaymentMethodNotFoundError(
-                "El método de pago solicitado no existe."
-            )
-
-        self._session.delete(model)
-        self._session.commit()
-
     @staticmethod
     def _to_domain(
         model: GlobalPaymentMethodModel,

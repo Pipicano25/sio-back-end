@@ -315,6 +315,7 @@ def test_settings(test_database_url: str) -> Settings:
         commercial_relationship_base_url="http://commercial-relationship.test/api/v1",
         product_catalog_base_url="http://product-catalog.test/api/v1",
         party_identity_base_url="http://party-identity.test/api/v1",
+        payment_reference_base_url="http://payment-reference.test",
         inventory_base_url="http://inventory.test/api/v1",
         keycloak_token_url="http://keycloak.test/realms/sio/protocol/openid-connect/token",
         client_id="sales-service",
@@ -414,6 +415,7 @@ def sale_body(world, *lines: dict[str, Any], **header: Any) -> dict[str, Any]:
     body: dict[str, Any] = {
         "branch_id": str(world.branch),
         "company_customer_id": str(world.customer),
+        "payment_method_id": str(world.payment_method),
         "lines": list(lines),
     }
     body.update({key: str(value) if hasattr(value, "hex") else value for key, value in header.items()})
