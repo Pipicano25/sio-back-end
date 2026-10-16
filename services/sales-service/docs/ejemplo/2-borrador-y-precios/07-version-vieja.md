@@ -1,4 +1,4 @@
-# Paso 7. Agregar una línea con una versión vieja
+# Paso 8. Agregar una línea con una versión vieja
 
 Ejercicio 2: Venta en borrador y precios.
 

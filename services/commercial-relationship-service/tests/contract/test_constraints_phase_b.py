@@ -358,6 +358,7 @@ EXPECTED_COLUMNS = {
     "price_list_items": {
         "id", "company_id", "price_list_id", "company_product_id", "company_product_presentation_id",
         "unit_price", "valid_from", "valid_to",
+        "origin", "closure_reason", "automatic_application_id",  # spec 021 (FR-021-24)
     },
 }
 AUDIT_COLUMNS = {"status", "version", "created_at", "updated_at", "created_by", "updated_by"}

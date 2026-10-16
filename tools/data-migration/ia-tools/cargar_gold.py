@@ -11,6 +11,8 @@ Para cada fila de Gold, en orden de dependencias:
 3. Construye el cuerpo con las propiedades del contrato OpenAPI desplegado y lo valida contra su esquema.
 4. Busca la fila en SIO por su clave natural (GET); si existe se reutiliza (`REUSADO`) y nunca se sobrescribe.
 5. Si no existe: en simulación `CREARIA`; con escritura habilitada, POST/PUT → `CREADO`, `CONFLICTO` (409) o `ERROR`.
+6. Spec 021, `company_product_purchase_taxes`: actualiza la tasa de compra de un producto ya cargado solo si en SIO
+   está sin configurar (`ACTUALIZARIA` / `ACTUALIZADO`); con la misma tasa `REUSADO`, con otra `CONFLICTO`.
 
 - No modifica ningún CSV. Los id obtenidos se anotan en `<empresa>/reports/cargue/sio_ids.csv` (diario, solo en
   escritura), que permite detener y reanudar sin duplicar. Cada ejecución deja su reporte en el mismo directorio.
@@ -32,6 +34,7 @@ import unicodedata
 import uuid
 from collections import Counter, defaultdict
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +50,8 @@ ORDEN = [
     "packaging_types", "brands", "attribute_definitions", "categories", "category_attributes",
     "products", "product_presentations", "product_identifiers", "product_categories", "product_attribute_values",
     "product_assets", "company_products", "company_product_presentations",
+    # Spec 021: tasa de impuesto de compra de productos de empresa ya existentes (PUT, nunca sobrescribe otra tasa).
+    "company_product_purchase_taxes",
 ]
 # Los activos solo registran la referencia (storage_uri): el archivo debe estar ya en MinIO, subido con la cuenta de
 # migración (README, sección 11). Sin --con-imagenes no se procesan.
@@ -66,7 +71,7 @@ CATALOGOS_COMPLETOS = {"packaging_types", "attribute_definitions", "categories",
 SIN_VALOR_POR_DEFECTO = {"company_products": ("sale_price", "reference_cost")}
 TIPOS_DE_IDENTIDAD = ("GTIN", "EAN", "UPC", "BARCODE", "IUM")
 PARAMETROS_DE_RUTA = {"company_id": "company_ref", "product_id": "product_ref", "category_id": "category_ref",
-                      "definition_id": "attribute_definition_ref"}
+                      "definition_id": "attribute_definition_ref", "company_product_id": "company_product_ref"}
 CATALOGO_SIO = {  # propiedad del contrato -> (columna del CSV, catálogo global de SIO)
     "country_id": ("country_iso3", "country"), "base_unit_id": ("base_unit_code", "unit"),
     "content_unit_id": ("content_unit_code", "unit"), "unit_of_measure_id": ("unit_code", "unit"),
@@ -181,6 +186,9 @@ class Cargador:
         sel["company_product_presentations"] = {r[self.pk["company_product_presentations"]]
                                                 for r in self.gold["company_product_presentations"]
                                                 if r["company_product_ref"] in sel["company_products"]}
+        sel["company_product_purchase_taxes"] = {r[self.pk["company_product_purchase_taxes"]]
+                                                 for r in self.gold["company_product_purchase_taxes"]
+                                                 if r["company_product_ref"] in sel["company_products"]}
         elegidos = [r for r in self.gold["products"] if r["product_ref"] in productos]
         sel["brands"] = {r["brand_ref"] for r in elegidos if r["brand_ref"]}
         sel["organization_identities"] = ({r["manufacturer_organization_ref"] for r in elegidos
@@ -384,6 +392,8 @@ class Cargador:
             return {**r, "resultado": "OMITIDO", "detalle": SIN_IMAGENES}
         if (tabla, ref) in self.ya_cargados:
             return {**r, "resultado": "YA_CARGADO", "sio_id": self.ids[(tabla, ref)]}
+        if tabla == "company_product_purchase_taxes":
+            return self._tasa_de_compra(r, fila)
         simulada = False
         for destino, dep in self.dependencias(tabla, fila):
             if (destino, dep) in self.ids:
@@ -421,6 +431,43 @@ class Cargador:
             self.simulados.add(sid)
             return {**r, "resultado": "CREARIA", "sio_id": sid, "detalle": json.dumps(cuerpo, ensure_ascii=False)[:600]}
         return self._crear(r, servicio, metodo, ruta, cuerpo)
+
+    def _tasa_de_compra(self, r: dict, fila: dict) -> dict:
+        """Spec 021: configura la tasa de un producto de empresa existente, solo con el valor explícito de la fila.
+
+        - Producto sin cargar → `DEPENDENCIA`; producto simulado → `ACTUALIZARIA` sin consultar SIO.
+        - SIO ya tiene esa tasa → `REUSADO`; tiene otra → `CONFLICTO` (nunca se sobrescribe).
+        - Sin tasa en SIO: simulación → `ACTUALIZARIA`; escritura → `PUT` con la `version` leída → `ACTUALIZADO`.
+        """
+        clave = ("company_products", fila["company_product_ref"])
+        if clave not in self.ids:
+            estado = self.resultado.get(clave, "no cargada ni seleccionada")
+            return {**r, "resultado": "DEPENDENCIA", "detalle": f"depende de {fila['company_product_ref']} ({estado})"}
+        producto = self.ids[clave]
+        servicio, metodo, ruta, _, _ = self.construir("company_product_purchase_taxes", fila)
+        valor = fila["purchase_tax_percentage"]
+        r.update(metodo=metodo, servicio=servicio, ruta=ruta)
+        if producto in self.simulados:
+            return {**r, "resultado": "ACTUALIZARIA", "sio_id": producto, "detalle": f"tasa {valor} (producto simulado)"}
+        status, actual = self._get(servicio, f"/api/v1/company-products/{producto}")
+        if status != 200:
+            return {**r, "resultado": "ERROR", "detalle": f"GET del producto respondió HTTP {status}"}
+        configurada = actual.get("purchase_tax_percentage")
+        if configurada is not None:
+            if Decimal(str(configurada)) == Decimal(valor):
+                return {**r, "resultado": "REUSADO", "sio_id": producto, "detalle": f"tasa {configurada} ya configurada"}
+            return {**r, "resultado": "CONFLICTO", "sio_id": producto,
+                    "detalle": f"SIO ya tiene la tasa {configurada}; no se sobrescribe con {valor}"}
+        cuerpo = {"version": actual["version"], "purchase_tax_percentage": valor}
+        errores = self.validar_contrato("company_product_purchase_taxes", cuerpo)
+        if errores:
+            return {**r, "resultado": "INVALIDA", "detalle": "; ".join(errores)}
+        if not self.escribir:
+            return {**r, "resultado": "ACTUALIZARIA", "sio_id": producto, "detalle": json.dumps(cuerpo, ensure_ascii=False)}
+        resultado = self._crear(r, servicio, metodo, ruta, cuerpo)
+        if resultado["resultado"] == "CREADO":
+            resultado["resultado"] = "ACTUALIZADO"
+        return resultado
 
     def _reusar(self, r: dict, tabla: str, cuerpo: dict, existente: dict) -> dict:
         if tabla == "product_attribute_values":
@@ -477,9 +524,10 @@ class Cargador:
                         r = self.procesar(tabla, fila)
                         clave = (tabla, r["ref"])
                         self.resultado[clave] = r["resultado"]
-                        if r.get("sio_id") and r["resultado"] in ("CREADO", "REUSADO", "CREARIA", "YA_CARGADO"):
+                        if r.get("sio_id") and r["resultado"] in (
+                                "CREADO", "REUSADO", "CREARIA", "YA_CARGADO", "ACTUALIZADO", "ACTUALIZARIA"):
                             self.ids[clave] = r["sio_id"]
-                        if self.escribir and r["resultado"] in ("CREADO", "REUSADO"):
+                        if self.escribir and r["resultado"] in ("CREADO", "REUSADO", "ACTUALIZADO"):
                             anotar.writerow([tabla, r["ref"], r["sio_id"], r["resultado"], nombre])
                             diario.flush()
                             os.fsync(diario.fileno())

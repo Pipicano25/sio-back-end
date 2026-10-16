@@ -471,6 +471,37 @@ def commercial_steps() -> list[Step]:
             save={"item_mayorista": "id"},
             audit=(AuditSpec(cr, "CREATE_PRICE_LIST_ITEM", "PriceListItem", "{item_mayorista}"),),
         ),
+        # Spec 021: tasa de compra configurada y una lista con precio automático (aparte de GENERAL y MAYORISTA).
+        Step(
+            "C-12.tasas", "Configurar la tasa de impuesto de compra de los productos A y B (0 %)", EX2, (8,), "admin.test",
+            _cr("company_product_purchase_taxes:update"), cr, "POST", "/companies/{empresa_a}/company-products/purchase-taxes/batch", 200,
+            body={"items": [
+                {"company_product_id": "{producto_empresa_a}", "version": "{producto_empresa_a_version}", "purchase_tax_percentage": "0"},
+                {"company_product_id": "{producto_empresa_b}", "version": "{producto_empresa_b_version}", "purchase_tax_percentage": "0"},
+            ]},
+            save={"producto_empresa_a_version": "items.0.version", "producto_empresa_b_version": "items.1.version"},
+            audit=(
+                AuditSpec(cr, "UPDATE_COMPANY_PRODUCT_PURCHASE_TAX", "CompanyProduct", "{producto_empresa_a}"),
+                AuditSpec(cr, "UPDATE_COMPANY_PRODUCT_PURCHASE_TAX", "CompanyProduct", "{producto_empresa_b}"),
+            ),
+            why="Spec 021: sin tasa la compra no se confirma. 0 % (exento, dato ficticio) conserva exactos los costos y márgenes del escenario; `null` sería «sin configurar».",
+        ),
+        Step(
+            "C-12.lista_automatica", "Crear la lista de precios AUTOMATICA", EX2, (8,), "admin.test",
+            _cr("price_lists:create"), cr, "POST", "/companies/{empresa_a}/price-lists", 201,
+            body={"code": "AUTOMATICA-{run}", "name": "Lista AUTOMATICA MVP {run} (dato ficticio)", "currency_code": "COP", "is_default": False},
+            save={"lista_automatica": "id"},
+            audit=(AuditSpec(cr, "CREATE_PRICE_LIST", "PriceList", "{lista_automatica}"),),
+            why="Spec 021: solo esta lista tiene política; GENERAL y MAYORISTA conservan sus precios manuales y las ventas no la usan.",
+        ),
+        Step(
+            "C-12.politica", "Crear la política de ganancia (30 %) con la caja del producto A", EX2, (8,), "admin.test",
+            _cr("pricing_policies:create"), cr, "POST", "/companies/{empresa_a}/price-lists/{lista_automatica}/pricing-policies", 201,
+            body={"name": "MVP {run} (dato ficticio)", "markup_percentage": "30", "company_product_presentation_ids": ["{presentacion_caja_empresa_a}"]},
+            save={"politica": "id"},
+            audit=(AuditSpec(cr, "CREATE_PRICING_POLICY", "PricingPolicy", "{politica}"),),
+            why="La política no cambia precios: rige desde la siguiente recepción física de la caja.",
+        ),
         Step(
             "C-13.compras", "Crear la secuencia de numeración de compras", EX3, (10,), "admin.test",
             "perm:purchase:purchase_sequences:create", "purchase", "POST", "/companies/{empresa_a}/purchase-sequences", 201,
@@ -573,6 +604,13 @@ PURCHASES = (
     + [purchase_confirm(number) for number in ("1", "2", "3")]
 )
 PURCHASE_RECEIPTS = [purchase_receive(number) for number in ("1", "2", "3")]
+AUTOMATIC_PRICE_CHECK = Step(
+    "P-03.precio_automatico", "Consultar el precio automático de la caja en AUTOMATICA", EX3, (10, 11), "admin.test",
+    _cr("price_list_items:read"), "commercial-relationship", "GET", "/companies/{empresa_a}/price-list-items", 200,
+    params={"price_list_id": "{lista_automatica}"},
+    expected_note="`unit_price` = `15600.00` y `origin` = `AUTOMATIC` (12 000 por caja en P1, tasa 0 %, × 1,30); lo aplica el worker de precios después de la recepción",
+    why="Spec 021: compra → recepción física → precio automático. El costo FIFO de Inventory no cambia (sin impuestos).",
+)
 
 INVENTORY_READS = [
     Step(
@@ -858,6 +896,7 @@ RECORRIDO = (
     + PURCHASES
     + SALE_BEFORE_RECEIPT
     + PURCHASE_RECEIPTS
+    + [AUTOMATIC_PRICE_CHECK]
     + INVENTORY_READS
     + SALES_DRAFTS
     + SALE_AVAILABILITY

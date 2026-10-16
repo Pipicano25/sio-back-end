@@ -16,8 +16,7 @@ def test_confirmation_applies_output_copies_fifo_cost_and_assigns_number(
     clock.fixed = datetime(2026, 10, 7, 15, 0, tzinfo=UTC)
     make_sequence(reset_policy="MONTHLY")
     draft = make_draft(
-        line(world.product, "2", company_product_presentation_id=world.presentation, price_list_id=world.price_list,
-             tax_amount="5700"),
+        line(world.product, "2", company_product_presentation_id=world.presentation, price_list_id=world.price_list),
         line(world.product_2, "3"),
     )
     response = confirm(draft)

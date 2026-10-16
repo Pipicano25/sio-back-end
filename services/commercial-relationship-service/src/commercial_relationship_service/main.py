@@ -43,6 +43,15 @@ from commercial_relationship_service.api.price_list_items import (
 from commercial_relationship_service.api.price_lists import (
     build_router as build_price_lists_router,
 )
+from commercial_relationship_service.api.automatic_prices import (
+    build_router as build_automatic_prices_router,
+)
+from commercial_relationship_service.api.company_product_taxes import (
+    build_router as build_product_taxes_router,
+)
+from commercial_relationship_service.api.pricing_policies import (
+    build_router as build_pricing_policies_router,
+)
 from commercial_relationship_service.api.security import build_auth
 from commercial_relationship_service.api.supplier_payment_conditions import (
     build_router as build_payment_conditions_router,
@@ -236,6 +245,7 @@ def create_app(
     register_error_handlers(app)
     app.include_router(build_health_router(database))
     app.include_router(build_products_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_product_taxes_router(current_auth), prefix=API_PREFIX)  # spec 021
     app.include_router(build_customers_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_suppliers_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_summaries_router(current_auth), prefix=API_PREFIX)
@@ -245,6 +255,8 @@ def create_app(
     app.include_router(build_price_lists_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_price_list_items_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_applicable_prices_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_pricing_policies_router(current_auth), prefix=API_PREFIX)  # spec 021
+    app.include_router(build_automatic_prices_router(current_auth), prefix=API_PREFIX)  # spec 021
 
     current_auth.protect(app, public_paths=public_paths)
     # Último middleware agregado = más externo: envuelve también a sio-auth.

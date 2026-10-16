@@ -17,6 +17,7 @@ from uuid import UUID
 from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.application.exceptions import (
     InvalidStatusTransitionError,
+    PriceClosedByAutomaticUpdateError,
     VersionConflictError,
     PresentationInactiveError,
     PriceInEffectNotModifiableError,
@@ -44,6 +45,12 @@ from commercial_relationship_service.domain.validity import (
 )
 
 EDITABLE_FIELDS = ("unit_price", "valid_from", "valid_to")
+
+
+def _require_not_closed_automatically(current) -> None:
+    """Spec 021 (RC-021-9, FR-021-25): un precio cerrado o cancelado por una aplicación no vuelve a regir."""
+    if getattr(current, "closure_reason", None) is not None:
+        raise PriceClosedByAutomaticUpdateError
 
 
 def _require_version(current, version: int) -> None:
@@ -87,6 +94,7 @@ class PriceListItemService:
         datos siguen siendo los validados (Principio VII).
         """
         _require_version(current, version)
+        _require_not_closed_automatically(current)
         price_list = self._lists.get(current.price_list_id)
         validate_amount_scale(values["unit_price"], price_list.currency_code, field="unit_price")
         now = self._now()
@@ -178,6 +186,7 @@ class PriceListItemService:
 
     def reactivate(self, current, *, version: int, actor: str):
         """Revalida lista, producto y presentación `ACTIVE`; el solapamiento lo rechaza la base."""
+        _require_not_closed_automatically(current)
         next_status(current.status, REACTIVATE)
         require_active_price_list(self._lists, current.price_list_id, current.company_id)
         require_product(self._products, current.company_product_id, current.company_id)

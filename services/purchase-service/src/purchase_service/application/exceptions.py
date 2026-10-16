@@ -290,3 +290,48 @@ class DependencyUnavailableError(PurchaseError):
         self.provider = provider
         self.operation = operation
         self.cause = cause
+
+
+class PurchaseTaxNotConfiguredError(PurchaseError):
+    """Spec 021 (FR-021-12, CP-31): hay líneas sin tasa de impuesto; el borrador se conserva (`409`)."""
+
+    code = "PURCHASE_TAX_NOT_CONFIGURED"
+    title = "Impuesto de compra sin configurar"
+
+    def __init__(self, errors: Sequence[Mapping[str, Any]]) -> None:
+        super().__init__(
+            "Una o más líneas no tienen tasa de impuesto de compra: configure la tasa del producto (0 es válido) o "
+            "ajuste la de la línea antes de confirmar.",
+            errors=errors,
+        )
+
+
+class PurchaseTaxChangedError(PurchaseError):
+    """Spec 021 (FR-021-12, DS-04, CP-65): la tasa predeterminada cambió desde que se guardó la línea (`409`)."""
+
+    code = "PURCHASE_TAX_CHANGED"
+    title = "Tasa de impuesto modificada"
+
+    def __init__(self, errors: Sequence[Mapping[str, Any]]) -> None:
+        super().__init__(
+            "La tasa de impuesto predeterminada de uno o más productos cambió desde que se guardó la línea. Vuelva a "
+            "guardar la línea para usar la tasa actual o ajústela a la de la factura.",
+            errors=errors,
+        )
+
+
+class DuplicatePresentationInPurchaseError(PurchaseError):
+    """Spec 021 (Historia 8, CP-29): la misma presentación aparece en dos líneas de la compra (`409`).
+
+    Cada recepción entrega un solo costo por presentación a Commercial Relationship (serie contigua); por eso una compra
+    no repite presentaciones. Lo garantiza también `uq_purchase_details_purchase_presentation`.
+    """
+
+    code = "DUPLICATE_PRESENTATION_IN_PURCHASE"
+    title = "Presentación repetida en la compra"
+
+    def __init__(self, errors: Sequence[Mapping[str, Any]]) -> None:
+        super().__init__(
+            "La misma presentación aparece en más de una línea: agrupe la cantidad en una sola línea.",
+            errors=errors,
+        )

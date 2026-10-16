@@ -69,6 +69,10 @@ class PriceListItemResponse(AuditedResponse):
     currency_code: str
     valid_from: AwareDatetime
     valid_to: AwareDatetime | None
+    # Spec 021 (FR-021-24): origen y cierre automáticos; sin costos ni porcentajes (FR-021-32a).
+    origin: str | None = None
+    closure_reason: str | None = None
+    automatic_application_id: UUID | None = None
 
     @field_serializer("unit_price")
     def _unit_price(self, value: Decimal) -> str:

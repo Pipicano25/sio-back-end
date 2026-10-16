@@ -29,7 +29,8 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import CHAR
+from sqlalchemy.dialects.postgresql import ARRAY, CHAR
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from commercial_relationship_service.infrastructure.database import Base
@@ -75,6 +76,8 @@ class CompanyProductModel(_Audited, Base):
     )
     is_purchasable: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     is_sellable: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    # Spec 021 (FR-021-07): NULL = sin configurar; 0 es válido. CHECK en la migración 0005.
+    purchase_tax_percentage: Mapped[Decimal | None] = mapped_column(Numeric(7, 4))
 
     __mapper_args__ = {"version_id_col": _Audited.version}
 
@@ -495,6 +498,10 @@ class PriceListItemModel(_Audited, Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Spec 021 (FR-021-24): NULL = precio manual; los creados o cerrados por una aplicación lo indican.
+    origin: Mapped[str | None] = mapped_column(String(12))
+    closure_reason: Mapped[str | None] = mapped_column(String(30))
+    automatic_application_id: Mapped[UUID | None] = mapped_column()
 
     __mapper_args__ = {"version_id_col": _Audited.version}
 
@@ -515,10 +522,280 @@ class PriceListItemModel(_Audited, Base):
         CheckConstraint("status IN ('ACTIVE','INACTIVE')", name="status"),
         CheckConstraint("unit_price >= 0", name="unit_price_non_negative"),
         CheckConstraint("valid_to IS NULL OR valid_to > valid_from", name="validity"),
+        CheckConstraint("origin IS NULL OR origin = 'AUTOMATIC'", name="origin"),
+        CheckConstraint(
+            "closure_reason IS NULL OR closure_reason IN ('AUTOMATIC_SUPERSEDED', 'NO_POLICY')",
+            name="closure_reason",
+        ),
+        ForeignKeyConstraint(
+            ["automatic_application_id"],
+            ["automatic_price_applications.id"],
+            name="fk_price_list_items_automatic_application",
+            ondelete="RESTRICT",
+        ),
         Index("ix_price_list_items_resolution", "price_list_id", "company_product_id", "valid_from"),
         Index("ix_price_list_items_company_id_status", "company_id", "status"),
     )
 
+
+# --------------------------------------------------------------------------
+# Spec 021: políticas de precios y actualizaciones automáticas por recepción (`data-model.md`).
+# Las exclusiones GiST (`ex_price_list_pricing_policy_*_no_overlap`) y los triggers de inmutabilidad
+# solo existen en la migración 0005, como `ex_price_list_items_no_overlap`.
+# --------------------------------------------------------------------------
+
+AUTOMATIC_FINAL_STATUSES = (
+    "APPLIED",
+    "UNCHANGED",
+    "ENDED_NO_POLICY",
+    "NO_PRICE_TO_END",
+    "SKIPPED_LIST_NOT_EFFECTIVE",
+    "SKIPPED_CURRENCY_MISMATCH",
+    "SKIPPED_PRESENTATION_INACTIVE",
+    "SKIPPED_ZERO_COST",
+    "RESOLVED",
+)
+AUTOMATIC_STATUSES = ("PENDING", "FAILED", *AUTOMATIC_FINAL_STATUSES)
+
+
+def _quoted(values: tuple[str, ...]) -> str:
+    return ", ".join(f"'{value}'" for value in values)
+
+
+class PricingPolicyModel(_Audited, Base):
+    """Política de precios de una lista (FR-021-01); `INACTIVE` es final (FR-021-04)."""
+
+    __tablename__ = "price_list_pricing_policies"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[UUID] = mapped_column(nullable=False)
+    price_list_id: Mapped[UUID] = mapped_column(nullable=False)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    deactivated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deactivation_reason: Mapped[str | None] = mapped_column(String(500))
+
+    __mapper_args__ = {"version_id_col": _Audited.version}
+
+    __table_args__ = (
+        _same_company_fk(["price_list_id", "company_id"], "price_lists", "fk_price_list_pricing_policies_price_list"),
+        UniqueConstraint("id", "price_list_id", name="uq_price_list_pricing_policies_id_price_list_id"),
+        CheckConstraint("status IN ('ACTIVE','INACTIVE')", name="status"),
+        CheckConstraint("(status = 'INACTIVE') = (deactivated_at IS NOT NULL)", name="deactivation"),
+        Index(
+            "uq_price_list_pricing_policies_name_ci",
+            "price_list_id",
+            func.lower(text("name")),
+            unique=True,
+            postgresql_where=text("status = 'ACTIVE'"),
+        ),
+        Index("ix_price_list_pricing_policies_company_id_status", "company_id", "status"),
+    )
+
+
+class _History:
+    """Vigencia `[valid_from, valid_to)` y metadatos D25 de un historial inmutable."""
+
+    valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_by: Mapped[str | None] = mapped_column(String(255))
+
+
+def _history_checks() -> tuple[CheckConstraint, ...]:
+    return (
+        CheckConstraint("valid_to IS NULL OR valid_to > valid_from", name="validity"),
+        CheckConstraint(
+            "(valid_to IS NULL) = (closed_at IS NULL) AND (closed_at IS NULL) = (closed_by IS NULL)",
+            name="closure",
+        ),
+    )
+
+
+class PricingPolicyTermModel(_History, Base):
+    """Porcentaje de recargo de una política durante una vigencia (FR-021-02); inmutable salvo su cierre."""
+
+    __tablename__ = "price_list_pricing_policy_terms"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    policy_id: Mapped[UUID] = mapped_column(nullable=False)
+    markup_percentage: Mapped[Decimal] = mapped_column(Numeric(8, 4), nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["policy_id"],
+            ["price_list_pricing_policies.id"],
+            name="fk_price_list_pricing_policy_terms_policy",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint("markup_percentage >= 0 AND markup_percentage <= 1000", name="markup_range"),
+        *_history_checks(),
+    )
+
+
+class PricingPolicyPresentationModel(_History, Base):
+    """Pertenencia de una presentación a una política durante una vigencia (FR-021-03); inmutable salvo su cierre."""
+
+    __tablename__ = "price_list_pricing_policy_presentations"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[UUID] = mapped_column(nullable=False)
+    policy_id: Mapped[UUID] = mapped_column(nullable=False)
+    price_list_id: Mapped[UUID] = mapped_column(nullable=False)
+    company_product_presentation_id: Mapped[UUID] = mapped_column(nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["policy_id", "price_list_id"],
+            ["price_list_pricing_policies.id", "price_list_pricing_policies.price_list_id"],
+            name="fk_price_list_pricing_policy_presentations_policy",
+            ondelete="RESTRICT",
+        ),
+        _same_company_fk(
+            ["company_product_presentation_id", "company_id"],
+            "company_product_presentations",
+            "fk_price_list_pricing_policy_presentations_presentation",
+        ),
+        *_history_checks(),
+        Index("ix_price_list_pricing_policy_presentations_policy_id", "policy_id"),
+    )
+
+
+class AutomaticPriceUpdateRequestModel(Base):
+    """Inbox idempotente de las solicitudes de Purchase (FR-021-19; D26); inmutable."""
+
+    __tablename__ = "automatic_price_update_requests"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[UUID] = mapped_column(nullable=False)
+    contract_version: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    purchase_id: Mapped[UUID] = mapped_column(nullable=False)
+    purchase_detail_id: Mapped[UUID] = mapped_column(nullable=False)
+    branch_id: Mapped[UUID] = mapped_column(nullable=False)
+    company_product_id: Mapped[UUID] = mapped_column(nullable=False)
+    company_product_presentation_id: Mapped[UUID] = mapped_column(nullable=False)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    previous_sequence: Mapped[int | None] = mapped_column(Integer)
+    currency_code: Mapped[str] = mapped_column(CHAR(3), nullable=False)
+    line_total: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
+    previous_purchase_detail_id: Mapped[UUID | None] = mapped_column()
+    previous_line_total: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    previous_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4))
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    received_by_user_id: Mapped[UUID] = mapped_column(nullable=False)
+    payload_hash: Mapped[str] = mapped_column(CHAR(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    __table_args__ = (
+        _same_company_fk(
+            ["company_product_id", "company_id"], "company_products", "fk_automatic_price_update_requests_company_product"
+        ),
+        _same_company_fk(
+            ["company_product_presentation_id", "company_product_id"],
+            "company_product_presentations",
+            "fk_automatic_price_update_requests_presentation",
+        ),
+        UniqueConstraint("purchase_detail_id", name="uq_automatic_price_update_requests_purchase_detail_id"),
+        UniqueConstraint(
+            "company_id", "company_product_presentation_id", "sequence", name="uq_automatic_price_update_requests_sequence"
+        ),
+        CheckConstraint("sequence > 0", name="sequence_positive"),
+        CheckConstraint("previous_sequence IS NULL OR previous_sequence = sequence - 1", name="previous_sequence"),
+        CheckConstraint("quantity > 0", name="quantity_positive"),
+        CheckConstraint(
+            "(previous_line_total IS NULL) = (previous_quantity IS NULL) "
+            "AND (previous_quantity IS NULL OR previous_quantity > 0)",
+            name="previous_facts",
+        ),
+        CheckConstraint("currency_code ~ '^[A-Z]{3}$'", name="currency_code_format"),
+    )
+
+
+class AutomaticPriceApplicationModel(Base):
+    """Aplicación de una solicitud a una lista (FR-021-20..28): la captura es inmutable y un estado final no cambia."""
+
+    __tablename__ = "automatic_price_applications"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[UUID] = mapped_column(nullable=False)
+    request_id: Mapped[UUID] = mapped_column(nullable=False)
+    price_list_id: Mapped[UUID] = mapped_column(nullable=False)
+    company_product_presentation_id: Mapped[UUID] = mapped_column(nullable=False)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    policy_id: Mapped[UUID | None] = mapped_column()
+    term_id: Mapped[UUID | None] = mapped_column()
+    markup_percentage: Mapped[Decimal | None] = mapped_column(Numeric(8, 4))
+    current_unit_cost: Mapped[Decimal | None] = mapped_column(Numeric(28, 10))
+    previous_unit_cost: Mapped[Decimal | None] = mapped_column(Numeric(28, 10))
+    reference_cost: Mapped[Decimal | None] = mapped_column(Numeric(28, 10))
+    previous_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 4))
+    new_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 4))
+    previous_price_item_id: Mapped[UUID | None] = mapped_column()
+    new_price_item_id: Mapped[UUID | None] = mapped_column()
+    cancelled_future_item_ids: Mapped[list[UUID]] = mapped_column(
+        ARRAY(PG_UUID(as_uuid=True)), nullable=False, server_default=text("'{}'::uuid[]")
+    )
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="PENDING")
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    first_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error_code: Mapped[str | None] = mapped_column(String(60))
+    last_error_detail: Mapped[str | None] = mapped_column(String(500))
+    resolved_by: Mapped[str | None] = mapped_column(String(255))
+    resolution_reason: Mapped[str | None] = mapped_column(String(500))
+    version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    updated_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    __mapper_args__ = {"version_id_col": version}
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["request_id"],
+            ["automatic_price_update_requests.id"],
+            name="fk_automatic_price_applications_request",
+            ondelete="RESTRICT",
+        ),
+        _same_company_fk(["price_list_id", "company_id"], "price_lists", "fk_automatic_price_applications_price_list"),
+        ForeignKeyConstraint(
+            ["policy_id"],
+            ["price_list_pricing_policies.id"],
+            name="fk_automatic_price_applications_policy",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["term_id"],
+            ["price_list_pricing_policy_terms.id"],
+            name="fk_automatic_price_applications_term",
+            ondelete="RESTRICT",
+        ),
+        UniqueConstraint("request_id", "price_list_id", name="uq_automatic_price_applications_request_list"),
+        CheckConstraint(f"status IN ({_quoted(AUTOMATIC_STATUSES)})", name="status"),
+        CheckConstraint("attempts >= 0", name="attempts_non_negative"),
+        CheckConstraint(
+            "(policy_id IS NULL) = (term_id IS NULL) AND (policy_id IS NULL) = (markup_percentage IS NULL)",
+            name="capture",
+        ),
+        CheckConstraint(
+            f"(status IN ({_quoted(AUTOMATIC_FINAL_STATUSES)})) = (completed_at IS NOT NULL)", name="completion"
+        ),
+        CheckConstraint(
+            "(status = 'RESOLVED') = (resolved_by IS NOT NULL AND resolution_reason IS NOT NULL)", name="resolution"
+        ),
+        Index("ix_automatic_price_applications_queue", "price_list_id", "company_product_presentation_id", "sequence"),
+        Index(
+            "ix_automatic_price_applications_pending",
+            "next_attempt_at",
+            postgresql_where=text("status IN ('PENDING', 'FAILED')"),
+        ),
+        Index("ix_automatic_price_applications_company_id_status", "company_id", "status"),
+    )
 
 # Outbox de auditoría (feature 016, D26): estructura de `libs/sio-audit`, registrada en el
 # `metadata` para que `alembic check` coincida con la migración.

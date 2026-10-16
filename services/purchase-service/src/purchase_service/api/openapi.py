@@ -27,8 +27,10 @@ OPENAPI_TAGS = [
     {
         "name": TAG_OPERATIONS,
         "description": (
-            "Confirmar ingresa la mercancía en Inventory (cantidad en unidad base, costo por unidad base sin "
-            "impuestos) y asigna el número del período; anular revierte exactamente esa entrada. Exigen "
+            "Confirmar asigna el número del período y deja la compra pendiente de recepción; la **recepción física** "
+            "ingresa la mercancía en Inventory (cantidad en unidad base, costo por unidad base sin impuestos) y "
+            "registra el costo para la actualización automática de precios (spec 021). Anular una compra recibida "
+            "revierte exactamente su entrada. Exigen "
             "`Idempotency-Key`: repetir la clave devuelve el mismo resultado sin duplicar movimientos. Con "
             "Inventory no disponible la operación queda `PENDING` y se completa con el reintento o el conciliador."
         ),
@@ -69,7 +71,8 @@ WRITE_RESPONSES = {
     404: problem("`PURCHASE.NOT_FOUND`."),
     409: problem(
         "`PURCHASE.REFERENCES_NOT_ELIGIBLE`, `PURCHASE.VERSION_CONFLICT`, `PURCHASE.INVALID_STATUS`, "
-        "`PURCHASE.OPERATION_IN_PROGRESS`, `PURCHASE.EVENT_NOT_ALLOWED_IN_STATUS`."
+        "`PURCHASE.OPERATION_IN_PROGRESS`, `PURCHASE.EVENT_NOT_ALLOWED_IN_STATUS`, "
+        "`PURCHASE.DUPLICATE_PRESENTATION_IN_PURCHASE` (la presentación ya está en otra línea, spec 021)."
     ),
     422: problem("`PURCHASE.VALIDATION_ERROR` (`errors[].code`)."),
 }
@@ -80,7 +83,8 @@ OPERATION_RESPONSES = {
         "`PURCHASE.IDEMPOTENCY_KEY_CONFLICT`, `PURCHASE.REFERENCES_NOT_ELIGIBLE`, `PURCHASE.SEQUENCE_NOT_CONFIGURED`, "
         "`PURCHASE.SEQUENCE_EXHAUSTED`, `PURCHASE.INVENTORY_REJECTED`, `PURCHASE.INVENTORY_ALREADY_CONSUMED`, "
         "`PURCHASE.OPERATION_IN_PROGRESS`, `PURCHASE.OPERATION_NOT_APPLIED`, `PURCHASE.VERSION_CONFLICT`, "
-        "`PURCHASE.INVALID_STATUS`."
+        "`PURCHASE.INVALID_STATUS`; al confirmar (spec 021) `PURCHASE.PURCHASE_TAX_NOT_CONFIGURED`, "
+        "`PURCHASE.PURCHASE_TAX_CHANGED` y `PURCHASE.DUPLICATE_PRESENTATION_IN_PURCHASE`."
     ),
     422: problem("`PURCHASE.VALIDATION_ERROR` o `PURCHASE.PURCHASE_WITHOUT_LINES`."),
 }

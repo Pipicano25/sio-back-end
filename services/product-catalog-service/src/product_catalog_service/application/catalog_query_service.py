@@ -204,6 +204,8 @@ class CatalogQueryService:
                     "id": presentation_id,
                     "found": True,
                     "global_product_id": presentation.global_product_id,
+                    "code": presentation.code,
+                    "name": presentation.name,
                     "status": presentation.status,
                     "eligible_for_adoption": self.completeness.presentation_eligible(
                         presentation.status,

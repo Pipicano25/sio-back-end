@@ -26,7 +26,9 @@ from tests.integration.test_real_dependencies import (  # noqa: F401 (fixtures)
 
 pytestmark = pytest.mark.integration
 
-AUDIT = os.environ.get("AUDIT_SERVICE_BASE_URL", "http://127.0.0.1:8110/api/v1").rstrip("/")
+AUDIT = (  # el mismo nombre que en Purchase y Sales; `AUDIT_SERVICE_BASE_URL` se conserva por compatibilidad
+    os.environ.get("AUDIT_INTEGRATION_BASE_URL") or os.environ.get("AUDIT_SERVICE_BASE_URL") or "http://127.0.0.1:8110/api/v1"
+).rstrip("/")
 CR_SERVICE_ACCOUNT = "4d586bde-69d8-4f30-b05a-50b4ec68f72f"
 
 

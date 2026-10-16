@@ -81,6 +81,27 @@ PHASE_B_ROUTES: tuple[Route, ...] = (
 PHASE_A_ROUTES = ROUTES
 ROUTES = PHASE_A_ROUTES + PHASE_B_ROUTES
 
+# Spec 021: rutas nuevas. Sus permisos, su aislamiento y sus errores los prueban `test_pricing_policies*.py` y
+# `test_company_product_purchase_tax.py` y `test_automatic_price_applications.py`; aquí solo se contrastan con el OpenAPI y el contrato.
+SPEC_021_ROUTES: tuple[Route, ...] = (
+    Route("GET", "/api/v1/companies/{company_id}/price-lists/{price_list_id}/pricing-policies", "pricing_policies", "read", "company", False),
+    Route("POST", "/api/v1/companies/{company_id}/price-lists/{price_list_id}/pricing-policies", "pricing_policies", "create", "company", True),
+    Route("GET", "/api/v1/pricing-policies/{policy_id}", "pricing_policies", "read", "policy", False),
+    Route("PUT", "/api/v1/pricing-policies/{policy_id}", "pricing_policies", "update", "policy", True),
+    Route("POST", "/api/v1/pricing-policies/{policy_id}/percentage", "pricing_policies", "update", "policy", True),
+    Route("POST", "/api/v1/pricing-policies/{policy_id}/presentations", "pricing_policies", "update", "policy", True),
+    Route("GET", "/api/v1/pricing-policies/{policy_id}/presentations", "pricing_policies", "read", "policy", False),
+    Route("POST", "/api/v1/pricing-policies/{policy_id}/presentations/remove", "pricing_policies", "update", "policy", True),
+    Route("POST", "/api/v1/pricing-policies/{policy_id}/deactivate", "pricing_policies", "delete", "policy", True, True),
+    Route("GET", "/api/v1/pricing-policies/{policy_id}/terms", "pricing_policies", "read", "policy", False),
+    Route("PUT", "/api/v1/company-products/{company_product_id}/purchase-tax", "company_product_purchase_taxes", "update", "product", True),
+    Route("POST", "/api/v1/companies/{company_id}/company-products/purchase-taxes/batch", "company_product_purchase_taxes", "update", "company", True),
+    Route("POST", "/api/v1/companies/{company_id}/automatic-price-update-requests", "automatic_price_update_requests", "submit", "technical", True),
+    Route("GET", "/api/v1/companies/{company_id}/automatic-price-applications", "automatic_price_applications", "read", "company", False),
+    Route("GET", "/api/v1/companies/{company_id}/automatic-price-applications/{application_id}", "automatic_price_applications", "read", "company", False),
+    Route("POST", "/api/v1/companies/{company_id}/automatic-price-applications/{application_id}/resolution", "automatic_price_applications", "resolve", "company", True),
+)
+
 RESOURCES = (
     "company_products",
     "company_customers",

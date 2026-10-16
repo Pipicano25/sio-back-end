@@ -111,6 +111,8 @@ class HTTPCommercialDirectory:
                         is_purchasable=bool_field(item, "is_purchasable"),
                         inventory_control_enabled=bool_field(item, "inventory_control_enabled"),
                         status=text_field(item, "status"),
+                        # Spec 021 (FR-021-08): campo aditivo; ausente o nulo = sin configurar.
+                        purchase_tax_percentage=decimal_field(item, "purchase_tax_percentage", optional=True),
                     )
             except UnexpectedBody as exc:
                 raise self._bad("company_products_batch", exc) from None

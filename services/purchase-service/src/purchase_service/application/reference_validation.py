@@ -17,6 +17,9 @@ Spec 020: solo contado (una condición de pago cuyo tipo no es `CASH` → `409
 PAYMENT_CONDITION_NOT_AVAILABLE`); medio de pago declarado y activo de Payment Reference
 (`PAYMENT_METHOD_NOT_FOUND` `422` / `PAYMENT_METHOD_INACTIVE` `409`); presentación obligatoria
 (`PRESENTATION_REQUIRED`) y costo por unidad base mayor que cero (`BASE_UNIT_COST_NOT_POSITIVE`).
+
+Spec 021 (Historia 8): una presentación aparece a lo sumo en una línea de la compra
+(`409 DUPLICATE_PRESENTATION_IN_PURCHASE`, `check_unique_presentations`).
 """
 
 from __future__ import annotations
@@ -33,6 +36,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from purchase_service.application.exceptions import (
     OPERATIONAL_CONTEXT,
     DependencyUnavailableError,
+    DuplicatePresentationInPurchaseError,
     NotFoundError,
     ReferencesNotEligibleError,
     ValidationFailedError,
@@ -100,6 +104,8 @@ class LineSnapshot:
     factor: Decimal
     unit_code: str
     lead_time_hours: Decimal | None
+    purchase_tax_percentage: Decimal | None = None
+    """Spec 021: tasa predeterminada del producto en Commercial Relationship (`None` = sin configurar)."""
 
 
 @dataclass
@@ -118,6 +124,32 @@ class Findings:
             raise ValidationFailedError(self.invalid)
         if self.not_eligible:
             raise ReferencesNotEligibleError(self.not_eligible)
+
+
+DUPLICATE_PRESENTATION = "DUPLICATE_PRESENTATION_IN_PURCHASE"
+
+
+def check_unique_presentations(lines: Iterable[tuple[str, int | None, UUID | None]]) -> None:
+    """`(campo, número de línea, presentación)` de todas las líneas que quedarían en la compra.
+
+    Se informa cada línea que repite una presentación ya usada en una línea anterior (Historia 8, CP-29).
+    """
+    seen: dict[UUID, int | None] = {}
+    errors = []
+    for field_name, line_number, presentation_id in lines:
+        if presentation_id is None:
+            continue  # la presentación obligatoria la valida `resolve_lines` (Spec 020)
+        if presentation_id in seen:
+            first = seen[presentation_id]
+            where = f"la línea {first}" if first is not None else "otra línea"
+            errors.append(field_error(
+                field_name, DUPLICATE_PRESENTATION, f"La presentación ya está en {where} de la compra.",
+                line_number=line_number,
+            ) | {"company_product_presentation_id": str(presentation_id)})
+        else:
+            seen[presentation_id] = line_number
+    if errors:
+        raise DuplicatePresentationInPurchaseError(errors)
 
 
 def today_in(timezone: str, now: datetime) -> date:
@@ -428,10 +460,9 @@ class ReferenceResolver:
         if findings.invalid or findings.not_eligible:
             findings.raise_if_any()
 
-        global_presentations = self._parallel(
-            catalog.get_presentation,
-            [presentation.global_product_presentation_id for _, _, presentation, _ in accepted if presentation],
-        )
+        # Spec 021 (H-2): una consulta por cada 100 presentaciones globales, no una por presentación.
+        global_ids = [presentation.global_product_presentation_id for _, _, presentation, _ in accepted if presentation]
+        global_presentations = catalog.lookup_presentations(global_ids) if global_ids else {}
         global_products = self._parallel(catalog.get_product, [product.global_product_id for _, product, _, _ in accepted])
         unit_ids = [item.base_unit_id for item in global_products.values() if item is not None]
         units = self._parallel(catalog.get_unit, unit_ids)
@@ -481,6 +512,7 @@ class ReferenceResolver:
                     factor=factor,
                     unit_code=unit.code[:20],
                     lead_time_hours=supplier_product.expected_supplier_lead_time_hours if supplier_product else None,
+                    purchase_tax_percentage=product.purchase_tax_percentage,
                 )
             )
 

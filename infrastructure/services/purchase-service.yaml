@@ -2,7 +2,8 @@ name: purchase-service
 
 # Proyecto compose "purchase-service" (única definición Compose del microservicio):
 # base de datos propia, base de pruebas (perfil test), contenedor de aplicación,
-# audit-outbox-worker y conciliador de operaciones pendientes (misma imagen).
+# audit-outbox-worker, conciliador de operaciones pendientes y worker de entrega de
+# solicitudes de precio (spec 021), todos con la misma imagen.
 # La base, la aplicación y los procesos auxiliares se unen a "sio-network",
 # creada por el proyecto "sio" (infrastructure/compose.yaml), que debe estar
 # levantado antes: ahí vive Keycloak (depends_on no cruza proyectos; el orden lo
@@ -35,6 +36,9 @@ x-purchase-environment: &purchase-environment
   PURCHASE_LOCK_TIMEOUT_SECONDS: ${PURCHASE_LOCK_TIMEOUT_SECONDS:-5}
   PURCHASE_RECONCILER_INTERVAL_SECONDS: ${PURCHASE_RECONCILER_INTERVAL_SECONDS:-60}
   PURCHASE_RECONCILER_THRESHOLD_SECONDS: ${PURCHASE_RECONCILER_THRESHOLD_SECONDS:-300}
+  # Spec 021: entrega de solicitudes de precio a Commercial Relationship (EXC-001).
+  PURCHASE_PRICE_WORKER_INTERVAL_SECONDS: ${PURCHASE_PRICE_WORKER_INTERVAL_SECONDS:-5}
+  PURCHASE_PRICE_WORKER_MAX_BACKOFF_SECONDS: ${PURCHASE_PRICE_WORKER_MAX_BACKOFF_SECONDS:-300}
   # Identidad técnica propia (client_credentials, D5).
   KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
   PURCHASE_CLIENT_ID: purchase-service
@@ -156,6 +160,28 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-m", "purchase_service.reconciler", "--check"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - sio-network
+
+  # Worker de entrega de solicitudes de precio (spec 021, EXC-001): misma imagen y configuración
+  # que la API; entrega el outbox a Commercial Relationship con el cliente técnico purchase-service,
+  # en orden de secuencia por presentación.
+  purchase-price-update-worker:
+    image: sio/purchase-service:${SIO_SERVICES_VERSION}
+    container_name: sio-purchase-price-update-worker
+    command: ["python", "-m", "purchase_service.price_update_worker"]
+    restart: unless-stopped
+    environment:
+      <<: *purchase-environment
+    depends_on:
+      purchase-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "purchase_service.price_update_worker", "--check"]
       interval: 30s
       timeout: 5s
       retries: 3

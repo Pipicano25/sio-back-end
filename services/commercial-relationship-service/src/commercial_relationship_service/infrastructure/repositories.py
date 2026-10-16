@@ -44,7 +44,7 @@ from commercial_relationship_service.infrastructure.models import (
     SupplierProductModel,
 )
 from commercial_relationship_service.application import audit_events
-from commercial_relationship_service.infrastructure.persistence import end_read
+from commercial_relationship_service.infrastructure.persistence import commit_or_translate, end_read
 from commercial_relationship_service.infrastructure.repository_base import (
     SQLAlchemyRepositoryBase,
 )
@@ -73,6 +73,33 @@ class CompanyProductRepository(SQLAlchemyRepositoryBase[CompanyProductModel]):
             CompanyProductModel.global_product_id == global_product_id,
         )
 
+
+    def lock_many(self, ids: list[UUID]) -> dict[UUID, CompanyProductModel]:
+        """Bloquea (`FOR UPDATE`) los productos en orden de `id` para una escritura por lote (spec 021)."""
+        rows = self.session.scalars(
+            select(CompanyProductModel)
+            .where(CompanyProductModel.id.in_(ids))
+            .order_by(CompanyProductModel.id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        models = {row.id: row for row in rows}
+        for model in models.values():
+            audit_events.remember(self.session, model)
+        return models
+
+    def save_all(self, models: list[CompanyProductModel], *, audit: dict[str, Any]) -> list[CompanyProductModel]:
+        """Confirma varias modificaciones en una sola transacción, con un evento por producto."""
+        for model in models:
+            audit_events.track_update(self.session, model, **audit)
+        commit_or_translate(self.session, duplicates=self.duplicates)
+        for model in models:
+            self.session.refresh(model)
+        end_read(self.session)
+        return models
+
+    def abort(self) -> None:
+        self.session.rollback()
 
 class CompanyCustomerRepository(SQLAlchemyRepositoryBase[CompanyCustomerModel]):
     """`company_customers`."""

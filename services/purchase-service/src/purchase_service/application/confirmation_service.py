@@ -28,15 +28,24 @@ from purchase_service.application.exceptions import (
     InvalidStatusError,
     NotFoundError,
     OperationInProgressError,
+    PurchaseTaxChangedError,
+    PurchaseTaxNotConfiguredError,
     PurchaseWithoutLinesError,
     SequenceExhaustedError,
     SequenceInUseError,
     SequenceNotConfiguredError,
     VersionConflictError,
+    field_error,
 )
 from purchase_service.application.operation_engine import OperationEngine
-from purchase_service.application.purchase_service import Actor, PurchaseView
-from purchase_service.application.reference_validation import HeaderInput, LineInput, ReferenceResolver, resolve_together
+from purchase_service.application.purchase_service import PRODUCT_DEFAULT, Actor, PurchaseView
+from purchase_service.application.reference_validation import (
+    HeaderInput,
+    LineInput,
+    ReferenceResolver,
+    check_unique_presentations,
+    resolve_together,
+)
 from purchase_service.application.snapshots import apply_header, apply_line, touch
 from purchase_service.domain.numbering import exceeds_maximum, format_number, next_value, period_key
 from purchase_service.domain.status import CONFIRM, CONFIRMED, DRAFT, PENDING, RECEIVE, SUCCEEDED
@@ -45,6 +54,37 @@ from purchase_service.infrastructure.repository import UQ_IDEMPOTENCY_KEY, UQ_PE
 
 UQ_NUMBER = "uq_purchases_company_number"
 from purchase_service.infrastructure.sequence_repository import SequenceRepository
+
+
+def _rate(value) -> str:
+    return "sin configurar" if value is None else format(value.normalize(), "f")
+
+
+def check_line_taxes(lines, snapshots) -> None:
+    """Spec 021 (FR-021-12): toda línea con tasa y las predeterminadas iguales a la actual del producto.
+
+    Sin efectos: `409 PURCHASE_TAX_NOT_CONFIGURED` (el borrador se conserva) o `409 PURCHASE_TAX_CHANGED` (DS-04),
+    para que el impuesto pagado no cambie sin que el usuario lo vea.
+    """
+    missing, changed = [], []
+    for index, (line, snapshot) in enumerate(zip(lines, snapshots, strict=True)):
+        prefix = f"lines[{index}]."
+        if line.tax_percentage is None:
+            missing.append(field_error(
+                f"{prefix}tax_percentage", "PURCHASE_TAX_NOT_CONFIGURED",
+                "El producto no tiene tasa de impuesto de compra configurada.", line_number=line.line_number,
+            ) | {"company_product_id": str(line.company_product_id)})
+        elif line.tax_percentage_source == PRODUCT_DEFAULT and snapshot.purchase_tax_percentage != line.tax_percentage:
+            changed.append(field_error(
+                f"{prefix}tax_percentage", "PURCHASE_TAX_CHANGED",
+                f"La tasa guardada es {_rate(line.tax_percentage)} % y la actual del producto es "
+                f"{_rate(snapshot.purchase_tax_percentage)}.",
+                line_number=line.line_number,
+            ) | {"saved": _rate(line.tax_percentage), "current": _rate(snapshot.purchase_tax_percentage)})
+    if missing:
+        raise PurchaseTaxNotConfiguredError(missing)
+    if changed:
+        raise PurchaseTaxChangedError(changed)
 
 
 def check_key_owner(operation: PurchaseOperation, company_id: UUID, purchase_id: UUID, operation_type: str, subject: str) -> None:
@@ -134,6 +174,10 @@ class ConfirmationService:
         lines = self._repo.lines(purchase.id)
         if not lines:
             raise PurchaseWithoutLinesError()
+        check_unique_presentations(  # spec 021: defensivo, la base ya lo impide
+            (f"lines[{index}].company_product_presentation_id", line.line_number, line.company_product_presentation_id)
+            for index, line in enumerate(lines)
+        )
         self._repo.end_read()
 
         company = replace(self._resolver.company(company_id), default_currency=purchase.currency_code)
@@ -165,6 +209,7 @@ class ConfirmationService:
                 ],
             ),
         )
+        check_line_taxes(lines, line_snapshots)
         self._resolver.check_operator(company_id, operator.application_user_id)
         self._check_sequence(purchase)
         self._repo.end_read()

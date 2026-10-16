@@ -66,7 +66,10 @@ def test_line_snapshots_and_distinct_lookups() -> None:
     assert calls.count("products") == 1 and calls.count("presentations") == 1
     assert calls.count("supplier_product") == 1  # un solo GET por valor distinto
     catalog_calls = [name for name, _ in fakes.catalog.availability.calls]
-    assert catalog_calls.count("presentation") == 3  # una por presentación global distinta
+    # spec 021 (H-2): una sola consulta por lotes con las tres presentaciones globales distintas
+    assert catalog_calls.count("presentations") == 1 and "presentation" not in catalog_calls
+    [batch] = [argument for name, argument in fakes.catalog.availability.calls if name == "presentations"]
+    assert len(set(batch)) == 3
     assert catalog_calls.count("product") == 2  # dos productos globales distintos
     assert catalog_calls.count("unit") == 1
 

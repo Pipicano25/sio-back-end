@@ -16,8 +16,7 @@ def test_create_draft_with_resolved_prices(seller, world, fakes, clock) -> None:
     fakes.inventory.availability.fail_if_called = True  # RN-01: el borrador nunca toca Inventory
     body = sale_body(
         world,
-        line(world.product, "2", company_product_presentation_id=world.presentation, price_list_id=world.price_list,
-             tax_amount="5700"),
+        line(world.product, "2", company_product_presentation_id=world.presentation, price_list_id=world.price_list),
         line(world.product_2, "3"),
         line(world.product, "1.5"),
         observations="Venta de mostrador (ficticia)",
@@ -43,7 +42,8 @@ def test_create_draft_with_resolved_prices(seller, world, fakes, clock) -> None:
     assert box["unit_price"] == "16000.0000" and box["price_source"] == "PRICE_LIST_ITEM"
     assert box["price_list_id"] == str(world.price_list) and box["price_list_item_id"] == str(world.item_box)
     assert box["price_list_requested"] is True
-    assert (box["subtotal"], box["tax_amount"], box["total"]) == ("32000.00", "5700.00", "37700.00")
+    # Spec 021 (B-4): el precio de la lista es el importe final; Sales no suma impuesto.
+    assert (box["subtotal"], box["tax_amount"], box["total"]) == ("32000.00", "0.00", "32000.00")
     assert box["base_quantity_factor_snapshot"] == "12.00000000" and box["base_quantity"] == "24.0000"
     assert box["presentation_code_snapshot"] == "CAJA12" and box["unit_code_snapshot"] == "UND"
     # Sin lista: precio explícito de su presentación unidad en la lista predeterminada (spec 019).
@@ -53,7 +53,7 @@ def test_create_draft_with_resolved_prices(seller, world, fakes, clock) -> None:
     assert oil["subtotal"] == "27000.00" and oil["discount_amount"] == "0.00" and oil["total"] == "27000.00"
     assert rice["unit_price"] == "1500.0000" and rice["subtotal"] == "2250.00" and rice["base_quantity"] == "1.5000"
     assert (sale["subtotal"], sale["discount_total"], sale["tax_total"], sale["total"]) == (
-        "61250.00", "0.00", "5700.00", "66950.00",
+        "61250.00", "0.00", "0.00", "61250.00",
     )
     # ventas.test no tiene read-profitability: los campos se omiten (no se envían como null).
     assert "has_unknown_cost" not in sale

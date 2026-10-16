@@ -207,6 +207,7 @@ class SaleDetail(AuditColumns, Base):
         CheckConstraint("subtotal >= 0", name="subtotal"),
         CheckConstraint("discount_amount >= 0 AND discount_amount <= subtotal", name="discount_amount"),
         CheckConstraint("discount_amount = 0", name="no_discount"),  # spec 020
+        CheckConstraint("tax_amount = 0", name="no_tax"),  # spec 021 (B-4, provisional)
         CheckConstraint("total = subtotal - discount_amount + tax_amount", name="total"),
         CheckConstraint("base_quantity_factor_snapshot > 0", name="factor"),
         CheckConstraint(

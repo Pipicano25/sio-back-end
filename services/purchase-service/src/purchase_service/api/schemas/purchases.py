@@ -50,7 +50,9 @@ class LineIn(StrictModel):
     quantity: DecimalIn
     unit_cost: DecimalIn
     discount_amount: DecimalIn = Decimal("0")
-    tax_amount: DecimalIn = Decimal("0")
+    # Spec 021 (DS-03): `tax_amount` ya no se acepta (campo desconocido → `422`); lo calcula el servidor desde la tasa.
+    # `tax_percentage` ajusta la tasa de la línea y exige `perm:purchase:purchase_line_taxes:override` (FR-021-11).
+    tax_percentage: str | int | float | Decimal | None = None
 
     def to_data(self) -> LineData:
         return LineData(
@@ -60,7 +62,7 @@ class LineIn(StrictModel):
             quantity=self.quantity,
             unit_cost=self.unit_cost,
             discount_amount=self.discount_amount,
-            tax_amount=self.tax_amount,
+            tax_percentage=self.tax_percentage,
         )
 
 
@@ -150,6 +152,9 @@ class PurchaseDetailResponse(BaseModel):
     unit_cost: str
     discount_amount: str
     tax_amount: str
+    tax_percentage: str | None
+    tax_percentage_source: str | None
+    warnings: list[str]
     subtotal: str
     total: str
     base_quantity: str
@@ -179,6 +184,9 @@ class PurchaseDetailResponse(BaseModel):
             unit_cost=fmt(detail.unit_cost, QUANTITY),
             discount_amount=fmt(detail.discount_amount, MONEY),
             tax_amount=fmt(detail.tax_amount, MONEY),
+            tax_percentage=fmt(detail.tax_percentage, QUANTITY),
+            tax_percentage_source=detail.tax_percentage_source,
+            warnings=["PURCHASE_TAX_NOT_CONFIGURED"] if detail.tax_percentage is None else [],
             subtotal=fmt(detail.subtotal, MONEY),
             total=fmt(detail.total, MONEY),
             base_quantity=fmt(line_base_quantity(detail), QUANTITY),

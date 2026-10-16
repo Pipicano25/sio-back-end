@@ -37,7 +37,7 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
 | `supervisor.test` | Sí | `—` | tiene `perm:all:all:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `503` | tiene `perm:purchase:all:all` y asignación a la sucursal |
+| `compras.test` | Sí | `503` | tiene `perm:purchase:purchases:update` y asignación a la sucursal |
 | `ventas.test` | No | `403` | no tiene `perm:purchase:purchases:update` |
 | `inventario.test` | No | `403` | no tiene `perm:purchase:purchases:update` |
 | `reportes.test` | No | `403` | no tiene `perm:purchase:purchases:update` |

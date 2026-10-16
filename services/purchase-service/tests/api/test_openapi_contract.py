@@ -10,6 +10,7 @@ from tests.api.routes import ROUTES
 
 SPEC = Path(__file__).resolve().parents[4] / "specs" / "014-purchase-core" / "contracts"
 SPEC_020 = Path(__file__).resolve().parents[4] / "specs" / "020-mvp-commercial-rules" / "contracts" / "purchase.md"
+SPEC_021 = Path(__file__).resolve().parents[4] / "specs" / "021-automatic-purchase-pricing" / "contracts" / "purchase.md"
 DOCUMENTED_EXTRA: set[str] = set()  # D-01 incorporado al catálogo (2026-10-07)
 
 
@@ -41,7 +42,7 @@ def test_every_route_documents_auth_and_problem_responses(test_client) -> None:
 
 
 def test_error_codes_match_the_catalog() -> None:
-    catalog = (SPEC / "errors.md").read_text(encoding="utf-8") + SPEC_020.read_text(encoding="utf-8")
+    catalog = "".join(path.read_text(encoding="utf-8") for path in (SPEC / "errors.md", SPEC_020, SPEC_021))
     documented = dict(re.findall(r"^\| `([A-Z_]+)` \| (\d{3}) \|", catalog, re.M))
     assert documented, "catálogo vacío"
     for code, status in documented.items():

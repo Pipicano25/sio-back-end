@@ -36,6 +36,12 @@ def require_also(request: Request, resource: str, action: str) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=FORBIDDEN_DETAIL)
 
 
+def require_override_if_requested(request: Request, lines) -> None:
+    """Spec 021 (FR-021-11, M-5): ajustar la tasa de una línea exige `purchase_line_taxes:override`."""
+    if any(line.tax_percentage is not None for line in lines):
+        require_also(request, "purchase_line_taxes", "override")
+
+
 def build_router(auth: SIOAuth) -> APIRouter:
     router = APIRouter(tags=[TAG_PURCHASES])
     base = "/companies/{company_id}/purchases"
@@ -53,6 +59,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
     ) -> PurchaseResponse:
         if body.lines:
             require_also(request, "purchase_details", "create")
+        require_override_if_requested(request, body.lines)
         view = services.purchases().create(company_id, body.to_header(), [line.to_data() for line in body.lines], actor)
         return PurchaseResponse.of(view)
 
@@ -118,8 +125,9 @@ def build_router(auth: SIOAuth) -> APIRouter:
         dependencies=[auth.permission(SERVICE, "purchase_details", "create")],
     )
     def add_line(
-        company_id: UUID, purchase_id: UUID, body: LineCreateIn, actor: ActorDep, services: ServicesDep
+        company_id: UUID, purchase_id: UUID, body: LineCreateIn, request: Request, actor: ActorDep, services: ServicesDep
     ) -> PurchaseResponse:
+        require_override_if_requested(request, [body])
         view = services.purchases().add_line(company_id, purchase_id, body.to_data(), body.version, actor)
         return PurchaseResponse.of(view)
 
@@ -135,9 +143,11 @@ def build_router(auth: SIOAuth) -> APIRouter:
         purchase_id: UUID,
         detail_id: UUID,
         body: LineCreateIn,
+        request: Request,
         actor: ActorDep,
         services: ServicesDep,
     ) -> PurchaseResponse:
+        require_override_if_requested(request, [body])
         view = services.purchases().update_line(company_id, purchase_id, detail_id, body.to_data(), body.version, actor)
         return PurchaseResponse.of(view)
 

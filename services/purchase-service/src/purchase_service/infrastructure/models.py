@@ -3,7 +3,7 @@
 Toda columna REF es un UUID validado contra su dueño (research.md R-06), sin FK
 física hacia otros servicios. Las restricciones llevan nombre explícito por la
 convención de `Base` (Principio VIII). Las reglas de ciclo de vida e inmutabilidad
-también viven en triggers de las migraciones `0001` y `0002` (spec 020).
+también viven en triggers de las migraciones `0001`, `0002` (spec 020) y `0003` (spec 021).
 """
 
 from __future__ import annotations
@@ -178,9 +178,23 @@ class PurchaseDetail(AuditColumns, Base):
     tax_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False, server_default=text("0"))
     subtotal: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
     total: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    # Spec 021 (FR-021-09): tasa aplicada y su origen; NULL en las compras anteriores (migración 0003).
+    tax_percentage: Mapped[Decimal | None] = mapped_column(Numeric(7, 4), nullable=True)
+    tax_percentage_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("purchase_id", "line_number", name="uq_purchase_details_line_number"),
+        UniqueConstraint(
+            "purchase_id", "company_product_presentation_id", name="uq_purchase_details_purchase_presentation"
+        ),
+        CheckConstraint(
+            "tax_percentage IS NULL OR (tax_percentage >= 0 AND tax_percentage <= 100)", name="tax_percentage"
+        ),
+        CheckConstraint(
+            "(tax_percentage IS NULL AND tax_percentage_source IS NULL) OR (tax_percentage IS NOT NULL "
+            "AND tax_percentage_source IN ('PRODUCT_DEFAULT', 'LINE_OVERRIDE'))",
+            name="tax_percentage_source",
+        ),
         CheckConstraint("line_number BETWEEN 1 AND 100", name="line_number"),
         CheckConstraint("quantity > 0", name="quantity"),
         CheckConstraint("unit_cost > 0", name="unit_cost"),
@@ -346,5 +360,77 @@ class PurchaseLifecycleEvent(Base):
         Index("ix_purchase_lifecycle_events_purchase", "purchase_id", "event_type", "created_at", "id"),
     )
 
+
+
+class PurchasePresentationCostSeries(Base):
+    """Serie de costos por presentación en la empresa (spec 021, R-03; infraestructura, D23).
+
+    Se bloquea (`FOR UPDATE`) en la T2 de la recepción: da la secuencia contigua y los hechos de la recepción
+    anterior. Un trigger de la migración `0003` solo deja avanzar `last_sequence` de uno en uno.
+    """
+
+    __tablename__ = "purchase_presentation_cost_series"
+
+    company_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    company_product_presentation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    last_sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    last_purchase_detail_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("purchase_details.id"), nullable=False
+    )
+    last_line_total: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    last_quantity: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint("last_sequence > 0", name="last_sequence"),
+        CheckConstraint("last_quantity > 0", name="last_quantity"),
+    )
+
+
+class PurchasePriceUpdateOutbox(Base):
+    """Outbox de solicitudes de actualización de precio hacia Commercial Relationship (spec 021, EXC-001; D26).
+
+    El contenido (`payload`, contrato v1) es inmutable; solo cambian los datos de entrega, y una solicitud
+    `DELIVERED` ya no cambia (trigger de la migración `0003`).
+    """
+
+    __tablename__ = "purchase_price_update_outbox"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    company_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    company_product_presentation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("purchases.id"), nullable=False)
+    purchase_detail_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("purchase_details.id"), nullable=False
+    )
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(12), nullable=False, server_default=text("'PENDING'"))
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    last_error_code: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    last_error_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("purchase_detail_id", name="uq_purchase_price_update_outbox_purchase_detail_id"),
+        UniqueConstraint(
+            "company_id", "company_product_presentation_id", "sequence", name="uq_purchase_price_update_outbox_sequence"
+        ),
+        CheckConstraint("sequence > 0", name="sequence"),
+        CheckConstraint("status IN ('PENDING', 'DELIVERED')", name="status"),
+        CheckConstraint("attempts >= 0", name="attempts"),
+        CheckConstraint("(status = 'DELIVERED') = (delivered_at IS NOT NULL)", name="delivery"),
+        Index(
+            "ix_purchase_price_update_outbox_pending",
+            "company_id",
+            "company_product_presentation_id",
+            "sequence",
+            postgresql_where=text("status = 'PENDING'"),
+        ),
+    )
 
 audit_outbox = audit_outbox_table(Base.metadata)

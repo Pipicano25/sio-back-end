@@ -64,6 +64,8 @@ def contratos(ium: bool) -> dict:
                                                       company_product_id=S, global_product_presentation_id=S,
                                                       internal_code=S, sku=S, reference_code=S, is_purchasable=B,
                                                       is_sellable=B, is_default_purchase=B, is_default_sale=B),
+        # Spec 021
+        "PurchaseTaxUpdate": _contrato(["version", "purchase_tax_percentage"], version=I, purchase_tax_percentage=D),
     }
 
 
@@ -103,6 +105,9 @@ class SioFalso:
         if self.estado_consulta:
             return self.estado_consulta, {"code": "SIMULADO"}
         params = dict(params or {})
+        if path.startswith("/api/v1/company-products/"):  # spec 021: producto de empresa por UUID
+            producto = self._producto_de_empresa(path.rsplit("/", 1)[1])
+            return (200, producto) if producto else (404, {"code": "NOT_FOUND"})
         if path == "/api/v1/products/by-identifier/{value}":
             for ident in self._identificadores():
                 if params["value"] in (ident["value"], ident.get("canonical_value")):
@@ -119,6 +124,16 @@ class SioFalso:
                 objetos = [o for o in objetos if plegar(str(o.get(clave))) == plegar(str(valor))]
         return 200, (list(objetos) if LISTAS_SIN_PAGINAR.match(path) else {"items": list(objetos)})
 
+    def _producto_de_empresa(self, producto_id: str) -> dict | None:
+        for (servicio, ruta), objetos in self.datos.items():
+            if ruta.endswith("/company-products"):
+                for objeto in objetos:
+                    if objeto["id"] == producto_id:
+                        objeto.setdefault("version", 1)
+                        objeto.setdefault("purchase_tax_percentage", None)
+                        return objeto
+        return None
+
     def send(self, method: str, service: str, path: str, body: dict):
         if not self.escritura:
             raise PermissionError("escritura no habilitada")
@@ -127,6 +142,15 @@ class SioFalso:
         self.envios.append((method, service, path, body))
         if self.estado_envio:
             return self.estado_envio, {"code": "SIMULADO.AUTH", "detail": "token o permisos"}
+        if method == "PUT" and path.endswith("/purchase-tax"):  # spec 021
+            producto = self._producto_de_empresa(path.split("/")[4])
+            if producto is None:
+                return 404, {"code": "NOT_FOUND"}
+            if producto["version"] != body["version"]:
+                return 409, {"code": "VERSION_CONFLICT", "detail": "versión vieja"}
+            producto["purchase_tax_percentage"] = body["purchase_tax_percentage"]
+            producto["version"] += 1
+            return 200, producto
         if method == "PUT":  # valor de atributo por (producto, definición)
             coleccion, definicion = path.rsplit("/", 1)
             producto = coleccion.split("/")[4]
@@ -244,6 +268,13 @@ def filas_sinteticas() -> dict[str, list[dict]]:
             {"company_product_presentation_ref": "CPP-SINT-2", "company_ref": "CMP-SINT",
              "company_product_ref": "CPR-SINT-2", "product_presentation_ref": "PRS-SINT-2-BOX-10",
              "internal_code": "000002", "is_sellable": "true"}],
+        # Spec 021: tasas explícitas de la empresa (sintéticas); CPR-SINT-2 no se carga (sin precio), así que su tasa
+        # queda en DEPENDENCIA.
+        "company_product_purchase_taxes": [
+            {"company_product_purchase_tax_ref": "TAX-CPR-SINT-1", "company_product_ref": "CPR-SINT-1",
+             "purchase_tax_percentage": "19"},
+            {"company_product_purchase_tax_ref": "TAX-CPR-SINT-2", "company_product_ref": "CPR-SINT-2",
+             "purchase_tax_percentage": "0"}],
     }, comun
 
 
@@ -344,7 +375,7 @@ def test_reanudacion_por_diario_e_idempotencia(empresa: Path) -> None:
     assert len(api.envios) == envios  # nada se vuelve a enviar
     assert {r for c in segundo["conteo"].values() for r in c} <= {"YA_CARGADO", "BLOQUEADA", "DEPENDENCIA", "OMITIDO"}
     diario = list(csv.DictReader(open(empresa / "reports" / "cargue" / "sio_ids.csv", encoding="utf-8")))
-    assert len(diario) == sum(ESPERADO_CREADO.values())
+    assert len(diario) == sum(ESPERADO_CREADO.values()) + 1  # + la tasa de compra ACTUALIZADO (spec 021)
 
 
 def test_sin_diario_reutiliza_por_identidad_y_no_duplica(empresa: Path, tmp_path: Path) -> None:
@@ -354,7 +385,7 @@ def test_sin_diario_reutiliza_por_identidad_y_no_duplica(empresa: Path, tmp_path
     _, otra = cargar(api, empresa, escribir=True, salida=tmp_path / "otra-salida")  # sin diario previo
     assert len(api.envios) == envios
     reusados = {t: c.get("REUSADO", 0) for t, c in otra["conteo"].items() if c.get("REUSADO")}
-    assert reusados == ESPERADO_CREADO
+    assert reusados == {**ESPERADO_CREADO, "company_product_purchase_taxes": 1}  # la tasa ya configurada (spec 021)
 
 
 def test_detenerse_por_caida_y_reanudar_sin_duplicar(empresa: Path) -> None:
@@ -521,3 +552,47 @@ def test_spec_019_productos_de_empresa_sin_precio_ni_costo(empresa: Path) -> Non
     assert resumen["conteo"]["company_product_presentations"] == {"CREADO": 2}
     enviados = [b for _, _, ruta, b in api.envios if ruta.endswith("/company-products")]
     assert all("sale_price" not in b and "reference_cost" not in b for b in enviados)  # nunca se envía 0
+
+
+# --- spec 021: tasa de impuesto de compra ------------------------------------------------------
+def _tasas(resumen: dict) -> dict[str, dict]:
+    return {f["ref"]: f for f in reporte(resumen) if f["csv"] == "company_product_purchase_taxes"}
+
+
+def test_spec_021_tasa_en_simulacion_no_escribe(empresa: Path) -> None:
+    api = SioFalso()
+    _, resumen = cargar(api, empresa, escribir=False)
+    tasas = _tasas(resumen)
+    assert tasas["TAX-CPR-SINT-1"]["resultado"] == "ACTUALIZARIA"  # producto simulado: no se consulta SIO
+    assert tasas["TAX-CPR-SINT-2"]["resultado"] == "DEPENDENCIA"
+    assert not any(ruta.endswith("/purchase-tax") for _, _, ruta, _ in api.envios)
+
+
+def test_spec_021_tasa_se_configura_una_vez_y_se_reutiliza(empresa: Path) -> None:
+    api = SioFalso()
+    _, resumen = cargar(api, empresa, escribir=True)
+    tasas = _tasas(resumen)
+    assert tasas["TAX-CPR-SINT-1"]["resultado"] == "ACTUALIZADO"
+    [envio] = [b for m, _, ruta, b in api.envios if ruta.endswith("/purchase-tax")]
+    assert envio == {"version": 1, "purchase_tax_percentage": "19"}
+    producto = api._producto_de_empresa(tasas["TAX-CPR-SINT-1"]["sio_id"])
+    assert producto["purchase_tax_percentage"] == "19" and producto["version"] == 2
+
+    _, segundo = cargar(api, empresa, escribir=True)  # reanudación: el diario lo marca como cargado
+    assert _tasas(segundo)["TAX-CPR-SINT-1"]["resultado"] == "YA_CARGADO"
+    assert len([1 for _, _, ruta, _ in api.envios if ruta.endswith("/purchase-tax")]) == 1
+
+
+def test_spec_021_tasa_distinta_en_sio_es_conflicto_y_no_se_sobrescribe(empresa: Path, tmp_path: Path) -> None:
+    api = SioFalso()
+    _, resumen = cargar(api, empresa, escribir=True, entidades=set(cargar_gold.ORDEN) - {"company_product_purchase_taxes"})
+    producto = next(o for o in api.creados("/company-products"))
+    producto.update(purchase_tax_percentage="5", version=1)
+    _, segundo = cargar(api, empresa, escribir=True, salida=tmp_path / "otra")
+    fila = _tasas(segundo)["TAX-CPR-SINT-1"]
+    assert fila["resultado"] == "CONFLICTO" and "no se sobrescribe" in fila["detalle"]
+    assert producto["purchase_tax_percentage"] == "5"
+
+    producto.update(purchase_tax_percentage="19.0000")
+    _, tercero = cargar(api, empresa, escribir=True, salida=tmp_path / "otra2")
+    assert _tasas(tercero)["TAX-CPR-SINT-1"]["resultado"] == "REUSADO"

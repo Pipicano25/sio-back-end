@@ -90,6 +90,8 @@ def check_line_inputs(
 
     Spec 020 (FR-020-13, RC-MVP-6): sin descuentos en el MVP; `discount_amount` solo admite `0`
     (omitido = `0`). El precio es el de la lista y no puede reducirse por ningún campo de la API.
+    Spec 021 (B-4, FR-021-30, provisional): tampoco se suma impuesto; `tax_amount` solo admite `0`. El precio de la
+    lista es el importe final. **No es una solución fiscal**: no separa el impuesto incluido ni factura.
     """
     discount_amount = check_amount(discount_amount, field=f"{prefix}discount_amount")
     if discount_amount != 0:
@@ -98,11 +100,19 @@ def check_line_inputs(
             "Las ventas del MVP no admiten descuentos: el precio es el de la lista de precios.",
             field=f"{prefix}discount_amount",
         )
+    tax_amount = check_amount(tax_amount, field=f"{prefix}tax_amount")
+    if tax_amount != 0:
+        raise DomainRuleError("TAX_NOT_ALLOWED", TAX_NOT_ALLOWED_MESSAGE, field=f"{prefix}tax_amount")
     return LineInputs(
         check_quantity(quantity, field=f"{prefix}quantity"),
         discount_amount,
-        check_amount(tax_amount, field=f"{prefix}tax_amount"),
+        tax_amount,
     )
+
+
+TAX_NOT_ALLOWED_MESSAGE = (
+    "Las ventas del MVP no admiten impuesto adicional: el precio de la lista es el importe final que paga el cliente."
+)
 
 
 @dataclass(frozen=True, slots=True)

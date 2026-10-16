@@ -21,7 +21,7 @@ def test_receipt_applies_the_entry_with_base_units_and_base_cost(world, fakes, m
         make_sequence,
         make_draft,
         confirm,
-        line(world.product, "2", "120000", company_product_presentation_id=world.presentation, tax_amount="45600"),
+        line(world.product, "2", "120000", company_product_presentation_id=world.presentation),
         line(world.product_2, "3", "1000", discount_amount="300"),
     )
     response = receive(purchase)

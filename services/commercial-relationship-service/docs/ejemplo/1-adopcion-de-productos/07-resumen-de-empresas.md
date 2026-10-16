@@ -14,7 +14,7 @@ GET /api/v1/company-summaries
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:commercial-relationship:all:read`), `ventas.test` (por `perm:commercial-relationship:all:read`), `inventario.test` (por `perm:commercial-relationship:company_products:read`), `reportes.test` (por `perm:commercial-relationship:company_products:read`), `consulta.test` (por `perm:commercial-relationship:company_products:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:commercial-relationship:company_products:read`), `ventas.test` (por `perm:commercial-relationship:company_products:read`), `inventario.test` (por `perm:commercial-relationship:company_products:read`), `reportes.test` (por `perm:commercial-relationship:company_products:read`), `consulta.test` (por `perm:commercial-relationship:company_products:read`)
 
 **Por qué se hace así**
 
@@ -51,8 +51,8 @@ GET /api/v1/company-summaries
   ],
   "page": 1,
   "page_size": 1,
-  "total_records": 6,
-  "total_pages": 6
+  "total_records": 9,
+  "total_pages": 9
 }
 ```
 

@@ -25,9 +25,15 @@ from purchase_service.application.exceptions import (
     field_error,
 )
 from purchase_service.application.ports import AccessDirectory, CompanyInfo
-from purchase_service.application.reference_validation import HeaderInput, LineInput, ReferenceResolver, resolve_together
+from purchase_service.application.reference_validation import (
+    HeaderInput,
+    LineInput,
+    ReferenceResolver,
+    check_unique_presentations,
+    resolve_together,
+)
 from purchase_service.application.snapshots import apply_amounts, apply_header, apply_line, recompute_totals, touch
-from purchase_service.domain.money import DomainRuleError, LineAmounts, line_amounts
+from purchase_service.domain.money import DomainRuleError, LineAmounts, check_tax_percentage, line_amounts, with_tax
 from purchase_service.domain.status import DRAFT, MAX_LINES
 from purchase_service.infrastructure.models import Purchase, PurchaseDetail
 from purchase_service.infrastructure.repository import PurchaseRepository
@@ -61,7 +67,20 @@ class LineData:
     quantity: Decimal
     unit_cost: Decimal
     discount_amount: Decimal
-    tax_amount: Decimal
+    tax_percentage: object | None = None
+    """Spec 021 (FR-021-11): tasa ajustada para la línea (exige permiso propio); `None` = la del producto."""
+
+
+@dataclass(frozen=True, slots=True)
+class PricedLine:
+    """Montos de una línea antes del impuesto y la tasa ajustada validada, si se envió (spec 021)."""
+
+    amounts: LineAmounts
+    override: Decimal | None
+
+
+PRODUCT_DEFAULT = "PRODUCT_DEFAULT"
+LINE_OVERRIDE = "LINE_OVERRIDE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,20 +90,65 @@ class PurchaseView:
     pending_operation_id: UUID | None = None
 
 
-def compute_amounts(lines: Sequence[LineData], *, prefix: Callable[[int], str]) -> list[LineAmounts]:
-    """Valida y calcula todas las líneas; reúne los errores de formato (`422`)."""
+def compute_amounts(lines: Sequence[LineData], *, prefix: Callable[[int], str]) -> list[PricedLine]:
+    """Valida y calcula todas las líneas sin impuesto; reúne los errores de formato (`422`).
+
+    Spec 021: el impuesto depende de la tasa del producto, que se conoce al resolver las referencias; se aplica
+    después con `apply_tax`.
+    """
     errors: list[dict] = []
-    amounts: list[LineAmounts] = []
+    priced: list[PricedLine] = []
     for index, line in enumerate(lines):
         try:
-            amounts.append(
-                line_amounts(line.quantity, line.unit_cost, line.discount_amount, line.tax_amount, prefix=prefix(index))
+            amounts = line_amounts(line.quantity, line.unit_cost, line.discount_amount, Decimal("0"), prefix=prefix(index))
+            override = (
+                None
+                if line.tax_percentage is None
+                else check_tax_percentage(line.tax_percentage, field=f"{prefix(index)}tax_percentage")
             )
+            priced.append(PricedLine(amounts, override))
         except DomainRuleError as error:
             errors.append(field_error(error.field or prefix(index), error.code, error.message))
     if errors:
         raise ValidationFailedError(errors)
-    return amounts
+    return priced
+
+
+def apply_tax(detail: PurchaseDetail, priced: PricedLine, snapshot) -> None:
+    """Fija los montos de la línea con el impuesto de su tasa y guarda la tasa y su origen (FR-021-09..11)."""
+    rate = priced.override if priced.override is not None else snapshot.purchase_tax_percentage
+    apply_amounts(detail, with_tax(priced.amounts, rate))
+    detail.tax_percentage = rate
+    detail.tax_percentage_source = (
+        LINE_OVERRIDE if priced.override is not None else PRODUCT_DEFAULT if rate is not None else None
+    )
+
+
+def _rate_text(rate: Decimal | None) -> str | None:
+    return None if rate is None else format(Decimal(rate).quantize(Decimal("0.0001")), "f")
+
+
+def record_overrides(session, purchase: Purchase, operator: OperatorAccess, pairs) -> None:
+    """Auditoría `OVERRIDE_PURCHASE_LINE_TAX` de cada línea con tasa ajustada (FR-021-11, FR-021-33)."""
+    for detail, snapshot in pairs:
+        if detail.tax_percentage_source != LINE_OVERRIDE:
+            continue
+        audit.record(
+            session,
+            action=audit.OVERRIDE_PURCHASE_LINE_TAX,
+            entity_type=audit.PURCHASE_DETAIL,
+            entity_id=detail.id,
+            company_id=purchase.company_id,
+            branch_id=purchase.branch_id,
+            application_user_id=operator.application_user_id,
+            previous_values={"tax_percentage": _rate_text(snapshot.purchase_tax_percentage)},
+            new_values={
+                "tax_percentage": _rate_text(detail.tax_percentage),
+                "tax_amount": detail.tax_amount,
+                "line_number": detail.line_number,
+                "purchase_id": purchase.id,
+            },
+        )
 
 
 def header_values(purchase: Purchase) -> dict:
@@ -117,6 +181,8 @@ def line_values(detail: PurchaseDetail) -> dict:
         "unit_cost": detail.unit_cost,
         "discount_amount": detail.discount_amount,
         "tax_amount": detail.tax_amount,
+        "tax_percentage": detail.tax_percentage,
+        "tax_percentage_source": detail.tax_percentage_source,
         "subtotal": detail.subtotal,
         "total": detail.total,
     }
@@ -173,6 +239,10 @@ class PurchaseService:
     def create(self, company_id: UUID, header: HeaderData, lines: Sequence[LineData], actor: Actor) -> PurchaseView:
         operator = require_branch_access(actor.access, company_id, header.branch_id)
         amounts = compute_amounts(lines, prefix=lambda index: f"lines[{index}].")
+        check_unique_presentations(
+            (f"lines[{index}].company_product_presentation_id", index + 1, line.company_product_presentation_id)
+            for index, line in enumerate(lines)
+        )
         company = self._resolver.company(company_id)
         header_snapshot, line_snapshots = resolve_together(
             lambda: self._resolver.resolve_header(company, _header_input(header)),
@@ -184,10 +254,10 @@ class PurchaseService:
                         line.company_product_id,
                         line.company_product_presentation_id,
                         line.supplier_product_id,
-                        amount.quantity,
+                        amount.amounts.quantity,
                         field_prefix=f"lines[{index}].",
                         line_number=index + 1,
-                        net_cost=amount.subtotal - amount.discount_amount,
+                        net_cost=amount.amounts.subtotal - amount.amounts.discount_amount,
                     )
                     for index, (line, amount) in enumerate(zip(lines, amounts, strict=True))
                 ],
@@ -228,7 +298,7 @@ class PurchaseService:
                 created_by=actor.subject,
                 updated_by=actor.subject,
             )
-            apply_amounts(detail, amount)
+            apply_tax(detail, amount, snapshot)
             apply_line(detail, snapshot)
             details.append(detail)
         recompute_totals(purchase, details)
@@ -249,6 +319,7 @@ class PurchaseService:
                 application_user_id=operator.application_user_id,
                 new_values={**header_values(purchase), "lines": [line_values(detail) for detail in details]},
             )
+            record_overrides(self._repo.session, purchase, operator, zip(details, line_snapshots, strict=True))
             self._repo.commit()
         except Exception:
             self._repo.rollback()
@@ -299,7 +370,7 @@ class PurchaseService:
 
     # ----------------------------------------------------------------- líneas
 
-    def _resolve_line(self, purchase: Purchase, line: LineData) -> tuple[LineAmounts, object]:
+    def _resolve_line(self, purchase: Purchase, line: LineData) -> tuple[PricedLine, object]:
         amount = compute_amounts([line], prefix=lambda _: "")[0]
         snapshot = self._resolver.resolve_lines(
             purchase.company_id,
@@ -309,8 +380,8 @@ class PurchaseService:
                     line.company_product_id,
                     line.company_product_presentation_id,
                     line.supplier_product_id,
-                    amount.quantity,
-                    net_cost=amount.subtotal - amount.discount_amount,
+                    amount.amounts.quantity,
+                    net_cost=amount.amounts.subtotal - amount.amounts.discount_amount,
                 )
             ],
         )[0]
@@ -350,6 +421,11 @@ class PurchaseService:
                 raise ValidationFailedError(
                     [field_error("lines", "LINES_LIMIT_EXCEEDED", f"Una compra admite a lo sumo {MAX_LINES} líneas.")]
                 )
+            check_unique_presentations([
+                *(("company_product_presentation_id", item.line_number, item.company_product_presentation_id)
+                  for item in existing),
+                ("company_product_presentation_id", None, line.company_product_presentation_id),
+            ])
             used = {item.line_number for item in existing}
             highest = max(used, default=0)
             number = highest + 1 if highest < MAX_LINES else min(n for n in range(1, MAX_LINES + 1) if n not in used)
@@ -366,10 +442,11 @@ class PurchaseService:
                 created_by=actor.subject,
                 updated_by=actor.subject,
             )
-            apply_amounts(detail, amount)
+            apply_tax(detail, amount, snapshot)
             apply_line(detail, snapshot)
             self._repo.add(detail)
             self._repo.flush()
+            record_overrides(self._repo.session, purchase, operator, [(detail, snapshot)])
             return self._finish_line_change(
                 purchase, operator, actor, audit.ADD_PURCHASE_DETAIL, detail.id, None, line_values(detail)
             )
@@ -390,17 +467,24 @@ class PurchaseService:
 
         try:
             purchase = self._lock_draft(company_id, purchase_id, version)
-            detail = next((item for item in self._repo.lines(purchase.id) if item.id == detail_id), None)
+            current_lines = self._repo.lines(purchase.id)
+            detail = next((item for item in current_lines if item.id == detail_id), None)
             if detail is None:
                 raise NotFoundError()
+            check_unique_presentations([
+                *(("company_product_presentation_id", item.line_number, item.company_product_presentation_id)
+                  for item in current_lines if item.id != detail_id),
+                ("company_product_presentation_id", detail.line_number, line.company_product_presentation_id),
+            ])
             previous = line_values(detail)
             detail.company_product_id = line.company_product_id
             detail.company_product_presentation_id = line.company_product_presentation_id
             detail.supplier_product_id = line.supplier_product_id
-            apply_amounts(detail, amount)
+            apply_tax(detail, amount, snapshot)
             apply_line(detail, snapshot)
             touch(detail, actor.subject, self._clock())
             self._repo.flush()
+            record_overrides(self._repo.session, purchase, operator, [(detail, snapshot)])
             return self._finish_line_change(
                 purchase, operator, actor, audit.UPDATE_PURCHASE_DETAIL, detail.id, previous, line_values(detail)
             )

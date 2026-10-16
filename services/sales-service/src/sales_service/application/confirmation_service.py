@@ -56,7 +56,7 @@ from sales_service.application.reference_validation import (
 )
 from sales_service.application.sale_service import Actor, SaleView
 from sales_service.application.snapshots import apply_business_date, apply_header, apply_line, touch
-from sales_service.domain.money import QUANTITY_QUANTUM
+from sales_service.domain.money import QUANTITY_QUANTUM, TAX_NOT_ALLOWED_MESSAGE
 from sales_service.domain.numbering import exceeds_maximum, next_value, period_key
 from sales_service.domain.pricing import PriceRef, list_to_request, price_changed
 from sales_service.domain.status import CONFIRM, DRAFT, PENDING
@@ -210,6 +210,16 @@ class ConfirmationService:
             )
             for index, line in enumerate(lines)
             if line.discount_amount != 0
+        ] + [
+            # Spec 021 (B-4, FR-021-30): un borrador anterior con impuesto tampoco se confirma.
+            field_error(
+                f"lines[{index}].tax_amount",
+                "TAX_NOT_ALLOWED",
+                TAX_NOT_ALLOWED_MESSAGE,
+                line_number=line.line_number,
+            )
+            for index, line in enumerate(lines)
+            if line.tax_amount != 0
         ]
         if discounted:
             raise ValidationFailedError(discounted)

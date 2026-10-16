@@ -13,7 +13,9 @@ Verifica, sin reiniciar la aplicación:
 2. **Caída inesperada** (PostgreSQL termina con `pg_ctl stop -m immediate`): la política de reinicio de
    Docker la levanta sola y el servicio vuelve a `ready`.
 
-Si la prueba se interrumpe con la base detenida: `docker start sio-commercial-relationship-db`.
+Solo actúa sobre contenedores aislados (`tests/integration/isolation.py`, etiqueta `sio.integration.isolated=true`;
+con `SIO_INTEGRATION_CONTAINER_PREFIX=sio-it-`); ante uno persistente la prueba se omite. Si se interrumpe con la base
+detenida: `docker start sio-it-commercial-relationship-db`.
 """
 
 from __future__ import annotations
@@ -27,10 +29,12 @@ from pathlib import Path
 import httpx
 import pytest
 
+from tests.integration.isolation import container
+
 pytestmark = pytest.mark.integration
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-BASE = os.environ.get("COMMERCIAL_RELATIONSHIP_INTEGRATION_BASE_URL", "http://localhost:8106").rstrip("/")
+BASE = os.environ.get("COMMERCIAL_RELATIONSHIP_INTEGRATION_BASE_URL", "http://localhost:8106").rstrip("/").removesuffix("/api/v1")
 TOKEN_URL = os.environ.get("KEYCLOAK_TOKEN_URL", "http://localhost:8081/realms/sio/protocol/openid-connect/token")
 DB_CONTAINER = "sio-commercial-relationship-db"
 APP_CONTAINER = "sio-commercial-relationship-service"
@@ -129,13 +133,13 @@ def _assert_ready_again(client, item_url, app_started_at, phase_b_url=None) -> f
     if phase_b_url is not None:
         assert _status(client, phase_b_url) == 200
     assert _status(client, COLLECTION) == 200
-    assert _inspect(APP_CONTAINER, "{{.State.StartedAt}}") == app_started_at, "La aplicación se reinició"
+    assert _inspect(container(APP_CONTAINER), "{{.State.StartedAt}}") == app_started_at, "La aplicación se reinició"
     return elapsed
 
 
 def test_prolonged_outage_returns_controlled_503_and_recovers(client, item_url, phase_b_url):
-    app_started_at = _inspect(APP_CONTAINER, "{{.State.StartedAt}}")
-    _docker("stop", DB_CONTAINER)
+    app_started_at = _inspect(container(APP_CONTAINER), "{{.State.StartedAt}}")
+    _docker("stop", container(DB_CONTAINER))
     try:
         started = time.monotonic()
         assert _status(client, _health("live")) == 200
@@ -146,26 +150,26 @@ def test_prolonged_outage_returns_controlled_503_and_recovers(client, item_url, 
         outage_seconds = time.monotonic() - started
         assert outage_seconds < DEADLINE_SECONDS
     finally:
-        _docker("start", DB_CONTAINER)
+        _docker("start", container(DB_CONTAINER))
 
-    _wait(lambda: _inspect(DB_CONTAINER, "{{.State.Health.Status}}") == "healthy", 120, "La base no volvió a healthy.")
+    _wait(lambda: _inspect(container(DB_CONTAINER), "{{.State.Health.Status}}") == "healthy", 120, "La base no volvió a healthy.")
     recovery = _assert_ready_again(client, item_url, app_started_at, phase_b_url)
     print(f"caida_prolongada respuestas_con_base_caida={outage_seconds:.2f}s recuperacion_ready={recovery:.2f}s")
 
 
 def test_unexpected_crash_is_restarted_by_docker(client, item_url, phase_b_url):
-    app_started_at = _inspect(APP_CONTAINER, "{{.State.StartedAt}}")
-    assert _inspect(DB_CONTAINER, "{{.HostConfig.RestartPolicy.Name}}") in {"unless-stopped", "always"}
-    assert _inspect(APP_CONTAINER, "{{.HostConfig.RestartPolicy.Name}}") in {"unless-stopped", "always"}
-    restarts_before = int(_inspect(DB_CONTAINER, "{{.RestartCount}}"))
+    app_started_at = _inspect(container(APP_CONTAINER), "{{.State.StartedAt}}")
+    assert _inspect(container(DB_CONTAINER), "{{.HostConfig.RestartPolicy.Name}}") in {"unless-stopped", "always"}
+    assert _inspect(container(APP_CONTAINER), "{{.HostConfig.RestartPolicy.Name}}") in {"unless-stopped", "always"}
+    restarts_before = int(_inspect(container(DB_CONTAINER), "{{.RestartCount}}"))
 
     subprocess.run(
-        ["docker", "exec", "-u", "postgres", DB_CONTAINER, "sh", "-c", 'pg_ctl -D "$PGDATA" stop -m immediate'],
+        ["docker", "exec", "-u", "postgres", container(DB_CONTAINER), "sh", "-c", 'pg_ctl -D "$PGDATA" stop -m immediate'],
         capture_output=True, text=True, check=False,
     )
 
-    _wait(lambda: int(_inspect(DB_CONTAINER, "{{.RestartCount}}")) > restarts_before, 60,
+    _wait(lambda: int(_inspect(container(DB_CONTAINER), "{{.RestartCount}}")) > restarts_before, 60,
           "Docker no reinició la base tras la caída inesperada.")
-    _wait(lambda: _inspect(DB_CONTAINER, "{{.State.Health.Status}}") == "healthy", 120, "La base no volvió a healthy.")
+    _wait(lambda: _inspect(container(DB_CONTAINER), "{{.State.Health.Status}}") == "healthy", 120, "La base no volvió a healthy.")
     recovery = _assert_ready_again(client, item_url, app_started_at, phase_b_url)
     print(f"caida_inesperada recuperacion_ready={recovery:.2f}s")

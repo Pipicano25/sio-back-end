@@ -42,6 +42,8 @@ class Settings:
     lock_timeout_seconds: float = 5.0
     reconciler_interval_seconds: float = 60.0
     reconciler_threshold_seconds: float = 300.0
+    price_worker_interval_seconds: float = 5.0
+    price_worker_max_backoff_seconds: float = 300.0
 
     def __post_init__(self) -> None:
         if self.reconciler_threshold_seconds < RECONCILER_THRESHOLD_FACTOR * self.inventory_timeout_seconds:
@@ -51,6 +53,10 @@ class Settings:
             )
         if self.lookup_concurrency < 1:
             raise RuntimeError("PURCHASE_LOOKUP_CONCURRENCY debe ser al menos 1.")
+        if self.price_worker_max_backoff_seconds < self.price_worker_interval_seconds:
+            raise RuntimeError(
+                "PURCHASE_PRICE_WORKER_MAX_BACKOFF_SECONDS debe ser al menos PURCHASE_PRICE_WORKER_INTERVAL_SECONDS."
+            )
 
     def __repr__(self) -> str:  # nunca muestra el secreto ni la URL de la base
         return f"Settings(client_id={self.client_id!r}, docs_enabled={self.docs_enabled!r})"
@@ -89,6 +95,9 @@ def load_settings() -> Settings:
         lock_timeout_seconds=_read_positive_float("PURCHASE_LOCK_TIMEOUT_SECONDS", 5.0),
         reconciler_interval_seconds=_read_positive_float("PURCHASE_RECONCILER_INTERVAL_SECONDS", 60.0),
         reconciler_threshold_seconds=_read_positive_float("PURCHASE_RECONCILER_THRESHOLD_SECONDS", 300.0),
+        # Spec 021: entrega de solicitudes de precio a Commercial Relationship (EXC-001).
+        price_worker_interval_seconds=_read_positive_float("PURCHASE_PRICE_WORKER_INTERVAL_SECONDS", 5.0),
+        price_worker_max_backoff_seconds=_read_positive_float("PURCHASE_PRICE_WORKER_MAX_BACKOFF_SECONDS", 300.0),
     )
 
 

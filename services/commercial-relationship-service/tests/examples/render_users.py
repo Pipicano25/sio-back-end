@@ -201,7 +201,8 @@ def render_users(ex, records):
     out += user_summary(rows)
     out += ["", "**Para hacer el ejercicio completo use `admin.test`**, siempre que tenga membresía `ACTIVE` en la "
             "empresa: en Commercial Relationship ni siquiera `perm:all:all:all` exime de la membresía (DS-03). "
-            "`supervisor.test` puede crear y modificar, pero no inactivar ni bloquear.", ""]
+            "`supervisor.test` puede crear y modificar, pero no inactivar ni bloquear (salvo políticas de ganancia, "
+            "spec 021).", ""]
 
     out += ["## Permiso por URL", "",
             "✅ = el usuario tiene el permiso de la llamada · ❌ = recibe `403 Forbidden`. "
@@ -327,10 +328,11 @@ def render_general(exercises, all_records):
             "| Usuario | Grupo | Permisos del grupo en Commercial Relationship | Puede |", "| --- | --- | --- | --- |"]
     summary = {
         "admin.test": "Todo, en las empresas donde es miembro",
-        "supervisor.test": "Consultar, adoptar, incorporar, seleccionar, modificar, reactivar y desbloquear. **No** "
-        "inactivar ni bloquear",
-        "compras.test": "Solo consultar",
-        "ventas.test": "Solo consultar",
+        "supervisor.test": "Consultar, adoptar, incorporar, seleccionar, modificar, reactivar y desbloquear; "
+        "administrar políticas de ganancia (incluido inactivarlas) y resolver actualizaciones automáticas (spec 021). "
+        "**No** inactivar ni bloquear el resto",
+        "compras.test": "Solo consultar (sin políticas de ganancia ni actualizaciones automáticas)",
+        "ventas.test": "Solo consultar (sin políticas de ganancia ni actualizaciones automáticas)",
         "inventario.test": "Nada (`403`)",
         "reportes.test": "Solo consultar",
         "consulta.test": "Solo consultar",

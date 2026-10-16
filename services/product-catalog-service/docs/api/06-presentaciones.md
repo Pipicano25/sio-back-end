@@ -125,8 +125,11 @@ POST /api/v1/presentations/batch-lookup
 ```json
 {
   "items": [
-    { "id": "pr1…", "found": true, "global_product_id": "<id>", "status": "ACTIVE", "eligible_for_adoption": true, "base_quantity": "1.00000000", "first_used_at": null },
-    { "id": "pr9…", "found": false, "global_product_id": null, "status": null, "eligible_for_adoption": null, "base_quantity": null, "first_used_at": null }
+    { "id": "pr1…", "found": true, "global_product_id": "<id>", "code": "TUBO_X_15G", "name": "Tubo x 15 g", "status": "ACTIVE", "eligible_for_adoption": true, "base_quantity": "1.00000000", "first_used_at": null },
+    { "id": "pr9…", "found": false, "global_product_id": null, "code": null, "name": null, "status": null, "eligible_for_adoption": null, "base_quantity": null, "first_used_at": null }
   ]
 }
 ```
+
+`code` y `name` son campos aditivos (spec 021): permiten a Purchase copiar el código y el nombre de la presentación en
+la línea de compra con una sola consulta por cada 100 presentaciones.

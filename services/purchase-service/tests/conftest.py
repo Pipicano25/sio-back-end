@@ -45,11 +45,22 @@ TEST_ISSUER = "https://keycloak.test/realms/sio"
 TEST_AUDIENCE = "sio-api"
 TEST_KID = "test-key"
 
+PURCHASE_EXPLICIT = tuple(
+    f"perm:purchase:{resource}:{action}"
+    for resource in ("purchases", "purchase_details", "purchase_lifecycle_events", "purchase_sequences", "purchase_operations")
+    for action in ("create", "read", "update", "delete")
+)
+
 # Roles de cada usuario de prueba según su grupo en la plantilla del realm.
 USER_ROLES: dict[str, tuple[str, ...]] = {
     "admin.test": ("perm:all:all:all",),
-    "supervisor.test": ("perm:all:all:read", "perm:all:all:create", "perm:all:all:update"),
-    "compras.test": ("perm:purchase:all:all", "perm:commercial-relationship:all:read", "perm:operational-context:all:read"),
+    # Spec 021: los supervisores ajustan la tasa de impuesto de una línea (permiso explícito).
+    "supervisor.test": (
+        "perm:all:all:read", "perm:all:all:create", "perm:all:all:update", "perm:purchase:purchase_line_taxes:override",
+    ),
+    # Spec 021: `perm:purchase:all:all` se reemplazó en la plantilla por los permisos explícitos anteriores, sin
+    # `purchase_line_taxes:override`.
+    "compras.test": (*PURCHASE_EXPLICIT, "perm:commercial-relationship:all:read", "perm:operational-context:all:read"),
     "ventas.test": ("perm:sales:all:all", "perm:commercial-relationship:all:read", "perm:operational-context:all:read"),
     "inventario.test": (
         "perm:operational-context:all:read",
@@ -62,6 +73,8 @@ USER_ROLES: dict[str, tuple[str, ...]] = {
 }
 
 TABLES = (
+    "purchase_price_update_outbox",  # spec 021
+    "purchase_presentation_cost_series",  # spec 021
     "purchase_lifecycle_events",
     "purchase_operations",
     "purchase_details",
@@ -412,6 +425,14 @@ def line(product, quantity: str = "2", unit_cost: str = "1000", **extra: Any) ->
     }
     body.update({key: str(value) if hasattr(value, "hex") else value for key, value in extra.items()})
     return body
+
+
+def distinct_lines(fakes, product, count: int, quantity: str = "2", unit_cost: str = "1000") -> list[dict[str, Any]]:
+    """`count` líneas del producto, cada una con su propia presentación (spec 021, FR-021-13)."""
+    return [
+        line(product, quantity, unit_cost, company_product_presentation_id=presentation)
+        for presentation in fakes.add_unit_presentations(product, count)
+    ]
 
 
 def sequence_body(**overrides: Any) -> dict[str, Any]:

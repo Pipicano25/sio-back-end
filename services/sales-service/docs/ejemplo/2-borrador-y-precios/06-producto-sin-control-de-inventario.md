@@ -1,4 +1,4 @@
-# Paso 6. Agregar un producto sin control de inventario
+# Paso 7. Agregar un producto sin control de inventario
 
 Ejercicio 2: Venta en borrador y precios.
 

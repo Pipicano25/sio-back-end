@@ -5,12 +5,13 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from tests.api.routes import ROUTES
+from tests.api.routes import ROUTES, SPEC_021_ROUTES
 
 SPECS = Path(__file__).resolve().parents[4] / "specs"
 CONTRACTS = (
     SPECS / "007-commercial-relationship-core" / "contracts" / "rest-api.md",
     SPECS / "010-commercial-relationship-commercial-product" / "contracts" / "rest-api.md",
+    SPECS / "021-automatic-purchase-pricing" / "contracts" / "commercial-relationship.md",
 )
 CONTRACT_ROUTE = re.compile(r"^\| `(GET|POST|PUT|DELETE|PATCH) (/api/v1/[^`]+)`", re.MULTILINE)
 
@@ -36,7 +37,8 @@ def _openapi_operations(schema) -> set[tuple[str, str]]:
 def test_openapi_matches_contract_exactly(as_token):
     schema = as_token(None).get("/openapi.json").json()
     assert _openapi_operations(schema) == _contract_operations()
-    assert len(_contract_operations()) == len(ROUTES) == 55
+    assert len(_contract_operations()) == len(ROUTES) + len(SPEC_021_ROUTES) == 55 + 16
+    assert {(route.method, route.path) for route in (*ROUTES, *SPEC_021_ROUTES)} == _contract_operations()
 
 
 def test_no_delete_routes(as_token):

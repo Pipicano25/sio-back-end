@@ -1,0 +1,103 @@
+{
+  "name": "company_product_purchase_taxes",
+  "title": "commercial-relationship · PurchaseTaxUpdate",
+  "description": "Spec 021: tasa de impuesto de compra predeterminada de cada producto de la empresa. Solo valores explícitos entregados por la empresa: una fila ausente deja el producto sin configurar (SIO no asigna tasas). 0 es una tasa válida.",
+  "fields": [
+    {
+      "name": "company_product_purchase_tax_ref",
+      "type": "string",
+      "description": "Referencia local estable (clave del CSV). Se asigna una vez y no se recalcula.",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "sio_id",
+      "type": "string",
+      "description": "UUID del producto de empresa en SIO cuya tasa ya quedó configurada, verificado por API. Vacío si aún no. Nunca inventado.",
+      "format": "uuid"
+    },
+    {
+      "name": "source_ref",
+      "type": "string",
+      "description": "Registro original del cliente: <archivo>#<hoja>#<fila> (varios separados por ' | '), CONTEXTO o DECISION:<id>.",
+      "constraints": {
+        "required": true
+      }
+    },
+    {
+      "name": "migration_status",
+      "type": "string",
+      "description": "PENDIENTE | VALIDADO | CONFLICTO. En Gold siempre VALIDADO.",
+      "constraints": {
+        "enum": [
+          "PENDIENTE",
+          "VALIDADO",
+          "CONFLICTO"
+        ],
+        "required": true
+      }
+    },
+    {
+      "name": "status_reason",
+      "type": "string",
+      "description": "Motivo del estado (qué falta o qué conflicto existe)."
+    },
+    {
+      "name": "company_product_ref",
+      "type": "string",
+      "description": "Producto de empresa al que pertenece la tasa (una sola fila por producto)",
+      "constraints": {
+        "maxLength": 120,
+        "unique": true,
+        "required": true
+      }
+    },
+    {
+      "name": "purchase_tax_percentage",
+      "type": "number",
+      "description": "Tasa de impuesto de compra de 0 a 100 con hasta 4 decimales, informada por la empresa (nunca supuesta; 0 solo si la empresa lo declara)",
+      "constraints": {
+        "minimum": 0,
+        "maximum": 100,
+        "required": true
+      }
+    }
+  ],
+  "primaryKey": [
+    "company_product_purchase_tax_ref"
+  ],
+  "missingValues": [
+    ""
+  ],
+  "foreignKeys": [
+    {
+      "fields": [
+        "company_product_ref"
+      ],
+      "reference": {
+        "resource": "company_products",
+        "fields": [
+          "company_product_ref"
+        ]
+      }
+    }
+  ],
+  "uniqueKeys": [
+    [
+      "company_product_ref"
+    ]
+  ],
+  "sio": {
+    "service": "commercial-relationship",
+    "endpoint": "PUT /api/v1/company-products/{company_product_id}/purchase-tax",
+    "contract": "PurchaseTaxUpdate",
+    "identity": [
+      "company_product_ref"
+    ],
+    "rules": [],
+    "verified_at": "2026-10-15 (spec 021, OpenAPI del servicio en desarrollo; no desplegado)"
+  }
+}

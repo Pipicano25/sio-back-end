@@ -227,13 +227,16 @@ EXERCISES = [
             create_draft(
                 "01-crear-el-borrador.md",
                 "Crear la compra en borrador",
-                draft("2026-11-04", ln(ARROZ, "2", "120000", company_product_presentation_id=CAJA, tax_amount="45600"),
+                draft("2026-11-04", ln(ARROZ, "2", "120000", company_product_presentation_id=CAJA),
                       supplier_payment_condition_id=CONDITION, supplier_document_number="FV-1001"),
                 "COMPRA",
                 [
                     "El borrador no afecta inventario y no tiene número.",
                     "La cantidad y el costo van en la unidad de compra (caja); el servidor calcula subtotal, total, "
                     "cantidad en unidad base (24) y costo por unidad base sin impuestos (10000).",
+                    "Spec 021: el impuesto no se envía; se calcula con la tasa de compra del producto en Commercial "
+                    "Relationship (19 % **ficticio**): 240000 × 19 % = 45600 (`tax_percentage_source` "
+                    "`PRODUCT_DEFAULT`).",
                     "Los nombres e identificación se guardan como snapshots provisionales.",
                 ],
             ),
@@ -336,7 +339,7 @@ EXERCISES = [
             create_draft(
                 "02-crear-el-borrador.md",
                 "Crear la compra en borrador",
-                draft("2026-11-04", ln(ARROZ, "2", "120000", company_product_presentation_id=CAJA, tax_amount="45600")),
+                draft("2026-11-04", ln(ARROZ, "2", "120000", company_product_presentation_id=CAJA)),
                 "COMPRA",
                 ["Compra de contado (sin condición): `due_date` = fecha de la compra."],
             ),
@@ -638,6 +641,85 @@ EXERCISES = [
                 "path": f"/api/v1/companies/{OTHER_COMPANY}/purchases/<COMPRA>",
                 "expect": 404,
                 "why": ["Sin membresía en esa empresa: `404`, igual que un recurso inexistente."],
+            },
+        ],
+    },
+    {
+        "number": 8,
+        "folder": "8-impuestos-y-recepcion",
+        "title": "Impuesto de compra por tasa",
+        "purpose": (
+            "Spec 021: el impuesto de cada línea ya no se escribe; Purchase lo calcula con la tasa de compra del producto "
+            "en Commercial Relationship (`(subtotal − descuento) × tasa`). Un supervisor puede ajustar la tasa de una "
+            "línea para que coincida con la factura del proveedor (permiso propio); el comprador no. Las tasas son "
+            "**ficticias**: 19 % (arroz) y 0 % (aceite) no representan tarifas reales."
+        ),
+        "data": COMMON_DATA,
+        "steps": [
+            create_draft(
+                "01-borrador-con-impuesto-calculado.md",
+                "Crear un borrador: el impuesto sale de la tasa del producto",
+                draft("2026-11-04", ln(ARROZ, "2", "120000", company_product_presentation_id=CAJA)),
+                "COMPRA",
+                [
+                    "No se envía `tax_amount` (si se envía, `422`): 240000 × 19 % = 45600 con "
+                    "`tax_percentage_source = PRODUCT_DEFAULT`.",
+                    "Un producto **sin** tasa configurada deja la línea con la advertencia `PURCHASE_TAX_NOT_CONFIGURED` "
+                    "y la compra no se puede confirmar hasta configurarla (`409`).",
+                ],
+            ),
+            {
+                "file": "02-ajustar-la-tasa-de-una-linea.md",
+                "title": "Agregar una línea con la tasa de la factura (supervisor)",
+                "actor": "supervisor.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{P}/purchases/<COMPRA>/details",
+                "body": {**ln(ACEITE, "6", "9800", discount_amount="800", tax_percentage="5"), "version": 1},
+                "expect": 201,
+                "why": [
+                    "La factura trae 5 % aunque el aceite tiene 0 %: `tax_percentage_source = LINE_OVERRIDE`, "
+                    "(58800 − 800) × 5 % = 2900.",
+                    "Exige `perm:purchase:purchase_line_taxes:override` y se audita como `OVERRIDE_PURCHASE_LINE_TAX`. "
+                    "La tasa del producto no cambia.",
+                ],
+            },
+            {
+                "file": "03-comprador-sin-permiso-de-ajuste.md",
+                "title": "Intentar ajustar la tasa como comprador",
+                "actor": "compras.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{P}/purchases/<COMPRA>/details",
+                "body": {**ln(ARROZ, "1", "1000", tax_percentage="0"), "version": 2},
+                "expect": 403,
+                "why": ["`compras` crea y edita compras, pero no ajusta tasas: `403` sin revelar el permiso exigido."],
+            },
+            {
+                "file": "04-tasa-fuera-de-rango.md",
+                "title": "Ajustar una tasa fuera de rango",
+                "actor": "supervisor.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{P}/purchases/<COMPRA>/details",
+                "body": {**ln(ARROZ, "1", "1000", tax_percentage="101"), "version": 2},
+                "expect": 422,
+                "why": ["De 0 a 100 con hasta 4 decimales: `TAX_PERCENTAGE_OUT_OF_RANGE`."],
+            },
+            {
+                "file": "05-presentacion-repetida.md",
+                "title": "Agregar otra línea con la misma presentación",
+                "actor": "compras.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{P}/purchases/<COMPRA>/details",
+                "body": {**ln(ARROZ, "1", "120000", company_product_presentation_id=CAJA), "version": 2},
+                "expect": 409,
+                "why": [
+                    "La caja del arroz ya está en la línea 1: `409 DUPLICATE_PRESENTATION_IN_PURCHASE`. Sume la cantidad "
+                    "en esa línea. Cada recepción entrega **un** costo por presentación para la actualización "
+                    "automática de precios (spec 021); otra presentación del mismo producto sí se admite.",
+                ],
             },
         ],
     },

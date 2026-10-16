@@ -16,7 +16,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import text
 
-from tests.conftest import base, line, new_key, purchase_body, user_sub
+from tests.conftest import base, distinct_lines, line, new_key, purchase_body, user_sub
 
 pytestmark = pytest.mark.performance
 
@@ -34,7 +34,10 @@ def test_confirmation_of_100_lines(buyer, world, fakes, make_sequence) -> None:
         availability.latency = LATENCY
     samples = []
     for _ in range(10):
-        lines = [line(world.product if index % 2 else world.product_2, "3", "1500") for index in range(100)]
+        lines = [  # spec 021: cada línea con su propia presentación
+            *distinct_lines(fakes, world.product, 50, "3", "1500"),
+            *distinct_lines(fakes, world.product_2, 50, "3", "1500"),
+        ]
         draft = buyer.post(f"{base(world)}/purchases", json=purchase_body(world, *lines))
         assert draft.status_code == 201, draft.text
         started = time.perf_counter()

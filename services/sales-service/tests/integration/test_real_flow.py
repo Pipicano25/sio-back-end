@@ -69,8 +69,7 @@ def test_purchase_stock_sale_balance_and_cancellation(admin, seller, supervisor,
     draft = create(
         seller, world,
         {"company_product_id": world.product.company_product, "quantity": "2",
-         "company_product_presentation_id": world.product.box_presentation, "price_list_id": world.price_list,
-         "tax_amount": "5700"},
+         "company_product_presentation_id": world.product.box_presentation, "price_list_id": world.price_list},
     )
     assert draft["lines"][0]["unit_price"] == "16000.0000" and draft["lines"][0]["price_list_item_id"] == world.box_item
     assert draft["customer_identification_snapshot"] == world.customer_identification

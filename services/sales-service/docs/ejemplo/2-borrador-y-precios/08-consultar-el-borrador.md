@@ -1,4 +1,4 @@
-# Paso 8. Consultar el borrador
+# Paso 9. Consultar el borrador
 
 Ejercicio 2: Venta en borrador y precios.
 
@@ -71,8 +71,8 @@ Estado `200`.
   "observations": null,
   "subtotal": "77000.00",
   "discount_total": "0.00",
-  "tax_total": "5700.00",
-  "total": "82700.00",
+  "tax_total": "0.00",
+  "total": "77000.00",
   "inventory_operation_id": null,
   "created_by_user_id": "d15f1000-0000-4000-8000-000000000004",
   "cancelled_by_user_id": null,
@@ -105,9 +105,9 @@ Estado `200`.
       "base_quantity": "24.0000",
       "unit_price": "16000.0000",
       "discount_amount": "0.00",
-      "tax_amount": "5700.00",
+      "tax_amount": "0.00",
       "subtotal": "32000.00",
-      "total": "37700.00",
+      "total": "32000.00",
       "created_at": "<asignado por el servicio>",
       "updated_at": "<asignado por el servicio>",
       "created_by": "ventas.test",

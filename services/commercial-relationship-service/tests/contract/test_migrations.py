@@ -9,6 +9,13 @@ from sqlalchemy import create_engine, inspect, text
 from tests.conftest import run_alembic
 
 TABLES = ("company_products", "company_customers", "company_suppliers")
+SPEC_021_TABLES = (
+    "price_list_pricing_policies",
+    "price_list_pricing_policy_terms",
+    "price_list_pricing_policy_presentations",
+    "automatic_price_update_requests",
+    "automatic_price_applications",
+)
 
 EXPECTED_CONSTRAINTS = {
     "company_products": {
@@ -268,7 +275,8 @@ def test_phase_b_upgrade_creates_tables_constraints_indexes_and_extension(test_d
                 ),
                 {"tables": list(PHASE_B_TABLES)},
             ).scalars().all()
-            assert set(referenced) <= set(TABLES) | set(PHASE_B_TABLES)
+            # Spec 021: `price_list_items.automatic_application_id` → `automatic_price_applications` (interna).
+            assert set(referenced) <= set(TABLES) | set(PHASE_B_TABLES) | set(SPEC_021_TABLES)
     finally:
         engine.dispose()
 

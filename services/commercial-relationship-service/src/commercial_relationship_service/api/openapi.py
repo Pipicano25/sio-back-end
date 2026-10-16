@@ -81,6 +81,7 @@ def configure_bearer_openapi(
 TAG_PRICE_LISTS = "Listas de precios (definir las listas)"
 TAG_PRICE_LIST_ITEMS = "Precios por producto dentro de una lista"
 TAG_APPLICABLE_PRICES = "Consultar el precio que aplica a una venta"
+TAG_PRICING_POLICIES = "Políticas de ganancia de una lista (precios automáticos)"
 
 # Secciones de /docs en el orden de registro de los routers; las de precios llevan una descripción
 # que explica en qué se diferencian.
@@ -117,6 +118,15 @@ OPENAPI_TAGS = [
             "indicada o en la predeterminada vigente. Sin precio: `NO_PRICE_IN_LIST` o "
             "`NO_APPLICABLE_PRICE_LIST` (spec 019: sin precios generales, respaldos ni conversiones). "
             "Lo usa Ventas al armar un documento."
+        ),
+    },
+    {
+        "name": TAG_PRICING_POLICIES,
+        "description": (
+            "Spec 021. Define **porcentajes de ganancia** (recargo sobre el costo real de compra, de 0 a 1000 %) "
+            "para grupos de presentaciones de una lista. Una presentación pertenece a lo sumo a una política de la "
+            "misma lista. **Cambiar una política no modifica precios**: los cambios rigen desde la siguiente "
+            "recepción física de una compra. Solo administradores y supervisores (expone porcentajes internos)."
         ),
     },
 ]

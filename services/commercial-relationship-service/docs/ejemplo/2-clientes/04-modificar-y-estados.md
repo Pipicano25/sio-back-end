@@ -117,7 +117,7 @@ GET /api/v1/companies/<EMPRESA>/company-customers?customer_kind=ORGANIZATION
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_customers:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:commercial-relationship:all:read`), `ventas.test` (por `perm:commercial-relationship:all:read`), `reportes.test` (por `perm:commercial-relationship:company_customers:read`), `consulta.test` (por `perm:commercial-relationship:company_customers:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:commercial-relationship:company_customers:read`), `ventas.test` (por `perm:commercial-relationship:company_customers:read`), `reportes.test` (por `perm:commercial-relationship:company_customers:read`), `consulta.test` (por `perm:commercial-relationship:company_customers:read`)
 - ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `company_customers` de `commercial-relationship`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 

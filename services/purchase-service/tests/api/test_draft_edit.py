@@ -24,17 +24,18 @@ def header(world, purchase, **changes):
 
 
 def test_line_changes_bump_version_and_recompute_totals(buyer, world, make_draft) -> None:
+    # Spec 021: el arroz ficticio tiene tasa del 19 % (2 × 100 + 38 de impuesto = 238); el aceite, 0 %.
     draft = make_draft(line(world.product, "2", "100"))
     added = buyer.post(url(world, draft, "/details"), json={**line(world.product_2, "1", "50"), "version": 1})
     assert added.status_code == 201, added.text
     added = added.json()
-    assert added["version"] == 2 and added["total"] == "250.00"
+    assert added["version"] == 2 and added["total"] == "288.00"
     assert [item["line_number"] for item in added["lines"]] == [1, 2]
 
     second = added["lines"][1]
     updated = buyer.put(url(world, draft, f"/details/{second['id']}"), json={**line(world.product_2, "3", "50"), "version": 2})
     assert updated.status_code == 200, updated.text
-    assert updated.json()["version"] == 3 and updated.json()["total"] == "350.00"
+    assert updated.json()["version"] == 3 and updated.json()["total"] == "388.00"
 
     first = added["lines"][0]
     deleted = buyer.delete(url(world, draft, f"/details/{first['id']}"), params={"version": 3})

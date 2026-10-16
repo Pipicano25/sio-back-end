@@ -36,7 +36,7 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
 | `supervisor.test` | Sí | `—` | tiene `perm:all:all:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `200` | tiene `perm:purchase:all:all` y asignación a la sucursal |
+| `compras.test` | Sí | `200` | tiene `perm:purchase:purchases:update` y asignación a la sucursal |
 | `ventas.test` | No | `403` | no tiene `perm:purchase:purchases:update` |
 | `inventario.test` | No | `403` | no tiene `perm:purchase:purchases:update` |
 | `reportes.test` | No | `403` | no tiene `perm:purchase:purchases:update` |
@@ -121,6 +121,9 @@ Estado `200`.
       "unit_cost": "120000.0000",
       "discount_amount": "0.00",
       "tax_amount": "45600.00",
+      "tax_percentage": "19.0000",
+      "tax_percentage_source": "PRODUCT_DEFAULT",
+      "warnings": [],
       "subtotal": "240000.00",
       "total": "285600.00",
       "base_quantity": "24.0000",

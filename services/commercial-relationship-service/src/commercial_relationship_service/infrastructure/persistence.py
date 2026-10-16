@@ -89,6 +89,23 @@ def commit_or_translate(
         raise VersionConflictError from None
 
 
+def flush_or_translate(
+    session: Session,
+    *,
+    duplicates: dict[str, Callable[[], CommercialRelationshipError]],
+) -> None:
+    """`flush` intermedio con la misma traducción de restricciones que `commit_or_translate` (spec 021)."""
+    try:
+        session.flush()
+    except IntegrityError as exc:
+        session.rollback()
+        constraint = _constraint_name(exc)
+        for name, error in duplicates.items():
+            if constraint == name:
+                raise error() from None
+        raise
+
+
 def end_read(session: Session) -> None:
     """Cierra la transacción implícita de una lectura (no retiene conexiones ni bloqueos).
 

@@ -212,7 +212,7 @@ EXERCISES = [
             create_draft(
                 "01-crear-el-borrador.md",
                 "Crear la venta en borrador",
-                draft(ln(ARROZ, "2", company_product_presentation_id=CAJA, price_list_id=LISTA, tax_amount="5700"),
+                draft(ln(ARROZ, "2", company_product_presentation_id=CAJA, price_list_id=LISTA),
                       ln(ACEITE, "3")),
                 "VENTA",
                 [
@@ -220,6 +220,8 @@ EXERCISES = [
                     "La segunda no pide lista: se usa el precio de la unidad de aceite en la lista predeterminada GENERAL (9000).",
                     "Solo contado: `CASH`, sin plazo, `due_date` = `operation_date` = hoy en la zona de la sucursal.",
                     "El borrador no afecta inventario y no tiene número.",
+                    "Spec 021 (provisional): no se suma impuesto; el precio de la lista es el importe final "
+                    "(`tax_amount` solo admite 0, `TAX_NOT_ALLOWED`). No es una solución fiscal.",
                 ],
             ),
             {
@@ -246,6 +248,21 @@ EXERCISES = [
                 "body": {**ln(ACEITE, "1", unit_price="5000"), "version": 2},
                 "expect": 422,
                 "why": ["Sin precio manual en el MVP (DS-11): `UNIT_PRICE_NOT_ALLOWED`."],
+            },
+            {
+                "file": "03a-impuesto-adicional.md",
+                "title": "Intentar sumar un impuesto sobre el precio",
+                "actor": "ventas.test",
+                "kind": ACCION,
+                "method": "POST",
+                "path": f"{P}/sales/<VENTA>/details",
+                "body": {**ln(ACEITE, "1", tax_amount="1710"), "version": 2},
+                "expect": 422,
+                "why": [
+                    "Spec 021 (provisional): el precio de la lista es el importe final que paga el cliente; Sales no "
+                    "suma impuestos (`TAX_NOT_ALLOWED`). No es una solución fiscal: no separa el impuesto incluido ni "
+                    "factura electrónicamente.",
+                ],
             },
             {
                 "file": "04-lista-inexistente.md",

@@ -75,7 +75,7 @@ def box_line(world, quantity="2", unit_cost="120000"):
         "supplier_product_id": world.supplier_product,
         "quantity": quantity,
         "unit_cost": unit_cost,
-        "tax_amount": "45600",
+        # Spec 021: el impuesto lo calcula Purchase con la tasa del producto (19 % ficticio): 240000 × 19 % = 45600.
     }
 
 

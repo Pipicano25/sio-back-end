@@ -57,6 +57,9 @@ def test_presentation_batch_lookup(api, session_factory) -> None:
     assert items[0]["eligible_for_adoption"] is True
     assert items[0]["global_product_id"] == str(product.id)
     assert items[0]["base_quantity"] == "20.00000000"
+    # spec 021 (H-2): código y nombre para que Purchase no consulte una por una
+    assert (items[0]["code"], items[0]["name"]) == (active.code, active.name)
+    assert (items[2]["code"], items[2]["name"]) == (None, None)
     assert items[1]["eligible_for_adoption"] is False
     assert items[2]["found"] is False
 

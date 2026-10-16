@@ -68,6 +68,8 @@ class RequestIdentity:
 
     subject: str
     technical_lookup: bool
+    technical: bool = False
+    """Spec 021 (DS-05): cuenta de servicio (`client_id` + `service-account-{client_id}`), con o sin `lookup`."""
 
     @classmethod
     def build(
@@ -81,6 +83,7 @@ class RequestIdentity:
             subject=subject,
             technical_lookup=grants_allow(grants, PLATFORM_LOOKUP)
             and is_technical_identity(raw_claims),
+            technical=is_technical_identity(raw_claims),
         )
 
 

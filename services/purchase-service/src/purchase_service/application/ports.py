@@ -105,6 +105,8 @@ class CompanyProductInfo:
     is_purchasable: bool
     inventory_control_enabled: bool
     status: str
+    purchase_tax_percentage: Decimal | None = None
+    """Spec 021 (FR-021-08): tasa predeterminada de impuesto de compra; `None` = sin configurar."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,7 +168,7 @@ class UnitInfo:
 
 
 class CatalogDirectory(Protocol):
-    def get_presentation(self, presentation_id: UUID) -> GlobalPresentationInfo | None: ...
+    def lookup_presentations(self, ids: Sequence[UUID]) -> dict[UUID, GlobalPresentationInfo]: ...
 
     def get_product(self, product_id: UUID) -> GlobalProductInfo | None: ...
 
@@ -256,3 +258,22 @@ class Directories:
     catalog: CatalogDirectory
     party: PartyDirectory
     payment_reference: PaymentReferenceDirectory
+
+
+# ---------------------------------------------------------------- spec 021: entrega a Commercial Relationship
+
+
+@dataclass(frozen=True, slots=True)
+class DeliveryResult:
+    """Resultado de entregar una solicitud de precio (EXC-001).
+
+    `outcome`: `ACCEPTED` (CR la guardó, `202`), `REJECTED` (`409`: defecto, no se reintenta solo) o `RETRY`
+    (caída, tiempo agotado, `5xx`, `401`/`403` u otro estado: se reintenta con espera creciente).
+    """
+
+    outcome: str
+    code: str | None = None
+
+
+class CommercialPricingGateway(Protocol):
+    def submit(self, company_id: UUID, payload: dict[str, Any]) -> DeliveryResult: ...

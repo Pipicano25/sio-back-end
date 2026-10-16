@@ -78,3 +78,33 @@ def test_header_totals_out_of_range() -> None:
     with pytest.raises(DomainRuleError) as error:
         header_totals([(D("9999999999999999.00"), D("0"), D("0"))] * 2)
     assert error.value.code == "AMOUNT_OUT_OF_RANGE"
+
+
+# ---------------------------------------------------------------- spec 021: impuesto por tasa (FR-021-09)
+
+
+def test_tax_from_rate_is_rounded_half_up_over_the_net_cost() -> None:
+    from purchase_service.domain.money import with_tax
+
+    base = line_amounts(D("2"), D("120000"), D("24000"), D("0"))
+    taxed = with_tax(base, D("19"))
+    assert taxed.tax_amount == D("41040.00") and taxed.total == D("257040.00")  # (240.000 − 24.000) × 19 %
+    assert with_tax(line_amounts(D("1"), D("0.05"), D("0"), D("0")), D("10")).tax_amount == D("0.01")  # 0,005 → 0,01
+    assert with_tax(base, None).tax_amount == D("0.00")  # sin configurar: 0 hasta que haya tasa
+    assert with_tax(base, D("0")).total == D("216000.00")
+
+
+@pytest.mark.parametrize("value", ["0", "19", "100", "12.3456"])
+def test_tax_percentage_accepted(value: str) -> None:
+    from purchase_service.domain.money import check_tax_percentage
+
+    assert check_tax_percentage(value) == D(value)
+
+
+@pytest.mark.parametrize("value", ["-0.0001", "100.0001", "1.23456", "abc", True])
+def test_tax_percentage_rejected(value) -> None:
+    from purchase_service.domain.money import check_tax_percentage
+
+    with pytest.raises(DomainRuleError) as error:
+        check_tax_percentage(value)
+    assert error.value.code == "TAX_PERCENTAGE_OUT_OF_RANGE"

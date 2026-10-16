@@ -161,3 +161,29 @@ class PriceChangeOutOfPeriodError(CommercialRelationshipError):
         "El instante de efecto debe ser actual o futuro y estar dentro de la vigencia del "
         "precio actual."
     )
+
+
+class MarkupPercentageOutOfRangeError(CommercialRelationshipError):
+    """Recargo fuera de 0 a 1.000 % o con más de 4 decimales (spec 021, FR-021-02)."""
+
+    code = "MARKUP_PERCENTAGE_OUT_OF_RANGE"
+    title = "Porcentaje de ganancia inválido"
+    default_message = "El porcentaje de ganancia debe estar entre 0 y 1000, con hasta 4 decimales."
+
+# spec 021: impuesto de compra del producto
+
+
+class PurchaseTaxRequiredError(CommercialRelationshipError):
+    """Se envió `null`: una tasa configurada no vuelve a "sin configurar" (FR-021-07)."""
+
+    code = "PURCHASE_TAX_REQUIRED"
+    title = "Tasa de impuesto obligatoria"
+    default_message = "Indique la tasa de impuesto de compra (0 es válido); no se puede dejar sin configurar."
+
+
+class TaxPercentageOutOfRangeError(CommercialRelationshipError):
+    """Tasa fuera de 0 a 100 o con más de 4 decimales (FR-021-07, M-3)."""
+
+    code = "TAX_PERCENTAGE_OUT_OF_RANGE"
+    title = "Tasa de impuesto inválida"
+    default_message = "La tasa de impuesto de compra debe estar entre 0 y 100, con hasta 4 decimales."

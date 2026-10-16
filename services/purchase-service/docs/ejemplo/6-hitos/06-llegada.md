@@ -32,7 +32,7 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
 | `supervisor.test` | Sí | `—` | tiene `perm:all:all:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `201` | tiene `perm:purchase:all:all` y asignación a la sucursal |
+| `compras.test` | Sí | `201` | tiene `perm:purchase:purchase_lifecycle_events:create` y asignación a la sucursal |
 | `ventas.test` | No | `403` | no tiene `perm:purchase:purchase_lifecycle_events:create` |
 | `inventario.test` | No | `403` | no tiene `perm:purchase:purchase_lifecycle_events:create` |
 | `reportes.test` | No | `403` | no tiene `perm:purchase:purchase_lifecycle_events:create` |

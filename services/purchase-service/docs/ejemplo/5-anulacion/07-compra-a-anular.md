@@ -41,7 +41,7 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
 | `supervisor.test` | Sí | `—` | tiene `perm:all:all:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `201` | tiene `perm:purchase:all:all` y asignación a la sucursal |
+| `compras.test` | Sí | `201` | tiene `perm:purchase:purchases:create` y asignación a la sucursal |
 | `ventas.test` | No | `403` | no tiene `perm:purchase:purchases:create` |
 | `inventario.test` | No | `403` | no tiene `perm:purchase:purchases:create` |
 | `reportes.test` | No | `403` | no tiene `perm:purchase:purchases:create` |
@@ -91,8 +91,8 @@ Estado `201`.
   "observations": null,
   "subtotal": "120000.00",
   "discount_total": "0.00",
-  "tax_total": "0.00",
-  "total": "120000.00",
+  "tax_total": "22800.00",
+  "total": "142800.00",
   "inventory_operation_id": null,
   "receipt_status": null,
   "received_at": null,
@@ -125,9 +125,12 @@ Estado `201`.
       "quantity": "1.0000",
       "unit_cost": "120000.0000",
       "discount_amount": "0.00",
-      "tax_amount": "0.00",
+      "tax_amount": "22800.00",
+      "tax_percentage": "19.0000",
+      "tax_percentage_source": "PRODUCT_DEFAULT",
+      "warnings": [],
       "subtotal": "120000.00",
-      "total": "120000.00",
+      "total": "142800.00",
       "base_quantity": "12.0000",
       "inventory_unit_cost": "10000.0000",
       "created_at": "<asignado por el servicio>",

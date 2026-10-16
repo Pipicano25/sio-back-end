@@ -23,7 +23,9 @@ OPENAPI_TAGS = [
             "→ `409`. Costo y margen solo con `perm:sales:sales:read-profitability`; sin él se omiten. Spec 020: "
             "solo contado; `payment_method_id` obligatorio (un único medio de pago activo de Payment Reference, "
             "declarativo: no registra pagos); sin descuentos (`discount_amount` solo admite `0`, "
-            "`DISCOUNT_NOT_ALLOWED`)."
+            "`DISCOUNT_NOT_ALLOWED`). Spec 021 (provisional): sin impuesto adicional (`tax_amount` solo admite `0`, "
+            "`TAX_NOT_ALLOWED`); el precio de la lista es el importe final que paga el cliente. **No es una solución "
+            "fiscal**: no separa el impuesto incluido ni factura electrónicamente."
         ),
     },
     {

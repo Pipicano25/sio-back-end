@@ -46,6 +46,7 @@ _BATCH_FIELDS = (
     "expiration_tracking_enabled",
     "is_purchasable",
     "is_sellable",
+    "purchase_tax_percentage",  # spec 021 (FR-021-08)
     "status",
     "version",
 )

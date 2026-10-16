@@ -109,6 +109,19 @@ def call(
     )
 
 
+def process(title, name, params=None, why=(), save=None, show=None, note=None):
+    """Un proceso automático (no es una llamada del usuario): lo ejecuta la prueba con `processes[name](**params)`.
+
+    Sirve para lo que en un entorno real hacen otros procesos, por ejemplo la entrega de Purchase al registrar una
+    recepción física y el `commercial-relationship-price-worker` (spec 021). No exige permisos de usuario.
+    """
+    return dict(
+        title=title, method="PROCESO", path="", body=None, why=list(why), save=save or {}, expect=None, show=show,
+        external=None, note=note, sample=None, sample_status=200, perm=None, fake={}, also=[],
+        process=name, params=dict(params or {}),
+    )
+
+
 def step(file, title, goal, calls, intro=None, after=None):
     return dict(file=file, title=title, goal=goal, calls=calls, intro=intro, after=after)
 
@@ -230,14 +243,26 @@ PAYMENT_REFERENCE = "http://localhost:8105"
 EMPRESA_EJ4 = "c0a1c0a1-0000-4000-8000-000000000e04"
 EMPRESA_EJ5 = "c0a1c0a1-0000-4000-8000-000000000e05"
 EMPRESA_EJ6 = "c0a1c0a1-0000-4000-8000-000000000e06"
+EMPRESA_EJ7 = "c0a1c0a1-0000-4000-8000-000000000e07"  # spec 021
+EMPRESA_EJ8 = "c0a1c0a1-0000-4000-8000-000000000e08"  # spec 021
+EMPRESA_EJ9 = "c0a1c0a1-0000-4000-8000-000000000e09"  # spec 021
 ORG_EMPRESA_EJ4 = "7a1c0f10-0000-4000-8000-0000000c0e04"
 ORG_EMPRESA_EJ5 = "7a1c0f10-0000-4000-8000-0000000c0e05"
 ORG_EMPRESA_EJ6 = "7a1c0f10-0000-4000-8000-0000000c0e06"
-COMPANIES.update({EMPRESA_EJ4: ORG_EMPRESA_EJ4, EMPRESA_EJ5: ORG_EMPRESA_EJ5, EMPRESA_EJ6: ORG_EMPRESA_EJ6})
+ORG_EMPRESA_EJ7 = "7a1c0f10-0000-4000-8000-0000000c0e07"
+ORG_EMPRESA_EJ8 = "7a1c0f10-0000-4000-8000-0000000c0e08"
+ORG_EMPRESA_EJ9 = "7a1c0f10-0000-4000-8000-0000000c0e09"
+COMPANIES.update({
+    EMPRESA_EJ4: ORG_EMPRESA_EJ4, EMPRESA_EJ5: ORG_EMPRESA_EJ5, EMPRESA_EJ6: ORG_EMPRESA_EJ6, EMPRESA_EJ7: ORG_EMPRESA_EJ7,
+    EMPRESA_EJ8: ORG_EMPRESA_EJ8, EMPRESA_EJ9: ORG_EMPRESA_EJ9,
+})
 COMPANY_NAMES.update({
     ORG_EMPRESA_EJ4: "DROGUERÍA PRESENTACIONES FICTICIA S.A.S.",
     ORG_EMPRESA_EJ5: "DROGUERÍA COMPRAS FICTICIA S.A.S.",
     ORG_EMPRESA_EJ6: "DROGUERÍA PRECIOS FICTICIA S.A.S.",
+    ORG_EMPRESA_EJ7: "DROGUERÍA POLÍTICAS FICTICIA S.A.S.",
+    ORG_EMPRESA_EJ8: "DROGUERÍA IMPUESTOS FICTICIA S.A.S.",
+    ORG_EMPRESA_EJ9: "DROGUERÍA ACTUALIZACIONES FICTICIA S.A.S.",
 })
 
 # Producto real de la fila 16577 (único con `Precio Lista` en la fuente).
@@ -321,3 +346,11 @@ def get_condition_type(variable, type_id, code):
         fake={variable: type_id},
         sample={"items": [{"id": f"<{variable}>", "code": code, "name": "<nombre del tipo>", "status": "ACTIVE"}]},
     )
+
+# Spec 021, ejercicio 9: identificadores fijos de las recepciones que entrega Purchase (simuladas en la validación).
+COMPRA_EJ9_1 = "5e5e5e5e-0000-4000-8000-000000000901"
+COMPRA_EJ9_2 = "5e5e5e5e-0000-4000-8000-000000000902"
+DETALLE_EJ9_1 = "5d5d5d5d-0000-4000-8000-000000000901"
+DETALLE_EJ9_2 = "5d5d5d5d-0000-4000-8000-000000000902"
+SEDE_EJ9 = "5b5b5b5b-0000-4000-8000-000000000909"
+RECIBIO_EJ9 = "5a5a5a5a-0000-4000-8000-000000000909"

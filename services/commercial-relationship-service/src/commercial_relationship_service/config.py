@@ -96,6 +96,47 @@ def load_settings() -> Settings:
     )
 
 
+
+@dataclass(frozen=True, slots=True)
+class PriceWorkerSettings:
+    """Configuración del `commercial-relationship-price-worker` (spec 021).
+
+    El worker solo usa la base propia: no hace llamadas HTTP ni necesita credenciales técnicas.
+
+    Attributes:
+        database_url: URL de conexión hacia PostgreSQL; nunca se registra.
+        interval_seconds: Espera entre ciclos.
+        batch_size: Aplicaciones procesadas como máximo por ciclo.
+        max_backoff_seconds: Tope de la espera creciente entre reintentos de una aplicación.
+    """
+
+    database_url: str = field(repr=False)
+    interval_seconds: float = 5.0
+    batch_size: int = 50
+    max_backoff_seconds: float = 300.0
+
+    def __post_init__(self) -> None:
+        if self.batch_size < 1:
+            raise RuntimeError("CR_PRICE_WORKER_BATCH_SIZE debe ser al menos 1.")
+        if self.max_backoff_seconds < self.interval_seconds:
+            raise RuntimeError(
+                "CR_PRICE_WORKER_MAX_BACKOFF_SECONDS debe ser al menos CR_PRICE_WORKER_INTERVAL_SECONDS."
+            )
+
+
+def load_price_worker_settings() -> PriceWorkerSettings:
+    """Carga la configuración del worker de precios desde variables de entorno.
+
+    Raises:
+        RuntimeError: Si una variable falta o contiene un valor inválido.
+    """
+    return PriceWorkerSettings(
+        database_url=_required_text("DATABASE_URL"),
+        interval_seconds=_read_positive_float("CR_PRICE_WORKER_INTERVAL_SECONDS", 5.0),
+        batch_size=int(_read_positive_float("CR_PRICE_WORKER_BATCH_SIZE", 50)),
+        max_backoff_seconds=_read_positive_float("CR_PRICE_WORKER_MAX_BACKOFF_SECONDS", 300.0),
+    )
+
 def _read_optional_text(name: str) -> str | None:
     value = os.getenv(name)
 

@@ -28,6 +28,9 @@ class PresentationLookupItem(BaseModel):
     id: UUID
     found: bool
     global_product_id: UUID | None = None
+    # Campos aditivos (spec 021, H-2): Purchase copia código y nombre en la línea sin consultar una por una.
+    code: str | None = None
+    name: str | None = None
     status: str | None = None
     eligible_for_adoption: bool | None = None
     base_quantity: Decimal | None = None

@@ -1,6 +1,7 @@
 # sales-service
 
-Microservicio de **ventas** de SIO (`specs/015-sales-core/`): registra ventas en borrador con el precio
+Microservicio de **ventas** de SIO (`specs/015-sales-core/`, con los cambios de `specs/020-mvp-commercial-rules/` y
+`specs/021-automatic-purchase-pricing/`): registra ventas en borrador con el precio
 que resuelve Commercial Relationship, consulta existencias, confirma descontando el inventario de la
 sucursal con su costo FIFO y su número oficial, y anula revirtiendo exactamente la salida.
 
@@ -38,6 +39,13 @@ confirmada no se recalculan nunca (RN-04).
   código y nombre que se refresca y congela al confirmar. Es **declarativo**: no registra ni comprueba pagos.
 - **Sin descuentos** (spec 020, FR-020-13): `discount_amount` se conserva por compatibilidad y solo admite
   `0` (`422 DISCOUNT_NOT_ALLOWED`); la base lo garantiza (`ck_sale_details_no_discount`).
+- **Sin impuesto adicional** (spec 021, provisional): `tax_amount` solo admite `0` (`422 TAX_NOT_ALLOWED`, también
+  al confirmar); la base lo garantiza (`ck_sale_details_no_tax`). El precio de la lista es el **importe final** que
+  paga el cliente. **No es una solución fiscal** (R-12): no hay facturación electrónica ni discriminación de IVA.
+- **Precios automáticos** (spec 021): el precio de una lista con políticas lo actualiza Commercial Relationship con
+  cada recepción de compra. Sales no cambia: vende con el precio vigente al resolverlo, aunque haya
+  actualizaciones pendientes, y conserva `409 PRICES_CHANGED` si cambió antes de confirmar. El margen sigue siendo
+  (subtotal − descuento) − costo FIFO de Inventory; no es el recargo de la política.
 - **Costo y margen** (R-10): el costo FIFO lo informa Inventory en la salida y se copia sin convertir
   ni recalcular. Margen = (subtotal − descuento) − costo; porcentaje nulo si el neto es 0 o si no cabe en
   `NUMERIC(7,4)`; con costo desconocido (`cost_known = false`) los márgenes quedan nulos y la cabecera
@@ -103,6 +111,9 @@ solo vende de contado.
 docker compose --file ../../infrastructure/services/sales-service.yaml --env-file ../../infrastructure/.env up -d sales-db
 alembic upgrade head            # en el contenedor: docker exec sio-sales-service alembic upgrade head
 ```
+
+Migración `0003` (spec 021): `ck_sale_details_no_tax` (`tax_amount = 0`); se detiene sin cambios si alguna línea
+tiene impuesto.
 
 Migración `0002` (spec 020): medio de pago (columnas, `ck_sales_payment_method_*`), ventas sin descuento y
 trigger de inmutabilidad reemplazado; se detiene sin cambios si hay descuentos o ventas fuera de `DRAFT`.

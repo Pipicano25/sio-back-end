@@ -22,12 +22,22 @@ from __future__ import annotations
 
 import os
 import re
+from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from uuid import UUID
 
 import pytest
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
+from commercial_relationship_service.application.automatic_price_application_service import (
+    AutomaticPriceApplicationService,
+)
 from commercial_relationship_service.application.ports import PaymentConditionTypeRef
+from commercial_relationship_service.audit_context import AuditActor, reset_actor, set_actor
+from commercial_relationship_service.infrastructure.pricing_repositories import AutomaticPricingRepository
+from commercial_relationship_service.price_worker import WORKER_ACTOR, WORKER_USERNAME, run_cycle
 from tests.conftest import ApiClient, truncate_all
 from tests.examples import spec_common
 from tests.examples.exercises import EXERCISES
@@ -71,6 +81,51 @@ def external_data(fake_oc, fake_catalog, fake_party, fake_payment):
         fake_catalog.base_units[UUID(product_id)] = UUID(unit_id)
     for type_id, (code, status) in spec_common.CONDITION_TYPES.items():
         fake_payment.types[UUID(type_id)] = PaymentConditionTypeRef(id=UUID(type_id), code=code, status=status)
+
+
+@pytest.fixture
+def processes(test_client, service_token, test_engine):
+    """Procesos automáticos de los ejercicios (spec 021): la entrega de Purchase y el worker de precios."""
+    purchase = ApiClient(test_client, service_token(
+        "perm:commercial-relationship:automatic_price_update_requests:submit", client_id="purchase-service"))
+
+    def recepcion(company, product, presentation, purchase_id, purchase_detail_id, sequence, line_total, quantity,
+                  previous=None, fail=False):
+        body = {
+            "contract_version": 1, "purchase_detail_id": purchase_detail_id, "purchase_id": purchase_id,
+            "branch_id": spec_common.SEDE_EJ9, "company_product_id": product,
+            "company_product_presentation_id": presentation, "sequence": sequence,
+            "previous_sequence": sequence - 1 if sequence > 1 else None, "currency_code": "COP",
+            "line_total": line_total, "quantity": quantity,
+            "previous_purchase_detail_id": spec_common.DETALLE_EJ9_1 if previous else None,
+            "previous_line_total": previous[0] if previous else None,
+            "previous_quantity": previous[1] if previous else None,
+            "received_at": datetime.now(UTC).isoformat(), "received_by_user_id": spec_common.RECIBIO_EJ9,
+        }
+        response = purchase.post(f"/api/v1/companies/{company}/automatic-price-update-requests", json=body)
+        assert response.status_code == 202, response.text
+        [application] = response.json()["applications"]
+        if fail:  # falla simulada con una espera larga: no se reintenta durante el ejercicio
+            token = set_actor(AuditActor(WORKER_ACTOR, WORKER_USERNAME))
+            try:
+                with Session(test_engine, expire_on_commit=False) as session:
+                    AutomaticPriceApplicationService(
+                        AutomaticPricingRepository(session), interval_seconds=3600, max_backoff_seconds=3600
+                    ).fail(UUID(application["id"]), RuntimeError("Falla simulada en el ejercicio"))
+            finally:
+                reset_actor(token)
+        else:
+            while run_cycle(test_engine, batch_size=50, max_backoff_seconds=300, interval_seconds=0.01).processed:
+                pass
+        with test_engine.connect() as connection:
+            row = connection.execute(
+                text("SELECT status, new_price, last_error_code FROM automatic_price_applications WHERE id = :id"),
+                {"id": application["id"]},
+            ).mappings().one()
+        price = None if row["new_price"] is None else format(Decimal(row["new_price"]).quantize(Decimal("0.01")), "f")
+        return {"status": row["status"], "new_price": price, "last_error_code": row["last_error_code"]}
+
+    return {"recepcion": recepcion}
 
 
 def _token(make_token, user):
@@ -126,10 +181,10 @@ def _configured_password():
 # --------------------------------------------------------------------------- ejecución
 
 @pytest.mark.parametrize("index", range(len(EXERCISES)), ids=[ex["folder"] for ex in EXERCISES])
-def test_exercise_runs_and_matches_documentation(api, test_client, make_token, index):
+def test_exercise_runs_and_matches_documentation(api, test_client, make_token, processes, index):
     """Ejercicio en una base nueva: respuestas, permisos por usuario y documentación."""
     exercise = EXERCISES[index]
-    ctx, records = run_exercise(api, exercise, _clients(test_client, make_token))
+    ctx, records = run_exercise(api, exercise, _clients(test_client, make_token), processes)
     _RESULTS[index] = (ctx, records)
 
     permissions = {record["permission"] for record in records if "permission" in record}
@@ -145,19 +200,19 @@ def test_exercise_runs_and_matches_documentation(api, test_client, make_token, i
 
 
 @pytest.mark.parametrize("order", ["forward", "reverse"])
-def test_exercises_share_one_database(api, order):
+def test_exercises_share_one_database(api, processes, order):
     """Todos los ejercicios en la misma base no chocan entre sí."""
     exercises = EXERCISES if order == "forward" else list(reversed(EXERCISES))
     for exercise in exercises:
-        run_exercise(api, exercise)
+        run_exercise(api, exercise, processes=processes)
 
 
-def test_general_permissions_document(api, test_engine, test_client, make_token):
+def test_general_permissions_document(api, test_engine, test_client, make_token, processes):
     """`usuarios-y-permisos.md` corresponde con los permisos observados en todos los ejercicios."""
     for index, exercise in enumerate(EXERCISES):
         if index not in _RESULTS:
             truncate_all(test_engine)
-            _RESULTS[index] = run_exercise(api, exercise, _clients(test_client, make_token))
+            _RESULTS[index] = run_exercise(api, exercise, _clients(test_client, make_token), processes)
 
     _check_documents({"usuarios-y-permisos.md": render_general_document(
         [_RESULTS[index][1] for index in range(len(EXERCISES))]

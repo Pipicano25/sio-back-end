@@ -1,4 +1,4 @@
-# Paso 4. Pedir una lista de precios inexistente
+# Paso 5. Pedir una lista de precios inexistente
 
 Ejercicio 2: Venta en borrador y precios.
 

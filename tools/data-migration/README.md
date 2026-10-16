@@ -10,8 +10,8 @@ explícita; por defecto simula (sección 11).
 | Capa | Contenido | Regla |
 |---|---|---|
 | **Bronze** | Archivos originales del cliente | Copia exacta, en solo lectura y con SHA-256 registrado. Nunca se modifica. |
-| **Silver** | 27 CSV normalizados con **todos** los registros | Cada fila tiene `migration_status` (`PENDIENTE`, `VALIDADO` o `CONFLICTO`) y su motivo. Nada se descarta: lo pendiente queda en Silver. |
-| **Gold** | Los mismos 27 CSV, solo con filas `VALIDADO` | Cada fila es idéntica a su fila de Silver y tiene integridad referencial completa. Es lo único cargable. |
+| **Silver** | 28 CSV normalizados con **todos** los registros | Cada fila tiene `migration_status` (`PENDIENTE`, `VALIDADO` o `CONFLICTO`) y su motivo. Nada se descarta: lo pendiente queda en Silver. |
+| **Gold** | Los mismos 28 CSV, solo con filas `VALIDADO` | Cada fila es idéntica a su fila de Silver y tiene integridad referencial completa. Es lo único cargable. |
 
 ## 2. Estructura
 
@@ -24,12 +24,12 @@ tools/data-migration/
 │   ├── cargar_gold.py      cargue de un Gold a SIO por API (simulación por defecto)
 │   └── test_*.py           pruebas del cargador y de la obtención de tokens (sin datos reales)
 ├── templates/
-│   ├── schemas/<entidad>.schema.json   27 esquemas Table Schema (iguales para Silver, Gold y toda empresa)
+│   ├── schemas/<entidad>.schema.json   28 esquemas Table Schema (iguales para Silver, Gold y toda empresa)
 │   └── required_information.xlsx       plantilla de información requerida
 └── <EMPRESA>/              datos privados, NO versionados (una línea en .gitignore por empresa)
     ├── bronze/             archivos originales
-    ├── silver/             27 CSV con todos los registros
-    ├── gold/               27 CSV con solo lo validado
+    ├── silver/             28 CSV con todos los registros
+    ├── gold/               28 CSV con solo lo validado
     ├── assets/             imágenes <sha256>.<ext>
     └── reports/            estado por registro, evidencia, faltantes, resumen, decisiones pendientes y respaldos
         └── cargue/         reportes de cada ejecución del cargador y diario sio_ids.csv
@@ -96,7 +96,7 @@ operación que no sea GET.
 1. **Frictionless (Table Schema):**
    - encabezados, tipos y obligatorios;
    - valores permitidos, patrones, longitudes y mínimos;
-   - claves primarias y claves foráneas entre los 27 CSV.
+   - claves primarias y claves foráneas entre los 28 CSV.
 2. **Reglas declaradas en cada esquema**, que Frictionless no aplica:
    - `uniqueKeys` (unicidad compuesta);
    - `sio.rules`: `positive`, `one_true`, `unique_where`, `check_where`, `same_parent`, `exactly_one_of`, `catalog`,
@@ -124,7 +124,10 @@ Hay un esquema por entidad de SIO, más `source_classifications`:
 - **Catálogos:** `packaging_types`, `brands`, `categories`, `groups`, `attribute_definitions`, `category_attributes`.
 - **Producto:** `products`, `product_presentations`, `product_identifiers`, `product_assets`, `product_categories`,
   `product_group_assignments`, `product_attribute_values`.
-- **Producto de empresa:** `company_products`, `company_product_presentations`.
+- **Producto de empresa:** `company_products`, `company_product_presentations` y, desde la spec 021,
+  `company_product_purchase_taxes` (tasa de impuesto de compra de cada producto: solo valores **explícitos** de la
+  empresa, de 0 a 100; una fila ausente deja el producto **sin configurar** y Compras no deja confirmar compras de ese
+  producto; 0 solo si la empresa lo declara).
 - **Compras y precios:** `company_suppliers`, `supplier_payment_conditions`, `supplier_products`, `price_lists`,
   `price_list_items`, `purchase_sequences`, `purchases`, `purchase_details`.
 - **Evidencia:** `source_classifications`.
@@ -214,7 +217,7 @@ país y ciudad) se referencian por `*_code` y **no** tienen CSV.
 
 1. Crear `<EMPRESA>/{bronze,silver,gold,assets,reports}` y agregar `tools/data-migration/<EMPRESA>/` a `.gitignore`.
 2. Copiar los archivos originales a `bronze/` (solo lectura) y registrar su SHA-256.
-3. Llenar los 27 CSV de `silver/` con los esquemas de `templates/schemas/`:
+3. Llenar los 28 CSV de `silver/` con los esquemas de `templates/schemas/`:
    - todo registro va a Silver, con su estado y motivo;
    - la evidencia por campo va a `reports/field_evidence.csv`;
    - el estado por registro original va a `reports/record_status.csv`.
@@ -279,7 +282,7 @@ mkdir -p /tmp/restaurar && tar -C /tmp/restaurar -xzf codigo-anterior-2026-10-13
 ## 11. Cargue a SIO por API (`cargar_gold.py`)
 
 Un único script que lee el Gold de una empresa y llama a las API públicas de SIO, sin colas, motores, servicios ni
-bases de datos adicionales. Sirve para cualquier empresa: todo lo que necesita sale de los 27 esquemas
+bases de datos adicionales. Sirve para cualquier empresa: todo lo que necesita sale de los 28 esquemas
 (`templates/schemas`) y de los contratos OpenAPI desplegados. **Por defecto solo simula.**
 
 ### Uso
@@ -327,6 +330,25 @@ La cuenta técnica `sio-data-importer` no puede crear empresas ni sedes: Operati
 
 En la etapa 3, lo ya cargado sale como `YA_CARGADO` y las imágenes, `OMITIDO` (salvo con `--con-imagenes`; ver
 "Imágenes").
+
+### Tasas de impuesto de compra (spec 021)
+
+`company_product_purchase_taxes` va al final: configura la tasa de un producto de empresa **ya cargado** con
+`PUT /api/v1/company-products/{id}/purchase-tax` (permiso `company_product_purchase_taxes:update`, de administradores
+y supervisores; ejecutarlo con un usuario de la empresa, `--rol usuario:<nombre>`). Lee el producto y su `version`
+antes de enviar:
+
+| Situación en SIO | Resultado |
+|---|---|
+| Producto aún no cargado (o fila de un producto no seleccionado) | `DEPENDENCIA` |
+| Producto simulado en esta ejecución | `ACTUALIZARIA` |
+| Sin tasa configurada | `ACTUALIZARIA` en simulación; `ACTUALIZADO` en escritura (se anota en el diario) |
+| Ya tiene la misma tasa | `REUSADO` |
+| Tiene otra tasa | `CONFLICTO`: **nunca** se sobrescribe; se corrige con decisión de la empresa |
+
+SIO no asigna tasas por su cuenta: el CSV solo contiene las que la empresa entrega (con su `source_ref`). Para DAO
+el archivo existe en Silver y Gold solo con encabezados hasta que DAO entregue sus tasas; cargarlas en SIO requiere
+autorización aparte.
 
 **Etapa 4, asociación comercial (spec 019):**
 

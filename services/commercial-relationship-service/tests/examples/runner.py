@@ -13,6 +13,9 @@ las consultas de un usuario con permiso pero sin membresía en la empresa respon
 
 Las llamadas a Operational Context, Product Catalog y Party Identity (clase C, Principio IV) no se ejecutan: se simulan
 con los dobles de los puertos y el permiso se toma del ejercicio.
+
+Los **procesos automáticos** (spec 021: la entrega de Purchase y el worker de precios) no son llamadas del usuario: los
+ejecuta la prueba con `processes[nombre](**params)` (con las variables `<…>` sustituidas), que devuelve el resultado que muestra el documento.
 """
 
 import logging
@@ -113,12 +116,21 @@ def _check_access(call, clients, method, path, kwargs, expected, record):
             record["verified"][name] = response.status_code
 
 
-def run_exercise(api, exercise, clients=None):
+def run_exercise(api, exercise, clients=None, processes=None):
     """Ejecuta un ejercicio. Devuelve (ctx, records) para generar la documentación."""
     ctx, records = {}, []
     for step_index, step in enumerate(exercise["steps"]):
         for call_index, call in enumerate(step["calls"]):
             record = {"step": step_index, "call": call_index}
+
+            if call.get("process"):
+                assert processes and call["process"] in processes, f"Proceso sin implementar: {call['process']}"
+                result = processes[call["process"]](**substitute(call["params"], ctx))
+                for var, where in call["save"].items():
+                    ctx[var] = resolve(result, where)
+                record.update(process=True, response=result)
+                records.append(record)
+                continue
 
             if call["external"]:
                 if clients is not None:

@@ -12,7 +12,7 @@ def test_confirmation_assigns_number_without_moving_inventory(buyer, world, fake
     """Spec 020: confirmar no crea existencias; la compra queda pendiente de recepción."""
     make_sequence(reset_policy="MONTHLY")
     draft = make_draft(
-        line(world.product, "2", "120000", company_product_presentation_id=world.presentation, tax_amount="45600"),
+        line(world.product, "2", "120000", company_product_presentation_id=world.presentation),
         line(world.product_2, "3", "1000", discount_amount="300"),
         supplier_payment_condition_id=world.condition,
     )

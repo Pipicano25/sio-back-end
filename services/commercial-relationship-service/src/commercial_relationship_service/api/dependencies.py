@@ -19,6 +19,7 @@ from commercial_relationship_service.application.company_customer_service import
 from commercial_relationship_service.application.company_product_service import (
     CompanyProductService,
 )
+from commercial_relationship_service.application.company_product_tax_service import CompanyProductTaxService
 from commercial_relationship_service.application.company_scope import (
     CompanyScopeService,
     RequestIdentity,
@@ -43,6 +44,11 @@ from commercial_relationship_service.application.price_list_item_service import 
     PriceListItemService,
 )
 from commercial_relationship_service.application.price_list_service import PriceListService
+from commercial_relationship_service.application.pricing_policy_service import PricingPolicyService
+from commercial_relationship_service.application.automatic_price_application_service import (
+    AutomaticPriceResolutionService,
+)
+from commercial_relationship_service.application.automatic_price_request_service import AutomaticPriceRequestService
 from commercial_relationship_service.application.supplier_payment_condition_service import (
     SupplierPaymentConditionService,
 )
@@ -50,6 +56,11 @@ from commercial_relationship_service.application.supplier_product_service import
     SupplierProductService,
 )
 from commercial_relationship_service.infrastructure.database import get_db_session
+from commercial_relationship_service.infrastructure.pricing_repositories import (
+    AutomaticPriceApplicationRepository,
+    AutomaticPricingRepository,
+    PricingPolicyRepository,
+)
 from commercial_relationship_service.infrastructure.repositories import (
     CompanyCustomerRepository,
     CompanyProductPresentationRepository,
@@ -213,3 +224,33 @@ def get_price_list_item_service(session: Session = Depends(get_db_session)) -> P
 
 def get_applicable_price_service(session: Session = Depends(get_db_session)) -> ApplicablePriceService:
     return ApplicablePriceService(PriceListItemRepository(session))
+
+
+def get_pricing_policy_repository(session: Session = Depends(get_db_session)) -> PricingPolicyRepository:
+    return PricingPolicyRepository(session)
+
+
+def get_pricing_policy_service(session: Session = Depends(get_db_session)) -> PricingPolicyService:
+    return PricingPolicyService(
+        PricingPolicyRepository(session),
+        PriceListRepository(session),
+        CompanyProductPresentationRepository(session),
+    )
+
+
+def get_product_tax_service(session: Session = Depends(get_db_session)) -> CompanyProductTaxService:
+    return CompanyProductTaxService(CompanyProductRepository(session))
+
+
+def get_automatic_price_request_service(session: Session = Depends(get_db_session)) -> AutomaticPriceRequestService:
+    return AutomaticPriceRequestService(AutomaticPricingRepository(session), CompanyProductPresentationRepository(session))
+
+
+def get_automatic_price_application_repository(
+    session: Session = Depends(get_db_session),
+) -> AutomaticPriceApplicationRepository:
+    return AutomaticPriceApplicationRepository(session)
+
+
+def get_automatic_price_resolution_service(session: Session = Depends(get_db_session)) -> AutomaticPriceResolutionService:
+    return AutomaticPriceResolutionService(AutomaticPriceApplicationRepository(session))

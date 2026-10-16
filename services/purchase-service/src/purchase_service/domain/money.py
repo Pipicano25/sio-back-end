@@ -155,3 +155,39 @@ def header_totals(lines: Iterable[tuple[Decimal, Decimal, Decimal]]) -> Totals:
         raise DomainRuleError("AMOUNT_OUT_OF_RANGE", "Los totales de la compra están fuera del rango permitido.")
 
     return Totals(money(subtotal), money(discount), money(tax), money(total))
+
+
+# ---------------------------------------------------------------- spec 021: impuesto por tasa (FR-021-09, M-3)
+
+HUNDRED = Decimal(100)
+TAX_PLACES = 4
+
+
+def check_tax_percentage(value: object, *, field: str = "tax_percentage") -> Decimal:
+    """Tasa de impuesto de compra: de 0 a 100 % con hasta 4 decimales (sin redondear)."""
+    if isinstance(value, bool):
+        raise DomainRuleError("TAX_PERCENTAGE_OUT_OF_RANGE", TAX_RANGE_MESSAGE, field=field)
+    try:
+        rate = Decimal(str(value).strip())
+    except (InvalidOperation, ValueError):
+        raise DomainRuleError("TAX_PERCENTAGE_OUT_OF_RANGE", TAX_RANGE_MESSAGE, field=field) from None
+    if not rate.is_finite() or rate < 0 or rate > HUNDRED or decimal_places(rate) > TAX_PLACES:
+        raise DomainRuleError("TAX_PERCENTAGE_OUT_OF_RANGE", TAX_RANGE_MESSAGE, field=field)
+    return rate
+
+
+TAX_RANGE_MESSAGE = "La tasa de impuesto debe estar entre 0 y 100, con hasta 4 decimales."
+
+
+def with_tax(amounts: LineAmounts, rate: Decimal | None) -> LineAmounts:
+    """Impuesto de la línea desde su tasa: `ROUND_HALF_UP((subtotal − descuento) × tasa / 100, 2)`.
+
+    Sin tasa (producto sin configurar) el impuesto es 0 mientras la compra es borrador; la confirmación lo exige.
+    El impuesto se suma una sola vez, en `total` (RC-021-7).
+    """
+    net = amounts.subtotal - amounts.discount_amount
+    tax = money(net * rate / HUNDRED) if rate is not None else Decimal("0.00")
+    total = net + tax
+    if total >= MAX_MONEY:
+        raise DomainRuleError("AMOUNT_OUT_OF_RANGE", "El total de la línea está fuera del rango permitido.", field="tax_percentage")
+    return LineAmounts(amounts.quantity, amounts.unit_cost, amounts.discount_amount, tax, amounts.subtotal, total)

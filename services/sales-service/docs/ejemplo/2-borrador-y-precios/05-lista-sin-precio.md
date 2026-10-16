@@ -1,4 +1,4 @@
-# Paso 5. Pedir una lista sin precio para el producto
+# Paso 6. Pedir una lista sin precio para el producto
 
 Ejercicio 2: Venta en borrador y precios.
 

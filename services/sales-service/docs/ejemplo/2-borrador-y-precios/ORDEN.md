@@ -11,11 +11,12 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 | 1 | [01-crear-el-borrador.md](01-crear-el-borrador.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales` | `ventas.test` | `201` |
 | 2 | [02-agregar-una-linea.md](02-agregar-una-linea.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `201` |
 | 3 | [03-precio-manual.md](03-precio-manual.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `422` |
-| 4 | [04-lista-inexistente.md](04-lista-inexistente.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `422` |
-| 5 | [05-lista-sin-precio.md](05-lista-sin-precio.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `409` |
-| 6 | [06-producto-sin-control-de-inventario.md](06-producto-sin-control-de-inventario.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `409` |
-| 7 | [07-version-vieja.md](07-version-vieja.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `409` |
-| 8 | [08-consultar-el-borrador.md](08-consultar-el-borrador.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>` | `ventas.test` | `200` |
+| 4 | [03a-impuesto-adicional.md](03a-impuesto-adicional.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `422` |
+| 5 | [04-lista-inexistente.md](04-lista-inexistente.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `422` |
+| 6 | [05-lista-sin-precio.md](05-lista-sin-precio.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `409` |
+| 7 | [06-producto-sin-control-de-inventario.md](06-producto-sin-control-de-inventario.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `409` |
+| 8 | [07-version-vieja.md](07-version-vieja.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details` | `ventas.test` | `409` |
+| 9 | [08-consultar-el-borrador.md](08-consultar-el-borrador.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>` | `ventas.test` | `200` |
 
 ## Por qué este orden
 
@@ -25,4 +26,4 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Variable | Se guarda en | Se usa en |
 | --- | --- | --- |
-| `<VENTA>` | paso 1 (`id`) | pasos 2, 3, 4, 5, 6, 7, 8 |
+| `<VENTA>` | paso 1 (`id`) | pasos 2, 3, 4, 5, 6, 7, 8, 9 |

@@ -36,6 +36,7 @@ from purchase_service.application.exceptions import (
 )
 from purchase_service.application.ports import InventoryGateway, InventoryRejection
 from purchase_service.application.purchase_service import PurchaseView
+from purchase_service.application.price_update_delivery import record_price_update_facts
 from purchase_service.application.snapshots import line_base_quantity, line_inventory_cost, touch
 from purchase_service.domain.status import (
     CANCEL,
@@ -198,6 +199,8 @@ class OperationEngine:
             operation.completed_at = now
             touch(operation, actor, now)
             self._repo.flush()
+            # Spec 021 (FR-021-14): serie de costos y solicitudes de precio en la misma T2 (outbox, EXC-001).
+            record_price_update_facts(self._repo, purchase, self._repo.lines(purchase.id), actor, now)
             audit.record(
                 self._repo.session,
                 action=audit.RECEIVE_PURCHASE,

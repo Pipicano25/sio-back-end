@@ -227,7 +227,8 @@ class Product:
     unit_presentation: str | None = None
 
 
-def _adopt(client, company: str, label: str, *, sale_price: str, inventory_control: bool, with_box: bool) -> Product:
+def _adopt(client, company: str, label: str, *, sale_price: str, inventory_control: bool, with_box: bool,
+           purchase_tax: str | None = "19") -> Product:
     unit = _first_id(client, f"{PRODUCT_CATALOG}/units-of-measure", status="ACTIVE")
     category = client.post(f"{PRODUCT_CATALOG}/categories", json={
         "code": f"VAL-SAL-{label}-{RUN_ID}", "name": f"Categoría ficticia de validación VENTAS {label} {RUN_ID}",
@@ -264,6 +265,12 @@ def _adopt(client, company: str, label: str, *, sale_price: str, inventory_contr
     })
     assert adopted.status_code == 201, adopted.text
     company_product = adopted.json()["id"]
+    # Spec 021: sin tasa de impuesto de compra configurada no se confirma la compra; 19 % es una tasa **ficticia**.
+    if purchase_tax is not None:
+        taxed = client.put(f"{COMMERCIAL_RELATIONSHIP}/company-products/{company_product}/purchase-tax", json={
+            "version": adopted.json()["version"], "purchase_tax_percentage": purchase_tax,
+        })
+        assert taxed.status_code == 200, taxed.text
     unit_presentation = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company}/company-product-presentations", json={
         "company_product_id": company_product, "global_product_presentation_id": unit_global.json()["id"],
         "sku": f"SKU-UND-{label}-{RUN_ID}",
@@ -406,6 +413,13 @@ def build_world(admin: httpx.Client) -> RealWorld:
     )
     stock_with_purchase(admin, world, [(product, "200", "1000"), (product_2, "200", "6000")])
     return world
+
+
+def adopt_product(admin: httpx.Client, world: RealWorld, label: str, *, sale_price: str = "2500.00",
+                  purchase_tax: str | None = "19") -> Product:
+    """Producto nuevo de la empresa del mundo, con control de inventario (spec 021: serie de costos propia)."""
+    return _adopt(admin, world.company, label, sale_price=sale_price, inventory_control=True, with_box=False,
+                  purchase_tax=purchase_tax)
 
 
 def stock_with_purchase(admin: httpx.Client, world: RealWorld, lines: list[tuple[Product, str, str]]) -> dict:

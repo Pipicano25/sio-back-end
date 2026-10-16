@@ -62,6 +62,12 @@ TEST_KID = "test-key"
 
 FUNCTIONAL_TABLES = (
     "audit_outbox",
+    # spec 021 (referencian price_lists, presentaciones y productos; van en el mismo TRUNCATE)
+    "automatic_price_applications",
+    "automatic_price_update_requests",
+    "price_list_pricing_policy_presentations",
+    "price_list_pricing_policy_terms",
+    "price_list_pricing_policies",
     "price_list_items",
     "price_lists",
     "supplier_payment_conditions",
@@ -85,12 +91,31 @@ CR_READ = (
     "perm:commercial-relationship:price_list_items:read",
 )
 
+# Lecturas explícitas de commercial-relationship de `compras` y `ventas` en la plantilla del realm (spec 021).
+CR_EXPLICIT_READ = (
+    *CR_READ,
+    "perm:commercial-relationship:product_pricing_policies:read",
+    "perm:commercial-relationship:customer_segments:read",
+    "perm:commercial-relationship:customer_credit_profiles:read",
+    "perm:commercial-relationship:customer_payment_conditions:read",
+    "perm:commercial-relationship:supplier_commercial_conditions:read",
+    "perm:commercial-relationship:supplier_evaluations:read",
+)
+
 # Roles de cada usuario de prueba según su grupo en la plantilla del realm.
 USER_ROLES: dict[str, tuple[str, ...]] = {
     "admin.test": ("perm:all:all:all",),
-    "supervisor.test": ("perm:all:all:read", "perm:all:all:create", "perm:all:all:update"),
-    "compras.test": ("perm:commercial-relationship:all:read", "perm:operational-context:all:read"),
-    "ventas.test": ("perm:commercial-relationship:all:read", "perm:operational-context:all:read"),
+    # Spec 021: los supervisores tienen además inactivar políticas, resolver actualizaciones y ajustar tasas de línea.
+    "supervisor.test": (
+        "perm:all:all:read", "perm:all:all:create", "perm:all:all:update",
+        "perm:commercial-relationship:pricing_policies:delete",
+        "perm:commercial-relationship:automatic_price_applications:resolve",
+        "perm:purchase:purchase_line_taxes:override",
+    ),
+    # Spec 021: `perm:commercial-relationship:all:read` se reemplazó por sus lecturas explícitas (sin políticas ni
+    # actualizaciones automáticas, que exponen costos).
+    "compras.test": (*CR_EXPLICIT_READ, "perm:operational-context:all:read"),
+    "ventas.test": (*CR_EXPLICIT_READ, "perm:operational-context:all:read"),
     "reportes.test": CR_READ,
     "consulta.test": CR_READ,
     "inventario.test": ("perm:operational-context:all:read", "perm:product-catalog:all:read"),

@@ -21,6 +21,24 @@ entrada si se recibieron), administra la numeración por período y registra los
 - **Cargue inicial**: compras normales identificadas con `observations` (no se filtra ni se audita); aparecen
   en los reportes como compras normales.
 
+## Reglas de la spec 021
+
+`specs/021-automatic-purchase-pricing/` (precios automáticos por recepción):
+
+- **Impuesto por tasa:** la línea ya no recibe `tax_amount` (un campo desconocido da `422`). Purchase lo calcula con
+  `ROUND_HALF_UP((subtotal − descuento) × tasa / 100, 2)`, con la tasa de compra del producto en Commercial
+  Relationship (`tax_percentage_source = PRODUCT_DEFAULT`) o la de la factura (`LINE_OVERRIDE`, permiso
+  `perm:purchase:purchase_line_taxes:override`, auditada como `OVERRIDE_PURCHASE_LINE_TAX`). Sin tasa la línea
+  tiene la advertencia `PURCHASE_TAX_NOT_CONFIGURED` y la compra no se confirma (`409`); si la tasa del producto
+  cambió desde que se guardó la línea, `409 PURCHASE_TAX_CHANGED`.
+- **Una presentación por compra:** `409 DUPLICATE_PRESENTATION_IN_PURCHASE` al crear, agregar o editar líneas y al
+  confirmar (`uq_purchase_details_purchase_presentation`).
+- **Hechos de costo:** en la T2 de la recepción se actualiza `purchase_presentation_cost_series` y se escribe una fila
+  de `purchase_price_update_outbox` por línea (contrato v1, secuencia contigua por presentación). La anulación no
+  los modifica (M-1). El costo que recibe Inventory no cambia (sin impuestos; FIFO intacto).
+- **Entrega:** el proceso `purchase-price-update-worker` los entrega a Commercial Relationship por HTTP (excepción
+  EXC-001 a D6, solo esta spec). La recepción nunca depende de esa entrega.
+
 ## Responsabilidad y entidades
 
 | Tabla | Rol |
@@ -32,6 +50,8 @@ entrada si se recibieron), administra la numeración por período y registra los
 | `purchase_operations` | Confirmación o anulación distribuida (`PENDING`/`SUCCEEDED`/`FAILED`), clave de idempotencia, `inventory_operation_id`, usuario operativo que la inició y motivo (inmutables; `error_details` solo errores) |
 | `purchase_lifecycle_events` | Hitos inmutables `ORDERED → SUPPLIER_DISPATCHED → ARRIVED → RECEIVED → AVAILABLE_FOR_SALE` |
 | `audit_outbox` | Transactional Outbox de `sio-audit` |
+| `purchase_presentation_cost_series` | Spec 021: última recepción por empresa y presentación (secuencia y hechos de costo) |
+| `purchase_price_update_outbox` | Spec 021: solicitudes de actualización de precio pendientes de entregar a Commercial Relationship |
 
 Snapshots (nombre e identificación del proveedor, código y nombre del producto, presentación, unidad,
 factor, lead time esperado, condición de pago): **excepción documentada al Principio III** (DS-02).
@@ -62,6 +82,8 @@ Anular: borrador o confirmada sin recibir → local; recibida → reverso de exa
 | Worker de auditoría | `python -m sio_audit.worker` | Entrega `audit_outbox` a Audit con el cliente `purchase-service` |
 | Conciliador | `python -m purchase_service.reconciler` (`--once`, `--check`) | Cada `PURCHASE_RECONCILER_INTERVAL_SECONDS` toma operaciones `PENDING` (recepciones y anulaciones de compras recibidas) más antiguas que `PURCHASE_RECONCILER_THRESHOLD_SECONDS`, consulta Inventory por clave y las completa o cierra (`OPERATION_NOT_APPLIED`); nunca vuelve a aplicar |
 
+| Entrega de precios (spec 021) | `python -m purchase_service.price_update_worker` (`--once`, `--check`) | Entrega `purchase_price_update_outbox` a `POST /companies/{c}/automatic-price-update-requests` de Commercial Relationship con el cliente `purchase-service`, en orden de secuencia por presentación; espera creciente ante fallos; un `409` no se reintenta automáticamente. Variables `PURCHASE_PRICE_WORKER_*` |
+
 Identidad de los procesos internos (D1, D22): el conciliador registra `updated_by =
 system:purchase-reconciler`.
 
@@ -71,6 +93,10 @@ Ver `specs/014-purchase-core/contracts/dependencies.md`. Un único adaptador rea
 modos de entorno; las pruebas inyectan dobles por DI. Identidad técnica: cliente `purchase-service`
 (`client_credentials`, secreto `PURCHASE_SERVICE_CLIENT_SECRET` solo en `infrastructure/.env`).
 `operational-access` siempre con el token del usuario.
+
+Spec 021: la tasa de compra se lee del `batch-lookup` de productos de Commercial Relationship (clase C, ya existente)
+y el worker de entrega llama a la ruta técnica de precios de Commercial Relationship (clase C) con el token
+`client_credentials` de Keycloak (clase B). No hay dependencias de clase D.
 
 ## Configuración
 
@@ -83,6 +109,9 @@ Variables en `.env.example` (copiar a `.env`; nunca versionar secretos). Payment
 docker compose --file ../../infrastructure/services/purchase-service.yaml --env-file ../../infrastructure/.env up -d purchase-db
 alembic upgrade head            # en el contenedor: docker exec sio-purchase-service alembic upgrade head
 ```
+
+Migración `0003` (spec 021): `tax_percentage` y `tax_percentage_source` en las líneas, la restricción única de
+presentación por compra (con guarda: se detiene si ya hay duplicados), la serie de costos y el outbox de precios.
 
 Migración `0002` (spec 020): recepción, solo contado, medio de pago, presentación y costo > 0, con guardas
 que la detienen sin cambios ante datos incompatibles.
@@ -104,7 +133,8 @@ No ejecutar en paralelo suites que usen la misma base de pruebas.
 
 ## Permisos
 
-`perm:purchase:{purchases,purchase_details,purchase_lifecycle_events,purchase_sequences,purchase_operations}:{create,read,update,delete}`.
+`perm:purchase:{purchases,purchase_details,purchase_lifecycle_events,purchase_sequences,purchase_operations}:{create,read,update,delete}`
+y, desde la spec 021, `perm:purchase:purchase_line_taxes:override` (solo administradores y supervisores).
 Todas las rutas exigen usuario humano; escribir compras, líneas e hitos y confirmar o anular exige
 además asignación a la sucursal. Ver `docs/ejemplo/usuarios-y-permisos.md`.
 
@@ -122,4 +152,7 @@ por pagar, devoluciones, aprobaciones.
 
 Proyecto Compose único `infrastructure/services/purchase-service.yaml` (proyecto `purchase-service`):
 `purchase-db`, `purchase-test-db` (perfil `test`), `purchase-service`, `purchase-audit-outbox-worker`,
-`purchase-reconciler`.
+`purchase-reconciler` y `purchase-price-update-worker` (spec 021).
+
+**Limitación (R-12):** el impuesto de compra forma parte del costo real que usa la actualización automática de
+precios; Sales no agrega impuesto a la venta (provisional, **no es una solución fiscal**).

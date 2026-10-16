@@ -9,7 +9,9 @@ Dos escenarios separados (H1):
   configuración del worker; la política de `libs/sio-audit` no cambia.
 
 En ambos se reinicia el worker con pendientes (retoma) y la historia se reconstruye por `occurred_at`:
-nunca se exige el orden de llegada (H2). Detiene `sio-audit-service` y lo vuelve a iniciar.
+nunca se exige el orden de llegada (H2). Detiene Audit y lo vuelve a iniciar, solo en la pila aislada
+(`tests/integration/isolation.py`: `SIO_INTEGRATION_CONTAINER_PREFIX=sio-it-` y etiqueta `sio.integration.isolated=true`);
+ante un contenedor persistente la prueba se omite. Si se interrumpe: `docker start sio-it-audit-service`.
 """
 
 from __future__ import annotations
@@ -21,6 +23,8 @@ from pathlib import Path
 
 import httpx
 import pytest
+
+from tests.integration.isolation import container
 
 from tests.integration.test_audit_delivery import AUDIT, _company_history  # noqa: F401
 from tests.integration.test_real_dependencies import (  # noqa: F401 (fixtures)
@@ -64,7 +68,7 @@ def _docker(*args: str) -> str:
     return subprocess.run(["docker", *args], capture_output=True, text=True, check=True).stdout.strip()
 
 
-TOKEN_URL = "http://127.0.0.1:8081/realms/sio/protocol/openid-connect/token"
+TOKEN_URL = os.environ.get("KEYCLOAK_TOKEN_URL", "http://127.0.0.1:8081/realms/sio/protocol/openid-connect/token")
 ENV_FILE = Path(__file__).resolve().parents[4] / "infrastructure" / ".env"
 
 
@@ -82,7 +86,7 @@ def _renew_token(client) -> None:
 
 
 def _backoff_max() -> float:
-    env = _docker("inspect", "-f", "{{range .Config.Env}}{{println .}}{{end}}", WORKER)
+    env = _docker("inspect", "-f", "{{range .Config.Env}}{{println .}}{{end}}", container(WORKER))
     for line in env.splitlines():
         if line.startswith("AUDIT_OUTBOX_BACKOFF_MAX_SECONDS="):
             return float(line.split("=", 1)[1])
@@ -91,7 +95,7 @@ def _backoff_max() -> float:
 
 def _pending(entity_id: str) -> int:
     sql = f"SELECT count(*) FROM audit_outbox WHERE status = 'PENDING' AND payload->>'entity_id' = '{entity_id}'"
-    out = _docker("exec", DB_CONTAINER, "sh", "-c", f'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -c "{sql}"')
+    out = _docker("exec", container(DB_CONTAINER), "sh", "-c", f'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -c "{sql}"')
     return int(out or 0)
 
 
@@ -103,18 +107,18 @@ def _audit_up() -> bool:
 
 
 def _outage(writer, seconds: float, writes: int = 2):
-    _docker("stop", AUDIT_CONTAINER)
+    _docker("stop", container(AUDIT_CONTAINER))
     try:
         started = time.monotonic()
         entity_type, entity_id, history = writer(writes)
         time.sleep(3)
         assert _pending(entity_id) >= writes  # la operación respondió y el evento quedó pendiente
-        _docker("restart", WORKER)  # reinicio con pendientes: retoma (RC-03)
+        _docker("restart", container(WORKER))  # reinicio con pendientes: retoma (RC-03)
         remaining = seconds - (time.monotonic() - started)
         if remaining > 0:
             time.sleep(remaining)
     finally:
-        _docker("start", AUDIT_CONTAINER)
+        _docker("start", container(AUDIT_CONTAINER))
     deadline = time.monotonic() + 120
     while not _audit_up():
         assert time.monotonic() < deadline, "Audit no volvió"

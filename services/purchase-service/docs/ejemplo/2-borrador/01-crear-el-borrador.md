@@ -21,8 +21,7 @@ Ejecuta: `compras.test`.
       "company_product_id": "d14d0000-0000-4000-8000-000000000001",
       "company_product_presentation_id": "d14e0000-0000-4000-8000-000000000001",
       "quantity": "2",
-      "unit_cost": "120000",
-      "tax_amount": "45600"
+      "unit_cost": "120000"
     }
   ],
   "supplier_payment_condition_id": "d14c0000-0000-4000-8000-000000000003",
@@ -34,6 +33,7 @@ Ejecuta: `compras.test`.
 
 - El borrador no afecta inventario y no tiene número.
 - La cantidad y el costo van en la unidad de compra (caja); el servidor calcula subtotal, total, cantidad en unidad base (24) y costo por unidad base sin impuestos (10000).
+- Spec 021: el impuesto no se envía; se calcula con la tasa de compra del producto en Commercial Relationship (19 % **ficticio**): 240000 × 19 % = 45600 (`tax_percentage_source` `PRODUCT_DEFAULT`).
 - Los nombres e identificación se guardan como snapshots provisionales.
 
 ## Permiso
@@ -46,7 +46,7 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
 | `supervisor.test` | Sí | `—` | tiene `perm:all:all:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `201` | tiene `perm:purchase:all:all` y asignación a la sucursal |
+| `compras.test` | Sí | `201` | tiene `perm:purchase:purchases:create` y asignación a la sucursal |
 | `ventas.test` | No | `403` | no tiene `perm:purchase:purchases:create` |
 | `inventario.test` | No | `403` | no tiene `perm:purchase:purchases:create` |
 | `reportes.test` | No | `403` | no tiene `perm:purchase:purchases:create` |
@@ -131,6 +131,9 @@ Estado `201`.
       "unit_cost": "120000.0000",
       "discount_amount": "0.00",
       "tax_amount": "45600.00",
+      "tax_percentage": "19.0000",
+      "tax_percentage_source": "PRODUCT_DEFAULT",
+      "warnings": [],
       "subtotal": "240000.00",
       "total": "285600.00",
       "base_quantity": "24.0000",

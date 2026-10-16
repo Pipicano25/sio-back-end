@@ -22,7 +22,7 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (Operational Context
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
 | `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` |
-| `compras.test` | Sí | `200` | tiene `perm:purchase:all:all` |
+| `compras.test` | Sí | `200` | tiene `perm:purchase:purchases:read` |
 | `ventas.test` | No | `403` | no tiene `perm:purchase:purchases:read` |
 | `inventario.test` | No | `403` | no tiene `perm:purchase:purchases:read` |
 | `reportes.test` | Sí | `200` | tiene `perm:purchase:purchases:read` |
@@ -107,6 +107,9 @@ Estado `200`.
       "unit_cost": "120000.0000",
       "discount_amount": "0.00",
       "tax_amount": "45600.00",
+      "tax_percentage": "19.0000",
+      "tax_percentage_source": "PRODUCT_DEFAULT",
+      "warnings": [],
       "subtotal": "240000.00",
       "total": "285600.00",
       "base_quantity": "24.0000",
@@ -134,6 +137,9 @@ Estado `200`.
       "unit_cost": "9800.0000",
       "discount_amount": "800.00",
       "tax_amount": "0.00",
+      "tax_percentage": "0.0000",
+      "tax_percentage_source": "PRODUCT_DEFAULT",
+      "warnings": [],
       "subtotal": "58800.00",
       "total": "58000.00",
       "base_quantity": "6.0000",

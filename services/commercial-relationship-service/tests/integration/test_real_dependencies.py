@@ -49,7 +49,7 @@ CLIENT_ID = "commercial-relationship-service"
 
 COMMERCIAL_RELATIONSHIP = os.environ.get(
     "COMMERCIAL_RELATIONSHIP_INTEGRATION_BASE_URL", "http://localhost:8106"
-).rstrip("/") + "/api/v1"
+).rstrip("/").removesuffix("/api/v1") + "/api/v1"  # se acepta con o sin `/api/v1`, como en los demás servicios
 OPERATIONAL_CONTEXT = os.environ.get("OPERATIONAL_CONTEXT_INTEGRATION_BASE_URL", "http://localhost:8104/api/v1").rstrip("/")
 PRODUCT_CATALOG = os.environ.get("PRODUCT_CATALOG_INTEGRATION_BASE_URL", "http://localhost:8103/api/v1").rstrip("/")
 PARTY_IDENTITY = os.environ.get("PARTY_IDENTITY_INTEGRATION_BASE_URL", "http://localhost:8101/api/v1").rstrip("/")

@@ -616,7 +616,7 @@ POST /api/v1/products/batch-lookup
 }
 ```
 
-Equivalentes: `POST /api/v1/presentations/batch-lookup` (incluye `base_quantity` y la elegibilidad)
+Equivalentes: `POST /api/v1/presentations/batch-lookup` (incluye `code`, `name`, `base_quantity` y la elegibilidad)
 y `POST /api/v1/units-of-measure/batch-lookup` (incluye `measurement_type` y `allows_decimals`).
 
 ### 6.5 Flujo recomendado para un servicio que adopta

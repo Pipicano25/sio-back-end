@@ -11,6 +11,7 @@ from commercial_relationship_service.api.schemas.common import (
     CurrencyCode,
     DisplayName,
     InternalCode,
+    PercentageOut,
     ReferenceCode,
     ShortName,
     StrictModel,
@@ -65,6 +66,8 @@ class CompanyProductResponse(AuditedResponse):
     expiration_tracking_enabled: bool
     is_purchasable: bool
     is_sellable: bool
+    # Spec 021 (FR-021-07): `null` = sin configurar; se modifica solo con `.../purchase-tax`.
+    purchase_tax_percentage: PercentageOut | None = None
 
 
 class BatchLookupRequest(StrictModel):
@@ -88,6 +91,7 @@ class BatchLookupItem(BaseModel):
     expiration_tracking_enabled: bool | None = None
     is_purchasable: bool | None = None
     is_sellable: bool | None = None
+    purchase_tax_percentage: PercentageOut | None = None  # spec 021: lo usa Purchase
     status: str | None = None
     version: int | None = None
 

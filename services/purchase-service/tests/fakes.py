@@ -224,14 +224,18 @@ class FakeCommercial:
             ),
         }
         self.products = {
+            # Spec 021: tasas de impuesto de compra ficticias (el 19 % no es una tarifa real).
             world.product: CompanyProductInfo(
-                world.product, world.company, world.global_product, "000045", "Arroz ficticio 500 g", True, True, "ACTIVE"
+                world.product, world.company, world.global_product, "000045", "Arroz ficticio 500 g", True, True, "ACTIVE",
+                Decimal("19"),
             ),
             world.product_2: CompanyProductInfo(
-                world.product_2, world.company, world.global_product_2, "000046", "Aceite ficticio 1 L", True, True, "ACTIVE"
+                world.product_2, world.company, world.global_product_2, "000046", "Aceite ficticio 1 L", True, True, "ACTIVE",
+                Decimal("0"),
             ),
             world.product_no_inventory: CompanyProductInfo(
-                world.product_no_inventory, world.company, world.global_product_2, "000099", "Servicio ficticio", True, False, "ACTIVE"
+                world.product_no_inventory, world.company, world.global_product_2, "000099", "Servicio ficticio", True, False,
+                "ACTIVE", Decimal("0"),
             ),
         }
         self.presentations = {
@@ -286,9 +290,9 @@ class FakeCatalog:
         }
         self.units = {world.unit: UnitInfo(world.unit, "UND")}
 
-    def get_presentation(self, presentation_id: UUID):
-        self.availability.hit("presentation", presentation_id)
-        return self.presentations.get(presentation_id)
+    def lookup_presentations(self, ids):
+        self.availability.hit("presentations", tuple(ids))
+        return {value: self.presentations[value] for value in dict.fromkeys(ids) if value in self.presentations}
 
     def get_product(self, product_id: UUID):
         self.availability.hit("product", product_id)
@@ -465,6 +469,17 @@ class Fakes:
 
     def directories(self) -> Directories:
         return Directories(self.oc, self.cr, self.catalog, self.party, self.pr)
+
+    def add_unit_presentations(self, product: UUID, count: int) -> list[UUID]:
+        """Registra `count` presentaciones de factor 1 distintas del producto (spec 021: una línea por presentación)."""
+        created = []
+        for index in range(count):
+            company = uuid5(UNIT_NAMESPACE, f"company:{product}:{index}")
+            global_ = uuid5(UNIT_NAMESPACE, f"global:{product}:{index}")
+            self.cr.presentations[company] = CompanyPresentationInfo(company, self.world.company, product, global_, True, "ACTIVE")
+            self.catalog.presentations[global_] = GlobalPresentationInfo(global_, f"U{index:03d}", f"Unidad {index}", Decimal("1"))
+            created.append(company)
+        return created
 
     def all_availability(self) -> list[Unavailable]:
         return [

@@ -111,7 +111,7 @@ def analyze(ex):
     for index, s in enumerate(ex["steps"]):
         saves, needs = [], []
         for c in s["calls"]:
-            for var in placeholders_in(c["path"]) + placeholders_in(c["body"]):
+            for var in placeholders_in(c["path"]) + placeholders_in(c["body"]) + placeholders_in(c.get("params")):
                 if var not in saves and var not in needs:
                     needs.append(var)
             saves += list(c["save"])
@@ -138,7 +138,29 @@ def step_label(ex, index):
 
 # ------------------------------------------------------------------ render de un paso
 
+def render_process(number, c, record, reverse):
+    out = [f"## {number}. {c['title']}", ""]
+    out += ["> **Proceso automático:** no es una llamada que haga el usuario. En un entorno real lo hacen Purchase (al "
+            "registrar la recepción física) y el `commercial-relationship-price-worker`; en la validación automática lo "
+            "ejecuta la prueba.", ""]
+    if c["why"]:
+        out += ["**Qué ocurre**", ""]
+        out += [f"- {w}" for w in c["why"]]
+        out.append("")
+    if record and "response" in record:
+        shown = pick(record["response"], [tokens(p) for p in c["show"]]) if c["show"] else record["response"]
+        out += ["**Resultado**", "", "```json", dumps(mask(shown, reverse)), "```", ""]
+    if c["save"]:
+        items = [f"`{where}` → `<{var}>`" for var, where in c["save"].items()]
+        out += ["**Guardar:** " + " · ".join(items), ""]
+    if c["note"]:
+        out += [c["note"], ""]
+    return out
+
+
 def render_call(number, c, record, reverse):
+    if c.get("process"):
+        return render_process(number, c, record, reverse)
     out = [f"## {number}. {c['title']}", ""]
     if c["external"]:
         out += [f"> **Otro servicio:** esta llamada va a **{c['external']}**, no a Commercial Relationship. "

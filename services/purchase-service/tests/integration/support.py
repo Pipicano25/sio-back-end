@@ -255,6 +255,11 @@ def _adopt(client, company: str, label: str, *, inventory_control: bool, with_bo
     })
     assert adopted.status_code == 201, adopted.text
     company_product = adopted.json()["id"]
+    # Spec 021: sin tasa de impuesto de compra configurada no se confirma la compra; 19 % es una tasa **ficticia**.
+    taxed = client.put(f"{COMMERCIAL_RELATIONSHIP}/company-products/{company_product}/purchase-tax", json={
+        "version": adopted.json()["version"], "purchase_tax_percentage": "19",
+    })
+    assert taxed.status_code == 200, taxed.text
     unit_presentation = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company}/company-product-presentations", json={
         "company_product_id": company_product, "global_product_presentation_id": unit_global.json()["id"],
         "sku": f"SKU-UND-{label}-{RUN_ID}",
@@ -400,6 +405,27 @@ def unit_line(product: Product, quantity: str, unit_cost: str) -> dict:
         "quantity": quantity,
         "unit_cost": unit_cost,
     }
+
+
+def distinct_presentations(admin: httpx.Client, world: RealWorld, product: Product, count: int) -> list[str]:
+    """`count` presentaciones de empresa distintas del producto (spec 021: una línea por presentación).
+
+    Cada una es una presentación global ficticia (factor `index + 2`) adoptada en Commercial Relationship.
+    """
+    created = []
+    for index in range(count):
+        global_ = admin.post(f"{PRODUCT_CATALOG}/products/{product.global_product}/presentations", json={
+            "code": f"P{index:03d}-{RUN_ID}", "name": f"Presentación ficticia {index} {RUN_ID}",
+            "base_quantity": str(index + 2), "display_order": index + 3, "is_base": False,
+        })
+        assert global_.status_code == 201, global_.text
+        adopted = admin.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{world.company}/company-product-presentations", json={
+            "company_product_id": product.company_product, "global_product_presentation_id": global_.json()["id"],
+            "sku": f"SKU-P{index:03d}-{RUN_ID}",
+        })
+        assert adopted.status_code == 201, adopted.text
+        created.append(adopted.json()["id"])
+    return created
 
 
 def new_key() -> str:

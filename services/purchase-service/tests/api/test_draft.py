@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from tests.conftest import base, line, purchase_body, user_sub
+from tests.conftest import base, distinct_lines, line, purchase_body, user_sub
 
 
 def test_create_draft_with_lines(buyer, world, fakes) -> None:
     fakes.inventory.availability.fail_if_called = True  # RN-01: el borrador nunca toca Inventory
     body = purchase_body(
         world,
-        line(world.product, "2", "120000", company_product_presentation_id=world.presentation, tax_amount="45600",
+        line(world.product, "2", "120000", company_product_presentation_id=world.presentation,
              supplier_product_id=world.supplier_product),
         line(world.product_2, "3", "5000.50", discount_amount="1.50"),
         line(world.product, "1.5", "2000"),
@@ -43,10 +43,12 @@ def test_create_draft_with_lines(buyer, world, fakes) -> None:
     assert second["subtotal"] == "15001.50" and second["total"] == "15000.00"
     assert second["presentation_code_snapshot"] == "UND" and second["base_quantity_factor_snapshot"] == "1.00000000"
     assert third["base_quantity"] == "1.5000"
+    # Spec 021: impuesto por tasa (arroz 19 %, aceite 0 %): 45.600 + 0 + 3.000 × 19 % = 46.170.
+    assert third["tax_amount"] == "570.00" and second["tax_amount"] == "0.00"
     assert purchase["subtotal"] == "258001.50"
     assert purchase["discount_total"] == "1.50"
-    assert purchase["tax_total"] == "45600.00"
-    assert purchase["total"] == "303600.00"
+    assert purchase["tax_total"] == "46170.00"
+    assert purchase["total"] == "304170.00"
 
 
 def test_draft_without_lines_is_allowed(buyer, world) -> None:
@@ -72,17 +74,19 @@ def test_operation_date_in_future_is_422(buyer, world, clock) -> None:
     assert buyer.post(f"{base(world)}/purchases", json=purchase_body(world, operation_date="2026-10-06")).status_code == 201
 
 
-def test_lines_limit(buyer, world) -> None:
-    response = buyer.post(f"{base(world)}/purchases", json=purchase_body(world, *[line(world.product)] * 101))
+def test_lines_limit(buyer, world, fakes) -> None:
+    lines = distinct_lines(fakes, world.product, 101)  # spec 021: una presentación por línea
+    response = buyer.post(f"{base(world)}/purchases", json=purchase_body(world, *lines))
     assert response.status_code == 422
     assert response.json()["errors"][0]["code"] == "LINES_LIMIT_EXCEEDED"
-    assert buyer.post(f"{base(world)}/purchases", json=purchase_body(world, *[line(world.product)] * 100)).status_code == 201
+    assert buyer.post(f"{base(world)}/purchases", json=purchase_body(world, *lines[:100])).status_code == 201
 
 
-def test_add_line_101_is_422(buyer, world) -> None:
-    created = buyer.post(f"{base(world)}/purchases", json=purchase_body(world, *[line(world.product)] * 100)).json()
+def test_add_line_101_is_422(buyer, world, fakes) -> None:
+    lines = distinct_lines(fakes, world.product, 101)
+    created = buyer.post(f"{base(world)}/purchases", json=purchase_body(world, *lines[:100])).json()
     response = buyer.post(
-        f"{base(world)}/purchases/{created['id']}/details", json={**line(world.product), "version": created["version"]}
+        f"{base(world)}/purchases/{created['id']}/details", json={**lines[100], "version": created["version"]}
     )
     assert response.status_code == 422
     assert response.json()["errors"][0]["code"] == "LINES_LIMIT_EXCEEDED"

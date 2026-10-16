@@ -18,6 +18,8 @@ from commercial_relationship_service.domain.errors import (
     PriceInEffectNotModifiableError,
     PriceItemWithoutPresentationError,
     PriceScaleNotAllowedError,
+    PurchaseTaxRequiredError,
+    TaxPercentageOutOfRangeError,
     ValidityInvalidError,
 )
 
@@ -471,4 +473,77 @@ class PricePeriodOverlapError(CommercialRelationshipError):
     default_message = (
         "La vigencia se cruza con otro precio activo de la misma lista, producto y "
         "presentación."
+    )
+
+
+# ---------------------------------------------------------------- spec 021: políticas de precios
+
+
+class PolicyNameDuplicateError(CommercialRelationshipError):
+    """Nombre de política ya usado por otra política activa de la lista (FR-021-01)."""
+
+    code = "POLICY_NAME_DUPLICATE"
+    title = "Nombre de política duplicado"
+    default_message = "Ya existe una política activa con ese nombre en la lista de precios."
+
+
+class PresentationAlreadyInPolicyError(CommercialRelationshipError):
+    """La presentación ya pertenece a otra política de la lista (RC-021-1; exclusión GiST)."""
+
+    code = "PRESENTATION_ALREADY_IN_POLICY"
+    title = "Presentación ya asignada"
+    default_message = "La presentación ya pertenece a otra política de la misma lista de precios."
+
+
+class PresentationNotInPolicyError(CommercialRelationshipError):
+    """Se retira una presentación que no pertenece a la política (FR-021-03)."""
+
+    code = "PRESENTATION_NOT_IN_POLICY"
+    title = "Presentación no asignada"
+    default_message = "La presentación no pertenece a la política."
+
+
+class PolicyInactiveError(CommercialRelationshipError):
+    """La política está inactiva: es un estado final (FR-021-04)."""
+
+    code = "POLICY_INACTIVE"
+    title = "Política inactiva"
+    default_message = "La política está inactiva y no admite cambios."
+
+
+# ---------------------------------------------------------------- spec 021: actualizaciones automáticas
+
+
+class RequestConflictError(CommercialRelationshipError):
+    """La misma línea de compra ya se entregó con otro contenido (FR-021-19)."""
+
+    code = "REQUEST_CONFLICT"
+    title = "Solicitud en conflicto"
+    default_message = "La línea de compra ya tiene una solicitud con otro contenido; el contenido de una solicitud no cambia."
+
+
+class SequenceConflictError(CommercialRelationshipError):
+    """La secuencia de la presentación ya pertenece a otra línea de compra (FR-021-19)."""
+
+    code = "SEQUENCE_CONFLICT"
+    title = "Secuencia en conflicto"
+    default_message = "La secuencia de la presentación ya pertenece a otra solicitud."
+
+
+class ApplicationAlreadyFinalError(CommercialRelationshipError):
+    """La aplicación ya está en un estado final (FR-021-27)."""
+
+    code = "APPLICATION_ALREADY_FINAL"
+    title = "Aplicación finalizada"
+    default_message = "La actualización automática ya terminó y no admite resolución."
+
+
+class PriceClosedByAutomaticUpdateError(CommercialRelationshipError):
+    """Un precio cerrado o cancelado por una actualización automática no se reactiva ni se extiende (RC-021-9)."""
+
+    code = "PRICE_CLOSED_BY_AUTOMATIC_UPDATE"
+    title = "Precio cerrado por una actualización automática"
+    default_message = (
+        "El precio fue cerrado o cancelado por una actualización automática y no puede volver a regir; registre un "
+        "precio nuevo si corresponde."
     )

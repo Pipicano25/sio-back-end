@@ -20,8 +20,7 @@ Ejecuta: `ventas.test`.
       "company_product_id": "d15d0000-0000-4000-8000-000000000001",
       "company_product_presentation_id": "d15e0000-0000-4000-8000-000000000001",
       "quantity": "2",
-      "price_list_id": "d15f0000-0000-4000-8000-000000000001",
-      "tax_amount": "5700"
+      "price_list_id": "d15f0000-0000-4000-8000-000000000001"
     },
     {
       "company_product_id": "d15d0000-0000-4000-8000-000000000002",
@@ -38,6 +37,7 @@ Ejecuta: `ventas.test`.
 - La segunda no pide lista: se usa el precio de la unidad de aceite en la lista predeterminada GENERAL (9000).
 - Solo contado: `CASH`, sin plazo, `due_date` = `operation_date` = hoy en la zona de la sucursal.
 - El borrador no afecta inventario y no tiene número.
+- Spec 021 (provisional): no se suma impuesto; el precio de la lista es el importe final (`tax_amount` solo admite 0, `TAX_NOT_ALLOWED`). No es una solución fiscal.
 
 ## Permiso
 
@@ -97,8 +97,8 @@ Estado `201`.
   "observations": null,
   "subtotal": "59000.00",
   "discount_total": "0.00",
-  "tax_total": "5700.00",
-  "total": "64700.00",
+  "tax_total": "0.00",
+  "total": "59000.00",
   "inventory_operation_id": null,
   "created_by_user_id": "d15f1000-0000-4000-8000-000000000004",
   "cancelled_by_user_id": null,
@@ -131,9 +131,9 @@ Estado `201`.
       "base_quantity": "24.0000",
       "unit_price": "16000.0000",
       "discount_amount": "0.00",
-      "tax_amount": "5700.00",
+      "tax_amount": "0.00",
       "subtotal": "32000.00",
-      "total": "37700.00",
+      "total": "32000.00",
       "created_at": "<asignado por el servicio>",
       "updated_at": "<asignado por el servicio>",
       "created_by": "ventas.test",

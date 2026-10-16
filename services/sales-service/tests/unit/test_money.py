@@ -10,9 +10,10 @@ from sales_service.domain.money import DomainRuleError, check_line_inputs, heade
 
 
 def test_line_subtotal_and_total() -> None:
-    amounts = line_amounts(D("2"), D("15000"), D("0"), D("5700"))
+    """Spec 021 (B-4): sin impuesto adicional, el total es el subtotal del precio de lista."""
+    amounts = line_amounts(D("2"), D("15000"), D("0"), D("0"))
     assert amounts.subtotal == D("30000.00")
-    assert amounts.total == D("35700.00")
+    assert amounts.total == D("30000.00")
     assert amounts.unit_price == D("15000.0000")
 
 
@@ -22,10 +23,14 @@ def test_subtotal_rounds_half_up_to_cents() -> None:
     assert line_amounts(D("1"), D("0.0049"), D("0"), D("0")).subtotal == D("0.00")
 
 
-def test_total_adds_tax_without_discount() -> None:
-    """Spec 020: sin descuentos, `total = subtotal + impuesto`."""
-    amounts = line_amounts(D("10"), D("100"), D("0"), D("19.99"))
-    assert (amounts.subtotal, amounts.discount_amount, amounts.total) == (D("1000.00"), D("0.00"), D("1019.99"))
+def test_cp63_any_tax_is_rejected_and_zero_is_accepted() -> None:
+    """Spec 021 (B-4, FR-021-30): el precio de la lista es final; `tax_amount` solo admite 0 (no es solución fiscal)."""
+    for tax in ("19.99", "0.01", "5700"):
+        with pytest.raises(DomainRuleError) as error:
+            line_amounts(D("10"), D("100"), D("0"), D(tax), prefix="lines[0].")
+        assert (error.value.code, error.value.field) == ("TAX_NOT_ALLOWED", "lines[0].tax_amount")
+    amounts = line_amounts(D("10"), D("100"), D("0"), D("0"))
+    assert (amounts.subtotal, amounts.tax_amount, amounts.total) == (D("1000.00"), D("0.00"), D("1000.00"))
 
 
 @pytest.mark.parametrize(
@@ -40,6 +45,7 @@ def test_total_adds_tax_without_discount() -> None:
         (D("1"), D("10"), D("10.01"), D("0"), "DISCOUNT_NOT_ALLOWED", "discount_amount"),  # spec 020
         (D("1"), D("10"), D("0.01"), D("0"), "DISCOUNT_NOT_ALLOWED", "discount_amount"),
         (D("1"), D("10"), D("0"), D("-1"), "AMOUNT_OUT_OF_RANGE", "tax_amount"),
+        (D("1"), D("10"), D("0"), D("1"), "TAX_NOT_ALLOWED", "tax_amount"),  # spec 021
         (D("99999999999999"), D("99999"), D("0"), D("0"), "AMOUNT_OUT_OF_RANGE", "quantity"),
     ],
 )

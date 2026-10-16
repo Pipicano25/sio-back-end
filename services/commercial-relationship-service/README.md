@@ -8,7 +8,8 @@ estado); la identidad del producto, de la presentación, de la persona, de la or
 condición de pago vive en su servicio dueño y aquí solo se guarda su UUID.
 
 - Spec, plan y contratos: `specs/007-commercial-relationship-core/` (Fase A) y
-  `specs/010-commercial-relationship-commercial-product/` (Fase B)
+  `specs/010-commercial-relationship-commercial-product/` (Fase B); precios automáticos por recepción de compras en
+  `specs/021-automatic-purchase-pricing/` (ver [Precios automáticos](#precios-automáticos-spec-021))
 - Contrato REST: `contracts/rest-api.md` de ambas features (la 010 amplía la 007 sin cambiarla)
 - Errores: `contracts/errors.md` de ambas features
 - Contrato Provider (consulta por UUID de las 8 entidades, por lotes de productos y presentaciones y
@@ -30,6 +31,11 @@ condición de pago vive en su servicio dueño y aquí solo se guarda su UUID.
 | `SupplierPaymentCondition` | `supplier_payment_conditions` | `company_id`, `payment_condition_type_id` (Payment Reference) |
 | `PriceList` | `price_lists` | `company_id` |
 | `PriceListItem` | `price_list_items` | `company_id` |
+| `PriceListPricingPolicy` (spec 021) | `price_list_pricing_policies` | `company_id` |
+| `PriceListPricingPolicyTerm` (spec 021) | `price_list_pricing_policy_terms` | — |
+| `PriceListPricingPolicyPresentation` (spec 021) | `price_list_pricing_policy_presentations` | `company_id` |
+| `AutomaticPriceUpdateRequest` (spec 021) | `automatic_price_update_requests` | `company_id`, `purchase_id`, `purchase_detail_id`, `branch_id`, `received_by_user_id` (Purchase, Operational Context) |
+| `AutomaticPriceApplication` (spec 021) | `automatic_price_applications` | `company_id` |
 
 Las entidades de la Fase B se relacionan entre sí y con las de la Fase A con **FK internas compuestas
 con `company_id`**: la base garantiza que todo pertenece a la misma empresa (y la presentación al mismo
@@ -52,6 +58,11 @@ prefijo (GAP-PR-14; al corregirse solo cambia la variable). Un proveedor caído,
 una respuesta fuera de contrato produce `503 COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` con la
 extensión `dependency` (`operational-context`, `product-catalog`, `party-identity`, `payment-reference`);
 el log registra la causa interna con el mismo `trace_id`. No publica ni consume eventos (sin RabbitMQ).
+
+**Spec 021:** CR no agrega dependencias salientes. Recibe de Purchase (clase C, consumidor) la solicitud de
+actualización de precio de cada recepción por HTTP con el token `client_credentials` de `purchase-service`, validado
+por Keycloak (clase B); es la excepción EXC-001 a D6, aprobada solo para esta spec. El worker de precios no hace
+llamadas HTTP: solo usa la base propia (clase A). No hay dependencias de clase D.
 
 Un único comportamiento en todos los entornos: no hay variables de "modo" (stub, fake) para los
 proveedores; las pruebas inyectan dobles por la fábrica `create_app`.
@@ -120,7 +131,10 @@ mayúsculas por empresa, en cualquier estado. La `0002` crea las 5 tablas de la 
 compuestas (`fk_`), predeterminadas como índices únicos parciales y la exclusión
 `ex_price_list_items_no_overlap` (crea la extensión `btree_gist`; el rol de la base debe poder crearla),
 y agrega `UNIQUE (id, company_id)` a `company_products` y `company_suppliers` sin cambio funcional. Una migración ya aplicada en un entorno compartido no
-se edita: las correcciones van en una migración nueva.
+se edita: las correcciones van en una migración nueva. La `0005` (spec 021) crea las 5 tablas de precios automáticos
+con exclusiones GiST y triggers de inmutabilidad, y agrega `purchase_tax_percentage` a `company_products` y `origin`,
+`closure_reason` y `automatic_application_id` a `price_list_items` (anulables: las filas existentes no cambian). Su
+`downgrade` se detiene si ya hay datos de la spec 021.
 
 ## Datos iniciales
 
@@ -268,9 +282,40 @@ Roles de cliente `sio-api` (plantilla `infrastructure/keycloak/realm-template/si
 | `supplier_payment_conditions` | Listar, obtener | Registrar | Modificar, reactivar | Inactivar |
 | `price_lists` | Listar, obtener | Crear | Modificar, reactivar | Inactivar |
 | `price_list_items` | Listar, obtener, precio aplicable | Registrar | Modificar, cambiar precio, reactivar | Inactivar |
+| `pricing_policies` (spec 021) | Listar, obtener, historial | Crear | Renombrar, porcentaje, presentaciones | Inactivar |
+| `company_product_purchase_taxes` (spec 021) | — | — | Tasa de compra (individual y en lote) | — |
+| `automatic_price_applications` (spec 021) | Listar, obtener | — | `resolve`: resolución administrativa | — |
+| `automatic_price_update_requests` (spec 021) | — | `submit`: solo la identidad técnica de Purchase | — | — |
+
+Los permisos de la spec 021 solo los tienen `administradores` y `supervisores` (los de `compras` y `ventas` se
+listan explícitamente, sin comodines, para no recibirlos), salvo `automatic_price_update_requests:submit`, que es del
+cliente técnico `purchase-service`.
 
 `perm:commercial-relationship:platform:lookup` es la capacidad de consulta técnica sin membresía;
 solo tiene efecto en identidades técnicas. El cliente técnico `commercial-relationship-service`
 tiene `perm:product-catalog:products:read`, `perm:product-catalog:first-use:register` y
 `perm:payment-reference:global_payment_condition_types:read`. Ningún usuario necesita permisos de
 Payment Reference para registrar condiciones de pago.
+
+## Precios automáticos (spec 021)
+
+- **Políticas por lista:** una lista con al menos una política `ACTIVE` en el momento de la recepción recibe precios
+  automáticos; una lista sin políticas conserva sus precios manuales. Una presentación está a lo sumo en una política
+  por lista. Cambiar una política no cambia precios: rige desde la siguiente recepción.
+- **Cálculo:** costo real unitario = `(subtotal − descuento + impuesto) / cantidad` de la presentación (sin volver a
+  sumar el impuesto). Si baja frente a la recepción anterior, el costo de referencia es el promedio simple; si sube o
+  se mantiene, el actual. Precio = costo de referencia × (1 + porcentaje/100), con los decimales de la moneda.
+- **Proceso:** la ruta técnica `POST /companies/{company_id}/automatic-price-update-requests` guarda la solicitud y
+  crea una aplicación por lista; el contenedor `commercial-relationship-price-worker` (misma imagen,
+  `python -m commercial_relationship_service.price_worker`, `--once` y `--check`) las procesa en orden de secuencia
+  por lista y presentación, cada una en su transacción, con reintentos de espera creciente y auditoría
+  (`system:commercial-relationship-price-worker`). Variables: `CR_PRICE_WORKER_INTERVAL_SECONDS` (5),
+  `CR_PRICE_WORKER_BATCH_SIZE` (50) y `CR_PRICE_WORKER_MAX_BACKOFF_SECONDS` (300).
+- **Consulta y resolución:** `GET /companies/{company_id}/automatic-price-applications[/{id}]` y
+  `POST …/{id}/resolution` (solo administradores y supervisores; exponen costos). Ejemplo: `docs/ejemplo/9-actualizaciones-automaticas/`.
+- **Tasa de compra:** `PUT /company-products/{id}/purchase-tax` y `POST /companies/{company_id}/company-products/purchase-taxes/batch`;
+  `null` = sin configurar, `0` = exento. Ninguna tasa se asigna automáticamente.
+- **Limitación (R-12):** el precio de la lista es el importe final que paga el cliente; Sales no agrega impuesto
+  (provisional, **no es una solución fiscal**). El porcentaje de la política es un recargo comercial sobre el costo
+  real de compra: no es el costo contable FIFO de Inventory ni el margen que calcula Sales.
+

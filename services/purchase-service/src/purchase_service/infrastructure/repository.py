@@ -13,9 +13,11 @@ from datetime import date
 from uuid import UUID
 
 from sqlalchemy import and_, func, select, text
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from purchase_service.application.exceptions import DuplicatePresentationInPurchaseError, field_error
 from purchase_service.domain.status import PENDING
 from purchase_service.infrastructure.database import set_lock_timeout
 from purchase_service.infrastructure.models import (
@@ -23,10 +25,13 @@ from purchase_service.infrastructure.models import (
     PurchaseDetail,
     PurchaseLifecycleEvent,
     PurchaseOperation,
+    PurchasePresentationCostSeries,
+    PurchasePriceUpdateOutbox,
 )
 
 UQ_IDEMPOTENCY_KEY = "uq_purchase_operations_idempotency_key"
 UQ_PENDING = "uq_purchase_operations_pending"
+UQ_PURCHASE_PRESENTATION = "uq_purchase_details_purchase_presentation"  # spec 021
 
 
 def violated_constraint(error: IntegrityError) -> str | None:
@@ -111,7 +116,86 @@ class PurchaseRepository:
         self.session.delete(entity)
 
     def flush(self) -> None:
-        self.session.flush()
+        """Traduce una presentación repetida que llegó a la base (p. ej. dos ediciones concurrentes) a `409`."""
+        try:
+            self.session.flush()
+        except IntegrityError as error:
+            if violated_constraint(error) != UQ_PURCHASE_PRESENTATION:
+                raise
+            raise DuplicatePresentationInPurchaseError([field_error(
+                "lines", "DUPLICATE_PRESENTATION_IN_PURCHASE", "La presentación ya está en otra línea de la compra.",
+            )]) from error
+
+    # ---------------------------------------- spec 021: serie de costos por presentación (R-03)
+
+    def lock_cost_series(self, company_id: UUID, presentation_ids: Sequence[UUID]) -> dict[UUID, PurchasePresentationCostSeries]:
+        """Bloquea las series de las presentaciones (en orden, sin interbloqueos) y devuelve las que ya existen.
+
+        El bloqueo consultivo también serializa la primera recepción de una presentación, que aún no tiene fila.
+        """
+        keys = [f"purchase:cost-series:{company_id}:{presentation_id}" for presentation_id in sorted(map(str, presentation_ids))]
+        self.session.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(k, 0)) FROM unnest(CAST(:keys AS text[])) AS k ORDER BY k"),
+            {"keys": keys},
+        )
+        rows = self.session.scalars(
+            select(PurchasePresentationCostSeries)
+            .where(
+                PurchasePresentationCostSeries.company_id == company_id,
+                PurchasePresentationCostSeries.company_product_presentation_id.in_(list(presentation_ids)),
+            )
+            .order_by(PurchasePresentationCostSeries.company_product_presentation_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        return {row.company_product_presentation_id: row for row in rows}
+
+    def previous_received_lines(
+        self, company_id: UUID, presentation_ids: Sequence[UUID], *, exclude_purchase_id: UUID
+    ) -> dict[UUID, PurchaseDetail]:
+        """Última línea recibida de cada presentación en la empresa antes de su serie (recepciones previas a la spec 021).
+
+        Por (`received_at`, `id` de la línea), sin importar si la compra se anuló después (M-1).
+        """
+        if not presentation_ids:
+            return {}
+        rows = self.session.scalars(
+            select(PurchaseDetail)
+            .join(Purchase, Purchase.id == PurchaseDetail.purchase_id)
+            .where(
+                Purchase.company_id == company_id,
+                Purchase.received_at.is_not(None),
+                Purchase.id != exclude_purchase_id,
+                PurchaseDetail.company_product_presentation_id.in_(list(presentation_ids)),
+            )
+            .order_by(PurchaseDetail.company_product_presentation_id, Purchase.received_at.desc(), PurchaseDetail.id.desc())
+            .ext(distinct_on(PurchaseDetail.company_product_presentation_id))
+        )
+        return {row.company_product_presentation_id: row for row in rows}
+
+    # ----------------------------------- spec 021: outbox de solicitudes de precio (EXC-001)
+
+    def deliverable_heads(self, limit: int) -> list[UUID]:
+        """La menor secuencia `PENDING` de cada (empresa, presentación), si ya toca su intento (orden de entrega)."""
+        rows = self.session.execute(
+            text(
+                "SELECT h.id FROM (SELECT DISTINCT ON (company_id, company_product_presentation_id) id, next_attempt_at, "
+                "created_at FROM purchase_price_update_outbox WHERE status = 'PENDING' "
+                "ORDER BY company_id, company_product_presentation_id, sequence) AS h "
+                "WHERE h.next_attempt_at <= now() ORDER BY h.created_at LIMIT :limit"
+            ),
+            {"limit": limit},
+        ).scalars().all()
+        self.session.commit()
+        return list(rows)
+
+    def outbox_for_update(self, request_id: UUID) -> PurchasePriceUpdateOutbox | None:
+        return self.session.scalar(
+            select(PurchasePriceUpdateOutbox)
+            .where(PurchasePriceUpdateOutbox.id == request_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
 
     def list_purchases(
         self,

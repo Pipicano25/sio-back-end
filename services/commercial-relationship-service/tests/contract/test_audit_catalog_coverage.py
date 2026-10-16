@@ -45,6 +45,19 @@ CATALOG = {
     ("POST", "/api/v1/price-list-items/{price_list_item_id}/change-price"): ("CHANGE_PRICE_LIST_ITEM_PRICE", "PriceListItem"),
     ("POST", "/api/v1/price-list-items/{price_list_item_id}/deactivate"): ("DEACTIVATE_PRICE_LIST_ITEM", "PriceListItem"),
     ("POST", "/api/v1/price-list-items/{price_list_item_id}/reactivate"): ("REACTIVATE_PRICE_LIST_ITEM", "PriceListItem"),
+    # Spec 021: tasa de impuesto de compra del producto
+    ("PUT", "/api/v1/company-products/{company_product_id}/purchase-tax"): ("UPDATE_COMPANY_PRODUCT_PURCHASE_TAX", "CompanyProduct"),
+    ("POST", f"{C}/company-products/purchase-taxes/batch"): ("UPDATE_COMPANY_PRODUCT_PURCHASE_TAX", "CompanyProduct"),
+    # Spec 021: solicitudes técnicas de Purchase
+    ("POST", f"{C}/automatic-price-update-requests"): ("RECEIVE_AUTOMATIC_PRICE_REQUEST", "AutomaticPriceUpdateRequest"),
+    ("POST", f"{C}/automatic-price-applications/{{application_id}}/resolution"): ("RESOLVE_AUTOMATIC_PRICE", "AutomaticPriceApplication"),
+    # Spec 021: políticas de precios
+    ("POST", f"{C}/price-lists/{{price_list_id}}/pricing-policies"): ("CREATE_PRICING_POLICY", "PricingPolicy"),
+    ("PUT", "/api/v1/pricing-policies/{policy_id}"): ("UPDATE_PRICING_POLICY", "PricingPolicy"),
+    ("POST", "/api/v1/pricing-policies/{policy_id}/percentage"): ("CHANGE_PRICING_POLICY_PERCENTAGE", "PricingPolicy"),
+    ("POST", "/api/v1/pricing-policies/{policy_id}/presentations"): ("ASSIGN_PRICING_POLICY_PRESENTATION", "PricingPolicy"),
+    ("POST", "/api/v1/pricing-policies/{policy_id}/presentations/remove"): ("UNASSIGN_PRICING_POLICY_PRESENTATION", "PricingPolicy"),
+    ("POST", "/api/v1/pricing-policies/{policy_id}/deactivate"): ("DEACTIVATE_PRICING_POLICY", "PricingPolicy"),
 }
 READS_BY_POST = {
     ("POST", "/api/v1/company-products/batch-lookup"),
@@ -66,7 +79,7 @@ def test_every_write_has_exactly_one_action(app) -> None:
     writes = _writes(app)
     assert READS_BY_POST <= writes
     assert writes - READS_BY_POST == set(CATALOG)
-    assert len(CATALOG) == 35
+    assert len(CATALOG) == 45  # 35 de la 016 + 10 de la spec 021
 
 
 def test_catalog_matches_the_service_constants() -> None:

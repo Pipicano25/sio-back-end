@@ -1492,6 +1492,7 @@ No almacena stock actual, movimientos, lotes reales ni niveles de reposición po
 | `is_purchasable`              | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Disponible para nuevas operaciones de compra.                                                 |
 | `is_sellable`                 | `BOOLEAN`       | NN, DEFAULT `TRUE`  | Disponible para nuevas operaciones de venta.                                                  |
 | `status`                      | `VARCHAR(20)`   | NN, CK, DEFAULT `'ACTIVE'` | Estado del producto dentro de la empresa: `ACTIVE` o `INACTIVE`.                       |
+| `purchase_tax_percentage`     | `NUMERIC(7,4)`  | CK, nullable        | Tasa de impuesto de compra del producto (spec 021), de 0 a 100 con 4 decimales; `NULL` = sin configurar, `0` = exento explícito. |
 | `created_by`                  | `VARCHAR(255)`  | NN                  | `sub` del token de quien crea el registro (Constitución D1); inmutable.                        |
 | `updated_by`                  | `VARCHAR(255)`  | NN                  | `sub` del token de quien realizó la última modificación (Constitución D1).                     |
 | `version`                     | `INTEGER`       | NN, DEFAULT `1`     | Control de concurrencia.                                                                      |
@@ -1512,6 +1513,7 @@ No almacena stock actual, movimientos, lotes reales ni niveles de reposición po
 - El stock mínimo y demás niveles de reposición no pertenecen a esta entidad; se configuran por sucursal mediante `InventoryPolicy`.
 - Un producto empresarial con `status = INACTIVE` no puede utilizarse en nuevas operaciones ordinarias.
 - La desactivación no elimina compras, ventas, precios, inventario o relaciones históricas.
+- `purchase_tax_percentage` (spec 021) admite de 0 a 100 con a lo sumo 4 decimales; `NULL` significa sin configurar y `0` es un valor válido (exento). Se modifica solo con `company_product_purchase_taxes:update` (individual o en lote). Purchase la toma como tasa predeterminada de cada línea: sin tasa configurada la compra no se confirma (`PURCHASE_TAX_NOT_CONFIGURED`). Los productos existentes quedan en `NULL`; ninguna tasa se asigna automáticamente.
 
 > **Reconciliación (2026-10-04):** sección alineada con `specs/007-commercial-relationship-core`
 > (Commercial Relationship Fase A): `status` con `CHECK` en lugar de `is_active` (BR-01) y auditoría
@@ -1842,6 +1844,10 @@ El lead time esperado es una condición de planificación y no reemplaza el lead
 **Naturaleza:** privada, configurable, histórica y versionada por empresa.  
 **Servicio propietario:** Commercial Relationship Service.
 **Alcance:** POST-MVP. No requerida para la operación de listas de precios del MVP.
+
+> **Spec 021:** las políticas de precios por lista (`price_list_pricing_policies`, §5.15) son otra entidad:
+> aplican un **recargo comercial** sobre el costo real de compra para fijar el precio de venta. Esta sección
+> describe reglas de **margen** sobre el costo FIFO de Inventory, que siguen fuera del MVP.
 
 ### Descripción
 
@@ -2649,6 +2655,9 @@ La vigencia permite conservar diferentes versiones históricas de un precio sin 
 | `valid_from`                      | `TIMESTAMPTZ`   | NN                 | Inicio de vigencia.                     |
 | `valid_to`                        | `TIMESTAMPTZ`   | nullable           | Finalización de vigencia.               |
 | `status` | `VARCHAR(20)` | NN, CK, DEFAULT `'ACTIVE'` | Estado del precio: `ACTIVE` o `INACTIVE`. |
+| `origin` | `VARCHAR(12)` | CK, nullable | `AUTOMATIC` si lo creó una actualización automática (spec 021); `NULL` = manual. |
+| `closure_reason` | `VARCHAR(30)` | CK, nullable | `AUTOMATIC_SUPERSEDED` o `NO_POLICY` cuando una actualización automática cerró el precio vigente o canceló uno futuro. |
+| `automatic_application_id` | `UUID` | FK, nullable | `AutomaticPriceApplication` que creó o cerró el precio. |
 | `created_by` | `VARCHAR(255)` | NN | `sub` del token de quien crea el registro (Constitución D1); inmutable. |
 | `updated_by` | `VARCHAR(255)` | NN | `sub` del token de quien realizó la última modificación (Constitución D1). |
 | `version`                         | `INTEGER`       | NN, DEFAULT `1`    | Control concurrente.                    |
@@ -2671,6 +2680,9 @@ La vigencia permite conservar diferentes versiones históricas de un precio sin 
 - La moneda se obtiene desde `PriceList.currency_code`.
 - Los precios históricos utilizados en ventas no deben eliminarse físicamente.
 - El valor `0` representa un precio real igual a cero; la ausencia de configuración debe representarse mediante la inexistencia de un `PriceListItem`, no mediante un valor cero artificial.
+- Durante el MVP `unit_price` es el **importe final** que paga el cliente: Sales no agrega impuesto (spec 021, `tax_amount = 0`). No es una solución fiscal.
+- Spec 021: en una lista con al menos una política `ACTIVE` en el momento de la recepción, cada recepción física procesada cierra el precio vigente de la presentación, cancela sus precios futuros (`status = INACTIVE`, `closure_reason`) y crea uno nuevo con `origin = AUTOMATIC` y `valid_to = NULL`. Si el precio no cambia, conserva el vigente (y lo deja sin fecha de fin) y aun así cancela los futuros. Una presentación sin política en esa lista pierde su precio (`NO_POLICY`). Las listas sin políticas conservan sus precios manuales.
+- Un precio con `closure_reason` no se reactiva ni se modifica (`409 PRICE_CLOSED_BY_AUTOMATIC_UPDATE`); reactivar la lista tampoco lo revive. Las respuestas exponen `origin`, `closure_reason` y `automatic_application_id`, nunca costos, recargos ni políticas.
 
 > **Reconciliación (2026-10-05):** sección alineada con `specs/010-commercial-relationship-commercial-product`
 > (Commercial Relationship Fase B): `status` con `CHECK` en lugar de `is_active` (BR-06); auditoría
@@ -2684,6 +2696,78 @@ La vigencia permite conservar diferentes versiones históricas de un precio sin 
 - Pertenece a un `CompanyProduct`.
 - Pertenece a una `CompanyProductPresentation` (obligatoria desde la spec 019).
 - Puede ser referenciado desde `SaleDetail`.
+- Puede haber sido creado o cerrado por una `AutomaticPriceApplication` (spec 021).
+
+## 5.15 PriceListPricingPolicy
+
+**Tabla:** `price_list_pricing_policies`
+**Naturaleza:** privada, configurable y versionada por empresa.
+**Servicio propietario:** Commercial Relationship Service (spec 021).
+
+### Descripción
+
+Política de precio automático de una lista: agrupa presentaciones y les aplica un recargo comercial sobre el costo real de compra. Una lista con al menos una política `ACTIVE` deja de ser manual para las recepciones siguientes.
+
+### Atributos
+
+| Atributo | Tipo | Regla | Descripción |
+| --- | --- | --- | --- |
+| `id` | `UUID` | PK, NN | Identificador. |
+| `company_id` | `UUID` | REF, NN | Empresa (la de la lista). |
+| `price_list_id` | `UUID` | FK, NN | Lista de la misma empresa. |
+| `name` | `VARCHAR(120)` | UQ, NN | Único por lista sin distinguir mayúsculas entre las políticas `ACTIVE`. |
+| `status` | `VARCHAR(10)` | CK, NN | `ACTIVE` o `INACTIVE` (final: no se reactiva). |
+| `deactivated_at` | `TIMESTAMPTZ` | CK, nullable | Obligatorio si y solo si `status = INACTIVE`. |
+| `deactivation_reason` | `VARCHAR(500)` | nullable | Motivo de la inactivación. |
+| `created_at`, `updated_at`, `created_by`, `updated_by`, `version` | | NN | Auditoría (D1) y concurrencia. |
+
+### Reglas y restricciones
+
+- Vigencia `[created_at, deactivated_at)`. Inactivar cierra en la misma transacción su término y sus asignaciones vigentes. No hay borrado físico.
+- Solo administradores y supervisores la consultan y la gestionan (`pricing_policies:*`).
+
+## 5.16 PriceListPricingPolicyTerm
+
+**Tabla:** `price_list_pricing_policy_terms`
+**Naturaleza:** asociación inmutable (D25).
+**Servicio propietario:** Commercial Relationship Service (spec 021).
+
+Historial del recargo de una política: `markup_percentage NUMERIC(8,4)` de 0 a 1000, `valid_from`, `valid_to` (se asigna una sola vez), `created_at`/`created_by` y `closed_at`/`closed_by`. Una exclusión GiST impide dos términos de la misma política en el mismo instante; cambiar el porcentaje cierra el término vigente y abre otro.
+
+## 5.17 PriceListPricingPolicyPresentation
+
+**Tabla:** `price_list_pricing_policy_presentations`
+**Naturaleza:** asociación inmutable (D25).
+**Servicio propietario:** Commercial Relationship Service (spec 021).
+
+Asignación de una `CompanyProductPresentation` (`ACTIVE`, de la misma empresa) a una política, con `price_list_id` copiado de la política, `valid_from` y `valid_to` (se asigna una sola vez). Una exclusión GiST sobre (`price_list_id`, `company_product_presentation_id`, vigencia) impide que una presentación esté en dos políticas de la misma lista a la vez (`409 PRESENTATION_ALREADY_IN_POLICY`). Retirar una presentación no cambia precios: la siguiente recepción la finaliza.
+
+## 5.18 AutomaticPriceUpdateRequest
+
+**Tabla:** `automatic_price_update_requests`
+**Naturaleza:** inbox (D26).
+**Servicio propietario:** Commercial Relationship Service (spec 021).
+
+Solicitud recibida de Purchase por cada línea recibida físicamente: `purchase_id`, `purchase_detail_id` (UQ, clave de idempotencia), `branch_id`, producto y presentación de la empresa, `sequence` (UQ por empresa y presentación) y `previous_sequence` (`sequence − 1` o `NULL`), `currency_code`, los hechos actuales (`line_total`, `quantity`) y los de la recepción anterior (`previous_line_total`, `previous_quantity`, `previous_purchase_detail_id`), `received_at`, `received_by_user_id`, `payload_hash` (SHA-256 del contenido canónico; otra entrega con distinto hash da `409 REQUEST_CONFLICT`), `created_at` y `created_by` (el `sub` de `purchase-service`). Solo la acepta la identidad técnica de Purchase. Al recibirla se crea una aplicación por cada lista activa con políticas en `received_at`, con la captura de política y recargo de ese instante.
+
+## 5.19 AutomaticPriceApplication
+
+**Tabla:** `automatic_price_applications`
+**Naturaleza:** infraestructura (D23), versionada.
+**Servicio propietario:** Commercial Relationship Service (spec 021).
+
+Resultado del procesamiento de una solicitud en una lista (UQ `request_id`, `price_list_id`): `sequence`, la captura (`policy_id`, `term_id`, `markup_percentage`), los costos de trazabilidad (`current_unit_cost`, `previous_unit_cost`, `reference_cost`), `previous_price`/`new_price` y sus `PriceListItem`, `cancelled_future_item_ids`, `status`, `attempts`, `next_attempt_at`, `first_attempt_at`, `completed_at`, `last_error_code`, `last_error_detail` (sin datos sensibles), `resolved_by`/`resolution_reason` y la auditoría (`system:commercial-relationship-price-worker` cuando escribe el worker).
+
+### Reglas y restricciones
+
+- Costo real unitario = `(subtotal − descuento + impuesto) / cantidad` de la presentación, sin volver a sumar impuestos. Si es menor que el de la recepción anterior, el costo de referencia es el promedio simple de ambos; si es mayor o igual, el actual. Precio = costo de referencia × (1 + recargo/100), con los decimales de la moneda de la lista. No se usan promedios ponderados ni el costo FIFO de Inventory.
+- Estados: `PENDING` → `APPLIED`, `UNCHANGED`, `ENDED_NO_POLICY`, `NO_PRICE_TO_END`, `SKIPPED_LIST_NOT_EFFECTIVE`, `SKIPPED_CURRENCY_MISMATCH`, `SKIPPED_PRESENTATION_INACTIVE` o `SKIPPED_ZERO_COST` (finales); `PENDING` → `FAILED` (se reintenta con espera creciente); `FAILED` → cualquiera de los finales o `RESOLVED` (resolución administrativa). Un trigger impide cambiar un estado final.
+- Se procesa en orden de `sequence` por lista y presentación: no avanza si hay una secuencia menor sin terminar o si falta la solicitud anterior. Cada lista y cada presentación son independientes.
+- La lista debe estar activa y vigente al procesar; la política y el recargo son los capturados en `received_at`.
+
+> **Spec 021 (2026-10-15):** secciones 5.15 a 5.19 y las columnas nuevas de §5.1 y §5.14 alineadas con
+> `specs/021-automatic-purchase-pricing` (migración `0005_automatic_purchase_pricing`). Los nombres de
+> restricciones, índices y triggers están en el `data-model.md` de esa feature.
 
 ---
 
@@ -2976,7 +3060,7 @@ De esta manera se conserva el historial de asesores relacionados con la empresa.
 
 Representa la cabecera de una compra.
 
-Comienza en `DRAFT` y no afecta inventario. Al confirmar se revalidan proveedor, condición, productos y presentaciones, se congelan los snapshots, Inventory aplica una entrada con todas las líneas (cantidad en unidad base y costo por unidad base sin impuestos) y, en la misma transacción local que la confirma, se asigna el número del período. Si algo falla la compra no queda confirmada ni consume número.
+Comienza en `DRAFT` y no afecta inventario. Al confirmar se revalidan proveedor, condición, productos, presentaciones y tasas de impuesto, se congelan los snapshots y, en la misma transacción local, se asigna el número del período; la compra queda `CONFIRMED` pendiente de recepción y **sin** entrada en Inventory. La entrada se aplica al confirmar la recepción física completa: Inventory recibe todas las líneas (cantidad en unidad base y costo por unidad base sin impuestos) y, en la misma transacción que registra la recepción, Purchase guarda los hechos de costo para la actualización automática de precios (spec 021). Si algo falla la compra no queda confirmada ni consume número.
 
 > **Spec 020 (prevalece sobre el párrafo anterior):** confirmar es local: asigna el número y deja la compra
 > `CONFIRMED` **pendiente de recepción**, sin entrada en Inventory. La entrada se aplica al confirmar la
@@ -3047,6 +3131,10 @@ Comienza en `DRAFT` y no afecta inventario. Al confirmar se revalidan proveedor,
 > `discount_amount < subtotal` (`ck_purchase_details_net_cost`); el costo por unidad base redondeado también debe
 > ser mayor que cero (validación de la aplicación).
 
+> **Spec 021:** `tax_amount` lo calcula Purchase (`ROUND_HALF_UP((subtotal − discount_amount) × tax_percentage / 100, 2)`);
+> el cliente no lo envía. Una compra no repite una presentación (`uq_purchase_details_purchase_presentation`,
+> `409 DUPLICATE_PRESENTATION_IN_PURCHASE`).
+
 ### Descripción
 
 Representa una línea de compra con producto, cantidad, costo, descuento, impuesto y total. Los snapshots garantizan que el documento histórico no cambie si el catálogo se modifica después: son provisionales en el borrador y se congelan al confirmar.
@@ -3071,7 +3159,9 @@ Representa una línea de compra con producto, cantidad, costo, descuento, impues
 | `quantity` | `NUMERIC(18,4)` | CK, NN | Cantidad en la unidad de compra. |
 | `unit_cost` | `NUMERIC(18,4)` | CK, NN | Costo unitario en la unidad de compra. |
 | `discount_amount` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Descuento (≤ subtotal). |
-| `tax_amount` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Impuesto. |
+| `tax_amount` | `NUMERIC(18,2)` | CK, NN, DEFAULT `0` | Impuesto calculado con `tax_percentage` (spec 021). |
+| `tax_percentage` | `NUMERIC(7,4)` | CK, nullable | Tasa aplicada a la línea, de 0 a 100 (spec 021); `NULL` solo en compras anteriores a la spec. |
+| `tax_percentage_source` | `VARCHAR(20)` | CK, nullable | `PRODUCT_DEFAULT` o `LINE_OVERRIDE`; nulo si y solo si `tax_percentage` es nulo. |
 | `subtotal` | `NUMERIC(18,2)` | CK, NN | Subtotal = cantidad × costo (2 decimales). |
 | `total` | `NUMERIC(18,2)` | CK, NN | Total = subtotal − descuento + impuesto. |
 | `created_at` | `TIMESTAMPTZ` | NN, DEFAULT `now()` | Creación. |
@@ -3084,7 +3174,8 @@ Representa una línea de compra con producto, cantidad, costo, descuento, impues
 - Número de línea 1–100, único dentro de la compra; a lo sumo 100 líneas.
 - Cantidad mayor que cero; montos no negativos; `discount_amount ≤ subtotal`; `total = subtotal − discount_amount + tax_amount`.
 - Sin presentación, `base_quantity_factor_snapshot = 1` y sin snapshots de presentación; con presentación, sus snapshots son obligatorios. La presentación pertenece al mismo `CompanyProduct`.
-- La confirmación convierte la cantidad a unidad base con `base_quantity_factor_snapshot` (≤ 4 decimales) y envía a Inventory el costo por unidad base `ROUND_HALF_UP((subtotal − discount_amount) / cantidad_base, 4)`, sin impuestos.
+- La recepción física convierte la cantidad a unidad base con `base_quantity_factor_snapshot` (≤ 4 decimales) y envía a Inventory el costo por unidad base `ROUND_HALF_UP((subtotal − discount_amount) / cantidad_base, 4)`, sin impuestos (contrato sin cambios en la spec 021).
+- La tasa de la línea es la de `CompanyProduct.purchase_tax_percentage` (`PRODUCT_DEFAULT`) o la indicada en la línea con el permiso `purchase_line_taxes:override` (`LINE_OVERRIDE`, auditada). Al confirmar, una tasa del producto sin configurar da `409 PURCHASE_TAX_NOT_CONFIGURED` y una que cambió desde el borrador da `409 PURCHASE_TAX_CHANGED`.
 - Solo se modifican o eliminan mientras la compra está en `DRAFT` (`tr_purchase_details_draft_only`).
 
 ## 7.3 PurchaseSequence
@@ -3241,6 +3332,25 @@ Contador independiente por secuencia y período. La asignación es una sola sent
 > hitos con vigencia por tipo. La publicación a Finance queda fuera del MVP (C-02). Los nombres de
 > restricciones, índices y triggers están en el `data-model.md` de esa feature.
 
+## 7.7 PurchasePresentationCostSeries
+
+**Tabla:** `purchase_presentation_cost_series`
+**Naturaleza:** infraestructura (D23).
+**Servicio propietario:** Purchase Service (spec 021).
+
+Última recepción física de cada presentación en la empresa: PK (`company_id`, `company_product_presentation_id`), `last_sequence` (> 0), `last_purchase_detail_id`, `last_line_total`, `last_quantity`, `created_at` y `updated_at`. Se actualiza bajo bloqueo en la transacción que registra la recepción y numera las solicitudes de precio de forma contigua. Una anulación no la modifica (M-1).
+
+## 7.8 PurchasePriceUpdateOutbox
+
+**Tabla:** `purchase_price_update_outbox`
+**Naturaleza:** outbox (D26; excepción EXC-001 a D6, solo spec 021).
+**Servicio propietario:** Purchase Service (spec 021).
+
+Una fila por línea recibida: `purchase_id`, `purchase_detail_id` (UQ), `company_id`, `company_product_presentation_id` y `sequence` (UQ los tres), `payload` (JSONB, contrato v1), `status` (`PENDING` o `DELIVERED`), `attempts`, `next_attempt_at`, `last_error_code`, `last_error_at`, `delivered_at`, `created_at` y `created_by` (quien completó la recepción, o `system:purchase-reconciler`). El worker `purchase-price-update-worker` la entrega por HTTP a Commercial Relationship en orden de secuencia por presentación, con espera creciente; un rechazo `409` no se reintenta automáticamente. La recepción no depende de que Commercial Relationship esté disponible. No se borra.
+
+> **Spec 021 (2026-10-15):** columnas nuevas de §7.2 y secciones 7.7 y 7.8 alineadas con
+> `specs/021-automatic-purchase-pricing` (migración `0003_price_update_facts`).
+
 # 8. Sales DB` y `# 9. Inventory DB`. **No aplicada** hasta la aprobación
 del usuario (T100).
 
@@ -3320,6 +3430,9 @@ Comienza en `DRAFT` y no descuenta inventario. Al confirmar se revalidan cliente
 **Servicio propietario:** Sales Service.
 
 > **Spec 020:** sin descuentos en el MVP: `discount_amount` solo admite `0` (`ck_sale_details_no_discount`).
+
+> **Spec 021 (provisional):** sin impuesto adicional: `tax_amount` solo admite `0` (`ck_sale_details_no_tax`,
+> `TAX_NOT_ALLOWED`); el precio de la lista es el importe final que paga el cliente. No es una solución fiscal.
 
 ### Descripción
 
