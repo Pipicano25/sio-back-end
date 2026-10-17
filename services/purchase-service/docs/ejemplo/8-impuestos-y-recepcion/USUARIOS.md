@@ -1,14 +1,14 @@
 # Usuarios del ejercicio 8
 
-| Usuario | Paso 1 | Paso 2 | Paso 3 | Paso 4 | Paso 5 |
-| --- | --- | --- | --- | --- | --- |
-| `admin.test` | `—` | `—` | `—` | `—` | `—` |
-| `supervisor.test` | `—` | `201` | `—` | `422` | `—` |
-| `compras.test` | `201` | `—` | `403` | `—` | `409` |
-| `ventas.test` | `403` | `403` | `403` | `403` | `403` |
-| `inventario.test` | `403` | `403` | `403` | `403` | `403` |
-| `reportes.test` | `403` | `403` | `403` | `403` | `403` |
-| `consulta.test` | `403` | `403` | `403` | `403` | `403` |
+| Usuario | Paso 1 | Paso 2 | Paso 3 | Paso 4 | Paso 5 | Paso 6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `admin.test` | `—` | `—` | `—` | `—` | `—` | `—` |
+| `supervisor.test` | `—` | `201` | `—` | `422` | `—` | `—` |
+| `compras.test` | `201` | `—` | `403` | `—` | `409` | `409` |
+| `ventas.test` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `inventario.test` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `reportes.test` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `consulta.test` | `403` | `403` | `403` | `403` | `403` | `403` |
 
 ## Permiso por URL
 
@@ -19,6 +19,7 @@
 | 3 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `perm:purchase:purchase_details:create` |
 | 4 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `perm:purchase:purchase_details:create` |
 | 5 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `perm:purchase:purchase_details:create` |
+| 6 | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `perm:purchase:purchases:update` |
 
 ## Ejemplos
 

@@ -55,8 +55,8 @@ class Outcome(str, Enum):
 
     APPLIED = "APPLIED"
     UNCHANGED = "UNCHANGED"
-    ENDED_NO_POLICY = "ENDED_NO_POLICY"
-    NO_PRICE_TO_END = "NO_PRICE_TO_END"
+    # Aclaración del 2026-10-16 (RC-021-13): sin política no se toca ningún precio de la lista y presentación.
+    SKIPPED_NO_POLICY = "SKIPPED_NO_POLICY"
     SKIPPED_LIST_NOT_EFFECTIVE = "SKIPPED_LIST_NOT_EFFECTIVE"
     SKIPPED_CURRENCY_MISMATCH = "SKIPPED_CURRENCY_MISMATCH"
     SKIPPED_PRESENTATION_INACTIVE = "SKIPPED_PRESENTATION_INACTIVE"
@@ -99,9 +99,7 @@ def decide(evaluation: PriceEvaluation) -> Outcome:
     if evaluation.current_unit_cost <= 0:
         return Outcome.SKIPPED_ZERO_COST
     if not evaluation.has_policy:
-        if evaluation.current_price is None and not evaluation.has_future_prices:
-            return Outcome.NO_PRICE_TO_END
-        return Outcome.ENDED_NO_POLICY
+        return Outcome.SKIPPED_NO_POLICY
     if evaluation.current_price is not None and evaluation.current_price == evaluation.new_price:
         return Outcome.UNCHANGED
     return Outcome.APPLIED

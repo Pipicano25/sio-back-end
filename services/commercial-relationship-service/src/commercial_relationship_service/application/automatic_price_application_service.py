@@ -5,7 +5,7 @@ Cada aplicación (una lista y una presentación) se procesa en **su propia trans
 fallo en una lista no deshace las demás (CP-39) y dos instancias del worker no aplican dos veces (CP-T09).
 
 Orden de decisión (FR-021-23, `domain.automatic_pricing.decide`): lista no vigente → moneda distinta → presentación
-inactiva → costo ≤ 0 → sin política (finaliza el precio de esta lista) → precio igual (`UNCHANGED`) → `APPLIED`.
+inactiva → costo ≤ 0 → sin política (`SKIPPED_NO_POLICY`, no toca precios) → precio igual (`UNCHANGED`) → `APPLIED`.
 
 Reglas de precios (Spec 019 reutilizada, R-07):
 - Con política, se cancelan **siempre** los precios futuros de esa lista y presentación (aclaración del 2026-10-15),
@@ -14,7 +14,8 @@ Reglas de precios (Spec 019 reutilizada, R-07):
   se toma sobre el vigente **al procesar**, aunque sea un precio manual posterior a la recepción (decisión aprobada 11).
 - `UNCHANGED`: sin versión nueva; si el vigente tenía fin, se abre (`valid_to = NULL`) para no dejar un hueco al
   cancelar los futuros.
-- `ENDED_NO_POLICY`: cierra el vigente en `now` y cancela los futuros con `closure_reason = NO_POLICY`.
+- `SKIPPED_NO_POLICY` (aclaración del 2026-10-16, RC-021-13): sin política en la captura no se toca ningún precio
+  (ni el vigente ni los futuros, ni versiones ni vigencias); la aplicación queda registrada y auditada.
 - Los precios cerrados o cancelados por una aplicación no se reactivan ni se extienden (RC-021-9).
 
 Resolución administrativa (A4, FR-021-27): solo desde `PENDING` o `FAILED`; deja la aplicación `RESOLVED` (final) sin
@@ -58,7 +59,6 @@ WORKER_USERNAME = "commercial-relationship-price-worker"
 ENTITY = "AutomaticPriceApplication"
 AUTOMATIC = "AUTOMATIC"
 SUPERSEDED = "AUTOMATIC_SUPERSEDED"
-NO_POLICY = "NO_POLICY"
 FAILED = "FAILED"
 RESOLVED = "RESOLVED"
 INACTIVE = "INACTIVE"
@@ -66,7 +66,6 @@ DETAIL_MAX = 500
 
 ACTION_BY_OUTCOME = {
     Outcome.APPLIED: audit_events.APPLY_AUTOMATIC_PRICE,
-    Outcome.ENDED_NO_POLICY: audit_events.END_PRICE_WITHOUT_POLICY,
 }
 
 
@@ -147,8 +146,8 @@ class AutomaticPriceApplicationService:
 
         cancelled: list[UUID] = []
         new_item_id = None
-        if outcome in (Outcome.APPLIED, Outcome.UNCHANGED, Outcome.ENDED_NO_POLICY):
-            reason = NO_POLICY if outcome is Outcome.ENDED_NO_POLICY else SUPERSEDED
+        if outcome in (Outcome.APPLIED, Outcome.UNCHANGED):  # solo con política (RC-021-13)
+            reason = SUPERSEDED
             for item in futures:
                 item.status = INACTIVE
                 item.closure_reason = reason
@@ -164,7 +163,7 @@ class AutomaticPriceApplicationService:
             # UPDATE por clave primaria y, sin este flush, abrir el vigente podría chocar con un futuro aún ACTIVE
             # en `ex_price_list_items_no_overlap`.
             repo.flush()
-            if current is not None and outcome in (Outcome.APPLIED, Outcome.ENDED_NO_POLICY):
+            if current is not None and outcome is Outcome.APPLIED:
                 current.valid_to = now
                 current.closure_reason = reason
                 current.automatic_application_id = application.id

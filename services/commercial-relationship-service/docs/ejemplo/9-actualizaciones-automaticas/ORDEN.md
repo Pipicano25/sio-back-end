@@ -18,7 +18,7 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | --- | --- | --- | --- | --- |
 | 00 | [00-datos-del-excel.md](00-datos-del-excel.md) | Leer: las filas del Excel y cómo se interpretan | — | — |
 | 01 | [01-consultar-datos.md](01-consultar-datos.md) | Obtener `<EMPRESA>`, el producto y su presentación global. | 3 | — |
-| 02 | [02-preparar-la-politica.md](02-preparar-la-politica.md) | La caja del acetaminofén en la política `Medicamentos` (30 %) de la lista `PUBLICO`. | 4 | 01 |
+| 02 | [02-preparar-la-politica.md](02-preparar-la-politica.md) | La caja del acetaminofén en la política `Medicamentos` (30 %) de la lista `PUBLICO`. | 5 | 01 |
 | 03 | [03-recepciones.md](03-recepciones.md) | Una recepción crea el primer precio; la segunda falla (simulado) y queda pendiente de reintento. | 2 | 01, 02 |
 | 04 | [04-consultar-actualizaciones.md](04-consultar-actualizaciones.md) | Ver el cálculo de cada actualización y encontrar la que falló. | 3 | 01 |
 | 05 | [05-resolver.md](05-resolver.md) | Cerrarla con un motivo, sin cambiar precios. | 3 | 01, 02, 04 |

@@ -88,6 +88,8 @@ class PurchaseView:
     purchase: Purchase
     lines: list[PurchaseDetail]
     pending_operation_id: UUID | None = None
+    # Spec 021 (FR-021-36): presentaciones sin política de ganancia, calculadas al crear, agregar o editar líneas.
+    uncovered: frozenset = frozenset()
 
 
 def compute_amounts(lines: Sequence[LineData], *, prefix: Callable[[int], str]) -> list[PricedLine]:
@@ -302,6 +304,9 @@ class PurchaseService:
             apply_line(detail, snapshot)
             details.append(detail)
         recompute_totals(purchase, details)
+        uncovered = self._resolver.uncovered_presentations(
+            company_id, purchase.currency_code, [detail.company_product_presentation_id for detail in details]
+        )
 
         try:
             self._repo.begin()
@@ -324,7 +329,7 @@ class PurchaseService:
         except Exception:
             self._repo.rollback()
             raise
-        return PurchaseView(purchase, details, None)
+        return PurchaseView(purchase, details, None, uncovered)
 
     # --------------------------------------------------------------- cabecera
 
@@ -387,8 +392,20 @@ class PurchaseService:
         )[0]
         return amount, snapshot
 
+    def _uncovered_after(self, purchase: Purchase, presentation_ids) -> frozenset:
+        """Cobertura de las presentaciones que tendrá el borrador (FR-021-36), antes de bloquear y escribir."""
+        return self._resolver.uncovered_presentations(purchase.company_id, purchase.currency_code, presentation_ids)
+
     def _finish_line_change(
-        self, purchase: Purchase, operator: OperatorAccess, actor: Actor, action: str, detail_id: UUID, previous, new
+        self,
+        purchase: Purchase,
+        operator: OperatorAccess,
+        actor: Actor,
+        action: str,
+        detail_id: UUID,
+        previous,
+        new,
+        uncovered: frozenset = frozenset(),
     ) -> PurchaseView:
         lines = self._repo.lines(purchase.id)
         recompute_totals(purchase, lines)
@@ -406,13 +423,16 @@ class PurchaseService:
             new_values={**(new or {}), "purchase_id": purchase.id, "purchase_version": purchase.version},
         )
         self._repo.commit()
-        return PurchaseView(purchase, lines, None)
+        return PurchaseView(purchase, lines, None, uncovered)
 
     def add_line(self, company_id: UUID, purchase_id: UUID, line: LineData, version: int, actor: Actor) -> PurchaseView:
         current = self._existing(company_id, purchase_id)
         operator = require_branch_access(actor.access, company_id, current.branch_id)
         self._precheck(current, version)
+        planned = [item.company_product_presentation_id for item in self._repo.lines(current.id)]
+        self._repo.end_read()
         amount, snapshot = self._resolve_line(current, line)
+        uncovered = self._uncovered_after(current, [*planned, line.company_product_presentation_id])
 
         try:
             purchase = self._lock_draft(company_id, purchase_id, version)
@@ -448,7 +468,7 @@ class PurchaseService:
             self._repo.flush()
             record_overrides(self._repo.session, purchase, operator, [(detail, snapshot)])
             return self._finish_line_change(
-                purchase, operator, actor, audit.ADD_PURCHASE_DETAIL, detail.id, None, line_values(detail)
+                purchase, operator, actor, audit.ADD_PURCHASE_DETAIL, detail.id, None, line_values(detail), uncovered
             )
         except Exception:
             self._repo.rollback()
@@ -460,10 +480,16 @@ class PurchaseService:
         current = self._existing(company_id, purchase_id)
         operator = require_branch_access(actor.access, company_id, current.branch_id)
         self._precheck(current, version)
-        if not any(item.id == detail_id for item in self._repo.lines(current.id)):
+        before = self._repo.lines(current.id)
+        if not any(item.id == detail_id for item in before):
             raise NotFoundError()
+        planned = [
+            line.company_product_presentation_id if item.id == detail_id else item.company_product_presentation_id
+            for item in before
+        ]
         self._repo.end_read()
         amount, snapshot = self._resolve_line(current, line)
+        uncovered = self._uncovered_after(current, planned)
 
         try:
             purchase = self._lock_draft(company_id, purchase_id, version)
@@ -486,7 +512,8 @@ class PurchaseService:
             self._repo.flush()
             record_overrides(self._repo.session, purchase, operator, [(detail, snapshot)])
             return self._finish_line_change(
-                purchase, operator, actor, audit.UPDATE_PURCHASE_DETAIL, detail.id, previous, line_values(detail)
+                purchase, operator, actor, audit.UPDATE_PURCHASE_DETAIL, detail.id, previous, line_values(detail),
+                uncovered,
             )
         except Exception:
             self._repo.rollback()

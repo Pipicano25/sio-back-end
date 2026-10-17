@@ -10,6 +10,8 @@ Se evalúa con `sio-auth` (incluidos los comodines) sobre la plantilla versionad
   ajuste de tasa de línea).
 - `automatic_price_update_requests:submit` lo tiene solo la cuenta técnica de Purchase; los
   administradores lo cubren por su comodín total, pero la ruta exige además identidad técnica (DS-05).
+- `pricing_policy_coverage:read` (FR-021-35, 2026-10-16) lo tiene la cuenta técnica de Purchase; entre los grupos, solo
+  administradores y supervisores por sus comodines de lectura (compras y ventas no).
 """
 
 from __future__ import annotations
@@ -39,7 +41,8 @@ SENSITIVE = [
     SioPermission("purchase", "purchase_line_taxes", "override"),
 ]
 SUBMIT = SioPermission(CR, "automatic_price_update_requests", "submit")
-NEW = {f"perm:{p.service}:{p.resource}:{p.action}" for p in [*SENSITIVE, SUBMIT]}
+COVERAGE = SioPermission(CR, "pricing_policy_coverage", "read")
+NEW = {f"perm:{p.service}:{p.resource}:{p.action}" for p in [*SENSITIVE, SUBMIT, COVERAGE]}
 
 
 def concrete(prefix: str, action: str | None = None) -> list[SioPermission]:
@@ -99,3 +102,12 @@ def test_purchasers_keep_every_previous_purchase_permission() -> None:
 def test_sellers_keep_sales_permissions_without_purchase_access() -> None:
     assert evaluate_permission(GROUPS["ventas"], SioPermission("sales", "sales", "create"))
     assert not evaluate_permission(GROUPS["ventas"], SioPermission("purchase", "purchases", "read"))
+
+
+def test_coverage_for_the_purchase_technical_account_without_percentages() -> None:
+    """La cuenta de Purchase consulta la cobertura (FR-021-35) sin poder leer políticas ni porcentajes (FR-021-32a)."""
+    purchase = ACCOUNTS["service-account-purchase-service"]
+    assert evaluate_permission(purchase, COVERAGE)
+    assert not evaluate_permission(purchase, SioPermission(CR, "pricing_policies", "read"))
+    groups = {name for name, roles in GROUPS.items() if evaluate_permission(roles, COVERAGE)}
+    assert "compras" not in groups and "ventas" not in groups

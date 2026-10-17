@@ -241,6 +241,23 @@ def test_application_capture_is_immutable_and_checks_hold(engine) -> None:
         connection.execute(text("UPDATE automatic_price_applications SET status = 'RESOLVED', completed_at = now()"))
     with pytest.raises(IntegrityError), engine.begin() as connection:
         connection.execute(text("UPDATE price_list_items SET closure_reason = 'OTRO'"))
+    # 2026-10-16 (RC-021-13): `NO_POLICY` ya no es un motivo de cierre
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(text("UPDATE price_list_items SET closure_reason = 'NO_POLICY'"))
+
+
+@pytest.mark.parametrize("retired", ["ENDED_NO_POLICY", "NO_PRICE_TO_END"])
+def test_retired_statuses_are_rejected_and_skipped_no_policy_is_final(engine, retired) -> None:
+    """`SKIPPED_NO_POLICY` reemplaza a los estados que finalizaban precios sin política (aclaración del 2026-10-16)."""
+    with engine.begin() as connection:
+        ids = _base_rows(connection)
+        _request_and_application(connection, ids)
+    with pytest.raises(IntegrityError), engine.begin() as connection:
+        connection.execute(text(f"UPDATE automatic_price_applications SET status = '{retired}', completed_at = now()"))
+    with engine.begin() as connection:
+        connection.execute(text("UPDATE automatic_price_applications SET status = 'SKIPPED_NO_POLICY', completed_at = now()"))
+    with pytest.raises(DBAPIError), engine.begin() as connection:  # final: no se reprocesa (RC-021-10)
+        connection.execute(text("UPDATE automatic_price_applications SET status = 'PENDING', completed_at = NULL"))
 
 
 def test_downgrade_guard_and_clean_downgrade(test_database_url, engine) -> None:

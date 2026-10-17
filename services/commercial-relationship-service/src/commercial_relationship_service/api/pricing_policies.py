@@ -5,10 +5,14 @@
 - Permisos `perm:commercial-relationship:pricing_policies:{read,create,update,delete}`, solo para administradores y
   supervisores (FR-021-32a). Siempre con membresía en la empresa: no hay exención técnica (las respuestas exponen
   porcentajes internos).
+- Cobertura (FR-021-35, §3b): `POST /companies/{company_id}/pricing-policies/coverage` con
+  `perm:commercial-relationship:pricing_policy_coverage:read`. Admite la exención técnica (`platform:lookup`) porque
+  solo responde si hay cobertura y en qué listas, sin porcentajes ni costos.
 """
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response, status
@@ -17,6 +21,7 @@ from sio_auth import CurrentSubject, SIOAuth
 from commercial_relationship_service.api.company_scope import company_dependency, load_scoped
 from commercial_relationship_service.api.dependencies import (
     get_identity,
+    get_presentation_repository,
     get_pricing_policy_repository,
     get_pricing_policy_service,
     get_scope_service,
@@ -26,6 +31,9 @@ from commercial_relationship_service.api.openapi import TAG_PRICING_POLICIES
 from commercial_relationship_service.api.pagination import PaginationParams
 from commercial_relationship_service.api.schemas.common import PaginatedResponse
 from commercial_relationship_service.api.schemas.pricing_policy import (
+    CoverageItemResponse,
+    CoverageRequest,
+    CoverageResponse,
     PercentageChange,
     PolicyDeactivation,
     PolicyPresentationResponse,
@@ -40,9 +48,12 @@ from commercial_relationship_service.application.company_scope import (
     CompanyScopeService,
     RequestIdentity,
 )
+from commercial_relationship_service.application.pricing_coverage_service import PricingCoverageService
 from commercial_relationship_service.application.pricing_policy_service import PricingPolicyService
+from commercial_relationship_service.domain.currency import validate_currency
 
 RESOURCE = "pricing_policies"
+COVERAGE_RESOURCE = "pricing_policy_coverage"
 BASE = "/pricing-policies"
 
 
@@ -91,6 +102,26 @@ def build_router(auth: SIOAuth) -> APIRouter:
 
     def one(repository, model) -> PricingPolicyResponse:
         return responses(repository, [model])[0]
+
+    @router.post(
+        "/companies/{company_id}" + BASE + "/coverage",
+        response_model=CoverageResponse,
+        dependencies=[auth.permission(SERVICE, COVERAGE_RESOURCE, "read")],
+        summary="Consultar si las presentaciones tienen política de ganancia aplicable (sin porcentajes)",
+    )
+    def coverage(
+        company_id: UUID,
+        body: CoverageRequest,
+        identity: RequestIdentity = Depends(get_identity),
+        scope: CompanyScopeService = Depends(get_scope_service),
+        repository=Depends(get_pricing_policy_repository),
+        presentations=Depends(get_presentation_repository),
+    ):
+        currency = validate_currency(body.currency_code)
+        items = PricingCoverageService(repository, presentations).coverage(
+            company_id, currency, body.company_product_presentation_ids, identity=identity, scope=scope
+        )
+        return CoverageResponse(items=[CoverageItemResponse(**asdict(item)) for item in items])
 
     @router.get(
         "/companies/{company_id}/price-lists/{price_list_id}" + BASE,

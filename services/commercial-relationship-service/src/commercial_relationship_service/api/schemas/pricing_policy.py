@@ -14,6 +14,7 @@ from pydantic import AwareDatetime, BaseModel, BeforeValidator, ConfigDict, Fiel
 
 from commercial_relationship_service.api.schemas.common import (
     AuditedResponse,
+    CurrencyCode,
     PercentageOut,
     StrictModel,
     Version,
@@ -90,3 +91,23 @@ class PolicyPresentationResponse(BaseModel):
     valid_to: AwareDatetime | None
     created_by: str
     closed_by: str | None
+
+
+class CoverageRequest(StrictModel):
+    """Cobertura de políticas (FR-021-35): moneda de la compra y de 1 a 100 presentaciones (sin repetidos)."""
+
+    currency_code: CurrencyCode
+    company_product_presentation_ids: list[UUID] = Field(min_length=1)
+
+
+class CoverageItemResponse(BaseModel):
+    """Solo cobertura: sin porcentajes, costos ni políticas (FR-021-32a)."""
+
+    company_product_presentation_id: UUID
+    found: bool
+    covered: bool
+    price_list_ids: list[UUID]
+
+
+class CoverageResponse(BaseModel):
+    items: list[CoverageItemResponse]

@@ -28,6 +28,7 @@ from purchase_service.application.exceptions import (
     InvalidStatusError,
     NotFoundError,
     OperationInProgressError,
+    PricingPolicyNotConfiguredError,
     PurchaseTaxChangedError,
     PurchaseTaxNotConfiguredError,
     PurchaseWithoutLinesError,
@@ -85,6 +86,21 @@ def check_line_taxes(lines, snapshots) -> None:
         raise PurchaseTaxNotConfiguredError(missing)
     if changed:
         raise PurchaseTaxChangedError(changed)
+
+
+def check_pricing_coverage(lines, uncovered: frozenset) -> None:
+    """Spec 021 (FR-021-35): toda presentación con política de ganancia aplicable; si no, `409` sin efectos."""
+    missing = [
+        field_error(
+            f"lines[{index}].company_product_presentation_id", "PRICING_POLICY_NOT_CONFIGURED",
+            "La presentación no tiene una política de ganancia aplicable en una lista activa y vigente de la moneda.",
+            line_number=line.line_number,
+        ) | {"company_product_presentation_id": str(line.company_product_presentation_id)}
+        for index, line in enumerate(lines)
+        if line.company_product_presentation_id in uncovered
+    ]
+    if missing:
+        raise PricingPolicyNotConfiguredError(missing)
 
 
 def check_key_owner(operation: PurchaseOperation, company_id: UUID, purchase_id: UUID, operation_type: str, subject: str) -> None:
@@ -210,6 +226,14 @@ class ConfirmationService:
             ),
         )
         check_line_taxes(lines, line_snapshots)
+        # Spec 021 (FR-021-35): cobertura de todas las presentaciones, fuera de transacción y antes de T1, así un
+        # rechazo no asigna número ni registra operación ni consume la clave.
+        check_pricing_coverage(
+            lines,
+            self._resolver.uncovered_presentations(
+                company_id, purchase.currency_code, [line.company_product_presentation_id for line in lines]
+            ),
+        )
         self._resolver.check_operator(company_id, operator.application_user_id)
         self._check_sequence(purchase)
         self._repo.end_read()

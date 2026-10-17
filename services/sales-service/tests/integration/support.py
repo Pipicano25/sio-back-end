@@ -80,6 +80,7 @@ class RenewingToken(httpx.Auth):
 
 
 def user_client(username: str) -> httpx.Client:
+    check_isolation()
     password = secret("KEYCLOAK_TEST_USER_PASSWORD")
     if not password:
         pytest.skip("Defina KEYCLOAK_TEST_USER_PASSWORD (o infrastructure/.env).")
@@ -88,6 +89,7 @@ def user_client(username: str) -> httpx.Client:
 
 
 def service_client(client_id: str, secret_variable: str) -> httpx.Client:
+    check_isolation()
     client_secret = secret(secret_variable)
     if not client_secret:
         pytest.skip(f"Defina {secret_variable} (o infrastructure/.env).")
@@ -95,7 +97,25 @@ def service_client(client_id: str, secret_variable: str) -> httpx.Client:
     return httpx.Client(auth=RenewingToken(data), timeout=60)
 
 
+
+def isolation_guard():
+    """Barrera compartida `validation/isolation_guard.py` (incidente E2E del 2026-10-16), cargada por ruta."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("sio_isolation_guard", REPO_ROOT / "validation" / "isolation_guard.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def check_isolation() -> None:
+    """Todos los destinos deben ser contenedores de la pila aislada; si no, la ejecución falla antes de escribir."""
+    isolation_guard().check_targets({"purchase": PURCHASE, "sales": SALES, "inventory": INVENTORY, "operational_context": OPERATIONAL_CONTEXT, "commercial_relationship": COMMERCIAL_RELATIONSHIP, "product_catalog": PRODUCT_CATALOG, "party_identity": PARTY_IDENTITY, "payment_reference": PAYMENT_REFERENCE, "geography": GEOGRAPHY, "audit": AUDIT, "keycloak": TOKEN_URL})
+
+
 def require_services() -> None:
+    # Antes de cualquier solicitud: todos los destinos deben ser contenedores de la pila aislada; si no, falla.
+    check_isolation()
     for url in (
         f"{SALES_ROOT}/health/ready",
         f"{PURCHASE.removesuffix('/api/v1')}/health/ready",
@@ -292,7 +312,40 @@ def _adopt(client, company: str, label: str, *, sale_price: str, inventory_contr
         })
         assert presentation.status_code == 201, presentation.text
         box_presentation = presentation.json()["id"]
+    cover(client, company, [unit_presentation.json()["id"], box_presentation])
     return Product(company_product, product_id, unit, box_presentation, unit_presentation.json()["id"])
+
+
+# Spec 021 (FR-021-35): una compra solo se confirma si cada presentación tiene política de ganancia aplicable. Cada
+# empresa de prueba tiene una lista ficticia "COB-…" con una política del 30 % que cubre las presentaciones adoptadas;
+# sus precios automáticos no se usan en las ventas de estas pruebas (otra lista).
+COVERAGE: dict[str, dict] = {}
+
+
+def cover(client, company: str, presentations: list[str]) -> str:
+    """Agrega las presentaciones a la política de cobertura de la empresa (la crea la primera vez); devuelve la lista."""
+    pending = [value for value in presentations if value]
+    entry = COVERAGE.get(company)
+    if entry is None:
+        price_list = client.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company}/price-lists", json={
+            "code": f"COB-{RUN_ID}", "name": f"Lista ficticia de cobertura {RUN_ID}", "currency_code": "COP",
+        })
+        assert price_list.status_code == 201, price_list.text
+        policy = client.post(
+            f"{COMMERCIAL_RELATIONSHIP}/companies/{company}/price-lists/{price_list.json()['id']}/pricing-policies",
+            json={"name": f"Cobertura ficticia {RUN_ID}", "markup_percentage": "30",
+                  "company_product_presentation_ids": pending[:100]},
+        )
+        assert policy.status_code == 201, policy.text
+        entry = COVERAGE[company] = {"list": price_list.json()["id"], "policy": policy.json()}
+        pending = pending[100:]
+    for start in range(0, len(pending), 100):
+        added = client.post(f"{COMMERCIAL_RELATIONSHIP}/pricing-policies/{entry['policy']['id']}/presentations", json={
+            "version": entry["policy"]["version"], "company_product_presentation_ids": pending[start:start + 100],
+        })
+        assert added.status_code == 200, added.text
+        entry["policy"] = added.json()
+    return entry["list"]
 
 
 @dataclass(frozen=True)

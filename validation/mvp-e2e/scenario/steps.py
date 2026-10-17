@@ -495,12 +495,12 @@ def commercial_steps() -> list[Step]:
             why="Spec 021: solo esta lista tiene política; GENERAL y MAYORISTA conservan sus precios manuales y las ventas no la usan.",
         ),
         Step(
-            "C-12.politica", "Crear la política de ganancia (30 %) con la caja del producto A", EX2, (8,), "admin.test",
+            "C-12.politica", "Crear la política de ganancia (30 %) con las presentaciones que se compran", EX2, (8,), "admin.test",
             _cr("pricing_policies:create"), cr, "POST", "/companies/{empresa_a}/price-lists/{lista_automatica}/pricing-policies", 201,
-            body={"name": "MVP {run} (dato ficticio)", "markup_percentage": "30", "company_product_presentation_ids": ["{presentacion_caja_empresa_a}"]},
+            body={"name": "MVP {run} (dato ficticio)", "markup_percentage": "30", "company_product_presentation_ids": ["{presentacion_caja_empresa_a}", "{presentacion_base_empresa_a}", "{presentacion_base_empresa_b}"]},
             save={"politica": "id"},
             audit=(AuditSpec(cr, "CREATE_PRICING_POLICY", "PricingPolicy", "{politica}"),),
-            why="La política no cambia precios: rige desde la siguiente recepción física de la caja.",
+            why="La política no cambia precios: rige desde la siguiente recepción física. Spec 021 (FR-021-35): una compra solo se confirma si cada presentación tiene política de ganancia aplicable, por eso incluye las tres presentaciones que se compran.",
         ),
         Step(
             "C-13.compras", "Crear la secuencia de numeración de compras", EX3, (10,), "admin.test",
@@ -608,7 +608,7 @@ AUTOMATIC_PRICE_CHECK = Step(
     "P-03.precio_automatico", "Consultar el precio automático de la caja en AUTOMATICA", EX3, (10, 11), "admin.test",
     _cr("price_list_items:read"), "commercial-relationship", "GET", "/companies/{empresa_a}/price-list-items", 200,
     params={"price_list_id": "{lista_automatica}"},
-    expected_note="`unit_price` = `15600.00` y `origin` = `AUTOMATIC` (12 000 por caja en P1, tasa 0 %, × 1,30); lo aplica el worker de precios después de la recepción",
+    expected_note="la caja: `unit_price` = `15600.00` y `origin` = `AUTOMATIC` (12 000 por caja en P1, tasa 0 %, × 1,30); las unidades de A y B también reciben su precio automático en AUTOMATICA (las ventas usan GENERAL y MAYORISTA); lo aplica el worker de precios después de la recepción",
     why="Spec 021: compra → recepción física → precio automático. El costo FIFO de Inventory no cambia (sin impuestos).",
 )
 

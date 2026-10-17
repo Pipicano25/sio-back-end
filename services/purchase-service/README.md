@@ -31,6 +31,13 @@ entrada si se recibieron), administra la numeración por período y registra los
   `perm:purchase:purchase_line_taxes:override`, auditada como `OVERRIDE_PURCHASE_LINE_TAX`). Sin tasa la línea
   tiene la advertencia `PURCHASE_TAX_NOT_CONFIGURED` y la compra no se confirma (`409`); si la tasa del producto
   cambió desde que se guardó la línea, `409 PURCHASE_TAX_CHANGED`.
+- **Cobertura de políticas obligatoria (FR-021-35, 2026-10-16):** al confirmar, cada presentación debe tener una
+  política de ganancia activa (0 % incluido) en una lista activa, vigente y de la moneda de la compra; Purchase lo
+  consulta en Commercial Relationship (`pricing-policies/coverage`, permiso técnico
+  `perm:commercial-relationship:pricing_policy_coverage:read`). Si falta, `409 PRICING_POLICY_NOT_CONFIGURED` con las
+  líneas afectadas y sin efectos (sin número ni operación; la clave no se consume); con CR caído, `503`. Las líneas del
+  borrador muestran la advertencia `PRICING_POLICY_NOT_CONFIGURED` al crearlas o editarlas. La recepción no vuelve a
+  validar: si la política se retiró, CR conserva el precio (`SKIPPED_NO_POLICY`).
 - **Una presentación por compra:** `409 DUPLICATE_PRESENTATION_IN_PURCHASE` al crear, agregar o editar líneas y al
   confirmar (`uq_purchase_details_purchase_presentation`).
 - **Hechos de costo:** en la T2 de la recepción se actualiza `purchase_presentation_cost_series` y se escribe una fila
@@ -125,11 +132,13 @@ de vida. Sin datos iniciales (las secuencias las crea el administrador).
 ```bash
 docker compose --file ../../infrastructure/services/purchase-service.yaml --env-file ../../infrastructure/.env --profile test up -d purchase-test-db
 .venv/Scripts/python.exe -m pytest                     # unitarias, contrato, API, ejemplos
-.venv/Scripts/python.exe -m pytest -m integration      # servicios reales (detiene y reinicia contenedores)
+SIO_TEST_TARGET=isolated .venv/Scripts/python.exe -m pytest -m integration   # solo la pila aislada sio-it-*
 .venv/Scripts/python.exe -m pytest -m performance      # SC-001, SC-002, SC-005
 ```
 
 No ejecutar en paralelo suites que usen la misma base de pruebas.
+
+Las pruebas de integración escriben en servicios reales: **solo** se ejecutan contra la pila aislada `sio-it-*` con `SIO_TEST_TARGET=isolated` y las URL de esa pila. La barrera `validation/isolation_guard.py` hace fallar la sesión antes de la primera solicitud si algún destino no es un contenedor con `sio.integration.isolated=true` (incidente del 2026-10-16); `localhost` no basta.
 
 ## Permisos
 

@@ -158,6 +158,49 @@ POST /api/v1/companies/<EMPRESA>/price-lists/<LISTA>/pricing-policies
 
 **Guardar:** `id` → `<MEDICAMENTOS>`
 
+## 5. Consultar la cobertura de la caja (lo que valida Purchase al confirmar)
+
+```http
+POST /api/v1/companies/<EMPRESA>/pricing-policies/coverage
+```
+
+```json
+{
+  "currency_code": "COP",
+  "company_product_presentation_ids": [
+    "<CAJA>"
+  ]
+}
+```
+
+**Permiso que exige la URL:** `perm:commercial-relationship:pricing_policy_coverage:read`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `pricing_policy_coverage` de `commercial-relationship`
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+
+**Por qué se hace así**
+
+- Spec 021 (FR-021-35): una compra solo se confirma si cada presentación tiene una política activa (0 % cuenta) en una lista activa, vigente y de la moneda de la compra. Purchase la consulta con su identidad técnica; la respuesta no incluye porcentajes ni costos.
+- Sin cobertura, la confirmación responde `409 PRICING_POLICY_NOT_CONFIGURED`. Una presentación recibida sin política en una lista con políticas conserva su precio (`SKIPPED_NO_POLICY`).
+
+**Respuesta esperada — `200 OK`** (abreviada)
+
+```json
+{
+  "items": [
+    {
+      "company_product_presentation_id": "<CAJA>",
+      "found": true,
+      "covered": true,
+      "price_list_ids": [
+        "<LISTA>"
+      ]
+    }
+  ]
+}
+```
+
 ---
 
 [← Paso anterior](01-consultar-datos.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](03-recepciones.md)

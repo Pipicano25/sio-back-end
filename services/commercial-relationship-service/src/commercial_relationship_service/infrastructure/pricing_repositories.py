@@ -187,10 +187,49 @@ class PricingPolicyRepository(SQLAlchemyRepositoryBase[PricingPolicyModel]):
         row.closed_at = at
         row.closed_by = actor
 
+    def coverage(
+        self, company_id: UUID, currency_code: str, presentation_ids: list[UUID], at: datetime
+    ) -> dict[UUID, list[UUID]]:
+        """Listas que cubren cada presentación en el instante (FR-021-35), solo de la empresa.
+
+        Cubre una política `ACTIVE` con la presentación asignada y un término de porcentaje vigentes en `at` (0 %
+        incluido), en una lista `ACTIVE`, vigente en `at` y con la moneda indicada. No devuelve porcentajes.
+        """
+        if not presentation_ids:
+            return {}
+        rows = self.session.execute(
+            select(PricingPolicyPresentationModel.company_product_presentation_id, PriceListModel.id)
+            .join(PricingPolicyModel, PricingPolicyModel.id == PricingPolicyPresentationModel.policy_id)
+            .join(PricingPolicyTermModel, PricingPolicyTermModel.policy_id == PricingPolicyModel.id)
+            .join(PriceListModel, PriceListModel.id == PricingPolicyModel.price_list_id)
+            .where(
+                PricingPolicyPresentationModel.company_id == company_id,
+                PricingPolicyModel.company_id == company_id,
+                PriceListModel.company_id == company_id,
+                PricingPolicyPresentationModel.company_product_presentation_id.in_(presentation_ids),
+                PricingPolicyModel.status == "ACTIVE",
+                PricingPolicyPresentationModel.valid_from <= at,
+                or_(PricingPolicyPresentationModel.valid_to.is_(None), PricingPolicyPresentationModel.valid_to > at),
+                PricingPolicyTermModel.valid_from <= at,
+                or_(PricingPolicyTermModel.valid_to.is_(None), PricingPolicyTermModel.valid_to > at),
+                PriceListModel.status == "ACTIVE",
+                PriceListModel.currency_code == currency_code,
+                or_(PriceListModel.valid_from.is_(None), PriceListModel.valid_from <= at),
+                or_(PriceListModel.valid_to.is_(None), PriceListModel.valid_to > at),
+            )
+            .distinct()
+        ).all()
+        covered: dict[UUID, list[UUID]] = {}
+        for presentation_id, price_list_id in rows:
+            covered.setdefault(presentation_id, []).append(price_list_id)
+        return {key: sorted(value, key=str) for key, value in covered.items()}
+
 
 # --------------------------------------------------------------------------
 # Solicitudes y aplicaciones automáticas (FR-021-19..28)
 # --------------------------------------------------------------------------
+
+
 
 class DetailAlreadyReceived(CommercialRelationshipError):
     """Otra transacción guardó la misma línea de compra a la vez: el servicio vuelve a leerla (idempotencia)."""

@@ -84,7 +84,8 @@ OPERATION_RESPONSES = {
         "`PURCHASE.SEQUENCE_EXHAUSTED`, `PURCHASE.INVENTORY_REJECTED`, `PURCHASE.INVENTORY_ALREADY_CONSUMED`, "
         "`PURCHASE.OPERATION_IN_PROGRESS`, `PURCHASE.OPERATION_NOT_APPLIED`, `PURCHASE.VERSION_CONFLICT`, "
         "`PURCHASE.INVALID_STATUS`; al confirmar (spec 021) `PURCHASE.PURCHASE_TAX_NOT_CONFIGURED`, "
-        "`PURCHASE.PURCHASE_TAX_CHANGED` y `PURCHASE.DUPLICATE_PRESENTATION_IN_PURCHASE`."
+        "`PURCHASE.PURCHASE_TAX_CHANGED`, `PURCHASE.PRICING_POLICY_NOT_CONFIGURED` (presentaciones sin política de "
+        "ganancia aplicable; FR-021-35) y `PURCHASE.DUPLICATE_PRESENTATION_IN_PURCHASE`."
     ),
     422: problem("`PURCHASE.VALIDATION_ERROR` o `PURCHASE.PURCHASE_WITHOUT_LINES`."),
 }
@@ -107,6 +108,21 @@ _USER_RESPONSES = {
         "`payment-reference`, `inventory`, `keycloak`)."
     ),
 }
+
+
+IDEMPOTENCY_KEY_SCHEMA = {"type": "string", "minLength": 1, "maxLength": 150, "pattern": "^[\\x21-\\x7e]{1,150}$"}
+
+
+def _document_idempotency_key(operation: dict[str, Any]) -> None:
+    """`Idempotency-Key` obligatoria en OpenAPI (confirmación, recepción y anulación).
+
+    La dependencia la declara opcional solo para conservar los errores propios del contrato
+    (`IDEMPOTENCY_KEY_REQUIRED`, `INVALID_FORMAT`); en el documento es obligatoria y de tipo texto.
+    """
+    for parameter in operation.get("parameters", []):
+        if parameter.get("in") == "header" and parameter.get("name", "").lower() == "idempotency-key":
+            parameter["required"] = True
+            parameter["schema"] = {**IDEMPOTENCY_KEY_SCHEMA, "title": "Idempotency-Key"}
 
 
 def configure_bearer_openapi(app: FastAPI, public_paths: Collection[str]) -> None:
@@ -133,6 +149,7 @@ def configure_bearer_openapi(app: FastAPI, public_paths: Collection[str]) -> Non
             for operation in path_item.values():
                 if not isinstance(operation, dict) or "responses" not in operation:
                     continue
+                _document_idempotency_key(operation)
                 if path in public_paths:
                     operation["security"] = []
                 else:

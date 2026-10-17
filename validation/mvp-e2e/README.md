@@ -13,9 +13,26 @@ API públicas (`127.0.0.1`, puertos de [`docs/port-map.md`](../../docs/port-map.
 para verificar (`SELECT`, `docker inspect`, `docker logs`) y detiene/arranca contenedores únicamente
 durante las caídas. Nunca ejecuta `docker rm`, `docker compose down` ni `docker volume rm`.
 
+## Barrera de aislamiento (obligatoria desde el 2026-10-16)
+
+El recorrido **escribe** (empresas, personas, productos, compras, ventas) y la etapa de caídas detiene contenedores.
+El 2026-10-16 una ejecución accidental contra el entorno integrado persistente creó datos de prueba en sus bases. Por
+eso la suite solo se ejecuta contra la **pila aislada** `sio-it-*`:
+
+- `SIO_TEST_TARGET=isolated` es obligatorio; sin esa variable la suite falla antes de crear el primer cliente HTTP.
+- Las URL (`SIO_MVP_<SERVICIO>_URL` y `SIO_MVP_KEYCLOAK_TOKEN_URL`) deben llegar a puertos publicados por contenedores
+  con la etiqueta `sio.integration.isolated=true` y el prefijo `sio-it-`; los valores por omisión (puertos 81xx y
+  8081 del entorno persistente) se rechazan. `localhost` no basta.
+- `docker stop`, `start` y `exec` solo se permiten sobre contenedores aislados, y `docker compose` queda bloqueado.
+
+La barrera es `validation/isolation_guard.py` (compartida con las suites de integración de Purchase, Sales y Commercial
+Relationship) y se prueba en `tests/unit/test_isolation_guard.py`. Las pruebas unitarias no la necesitan: se ejecutan
+siempre con `pytest tests/unit` (no use `-m "not integration"`: esta suite no usa ese marcador y seleccionaría el
+recorrido completo).
+
 ## Precondiciones
 
-El entorno integrado de `infrastructure/` debe estar levantado con migraciones y seeds aplicados. La
+La pila aislada `sio-it-*` debe estar levantada con migraciones y seeds aplicados. La
 etapa `preflight` verifica las precondiciones E-01..E-12 descritas en
 [`quickstart.md`](../../specs/017-mvp-integral-validation/quickstart.md) (Docker, Keycloak con el realm
 de la plantilla, 10 servicios sanos, migraciones en head, workers de auditoría, conciliadores, seeds,

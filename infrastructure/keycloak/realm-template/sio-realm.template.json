@@ -1388,6 +1388,10 @@
           "description": "Entregar solicitudes de actualización de precio por recepción (solo la cuenta técnica de purchase-service; la ruta exige además identidad técnica; spec 021, EXC-001)"
         },
         {
+          "name": "perm:commercial-relationship:pricing_policy_coverage:read",
+          "description": "Consultar si las presentaciones tienen política de ganancia aplicable, sin porcentajes ni costos (solo la cuenta técnica de purchase-service, para confirmar compras; spec 021, FR-021-35)"
+        },
+        {
           "name": "perm:commercial-relationship:supplier_evaluations:create",
           "description": "Crear supplier_evaluations en commercial-relationship"
         },
@@ -2319,7 +2323,8 @@
           "perm:inventory:movements:read",
           "perm:inventory:platform:lookup",
           "perm:audit:audit-events:create",
-          "perm:commercial-relationship:automatic_price_update_requests:submit"
+          "perm:commercial-relationship:automatic_price_update_requests:submit",
+          "perm:commercial-relationship:pricing_policy_coverage:read"
         ]
       }
     },

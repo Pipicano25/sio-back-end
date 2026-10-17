@@ -165,7 +165,7 @@ class PricingPolicyService:
         )
 
     def remove(self, current, *, presentation_ids: list[UUID], version: int, actor: str):
-        """Retira presentaciones; su precio se finaliza en la siguiente recepción, no ahora (CP-16)."""
+        """Retira presentaciones; no toca precios: desde la siguiente recepción quedan `SKIPPED_NO_POLICY` (CP-16)."""
         presentation_ids = unique_in_order(presentation_ids)
         _require_batch(presentation_ids)
         policy = self._locked(current, version)

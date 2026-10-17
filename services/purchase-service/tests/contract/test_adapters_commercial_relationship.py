@@ -91,3 +91,61 @@ def test_unavailable(handler) -> None:
     with pytest.raises(DependencyUnavailableError) as error:
         cr.lookup_products([uuid4()])
     assert error.value.provider == "commercial-relationship"
+
+
+# ------------------------------------------------- cobertura de políticas (spec 021, FR-021-35; contrato CR §3b)
+
+
+def _coverage_handler(covered: set, *, omit=None, extra=None):
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        items = [
+            {"company_product_presentation_id": value, "found": True, "covered": value in covered, "price_list_ids": []}
+            for value in body["company_product_presentation_ids"] if value != omit
+        ]
+        if extra:
+            items.append({"company_product_presentation_id": extra, "found": True, "covered": True, "price_list_ids": []})
+        return httpx.Response(200, json={"items": items})
+
+    return handler
+
+
+def test_coverage_sends_the_company_currency_and_batches_of_100() -> None:
+    company = uuid4()
+    ids = [uuid4() for _ in range(150)]
+    covered = {str(value) for value in ids[::2]}
+    directory, recorder = adapter(_coverage_handler(covered))
+    result = directory.lookup_pricing_coverage(company, "COP", [*ids, ids[0]])  # repetidos una sola vez
+    assert result == {value: str(value) in covered for value in ids}
+    assert [request.url.path for request in recorder.requests] == [f"/api/v1/companies/{company}/pricing-policies/coverage"] * 2
+    sent = [json.loads(request.content) for request in recorder.requests]
+    assert [len(body["company_product_presentation_ids"]) for body in sent] == [100, 50]
+    assert {body["currency_code"] for body in sent} == {"COP"}
+    assert all(request.headers["Authorization"].startswith("Bearer tecnico-") for request in recorder.requests)
+
+
+def test_coverage_ignores_unrequested_items_and_requires_every_answer() -> None:
+    wanted, intruder = uuid4(), uuid4()
+    directory, _ = adapter(_coverage_handler({str(wanted)}, extra=str(intruder)))
+    assert directory.lookup_pricing_coverage(uuid4(), "COP", [wanted]) == {wanted: True}
+    directory, _ = adapter(_coverage_handler(set(), omit=str(wanted)))
+    with pytest.raises(DependencyUnavailableError):  # sin respuesta para una pedida: nunca se asume cobertura
+        directory.lookup_pricing_coverage(uuid4(), "COP", [wanted])
+
+
+def test_coverage_not_found_is_not_covered() -> None:
+    value = uuid4()
+    handler = json_response(200, {"items": [{"company_product_presentation_id": str(value), "found": False,
+                                             "covered": False, "price_list_ids": []}]})
+    directory, _ = adapter(handler)
+    assert directory.lookup_pricing_coverage(uuid4(), "COP", [value]) == {value: False}
+
+
+@pytest.mark.parametrize("handler", [json_response(500), json_response(403), json_response(404), json_response(422), timeout,
+                                     json_response(200, {"items": "x"}),
+                                     json_response(200, {"items": [{"company_product_presentation_id": "no-uuid"}]})])
+def test_coverage_technical_errors_are_unavailable(handler) -> None:
+    directory, _ = adapter(handler)
+    with pytest.raises(DependencyUnavailableError) as error:
+        directory.lookup_pricing_coverage(uuid4(), "COP", [uuid4()])
+    assert error.value.provider == "commercial-relationship"

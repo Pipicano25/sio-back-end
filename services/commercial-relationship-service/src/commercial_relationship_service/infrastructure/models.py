@@ -524,7 +524,7 @@ class PriceListItemModel(_Audited, Base):
         CheckConstraint("valid_to IS NULL OR valid_to > valid_from", name="validity"),
         CheckConstraint("origin IS NULL OR origin = 'AUTOMATIC'", name="origin"),
         CheckConstraint(
-            "closure_reason IS NULL OR closure_reason IN ('AUTOMATIC_SUPERSEDED', 'NO_POLICY')",
+            "closure_reason IS NULL OR closure_reason IN ('AUTOMATIC_SUPERSEDED')",
             name="closure_reason",
         ),
         ForeignKeyConstraint(
@@ -547,8 +547,7 @@ class PriceListItemModel(_Audited, Base):
 AUTOMATIC_FINAL_STATUSES = (
     "APPLIED",
     "UNCHANGED",
-    "ENDED_NO_POLICY",
-    "NO_PRICE_TO_END",
+    "SKIPPED_NO_POLICY",
     "SKIPPED_LIST_NOT_EFFECTIVE",
     "SKIPPED_CURRENCY_MISMATCH",
     "SKIPPED_PRESENTATION_INACTIVE",

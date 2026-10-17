@@ -97,6 +97,7 @@ SPEC_021_ROUTES: tuple[Route, ...] = (
     Route("PUT", "/api/v1/company-products/{company_product_id}/purchase-tax", "company_product_purchase_taxes", "update", "product", True),
     Route("POST", "/api/v1/companies/{company_id}/company-products/purchase-taxes/batch", "company_product_purchase_taxes", "update", "company", True),
     Route("POST", "/api/v1/companies/{company_id}/automatic-price-update-requests", "automatic_price_update_requests", "submit", "technical", True),
+    Route("POST", "/api/v1/companies/{company_id}/pricing-policies/coverage", "pricing_policy_coverage", "read", "technical", False),
     Route("GET", "/api/v1/companies/{company_id}/automatic-price-applications", "automatic_price_applications", "read", "company", False),
     Route("GET", "/api/v1/companies/{company_id}/automatic-price-applications/{application_id}", "automatic_price_applications", "read", "company", False),
     Route("POST", "/api/v1/companies/{company_id}/automatic-price-applications/{application_id}/resolution", "automatic_price_applications", "resolve", "company", True),

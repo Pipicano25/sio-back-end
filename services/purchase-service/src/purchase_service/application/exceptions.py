@@ -306,6 +306,20 @@ class PurchaseTaxNotConfiguredError(PurchaseError):
         )
 
 
+class PricingPolicyNotConfiguredError(PurchaseError):
+    """Spec 021 (FR-021-35, CP-70): hay presentaciones sin política de ganancia aplicable; el borrador se conserva."""
+
+    code = "PRICING_POLICY_NOT_CONFIGURED"
+    title = "Política de ganancia sin configurar"
+
+    def __init__(self, errors: Sequence[Mapping[str, Any]]) -> None:
+        super().__init__(
+            "Una o más presentaciones no tienen una política de ganancia aplicable en una lista activa y vigente de la "
+            "moneda de la compra: configúrela en Commercial Relationship antes de confirmar.",
+            errors=errors,
+        )
+
+
 class PurchaseTaxChangedError(PurchaseError):
     """Spec 021 (FR-021-12, DS-04, CP-65): la tasa predeterminada cambió desde que se guardó la línea (`409`)."""
 

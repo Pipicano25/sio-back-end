@@ -97,14 +97,28 @@ def journal(settings, report_dir) -> Journal:
     return Journal(report_dir, sensitive_values=settings.sensitive_values())
 
 
+def isolation_guard():
+    """Carga `validation/isolation_guard.py` por ruta (compartido con las suites de integración de los servicios)."""
+    import importlib.util
+
+    path = Path(__file__).resolve().parents[2] / "isolation_guard.py"
+    spec = importlib.util.spec_from_file_location("sio_isolation_guard", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 @pytest.fixture(scope="session")
 def clients(settings, run_context, journal) -> Clients:
+    # Barrera de aislamiento (incidente del 2026-10-16): antes del primer cliente, y por tanto de la primera escritura,
+    # todos los destinos deben ser contenedores de la pila aislada (`validation/isolation_guard.py`).
+    isolation_guard().check_targets({**dict(settings.urls), "keycloak": settings.token_url})
     return Clients(settings, run_context, journal, stage=_stage())
 
 
 @pytest.fixture(scope="session")
 def docker() -> DockerEnv:
-    return DockerEnv()
+    return DockerEnv(container_guard=isolation_guard().check_container)
 
 
 @pytest.fixture(scope="session")

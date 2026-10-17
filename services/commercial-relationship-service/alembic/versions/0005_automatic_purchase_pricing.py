@@ -15,7 +15,8 @@ Create Date: 2026-10-15
   `automatic_price_update_requests` (D26) y `automatic_price_applications`, una por lista y presentación, con la
   captura inmutable de la política vigente en la recepción (RC-021-5). Un trigger impide cambiar una aplicación en
   estado final (RC-021-10).
-- **Precios de lista** (FR-021-24): `origin`, `closure_reason` y `automatic_application_id`, anulables.
+- **Precios de lista** (FR-021-24): `origin`, `closure_reason` (`AUTOMATIC_SUPERSEDED`) y `automatic_application_id`,
+  anulables.
 
 Metadatos adoptados (opción interina declarada en `data-model.md`): D25 para las asociaciones inmutables
 (`created_at`, `created_by`, `closed_at`, `closed_by`) y D26 para el inbox (`created_at`, `created_by`).
@@ -41,11 +42,13 @@ ASSIGNMENTS = "price_list_pricing_policy_presentations"
 REQUESTS = "automatic_price_update_requests"
 APPLICATIONS = "automatic_price_applications"
 
+# Ajuste del 2026-10-16 en este mismo archivo (la migración no se aplicó en ningún entorno compartido; Constitución
+# §migraciones): `SKIPPED_NO_POLICY` reemplaza a `ENDED_NO_POLICY` y `NO_PRICE_TO_END`, y `NO_POLICY` deja de ser un
+# motivo de cierre (RC-021-13).
 FINAL_STATUSES = (
     "APPLIED",
     "UNCHANGED",
-    "ENDED_NO_POLICY",
-    "NO_PRICE_TO_END",
+    "SKIPPED_NO_POLICY",
     "SKIPPED_LIST_NOT_EFFECTIVE",
     "SKIPPED_CURRENCY_MISMATCH",
     "SKIPPED_PRESENTATION_INACTIVE",
@@ -53,7 +56,7 @@ FINAL_STATUSES = (
     "RESOLVED",
 )
 STATUSES = ("PENDING", "FAILED", *FINAL_STATUSES)
-CLOSURE_REASONS = ("AUTOMATIC_SUPERSEDED", "NO_POLICY")
+CLOSURE_REASONS = ("AUTOMATIC_SUPERSEDED",)
 
 
 def _in(values: Sequence[str]) -> str:

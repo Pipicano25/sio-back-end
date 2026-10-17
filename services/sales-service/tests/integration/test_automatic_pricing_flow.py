@@ -25,6 +25,7 @@ import pytest
 from tests.integration.support import (
     AUDIT,
     COMMERCIAL_RELATIONSHIP,
+    COVERAGE,
     INVENTORY,
     PURCHASE,
     RUN_ID,
@@ -146,9 +147,12 @@ def test_purchase_receipt_fifo_automatic_price_and_sale(admin, seller, superviso
                                  params={"purchase_id": received["id"]}), 200)["items"]
     by_list = {item["price_list_id"]: item for item in applications}
     # Q1 y B-3: toda lista con política en received_at recibe una aplicación; la manual (sin políticas) ninguna. Las
-    # listas con política de otras pruebas no tienen el arroz en ninguna política ni precio: NO_PRICE_TO_END.
+    # listas con política de otras pruebas no tienen el arroz en ninguna política: SKIPPED_NO_POLICY, sin tocar sus
+    # precios (aclaración del 2026-10-16, RC-021-13).
     assert {publico, mayorista} <= set(by_list) and manual not in by_list
-    assert {item["status"] for key, item in by_list.items() if key not in (publico, mayorista)} <= {"NO_PRICE_TO_END"}
+    coverage = COVERAGE[world.company]["list"]  # lista de cobertura del soporte (FR-021-35): también se actualiza
+    assert by_list[coverage]["status"] == "APPLIED"
+    assert {item["status"] for key, item in by_list.items() if key not in (publico, mayorista, coverage)} <= {"SKIPPED_NO_POLICY"}
     assert by_list[publico]["status"] == "APPLIED" and by_list[publico]["current_unit_cost"] == "2380"
     assert by_list[publico]["reference_cost"] == "2380" and by_list[publico]["new_price"] == "3094.00"
 
@@ -180,8 +184,10 @@ def test_purchase_receipt_fifo_automatic_price_and_sale(admin, seller, superviso
     second = _purchase(admin, world, arroz, "10", "2000")
     second = _operation(admin, world, second, "confirmation")
     second = _operation(admin, world, second, "receipt", full_receipt_confirmed=True)
-    wait_until(lambda: len(_ok(admin.get(f"{CR}/companies/{world.company}/automatic-price-applications",
-                                         params={"purchase_id": second["id"], "status": "UNCHANGED"}), 200)["items"]) == 2,
+    # Público y Mayorista (la lista de cobertura del soporte, FR-021-35, también queda UNCHANGED y no se cuenta aquí)
+    wait_until(lambda: {item["price_list_id"] for item in _ok(admin.get(
+        f"{CR}/companies/{world.company}/automatic-price-applications",
+        params={"purchase_id": second["id"], "status": "UNCHANGED"}), 200)["items"]} >= {publico, mayorista},
                60, "La segunda recepción no quedó UNCHANGED en las dos listas")
     _operation(admin, world, second, "cancellation", reason="Anulación ficticia de validación")
     time.sleep(5)

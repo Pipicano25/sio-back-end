@@ -64,6 +64,12 @@ actualización de precio de cada recepción por HTTP con el token `client_creden
 por Keycloak (clase B); es la excepción EXC-001 a D6, aprobada solo para esta spec. El worker de precios no hace
 llamadas HTTP: solo usa la base propia (clase A). No hay dependencias de clase D.
 
+Purchase también consulta `POST /companies/{id}/pricing-policies/coverage` (permiso
+`perm:commercial-relationship:pricing_policy_coverage:read`) al confirmar compras: responde si cada presentación tiene
+una política de ganancia aplicable en una lista activa, vigente y de la moneda, sin porcentajes ni costos
+(FR-021-35). Una presentación recibida sin política en una lista con políticas conserva su precio
+(`SKIPPED_NO_POLICY`, RC-021-13).
+
 Un único comportamiento en todos los entornos: no hay variables de "modo" (stub, fake) para los
 proveedores; las pruebas inyectan dobles por la fábrica `create_app`.
 
@@ -147,8 +153,10 @@ empresa.
 docker compose --file ../../infrastructure/services/commercial-relationship-service.yaml --env-file ../../infrastructure/.env --profile test up -d commercial-relationship-test-db
 pytest                                     # unitarias, contrato, API, salud y ejemplos
 pytest -m performance -o addopts=""        # 50 000 productos por empresa: búsqueda y precio aplicable, p95 < 1 s
-pytest -m integration -o addopts=""        # proveedores y Keycloak reales (entorno integrado)
+SIO_TEST_TARGET=isolated pytest -m integration -o addopts=""   # solo la pila aislada sio-it-* (ver abajo)
 ```
+
+Las pruebas de integración escriben en servicios reales: **solo** se ejecutan contra la pila aislada `sio-it-*` con `SIO_TEST_TARGET=isolated` y las URL de esa pila. La barrera `validation/isolation_guard.py` hace fallar la sesión antes de la primera solicitud si algún destino no es un contenedor con `sio.integration.isolated=true` (incidente del 2026-10-16); `localhost` no basta.
 
 - Las pruebas ordinarias no necesitan Keycloak ni los proveedores: los tokens se firman con una clave
   RSA temporal y Operational Context, Product Catalog, Party Identity y Payment Reference son dobles inyectados

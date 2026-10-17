@@ -27,6 +27,7 @@ from purchase_service.infrastructure.http_client import (
     UnexpectedBody,
     bool_field,
     date_field,
+    json_object,
     decimal_field,
     int_field,
     text_field,
@@ -142,6 +143,41 @@ class HTTPCommercialDirectory:
                     )
             except UnexpectedBody as exc:
                 raise self._bad("company_product_presentations_batch", exc) from None
+        return result
+
+    def lookup_pricing_coverage(self, company_id: UUID, currency_code: str, ids: Sequence[UUID]) -> dict[UUID, bool]:
+        """Cobertura de políticas (spec 021, FR-021-35; contrato CR §3b), de a 100 presentaciones.
+
+        Solo se aceptan las presentaciones pedidas; cualquier respuesta distinta de `200` con `items` válidos es un
+        error técnico (`503`): Purchase nunca asume cobertura.
+        """
+        result: dict[UUID, bool] = {}
+        distinct = list(dict.fromkeys(ids))
+        operation = "pricing_policy_coverage"
+        for start in range(0, len(distinct), BATCH_LIMIT):
+            chunk = distinct[start : start + BATCH_LIMIT]
+            response = self._caller.send(
+                operation,
+                "POST",
+                f"/companies/{company_id}/pricing-policies/coverage",
+                json={"currency_code": currency_code, "company_product_presentation_ids": [str(value) for value in chunk]},
+            )
+            if response.status_code != 200:
+                raise self._caller.client.unavailable(operation, outcome=f"estado={response.status_code}")
+            body = json_object(response)
+            items = body.get("items") if body else None
+            if not isinstance(items, list) or not all(isinstance(item, dict) for item in items):
+                raise self._caller.client.unavailable(operation, outcome="cuerpo_inesperado")
+            requested = set(chunk)
+            try:
+                for item in items:
+                    presentation_id = uuid_field(item, "company_product_presentation_id")
+                    if presentation_id in requested:
+                        result[presentation_id] = bool_field(item, "found") and bool_field(item, "covered")
+            except UnexpectedBody as exc:
+                raise self._bad(operation, exc) from None
+            if requested - set(result):  # toda presentación pedida debe tener respuesta
+                raise self._caller.client.unavailable(operation, outcome="cuerpo_incompleto")
         return result
 
     def get_supplier_product(self, supplier_product_id: UUID) -> SupplierProductInfo | None:

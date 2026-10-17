@@ -105,7 +105,8 @@ def prices(test_engine, world: Scenario, presentation: str | None = None, price_
     with test_engine.connect() as connection:
         rows = connection.execute(
             text(
-                "SELECT id, unit_price, valid_from, valid_to, status, origin, closure_reason, automatic_application_id "
+                "SELECT id, unit_price, valid_from, valid_to, status, origin, closure_reason, automatic_application_id, "
+                "version, updated_at "
                 "FROM price_list_items WHERE price_list_id = :l AND company_product_presentation_id = :p "
                 "ORDER BY valid_from, created_at"
             ),

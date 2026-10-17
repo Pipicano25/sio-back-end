@@ -33,7 +33,7 @@ from tests.examples.exercises import EXERCISES, NOW
 from tests.examples.render import render_exercise, render_general
 from tests.examples.runner import NO_PERMISSIONS_HUMAN, WILDCARD_SERVICE, run_exercise
 from tests.examples.users import USERS
-from tests.fakes import World, build_fakes
+from tests.fakes import World, build_fakes, unit_presentation_of
 
 DOCS = Path(__file__).resolve().parents[2] / "docs" / "ejemplo"
 HANDWRITTEN = {"README.md"}
@@ -112,6 +112,8 @@ def before_hook(fakes):
             fakes.inventory.availability.down = True
         elif change == "inventory_up":
             fakes.inventory.availability.down = False
+        elif change == "sin_politica:aceite":  # spec 021 (FR-021-35): la unidad del aceite sin política de ganancia
+            fakes.cr.uncovered = {unit_presentation_of(fakes.world.product_2)}
         elif change.startswith("consume:"):
             fakes.inventory.consumed.add(UUID(str(ctx[change.split(":", 1)[1]])))
         else:

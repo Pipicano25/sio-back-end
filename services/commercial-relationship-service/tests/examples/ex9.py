@@ -95,6 +95,16 @@ EX9 = dict(
                       body={"name": "Medicamentos", "markup_percentage": "30", "company_product_presentation_ids": ["<CAJA>"]},
                       why=["Ejercicio 7. Desde ahora la lista `PUBLICO` recibe precios automáticos."],
                       save={"MEDICAMENTOS": "id"}, show=["id", "name", "markup_percentage", "presentation_count"]),
+                 call("Consultar la cobertura de la caja (lo que valida Purchase al confirmar)", "POST",
+                      f"{API}/companies/<EMPRESA>/pricing-policies/coverage",
+                      body={"currency_code": "COP", "company_product_presentation_ids": ["<CAJA>"]},
+                      why=["Spec 021 (FR-021-35): una compra solo se confirma si cada presentación tiene una política "
+                           "activa (0 % cuenta) en una lista activa, vigente y de la moneda de la compra. Purchase la "
+                           "consulta con su identidad técnica; la respuesta no incluye porcentajes ni costos.",
+                           "Sin cobertura, la confirmación responde `409 PRICING_POLICY_NOT_CONFIGURED`. Una "
+                           "presentación recibida sin política en una lista con políticas conserva su precio "
+                           "(`SKIPPED_NO_POLICY`)."],
+                      expect=200, show=["items"]),
              ]),
         step("03-recepciones.md", "Recibir dos compras",
              "Una recepción crea el primer precio; la segunda falla (simulado) y queda pendiente de reintento.", [

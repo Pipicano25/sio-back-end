@@ -141,6 +141,11 @@ class CommercialDirectory(Protocol):
 
     def lookup_presentations(self, ids: Sequence[UUID]) -> dict[UUID, CompanyPresentationInfo]: ...
 
+    def lookup_pricing_coverage(self, company_id: UUID, currency_code: str, ids: Sequence[UUID]) -> dict[UUID, bool]:
+        """Spec 021 (FR-021-35): `True` si la presentación tiene política de ganancia aplicable en una lista activa,
+        vigente y de la moneda; `False` si no la tiene o no es de la empresa. Un fallo técnico es `503`."""
+        ...
+
     def get_supplier_product(self, supplier_product_id: UUID) -> SupplierProductInfo | None: ...
 
 

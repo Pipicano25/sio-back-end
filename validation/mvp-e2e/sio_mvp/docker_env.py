@@ -72,8 +72,12 @@ class DockerEnv:
         clock: Callable[[], float] = time.monotonic,
         health_timeout: float = HEALTH_TIMEOUT_SECONDS,
         on_event: Callable[[str, dict], None] | None = None,
+        container_guard: Callable[[str], object] | None = None,
     ) -> None:
         self._runner = runner or subprocess_runner()
+        # Barrera de aislamiento (`validation/isolation_guard.py`): `stop`, `start` y `exec` solo sobre contenedores
+        # aislados, y nunca `compose` (los proyectos Compose son los del entorno persistente).
+        self._container_guard = container_guard
         self._sleep = sleep
         self._clock = clock
         self.health_timeout = health_timeout
@@ -91,6 +95,12 @@ class DockerEnv:
             raise ValueError(f"Comando Docker destructivo no permitido: {args}")
         if args[0] == "compose" and "up" not in args:
             raise ValueError("Solo se permite 'docker compose … up -d'")
+        if self._container_guard is not None:
+            if args[0] == "compose":
+                raise ValueError("docker compose no se permite con la barrera de aislamiento activa")
+            if args[0] in {"stop", "start", "exec"}:
+                target = next((item for item in args[1:] if not item.startswith("-")), None)
+                self._container_guard(target or "")
         return self._runner(list(args))
 
     def inspect(self, name: str) -> ContainerState:

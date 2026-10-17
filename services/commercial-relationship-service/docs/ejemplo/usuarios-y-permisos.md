@@ -116,6 +116,7 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 | `POST /api/v1/pricing-policies/{id}/deactivate` 🔒 | `perm:commercial-relationship:pricing_policies:delete` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 7 |
 | `PUT /api/v1/company-products/{id}/purchase-tax` 🔒 | `perm:commercial-relationship:company_product_purchase_taxes:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 8 |
 | `POST /api/v1/companies/{id}/company-products/purchase-taxes/batch` 🔒 | `perm:commercial-relationship:company_product_purchase_taxes:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 8 |
+| `POST /api/v1/companies/{id}/pricing-policies/coverage` 🔒 | `perm:commercial-relationship:pricing_policy_coverage:read` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 9 |
 | `GET /api/v1/companies/{id}/automatic-price-applications` 🔒 | `perm:commercial-relationship:automatic_price_applications:read` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 9 |
 | `GET /api/v1/companies/{id}/automatic-price-applications/{id}` 🔒 | `perm:commercial-relationship:automatic_price_applications:read` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 9 |
 | `POST /api/v1/companies/{id}/automatic-price-applications/{id}/resolution` 🔒 | `perm:commercial-relationship:automatic_price_applications:resolve` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 9 |

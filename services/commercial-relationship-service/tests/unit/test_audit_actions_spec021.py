@@ -12,8 +12,7 @@ SPEC_021 = (
     "CREATE_PRICING_POLICY", "UPDATE_PRICING_POLICY", "CHANGE_PRICING_POLICY_PERCENTAGE",
     "ASSIGN_PRICING_POLICY_PRESENTATION", "UNASSIGN_PRICING_POLICY_PRESENTATION", "DEACTIVATE_PRICING_POLICY",
     "UPDATE_COMPANY_PRODUCT_PURCHASE_TAX", "RECEIVE_AUTOMATIC_PRICE_REQUEST", "RESOLVE_AUTOMATIC_PRICE",
-    "APPLY_AUTOMATIC_PRICE", "SKIP_AUTOMATIC_PRICE", "END_PRICE_WITHOUT_POLICY", "CANCEL_FUTURE_PRICE",
-    "FAIL_AUTOMATIC_PRICE",
+    "APPLY_AUTOMATIC_PRICE", "SKIP_AUTOMATIC_PRICE", "CANCEL_FUTURE_PRICE", "FAIL_AUTOMATIC_PRICE",
 )
 
 
@@ -25,7 +24,12 @@ def test_action_exists_and_matches_contract(name: str) -> None:
 
 def test_process_actions_are_not_http_actions() -> None:
     assert set(actions.PROCESS_ACTIONS) == {
-        "APPLY_AUTOMATIC_PRICE", "SKIP_AUTOMATIC_PRICE", "END_PRICE_WITHOUT_POLICY", "FAIL_AUTOMATIC_PRICE",
-        "CANCEL_FUTURE_PRICE",
+        "APPLY_AUTOMATIC_PRICE", "SKIP_AUTOMATIC_PRICE", "FAIL_AUTOMATIC_PRICE", "CANCEL_FUTURE_PRICE",
     }
     assert not set(actions.PROCESS_ACTIONS) & set(actions.ACTIONS)
+
+
+def test_end_price_without_policy_was_withdrawn() -> None:
+    """2026-10-16 (RC-021-13): sin política no se cierra ningún precio, así que la acción ya no existe."""
+    assert not hasattr(actions, "END_PRICE_WITHOUT_POLICY")
+    assert "END_PRICE_WITHOUT_POLICY" not in actions.PROCESS_ACTIONS

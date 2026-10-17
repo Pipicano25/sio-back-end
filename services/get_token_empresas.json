@@ -1,0 +1,18 @@
+{
+  "descripcion": "Usuarios de empresas para services/get_token.py (opción 8). Solo nombres de usuario de Keycloak, su grupo real y sus sucursales en Operational Context; nunca contraseñas. Verificado el 2026-10-16 contra Keycloak (grupos) y Operational Context (membresías activas). Para agregar una empresa, añada un elemento a 'empresas'.",
+  "empresas": [
+    {
+      "nombre": "GRUPO DAO S.A.S.",
+      "company_id": "eede165e-71e7-430f-b126-d3899cd36398",
+      "usuarios": [
+        {"usuario": "santiago.rodriguez", "grupo": "supervisores", "sucursales": ["DAO-PPAL", "DAO-CATAY", "DAO-SANJOSE"]},
+        {"usuario": "laura.martinez", "grupo": "ventas", "sucursales": ["DAO-PPAL"]},
+        {"usuario": "andres.ramirez", "grupo": "ventas", "sucursales": ["DAO-PPAL"]},
+        {"usuario": "valentina.gomez", "grupo": "consulta", "sucursales": ["DAO-CATAY"]},
+        {"usuario": "juan.castro", "grupo": "consulta", "sucursales": ["DAO-CATAY"]},
+        {"usuario": "daniela.herrera", "grupo": "consulta", "sucursales": ["DAO-SANJOSE"]},
+        {"usuario": "nicolas.vargas", "grupo": "consulta", "sucursales": ["DAO-SANJOSE"]}
+      ]
+    }
+  ]
+}

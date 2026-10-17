@@ -66,9 +66,24 @@ def test_no_previous_read_was_lost_except_q_c1_exclusions(realm, group) -> None:
     assert not lost, lost
 
 
+# Altas posteriores documentadas: la spec 021 asignó a `supervisores` tres permisos nuevos de otros servicios (políticas
+# de precios, resolución de actualizaciones automáticas y ajuste de la tasa de una línea de compra). No afectan a Party
+# Identity; cualquier otro cambio en estos grupos sigue fallando.
+LATER_ADDITIONS = {
+    "supervisores": {
+        "perm:commercial-relationship:pricing_policies:delete",
+        "perm:commercial-relationship:automatic_price_applications:resolve",
+        "perm:purchase:purchase_line_taxes:override",
+    },
+}
+
+
 @pytest.mark.parametrize("group", ["administradores", "supervisores", "inventario"])
 def test_unchanged_groups_keep_their_roles(realm, group) -> None:
-    assert inventory.group_roles(group, realm) == SNAPSHOT["groups"][group]["roles"]
+    current = inventory.group_roles(group, realm)
+    before = SNAPSHOT["groups"][group]["roles"]
+    assert [role for role in current if role in before] == before  # conserva todos, en el mismo orden
+    assert set(current) - set(before) == LATER_ADDITIONS.get(group, set())
 
 
 @pytest.mark.parametrize("group", inventory.READ_ONLY_GROUPS)

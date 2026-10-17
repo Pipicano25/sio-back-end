@@ -58,3 +58,12 @@ def sequence(seller, real_world):
     )
     assert response.status_code == 201, response.text
     return response.json()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def isolated_targets() -> None:
+    """Barrera de aislamiento antes de la primera prueba (incidente del 2026-10-16): falla si algún destino no es la
+    pila aislada `sio-it-*` (`validation/isolation_guard.py`)."""
+    from tests.integration.support import check_isolation
+
+    check_isolation()

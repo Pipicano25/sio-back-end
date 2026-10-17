@@ -2656,7 +2656,7 @@ La vigencia permite conservar diferentes versiones históricas de un precio sin 
 | `valid_to`                        | `TIMESTAMPTZ`   | nullable           | Finalización de vigencia.               |
 | `status` | `VARCHAR(20)` | NN, CK, DEFAULT `'ACTIVE'` | Estado del precio: `ACTIVE` o `INACTIVE`. |
 | `origin` | `VARCHAR(12)` | CK, nullable | `AUTOMATIC` si lo creó una actualización automática (spec 021); `NULL` = manual. |
-| `closure_reason` | `VARCHAR(30)` | CK, nullable | `AUTOMATIC_SUPERSEDED` o `NO_POLICY` cuando una actualización automática cerró el precio vigente o canceló uno futuro. |
+| `closure_reason` | `VARCHAR(30)` | CK, nullable | `AUTOMATIC_SUPERSEDED` cuando una actualización automática con política cerró el precio vigente o canceló uno futuro (desde el 2026-10-16 no existe `NO_POLICY`: sin política no se cierra ningún precio). |
 | `automatic_application_id` | `UUID` | FK, nullable | `AutomaticPriceApplication` que creó o cerró el precio. |
 | `created_by` | `VARCHAR(255)` | NN | `sub` del token de quien crea el registro (Constitución D1); inmutable. |
 | `updated_by` | `VARCHAR(255)` | NN | `sub` del token de quien realizó la última modificación (Constitución D1). |
@@ -2681,7 +2681,7 @@ La vigencia permite conservar diferentes versiones históricas de un precio sin 
 - Los precios históricos utilizados en ventas no deben eliminarse físicamente.
 - El valor `0` representa un precio real igual a cero; la ausencia de configuración debe representarse mediante la inexistencia de un `PriceListItem`, no mediante un valor cero artificial.
 - Durante el MVP `unit_price` es el **importe final** que paga el cliente: Sales no agrega impuesto (spec 021, `tax_amount = 0`). No es una solución fiscal.
-- Spec 021: en una lista con al menos una política `ACTIVE` en el momento de la recepción, cada recepción física procesada cierra el precio vigente de la presentación, cancela sus precios futuros (`status = INACTIVE`, `closure_reason`) y crea uno nuevo con `origin = AUTOMATIC` y `valid_to = NULL`. Si el precio no cambia, conserva el vigente (y lo deja sin fecha de fin) y aun así cancela los futuros. Una presentación sin política en esa lista pierde su precio (`NO_POLICY`). Las listas sin políticas conservan sus precios manuales.
+- Spec 021: en una lista con al menos una política `ACTIVE` en el momento de la recepción, cada recepción física procesada cierra el precio vigente de la presentación, cancela sus precios futuros (`status = INACTIVE`, `closure_reason`) y crea uno nuevo con `origin = AUTOMATIC` y `valid_to = NULL`. Si el precio no cambia, conserva el vigente (y lo deja sin fecha de fin) y aun así cancela los futuros. Una presentación recibida sin política en esa lista **conserva** su precio vigente y sus futuros (`SKIPPED_NO_POLICY`, RC-021-13). Las listas sin políticas conservan sus precios manuales. Para confirmar una compra, cada presentación debe tener una política aplicable en al menos una lista activa, vigente y de la moneda de la compra (FR-021-35; la cobertura se calcula con las tablas de políticas, sin tablas nuevas).
 - Un precio con `closure_reason` no se reactiva ni se modifica (`409 PRICE_CLOSED_BY_AUTOMATIC_UPDATE`); reactivar la lista tampoco lo revive. Las respuestas exponen `origin`, `closure_reason` y `automatic_application_id`, nunca costos, recargos ni políticas.
 
 > **Reconciliación (2026-10-05):** sección alineada con `specs/010-commercial-relationship-commercial-product`
@@ -2761,7 +2761,7 @@ Resultado del procesamiento de una solicitud en una lista (UQ `request_id`, `pri
 ### Reglas y restricciones
 
 - Costo real unitario = `(subtotal − descuento + impuesto) / cantidad` de la presentación, sin volver a sumar impuestos. Si es menor que el de la recepción anterior, el costo de referencia es el promedio simple de ambos; si es mayor o igual, el actual. Precio = costo de referencia × (1 + recargo/100), con los decimales de la moneda de la lista. No se usan promedios ponderados ni el costo FIFO de Inventory.
-- Estados: `PENDING` → `APPLIED`, `UNCHANGED`, `ENDED_NO_POLICY`, `NO_PRICE_TO_END`, `SKIPPED_LIST_NOT_EFFECTIVE`, `SKIPPED_CURRENCY_MISMATCH`, `SKIPPED_PRESENTATION_INACTIVE` o `SKIPPED_ZERO_COST` (finales); `PENDING` → `FAILED` (se reintenta con espera creciente); `FAILED` → cualquiera de los finales o `RESOLVED` (resolución administrativa). Un trigger impide cambiar un estado final.
+- Estados: `PENDING` → `APPLIED`, `UNCHANGED`, `SKIPPED_NO_POLICY`, `SKIPPED_LIST_NOT_EFFECTIVE`, `SKIPPED_CURRENCY_MISMATCH`, `SKIPPED_PRESENTATION_INACTIVE` o `SKIPPED_ZERO_COST` (finales); `PENDING` → `FAILED` (se reintenta con espera creciente); `FAILED` → cualquiera de los finales o `RESOLVED` (resolución administrativa). Un trigger impide cambiar un estado final.
 - Se procesa en orden de `sequence` por lista y presentación: no avanza si hay una secuencia menor sin terminar o si falta la solicitud anterior. Cada lista y cada presentación son independientes.
 - La lista debe estar activa y vigente al procesar; la política y el recargo son los capturados en `received_at`.
 

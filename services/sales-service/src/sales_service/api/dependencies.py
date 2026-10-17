@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, Request
+from fastapi import Depends, Header, Request
 
 from sales_service.api.identity import HumanIdentity, require_human_user
 from sales_service.application.branch_access import require_membership
@@ -35,6 +35,11 @@ InventoryFactory = Callable[[], InventoryGateway]
 AccessFactory = Callable[[Request], AccessDirectory]
 
 _PRINTABLE = re.compile(r"^[\x21-\x7e]{1,150}$")
+IDEMPOTENCY_HEADER = "Idempotency-Key"
+IDEMPOTENCY_DESCRIPTION = (
+    "Clave de idempotencia de la operación (de 1 a 150 caracteres ASCII imprimibles, sin espacios). "
+    "Repetir la misma clave devuelve el mismo resultado sin duplicar efectos; una operación nueva usa otra clave."
+)
 
 
 class Services:
@@ -115,8 +120,13 @@ def company_reader(company_id: UUID, actor: Annotated[Actor, Depends(get_actor)]
     return company_id
 
 
-def idempotency_key(request: Request) -> str:
-    value = request.headers.get("idempotency-key")
+def idempotency_key(
+    # Declarada con `Header` para que OpenAPI y Swagger la muestren. El valor por omisión `None` mantiene la
+    # validación propia (`IDEMPOTENCY_KEY_REQUIRED`, `INVALID_FORMAT`); `openapi.py` la marca obligatoria.
+    value: Annotated[
+        str | None, Header(alias=IDEMPOTENCY_HEADER, description=IDEMPOTENCY_DESCRIPTION, examples=["venta-0001"])
+    ] = None,
+) -> str:
     if value is None or not value.strip():
         raise ValidationFailedError(
             [field_error("Idempotency-Key", "IDEMPOTENCY_KEY_REQUIRED", "La cabecera Idempotency-Key es obligatoria.")]

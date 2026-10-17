@@ -211,6 +211,7 @@ class FakeAccess:
 class FakeCommercial:
     def __init__(self, world: World) -> None:
         self.availability = Unavailable(COMMERCIAL_RELATIONSHIP)
+        self.uncovered: set[UUID] = set()  # spec 021: presentaciones sin política de ganancia aplicable
         self.suppliers = {world.supplier: SupplierInfo(world.supplier, world.company, world.organization, "Distribuidora Ficticia S.A.S.", "ACTIVE")}
         self.conditions = {
             world.condition: PaymentConditionInfo(
@@ -269,6 +270,16 @@ class FakeCommercial:
     def lookup_presentations(self, ids) -> dict[UUID, CompanyPresentationInfo]:
         self.availability.hit("presentations", tuple(ids))
         return {value: self.presentations[value] for value in ids if value in self.presentations}
+
+    def lookup_pricing_coverage(self, company_id: UUID, currency_code: str, ids) -> dict[UUID, bool]:
+        """Spec 021 (FR-021-35): por omisión toda presentación de la empresa está cubierta; `uncovered` las excluye."""
+        self.availability.hit("pricing_coverage", (company_id, currency_code, tuple(ids)))
+        return {
+            value: value in self.presentations
+            and self.presentations[value].company_id == company_id
+            and value not in self.uncovered
+            for value in ids
+        }
 
     def get_supplier_product(self, supplier_product_id: UUID) -> SupplierProductInfo | None:
         self.availability.hit("supplier_product", supplier_product_id)

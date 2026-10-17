@@ -127,9 +127,11 @@ triggers de inmutabilidad y ciclo de vida. Sin datos iniciales (las secuencias l
 ```bash
 docker compose --file ../../infrastructure/services/sales-service.yaml --env-file ../../infrastructure/.env --profile test up -d sales-test-db
 .venv/Scripts/python.exe -m pytest                     # unitarias, contrato, API, ejemplos
-.venv/Scripts/python.exe -m pytest -m integration      # servicios reales (detiene y reinicia contenedores)
+SIO_TEST_TARGET=isolated .venv/Scripts/python.exe -m pytest -m integration   # solo la pila aislada sio-it-*
 .venv/Scripts/python.exe -m pytest -m performance      # SC-001, SC-002, SC-003, SC-005
 ```
+
+Las pruebas de integración escriben en servicios reales: **solo** se ejecutan contra la pila aislada `sio-it-*` con `SIO_TEST_TARGET=isolated` y las URL de esa pila. La barrera `validation/isolation_guard.py` hace fallar la sesión antes de la primera solicitud si algún destino no es un contenedor con `sio.integration.isolated=true` (incidente del 2026-10-16); `localhost` no basta.
 
 No ejecutar en paralelo suites que usen la misma base de pruebas.
 

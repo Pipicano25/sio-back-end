@@ -165,7 +165,7 @@ class PurchaseDetailResponse(BaseModel):
     updated_by: str
 
     @classmethod
-    def of(cls, detail: PurchaseDetail) -> PurchaseDetailResponse:
+    def of(cls, detail: PurchaseDetail, uncovered: frozenset = frozenset()) -> PurchaseDetailResponse:
         return cls(
             id=detail.id,
             purchase_id=detail.purchase_id,
@@ -186,7 +186,9 @@ class PurchaseDetailResponse(BaseModel):
             tax_amount=fmt(detail.tax_amount, MONEY),
             tax_percentage=fmt(detail.tax_percentage, QUANTITY),
             tax_percentage_source=detail.tax_percentage_source,
-            warnings=["PURCHASE_TAX_NOT_CONFIGURED"] if detail.tax_percentage is None else [],
+            warnings=(["PURCHASE_TAX_NOT_CONFIGURED"] if detail.tax_percentage is None else [])
+            # spec 021 (FR-021-36): solo en las respuestas que crean, agregan o editan líneas
+            + (["PRICING_POLICY_NOT_CONFIGURED"] if detail.company_product_presentation_id in uncovered else []),
             subtotal=fmt(detail.subtotal, MONEY),
             total=fmt(detail.total, MONEY),
             base_quantity=fmt(line_base_quantity(detail), QUANTITY),
@@ -293,7 +295,7 @@ class PurchaseResponse(BaseModel):
             updated_at=purchase.updated_at,
             created_by=purchase.created_by,
             updated_by=purchase.updated_by,
-            lines=[PurchaseDetailResponse.of(line) for line in view.lines] if with_lines else None,
+            lines=[PurchaseDetailResponse.of(line, view.uncovered) for line in view.lines] if with_lines else None,
         )
 
 

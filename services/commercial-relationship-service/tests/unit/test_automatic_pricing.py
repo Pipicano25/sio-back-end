@@ -114,9 +114,11 @@ def _evaluation(**overrides) -> PriceEvaluation:
         ({"currency_matches": False}, Outcome.SKIPPED_CURRENCY_MISMATCH),
         ({"presentation_active": False}, Outcome.SKIPPED_PRESENTATION_INACTIVE),
         ({"current_unit_cost": D("0")}, Outcome.SKIPPED_ZERO_COST),  # CP-28
-        ({"has_policy": False}, Outcome.ENDED_NO_POLICY),
-        ({"has_policy": False, "current_price": None}, Outcome.NO_PRICE_TO_END),
-        ({"has_policy": False, "current_price": None, "has_future_prices": True}, Outcome.ENDED_NO_POLICY),
+        # RC-021-13 (2026-10-16): sin política nunca se toca el precio, haya o no vigente o futuros
+        ({"has_policy": False}, Outcome.SKIPPED_NO_POLICY),
+        ({"has_policy": False, "current_price": None}, Outcome.SKIPPED_NO_POLICY),
+        ({"has_policy": False, "current_price": None, "has_future_prices": True}, Outcome.SKIPPED_NO_POLICY),
+        ({"has_policy": False, "has_future_prices": True}, Outcome.SKIPPED_NO_POLICY),
         ({"new_price": D("3000")}, Outcome.UNCHANGED),  # CP-21
         ({}, Outcome.APPLIED),
         ({"current_price": None}, Outcome.APPLIED),  # CP-01: primer precio

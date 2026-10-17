@@ -222,3 +222,14 @@ def test_cpt03_the_reconciler_also_writes_the_request(world, fakes, make_sequenc
     assert len(result.completed) == 1
     [request] = fetch(test_engine, OUTBOX)
     assert request["sequence"] == 1 and request["created_by"] == "system:purchase-reconciler"
+
+
+def test_confirmation_alone_never_requests_prices_the_receipt_does(buyer, world, make_sequence, confirm, receive, test_engine) -> None:
+    """Decisión aprobada 1 (FR-021-14): solo la recepción física dispara la actualización; confirmar no escribe nada."""
+    make_sequence()
+    purchase = _confirmed(buyer, world, confirm, _arroz(world))
+    assert purchase["status"] == "CONFIRMED" and purchase["receipt_status"] == "PENDING"
+    assert fetch(test_engine, OUTBOX) == [] and fetch(test_engine, SERIES) == []
+    received = receive(purchase)
+    assert received.status_code == 200, received.text
+    assert len(fetch(test_engine, OUTBOX)) == 1 and len(fetch(test_engine, SERIES)) == 1

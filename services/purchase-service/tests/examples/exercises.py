@@ -721,6 +721,24 @@ EXERCISES = [
                     "automática de precios (spec 021); otra presentación del mismo producto sí se admite.",
                 ],
             },
+            confirm(
+                "06-confirmar-sin-politica-de-ganancia.md",
+                "Confirmar con una presentación sin política de ganancia",
+                "COMPRA",
+                2,
+                "impuestos-0001",
+                [
+                    "Spec 021 (FR-021-35): cada presentación debe tener una política de ganancia activa (0 % cuenta) en "
+                    "una lista activa, vigente y de la moneda de la compra. El aceite no la tiene: `409 "
+                    "PRICING_POLICY_NOT_CONFIGURED` con la línea en `errors[]`; la compra sigue en `DRAFT`, sin número "
+                    "ni operación, y la clave no se consume.",
+                    "Basta una lista que la cubra; las demás pueden seguir siendo manuales. Al configurarla en Commercial "
+                    "Relationship, la misma confirmación continúa con las demás reglas. Purchase solo sabe si hay "
+                    "cobertura: no ve porcentajes ni costos.",
+                ],
+                expect=409,
+                before=["sin_politica:aceite"],
+            ),
         ],
     },
 ]

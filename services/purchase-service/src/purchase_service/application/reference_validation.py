@@ -519,6 +519,16 @@ class ReferenceResolver:
         findings.raise_if_any()
         return snapshots
 
+    # -------------------------------------------------------- cobertura de políticas (spec 021)
+
+    def uncovered_presentations(self, company_id: UUID, currency_code: str, presentation_ids: Iterable[UUID]) -> frozenset[UUID]:
+        """Presentaciones sin política de ganancia aplicable (FR-021-35); un fallo de CR es `503` (nunca se asume)."""
+        distinct = list(dict.fromkeys(presentation_ids))
+        if not distinct:
+            return frozenset()
+        covered = self._dirs.commercial.lookup_pricing_coverage(company_id, currency_code, distinct)
+        return frozenset(value for value in distinct if not covered.get(value, False))
+
     # -------------------------------------------------------- usuario operativo
 
     def check_operator(self, company_id: UUID, application_user_id: UUID) -> None:
