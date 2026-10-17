@@ -1,4 +1,4 @@
-# Paso 07 de 13 — Clasificar y registrar atributos
+# Paso 07 de 14 — Clasificar y registrar atributos
 
 Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](06-crear-producto.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](08-crear-presentacion.md)
 

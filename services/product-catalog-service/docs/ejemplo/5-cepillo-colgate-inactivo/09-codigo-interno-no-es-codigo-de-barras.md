@@ -1,4 +1,4 @@
-# Paso 09 de 13 — El código `022348` no se registra
+# Paso 09 de 14 — El código `022348` no se registra
 
 Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](08-crear-presentacion.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](10-agregar-imagen.md)
 

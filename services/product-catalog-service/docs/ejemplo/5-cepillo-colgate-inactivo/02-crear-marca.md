@@ -1,4 +1,4 @@
-# Paso 02 de 13 — Crear la marca Colgate
+# Paso 02 de 14 — Crear la marca Colgate
 
 Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](01-consultar-datos-base.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](03-crear-categorias.md)
 

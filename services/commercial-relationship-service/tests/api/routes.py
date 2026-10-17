@@ -103,6 +103,13 @@ SPEC_021_ROUTES: tuple[Route, ...] = (
     Route("POST", "/api/v1/companies/{company_id}/automatic-price-applications/{application_id}/resolution", "automatic_price_applications", "resolve", "company", True),
 )
 
+# Spec 022 (CR-1 y CR-2): búsquedas de solo lectura. Sus permisos, su aislamiento y sus límites los prueban
+# `test_company_products_search.py` y `test_presentations_by_products.py`; aquí solo se contrastan con el OpenAPI.
+SPEC_022_ROUTES: tuple[Route, ...] = (
+    Route("POST", "/api/v1/companies/{company_id}/company-products/search", "company_products", "read", "company", False),
+    Route("POST", "/api/v1/companies/{company_id}/company-product-presentations/by-products", "company_product_presentations", "read", "company", False),
+)
+
 RESOURCES = (
     "company_products",
     "company_customers",

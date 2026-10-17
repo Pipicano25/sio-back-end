@@ -82,6 +82,12 @@ services:
       ASSET_STORAGE_BUCKET: ${OBJECT_STORAGE_BUCKET:-sio-product-assets}
       ASSET_STORAGE_ACCESS_KEY: ${PRODUCT_CATALOG_ASSET_STORAGE_ACCESS_KEY:-}
       ASSET_STORAGE_SECRET_KEY: ${PRODUCT_CATALOG_ASSET_STORAGE_SECRET_KEY:-}
+      # Spec 022: URL pública base de image_url y secreto HMAC de las referencias de imagen. Vacíos por
+      # defecto: sin ellos no se entregan image_url ni existe GET /api/v1/public/product-images. Se
+      # configuran en el entorno persistente solo con autorización (FR-022-99).
+      PRODUCT_CATALOG_PUBLIC_BASE_URL: ${PRODUCT_CATALOG_PUBLIC_BASE_URL:-}
+      PRODUCT_IMAGE_REF_SECRET: ${PRODUCT_IMAGE_REF_SECRET:-}
+      PRODUCT_IMAGE_REF_SECRET_PREVIOUS: ${PRODUCT_IMAGE_REF_SECRET_PREVIOUS:-}
 
     ports:
       - "127.0.0.1:${PRODUCT_CATALOG_SERVICE_PORT:-8103}:8000"

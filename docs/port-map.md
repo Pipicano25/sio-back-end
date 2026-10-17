@@ -30,7 +30,7 @@ Reglas:
 | Proyecto | Archivo compose | Archivo de variables | Contenido |
 |---|---|---|---|
 | `sio` | `infrastructure/compose.yaml` | `infrastructure/.env` | Keycloak, su base, RabbitMQ y la red `sio-network` |
-| `<servicio>` | `infrastructure/services/<servicio>.yaml` | `infrastructure/.env` | API (`8101–8111`), base (`5440–5450`) y base de pruebas (perfil `test`, `55433–55453`) |
+| `<servicio>` | `infrastructure/services/<servicio>.yaml` | `infrastructure/.env` | API (`8101–8112`), base (`5440–5450`) y base de pruebas (perfil `test`, `55433–55453`) |
 
 `infrastructure/scripts/rebuild-all.sh` levanta todos los proyectos (sin el
 perfil `test`). La base de pruebas se levanta a pedido, desde la raíz:
@@ -80,6 +80,7 @@ operational-context `8004`, commercial-relationship `8005`), sin compose.
 | inventory-service | `sio-inventory-service` | `INVENTORY_SERVICE_PORT` | `8109` | `sio-inventory-db` | `INVENTORY_DB_PORT` | `5448` | `INVENTORY_TEST_DB_PORT` | `55449` |
 | audit-service | `sio-audit-service` | `AUDIT_SERVICE_PORT` | `8110` | `sio-audit-db` | `AUDIT_DB_PORT` | `5449` | `AUDIT_TEST_DB_PORT` | `55451` |
 | workflow-service | *(reservado)* | `WORKFLOW_SERVICE_PORT` | `8111` | `sio-workflow-db` | `WORKFLOW_DB_PORT` | `5450` | `WORKFLOW_TEST_DB_PORT` | `55453` |
+| product-inventory-query-service | `sio-product-inventory-query-service` | `PRODUCT_INVENTORY_QUERY_SERVICE_PORT` | `8112` | *(sin base de datos)* | — | — | — | — |
 
 *(reservado)*: el servicio aún no tiene contenedor de aplicación en
 `infrastructure/services/<servicio>.yaml`; el puerto queda apartado para cuando se agregue.

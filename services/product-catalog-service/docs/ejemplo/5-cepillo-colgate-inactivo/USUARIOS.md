@@ -63,6 +63,9 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 | [13](13-verificar-producto-inactivo.md) | 1. Error esperado: agregar una presentación | `POST /api/v1/products/{id}/presentations` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [13](13-verificar-producto-inactivo.md) | 2. Buscar productos inactivos | `GET /api/v1/products` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [13](13-verificar-producto-inactivo.md) | 3. Consultar el detalle | `GET /api/v1/products/{id}` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [14](14-consultas-por-lotes.md) | 1. Resumen del producto por lotes | `POST /api/v1/products/summaries/batch-lookup` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [14](14-consultas-por-lotes.md) | 2. Productos de la marca, incluidos los inactivos | `POST /api/v1/products/match` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [14](14-consultas-por-lotes.md) | 3. ¿El cepillo tiene una imagen apta? | `POST /api/v1/products/match` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Ejemplos de uso con los usuarios
 
@@ -121,15 +124,6 @@ Respuesta `403 Forbidden`:
 ```
 
 `consulta.test` solo tiene lecturas explícitas (en el catálogo: `perm:product-catalog:attribute-definitions:read`, `perm:product-catalog:brands:read`, `perm:product-catalog:categories:read`, `perm:product-catalog:global_categories:read`, `perm:product-catalog:global_category_attributes:read`, `perm:product-catalog:global_product_attribute_values:read`, `perm:product-catalog:global_products:read`, `perm:product-catalog:global_units_of_measure:read`, `perm:product-catalog:group-types:read`, `perm:product-catalog:packaging-types:read`, `perm:product-catalog:product_assets:read`, `perm:product-catalog:product_attribute_definitions:read`, `perm:product-catalog:products:read`, `perm:product-catalog:units-of-measure:read`): puede **leer**, pero la URL exige `perm:product-catalog:brands:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
-
-### 3. `consulta.test` consulta el resultado (permitido)
-
-```bash
-curl -s -X GET "http://localhost:8003/api/v1/products?status=INACTIVE&search=cepillo" \
-  -H "Authorization: Bearer $TOKEN_CONSULTA"
-```
-
-Responde `200 OK` con la misma información que ve `admin.test` en el paso 13: `perm:product-catalog:products:read` cubre `perm:product-catalog:products:read`. Lo mismo pasa con `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, que tienen lectura sobre `product-catalog`.
 
 ### 4. `supervisor.test` intenta inactivar (rechazado)
 

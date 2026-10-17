@@ -64,6 +64,9 @@ READS_BY_POST = {
     ("POST", "/api/v1/company-product-presentations/batch-lookup"),
     ("POST", f"{C}/applicable-prices/resolve"),
     ("POST", f"{C}/pricing-policies/coverage"),  # spec 021 (FR-021-35): consulta de cobertura, sin efectos
+    # Spec 022 (CR-1, CR-2): búsquedas de solo lectura, sin auditoría.
+    ("POST", f"{C}/company-products/search"),
+    ("POST", f"{C}/company-product-presentations/by-products"),
 }
 
 

@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
-from commercial_relationship_service.api.company_scope import check_company, load_scoped
+from commercial_relationship_service.api.company_scope import check_company, company_dependency, load_scoped
 from commercial_relationship_service.api.dependencies import (
     get_identity,
     get_product_repository,
@@ -23,10 +24,15 @@ from commercial_relationship_service.api.schemas.company_product import (
     BatchLookupResponse,
     CompanyProductCreate,
     CompanyProductResponse,
+    CompanyProductSearchItem,
+    CompanyProductSearchRequest,
+    CompanyProductSearchResponse,
     CompanyProductUpdate,
+    SearchPosition,
 )
 from commercial_relationship_service.application.company_product_service import (
     CompanyProductService,
+    ProductSearchCriteria,
 )
 from commercial_relationship_service.application.company_scope import (
     SERVICE,
@@ -84,6 +90,35 @@ def _resource(*, write: bool, allow_inactive_company: bool = False, lookup: bool
     return dependency
 
 
+def _position_value(model, key: str) -> str:
+    value = getattr(model, key)
+    return value.isoformat() if isinstance(value, datetime) else str(value)
+
+
+def _criteria(body: CompanyProductSearchRequest) -> ProductSearchCriteria:
+    after = None
+
+    if body.after is not None:
+        raw = body.after.k[0]
+        after = (datetime.fromisoformat(raw) if body.sort.key == "created_at" else raw, body.after.id)
+
+    return ProductSearchCriteria(
+        status=body.status,
+        limit=body.limit,
+        sort_key=body.sort.key,
+        descending=body.sort.direction == "desc",
+        search=body.search,
+        internal_code=body.internal_code,
+        sku=body.sku,
+        is_purchasable=body.is_purchasable,
+        is_sellable=body.is_sellable,
+        inventory_control_enabled=body.inventory_control_enabled,
+        company_product_ids=body.company_product_ids,
+        global_product_ids=body.global_product_ids,
+        after=after,
+    )
+
+
 def build_router(auth: SIOAuth) -> APIRouter:
     """Construye el router de productos empresariales."""
     router = APIRouter(tags=["Productos empresariales"])
@@ -117,6 +152,37 @@ def build_router(auth: SIOAuth) -> APIRouter:
             page_size=page.page_size,
             total_records=page.total_records,
             total_pages=page.total_pages,
+        )
+
+    @router.post(
+        "/companies/{company_id}/company-products/search",
+        response_model=CompanyProductSearchResponse,
+        dependencies=[permission("read")],
+        summary="Buscar productos empresariales con continuación por posición (spec 022, CR-1)",
+        description=(
+            "Lectura progresiva para consumidores que paginan sin conteo. Mismos filtros que el listado, `search` "
+            "extendido al SKU de las presentaciones, `internal_code` y `sku` exactos y modo evaluador con hasta 100 "
+            "ids. Orden `<clave>, id`; cada elemento trae su `position`, que se reenvía en `after`. Sin "
+            "`total_records`: `has_more` indica si hay más. El listado `GET` no cambia."
+        ),
+    )
+    def search_products(
+        body: CompanyProductSearchRequest,
+        company_id: UUID = Depends(company_dependency(write=False, lookup=True)),
+        service: CompanyProductService = Depends(get_product_service),
+    ):
+        rows, has_more = service.search(company_id, _criteria(body))
+        return CompanyProductSearchResponse(
+            items=[
+                CompanyProductSearchItem.model_validate(
+                    {
+                        **CompanyProductResponse.model_validate(row).model_dump(),
+                        "position": SearchPosition(k=[_position_value(row, body.sort.key)], id=row.id),
+                    }
+                )
+                for row in rows
+            ],
+            has_more=has_more,
         )
 
     @router.post(

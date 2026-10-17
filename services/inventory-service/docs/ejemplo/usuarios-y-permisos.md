@@ -107,3 +107,7 @@ curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
 | 8 | 6 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `perm:inventory:product-policies:update` |
 | 8 | 7 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies/<POLITICA>/deactivate` | `perm:inventory:product-policies:update` |
 | 8 | 8 | `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies?branch_id=d44b0000-0000-4000-8000-000000000001` | `perm:inventory:product-policies:read` |
+| 8 | 9 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `perm:inventory:product-policies:update` |
+| 8 | 10 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/branches/d44b0000-0000-4000-8000-000000000001/inventory-policies/lookup` | `perm:inventory:product-policies:read` |
+| 8 | 11 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-product-sets` | `perm:inventory:balances:read` |
+| 8 | 12 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-summary` | `perm:inventory:balances:read` |

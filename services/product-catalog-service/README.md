@@ -59,6 +59,8 @@ Copie `.env.example` a `.env` (el `.env` no se versiona).
 | `SIO_AUTH_ISSUER`, `SIO_AUTH_JWKS_URL`, `SIO_AUTH_AUDIENCE`      | Configuración de `sio-auth`                                 | `http://localhost:8081/realms/sio`, `sio-api`                |
 | `PARTY_IDENTITY_SERVICE_BASE_URL`                                | URL base de Party Identity, **incluido su prefijo de ruta** | `http://localhost:8101/api/v1`                                   |
 | `PARTY_IDENTITY_TIMEOUT_SECONDS`                                 | Tiempo de espera de la validación del fabricante            | `3`                                                          |
+| `PRODUCT_CATALOG_PUBLIC_BASE_URL` | URL pública base con la que se construye `image_url` (spec 022) | `http://localhost:8103` |
+| `PRODUCT_IMAGE_REF_SECRET`, `PRODUCT_IMAGE_REF_SECRET_PREVIOUS` | Secreto HMAC de las referencias de imagen (al menos 32 bytes) y el saliente durante una rotación. Sin secreto o sin URL base no hay `image_url` | solo en `.env` |
 
 ## Arranque local
 
@@ -205,6 +207,15 @@ base detenida: `docker start sio-product-catalog-db`.
 - Primer uso: `POST /api/v1/products/{id}/first-use` (permiso `first-use:register`, servicios que
   adoptan) y `…/first-use/manual` (permiso `first-use:register-manual`). La marca es irreversible y
   bloquea la unidad base y la equivalencia física de la presentación.
+- Resumen por lotes (spec 022, PC-1): `POST /api/v1/products/summaries/batch-lookup` con hasta 100
+  ids devuelve nombre canónico, tipo, estado, marca, unidad base, categorías e identificadores `ACTIVE`,
+  `has_image` (imagen principal `ACTIVE` JPEG, PNG o WebP en el almacenamiento de SIO con clave derivada
+  del SHA-256) e `image_url` (URL absoluta y firmada, o `null`). Número fijo de consultas por lote.
+- Productos por filtros (spec 022, PC-2): `POST /api/v1/products/match`. Con `candidate_ids` (hasta 100)
+  devuelve los que cumplen; sin ellos, recorre en orden de nombre canónico normalizado e `id` con
+  `after` y `limit` (1 a 100) y `has_more`, sin conteos. Filtros: marcas, categorías (con
+  descendientes), identificador exacto, tipo, estado (`ACTIVE` por defecto) y `has_image`.
+- Lote de unidades: desde la spec 022 incluye `code` y `name` (campos aditivos).
 
 ## Permisos
 

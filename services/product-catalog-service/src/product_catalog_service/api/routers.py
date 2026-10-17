@@ -23,6 +23,7 @@ def include_domain_routers(app: FastAPI, auth: SIOAuth) -> None:
         product_attribute_values,
         product_categories,
         product_group_assignments,
+        product_summaries,
         products,
         units_of_measure,
     )
@@ -33,6 +34,7 @@ def include_domain_routers(app: FastAPI, auth: SIOAuth) -> None:
         brands.build_router,
         categories.build_router,
         attribute_definitions.build_router,
+        product_summaries.build_router,  # spec 022: antes de las rutas con {product_id}
         products.build_router,
         product_categories.build_router,
         product_attribute_values.build_router,

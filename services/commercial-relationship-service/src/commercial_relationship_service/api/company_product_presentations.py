@@ -26,6 +26,9 @@ from commercial_relationship_service.api.schemas.company_product_presentation im
     PresentationBatchLookupItem,
     PresentationBatchLookupRequest,
     PresentationBatchLookupResponse,
+    PresentationByProductItem,
+    PresentationsByProductsRequest,
+    PresentationsByProductsResponse,
 )
 from commercial_relationship_service.application.company_product_presentation_service import (
     CompanyProductPresentationService,
@@ -48,6 +51,10 @@ _BATCH_FIELDS = (
     "is_default_sale",
     "status",
     "version",
+    # Spec 022 (CR-2): aditivos.
+    "internal_code",
+    "sku",
+    "reference_code",
 )
 
 
@@ -123,6 +130,24 @@ def build_router(auth: SIOAuth) -> APIRouter:
         model = service.adopt(company_id, body.model_dump(), actor=actor)
         response.headers["Location"] = f"/api/v1{BASE}/{model.id}"
         return CompanyProductPresentationResponse.model_validate(model)
+
+    @router.post(
+        "/companies/{company_id}" + BASE + "/by-products",
+        response_model=PresentationsByProductsResponse,
+        dependencies=[permission("read")],
+        summary="Presentaciones de varios productos empresariales (spec 022, CR-2)",
+        description=(
+            "Todas las presentaciones de hasta 100 productos de la empresa, en orden `company_product_id, id`. "
+            "Los productos de otra empresa no aparecen. `status` por defecto `ALL`."
+        ),
+    )
+    def presentations_by_products(
+        body: PresentationsByProductsRequest,
+        company_id: UUID = Depends(company_dependency(write=False, lookup=True)),
+        repository=Depends(get_presentation_repository),
+    ):
+        rows = repository.list_by_products(company_id, body.company_product_ids, status=body.status)
+        return PresentationsByProductsResponse(items=[PresentationByProductItem.model_validate(row) for row in rows])
 
     @router.post(
         BASE + "/batch-lookup",

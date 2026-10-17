@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from commercial_relationship_service.api.schemas.common import (
     AuditedResponse,
@@ -79,7 +80,55 @@ class PresentationBatchLookupItem(BaseModel):
     is_default_sale: bool | None = None
     status: str | None = None
     version: int | None = None
+    # Spec 022 (CR-2, FR-022-81): campos aditivos; los anteriores no cambian.
+    internal_code: str | None = None
+    sku: str | None = None
+    reference_code: str | None = None
 
 
 class PresentationBatchLookupResponse(BaseModel):
     items: list[PresentationBatchLookupItem]
+
+
+# ------------------------------------------------- spec 022, CR-2 (FR-022-81)
+
+BY_PRODUCTS_LIMIT = 100
+
+
+class PresentationsByProductsRequest(StrictModel):
+    """Presentaciones de 1 a 100 productos de la empresa; el límite se valida tras quitar duplicados."""
+
+    company_product_ids: list[UUID] = Field(min_length=1)
+    status: Literal["ACTIVE", "INACTIVE", "ALL"] = "ALL"
+
+    @field_validator("company_product_ids")
+    @classmethod
+    def _unique(cls, value: list[UUID]) -> list[UUID]:
+        unique = list(dict.fromkeys(value))
+        if len(unique) > BY_PRODUCTS_LIMIT:
+            raise ValueError(f"Se admiten como máximo {BY_PRODUCTS_LIMIT} productos.")
+        return unique
+
+
+class PresentationByProductItem(BaseModel):
+    """Presentación con los campos del lote actual más sus códigos (spec 022)."""
+
+    model_config = {"from_attributes": True}
+
+    id: UUID
+    company_id: UUID
+    company_product_id: UUID
+    global_product_presentation_id: UUID
+    internal_code: str | None
+    sku: str | None
+    reference_code: str | None
+    is_purchasable: bool
+    is_sellable: bool
+    is_default_purchase: bool
+    is_default_sale: bool
+    status: str
+    version: int
+
+
+class PresentationsByProductsResponse(BaseModel):
+    items: list[PresentationByProductItem]

@@ -16,6 +16,10 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 | 6 | [06-politica-duplicada.md](06-politica-duplicada.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `admin.test` | `409` |
 | 7 | [07-inactivar.md](07-inactivar.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies/<POLITICA>/deactivate` | `admin.test` | `200` |
 | 8 | [08-consultar-politicas.md](08-consultar-politicas.md) | `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies?branch_id=d44b0000-0000-4000-8000-000000000001` | `inventario.test` | `200` |
+| 9 | [09-nueva-politica-del-arroz.md](09-nueva-politica-del-arroz.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `admin.test` | `201` |
+| 10 | [10-politicas-por-lote.md](10-politicas-por-lote.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/branches/d44b0000-0000-4000-8000-000000000001/inventory-policies/lookup` | `inventario.test` | `200` |
+| 11 | [11-pares-bajo-minimo.md](11-pares-bajo-minimo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-product-sets` | `inventario.test` | `200` |
+| 12 | [12-resumen.md](12-resumen.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-summary` | `inventario.test` | `200` |
 
 ## Por qué este orden
 

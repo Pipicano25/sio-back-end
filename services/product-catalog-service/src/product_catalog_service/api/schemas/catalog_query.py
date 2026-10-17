@@ -43,6 +43,9 @@ class UnitLookupItem(BaseModel):
     status: str | None = None
     measurement_type: str | None = None
     allows_decimals: bool | None = None
+    # Spec 022 (PC-3, FR-022-84): campos aditivos.
+    code: str | None = None
+    name: str | None = None
 
 
 class ProductLookupResponse(BaseModel):

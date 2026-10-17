@@ -50,6 +50,10 @@ ROUTES: list[tuple[str, str, str]] = [
     ("GET", f"{_C}/branches/{BRANCH}/valuation", "perm:inventory:valuation:read"),
     ("GET", f"{_C}/branches/{BRANCH}/valuation/{PRODUCT}/layers", "perm:inventory:valuation:read"),
     ("GET", f"{_C}/inventory-movements/{MOVEMENT}/cost-consumptions", "perm:inventory:valuation:read"),
+    # Spec 022: INV-1, INV-2 e INV-3 (INV-2 e INV-3 exigen además `product-policies:read`; se rechaza el primero).
+    ("POST", f"{_C}/branches/{BRANCH}/inventory-policies/lookup", "perm:inventory:product-policies:read"),
+    ("POST", f"{_C}/inventory-product-sets", "perm:inventory:balances:read"),
+    ("POST", f"{_C}/inventory-summary", "perm:inventory:balances:read"),
 ]
 
 HUMAN_ONLY: set[tuple[str, str]] = {

@@ -274,7 +274,19 @@ base detenida: `docker start sio-commercial-relationship-db`.
   `company_products:read`; no da alcance de plataforma.
 - Consulta por lotes: `POST /api/v1/company-products/batch-lookup` y
   `POST /api/v1/company-product-presentations/batch-lookup` con hasta 100 UUID; los ausentes o fuera de
-  alcance se devuelven con solo `id` y `found: false`.
+  alcance se devuelven con solo `id` y `found: false`. Desde la spec 022 el lote de presentaciones
+  incluye además `internal_code`, `sku` y `reference_code` (campos aditivos).
+- Búsqueda progresiva (spec 022, CR-1): `POST /api/v1/companies/{company_id}/company-products/search`
+  con los filtros del listado, `search` extendido al SKU de las presentaciones (sin repetir el producto),
+  `internal_code` y `sku` exactos, `sort` (`display_name`, `internal_code` o `created_at`; desempate por
+  `id`), `limit` de 1 a 100 y `after` (la `position` del último elemento usado). Sin `total_records`:
+  `has_more` indica si hay más. Con `company_product_ids` o `global_product_ids` (hasta 100) evalúa los
+  filtros solo sobre esos productos. Exige `company_products:read`; la cuenta técnica usa
+  `platform:lookup`. El listado `GET` no cambia.
+- Presentaciones por productos (spec 022, CR-2):
+  `POST /api/v1/companies/{company_id}/company-product-presentations/by-products` con hasta 100
+  `company_product_ids` y `status` (`ALL` por defecto); orden `company_product_id, id`. Exige
+  `company_product_presentations:read`.
 
 ## Permisos
 

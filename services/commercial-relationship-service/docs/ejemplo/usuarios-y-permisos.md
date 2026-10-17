@@ -66,12 +66,12 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 
 | Método y URL | Permiso requerido | admin | supervisor | compras | ventas | inventario | reportes | consulta | Ejercicios |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `GET http://localhost:8004/api/v1/me/operational-context` | `perm:operational-context:application_users:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5, 6, 7, 8, 9 |
-| `GET http://localhost:8003/api/v1/products/by-identifier/7707355056876` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 4, 5, 6, 7, 8, 9 |
-| `GET http://localhost:8003/api/v1/products/by-identifier/7706634002856` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 4 |
+| `GET http://localhost:8004/api/v1/me/operational-context` | `perm:operational-context:application_users:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 |
+| `GET http://localhost:8003/api/v1/products/by-identifier/7707355056876` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 4, 5, 6, 7, 8, 9, 10 |
+| `GET http://localhost:8003/api/v1/products/by-identifier/7706634002856` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 4, 10 |
 | `GET http://localhost:8003/api/v1/products/by-identifier/7701021118264` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
 | `GET http://localhost:8003/api/v1/products` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
-| `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 1, 4, 5, 6, 7, 8, 9 |
+| `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 1, 4, 5, 6, 7, 8, 9, 10 |
 | `PUT /api/v1/company-products/{id}` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 1 |
 | `GET /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
 | `POST /api/v1/company-products/batch-lookup` | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
@@ -93,8 +93,8 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 | `POST /api/v1/company-suppliers/{id}/unblock` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 3 |
 | `POST /api/v1/company-suppliers/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_suppliers:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 3 |
 | `GET /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 3 |
-| `GET http://localhost:8003/api/v1/products/{id}/presentations` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 4, 5, 6, 7, 9 |
-| `POST /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 4, 5, 6, 7, 9 |
+| `GET http://localhost:8003/api/v1/products/{id}/presentations` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 4, 5, 6, 7, 9, 10 |
+| `POST /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 4, 5, 6, 7, 9, 10 |
 | `GET /api/v1/company-product-presentations/{id}` 🔒 | `perm:commercial-relationship:company_product_presentations:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 4 |
 | `POST /api/v1/company-product-presentations/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_product_presentations:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 4 |
 | `GET /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 4 |
@@ -102,7 +102,7 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 | `GET http://localhost:8105/global-payment-condition-types` | `perm:payment-reference:global_payment_condition_types:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 5 |
 | `POST /api/v1/companies/{id}/supplier-products` 🔒 | `perm:commercial-relationship:supplier_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 5 |
 | `POST /api/v1/companies/{id}/supplier-payment-conditions` 🔒 | `perm:commercial-relationship:supplier_payment_conditions:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 5 |
-| `GET http://localhost:8003/api/v1/products/by-identifier/7702057716226` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 6, 7, 8 |
+| `GET http://localhost:8003/api/v1/products/by-identifier/7702057716226` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 6, 7, 8, 10 |
 | `POST /api/v1/companies/{id}/price-lists` 🔒 | `perm:commercial-relationship:price_lists:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 6, 7, 9 |
 | `POST /api/v1/companies/{id}/price-list-items` 🔒 | `perm:commercial-relationship:price_list_items:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 6 |
 | `PUT /api/v1/price-list-items/{id}` 🔒 | `perm:commercial-relationship:price_list_items:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 6 |
@@ -121,6 +121,8 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 | `GET /api/v1/companies/{id}/automatic-price-applications/{id}` 🔒 | `perm:commercial-relationship:automatic_price_applications:read` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 9 |
 | `POST /api/v1/companies/{id}/automatic-price-applications/{id}/resolution` 🔒 | `perm:commercial-relationship:automatic_price_applications:resolve` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 9 |
 | `GET /api/v1/companies/{id}/price-list-items` 🔒 | `perm:commercial-relationship:price_list_items:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 9 |
+| `POST /api/v1/companies/{id}/company-products/search` 🔒 | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 10 |
+| `POST /api/v1/companies/{id}/company-product-presentations/by-products` 🔒 | `perm:commercial-relationship:company_product_presentations:read` | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 10 |
 
 ## Permisos que no son obvios
 

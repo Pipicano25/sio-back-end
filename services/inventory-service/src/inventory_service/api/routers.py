@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from sio_auth import SIOAuth
 
-from inventory_service.api import adjustments, counts, entries, outputs, policies, queries, valuation
+from inventory_service.api import adjustments, counts, entries, inventory_reads, outputs, policies, queries, valuation
 
 
 def include_api_routers(app: FastAPI, auth: SIOAuth, *, prefix: str) -> None:
@@ -17,3 +17,4 @@ def include_api_routers(app: FastAPI, auth: SIOAuth, *, prefix: str) -> None:
     app.include_router(adjustments.build_router(auth), prefix=prefix)
     app.include_router(counts.build_router(auth), prefix=prefix)
     app.include_router(policies.build_router(auth), prefix=prefix)
+    app.include_router(inventory_reads.build_router(auth), prefix=prefix)  # spec 022: INV-1, INV-2, INV-3

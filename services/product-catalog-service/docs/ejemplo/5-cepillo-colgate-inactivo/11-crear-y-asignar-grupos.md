@@ -1,4 +1,4 @@
-# Paso 11 de 13 — Crear y asignar los grupos
+# Paso 11 de 14 — Crear y asignar los grupos
 
 Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](10-agregar-imagen.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](12-inactivar-producto.md)
 

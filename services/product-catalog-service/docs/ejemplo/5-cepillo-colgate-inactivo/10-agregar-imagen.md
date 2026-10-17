@@ -1,4 +1,4 @@
-# Paso 10 de 13 — Agregar la imagen del producto
+# Paso 10 de 14 — Agregar la imagen del producto
 
 Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](09-codigo-interno-no-es-codigo-de-barras.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](11-crear-y-asignar-grupos.md)
 

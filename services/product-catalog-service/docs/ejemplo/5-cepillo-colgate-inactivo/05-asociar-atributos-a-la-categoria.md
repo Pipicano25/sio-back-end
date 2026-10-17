@@ -1,4 +1,4 @@
-# Paso 05 de 13 — Asociar los atributos a la categoría
+# Paso 05 de 14 — Asociar los atributos a la categoría
 
 Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](04-crear-atributos.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](06-crear-producto.md)
 

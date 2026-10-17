@@ -9,5 +9,6 @@ from tests.examples.ex6 import EX6
 from tests.examples.ex7 import EX7
 from tests.examples.ex8 import EX8
 from tests.examples.ex9 import EX9
+from tests.examples.ex10 import EX10
 
-EXERCISES = [EX1, EX2, EX3, EX4, EX5, EX6, EX7, EX8, EX9]
+EXERCISES = [EX1, EX2, EX3, EX4, EX5, EX6, EX7, EX8, EX9, EX10]

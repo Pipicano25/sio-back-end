@@ -115,6 +115,12 @@ SERVICES=(
     sales-service
 )
 
+# Microservicios con imagen propia y SIN base de datos (no se migran ni se siembran):
+# product-inventory-query-service es de solo lectura y compone por HTTP (spec 022).
+STATELESS_SERVICES=(
+    product-inventory-query-service
+)
+
 # Proyectos compose del entorno: primero la infraestructura, luego uno por
 # cada archivo de infrastructure/services/ (incluye los que aún solo tienen base).
 PROJECTS=("$INFRA_PROJECT")
@@ -317,7 +323,7 @@ summary() {
         echo "Accesos (docs/port-map.md):"
         printf '  %-29s %s\n' "Keycloak admin" "${KEYCLOAK_PUBLIC_URL}/admin  (realm: ${KEYCLOAK_REALM})"
         printf '  %-29s %s\n' "RabbitMQ management" "http://localhost:${RABBITMQ_MANAGEMENT_PORT}"
-        for i in "${SERVICES[@]}"; do
+        for i in "${SERVICES[@]}" "${STATELESS_SERVICES[@]}"; do
             var="${i//-/_}"; var="${var^^}_PORT"
             printf '  %-29s http://localhost:%s\n' "$i" "${!var:-?}"
         done
@@ -367,7 +373,7 @@ trap 'summary $?' EXIT
 # ve afectado: ahí solo se advierte.
 step "Verificando permisos de las carpetas de los servicios"
 UNREADABLE=()
-for service in "${SERVICES[@]}"; do
+for service in "${SERVICES[@]}" "${STATELESS_SERVICES[@]}"; do
     while read -r dir; do
         ls -A "$dir" >/dev/null 2>&1 || UNREADABLE+=("$dir")
     done < <(find "$REPO_DIR/services/$service" -maxdepth 2 -type d \
@@ -556,11 +562,11 @@ else
 fi
 
 step "Construyendo microservicios ${BUILD_ARGS[*]:-}"
-for service in "${SERVICES[@]}"; do
+for service in "${SERVICES[@]}" "${STATELESS_SERVICES[@]}"; do
     echo "--- $service"
     compose "$(project_of "$service")" build "${BUILD_ARGS[@]}" "$service"
 done
-note "Imágenes construidas: keycloak ${SERVICES[*]}${BUILD_ARGS[*]:+ (${BUILD_ARGS[*]})}"
+note "Imágenes construidas: keycloak ${SERVICES[*]} ${STATELESS_SERVICES[*]}${BUILD_ARGS[*]:+ (${BUILD_ARGS[*]})}"
 
 step "Levantando el resto de servicios y esperando healthchecks"
 for project in "${PROJECTS[@]}"; do

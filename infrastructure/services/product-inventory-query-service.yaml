@@ -1,0 +1,61 @@
+name: product-inventory-query-service
+
+# Proyecto compose "product-inventory-query-service" (única definición Compose del microservicio,
+# regla 3 de docs/port-map.md). Servicio de solo lectura y SIN base de datos (spec 022, A-02): solo
+# el contenedor de la aplicación, unido a "sio-network", creada por el proyecto "sio"
+# (infrastructure/compose.yaml), donde viven Keycloak y los servicios que consulta.
+# No hay dependencia de arranque: si CR, PC, Inventory u OC no están disponibles, cada consulta
+# responde 503 (FR-022-71); /health/ready solo depende del JWKS de Keycloak (FR-022-78).
+
+services:
+  product-inventory-query-service:
+    build:
+      context: ../..
+      dockerfile: services/product-inventory-query-service/Dockerfile
+    image: sio/product-inventory-query-service:${SIO_SERVICES_VERSION}
+    container_name: sio-product-inventory-query-service
+    restart: unless-stopped
+    environment:
+      # El issuer debe coincidir con KEYCLOAK_PUBLIC_URL; las llaves se obtienen dentro de sio-network.
+      SIO_AUTH_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+      SIO_AUTH_AUDIENCE: sio-api
+      SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
+      # Dependencias (specs/022-product-inventory-query-service/contracts/dependencies.md).
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+      COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
+      PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
+      INVENTORY_SERVICE_BASE_URL: http://inventory-service:8000/api/v1
+      # Tiempos (RNF-022-3, FR-022-136): trabajo + una llamada <= presupuesto.
+      PIQS_DEPENDENCY_TIMEOUT_SECONDS: ${PIQS_DEPENDENCY_TIMEOUT_SECONDS:-3}
+      PIQS_REQUEST_BUDGET_SECONDS: ${PIQS_REQUEST_BUDGET_SECONDS:-8}
+      PIQS_WORK_TIME_SECONDS: ${PIQS_WORK_TIME_SECONDS:-5}
+      PIQS_MAX_BATCHES_PER_REQUEST: ${PIQS_MAX_BATCHES_PER_REQUEST:-5}
+      PIQS_BATCH_MIN: ${PIQS_BATCH_MIN:-20}
+      PIQS_BATCH_FACTOR: ${PIQS_BATCH_FACTOR:-2}
+      PIQS_BATCH_MAX: ${PIQS_BATCH_MAX:-40}
+      PIQS_MAX_PARALLEL_CALLS: ${PIQS_MAX_PARALLEL_CALLS:-8}
+      # Cursor firmado (FR-022-145 a FR-022-147): secreto solo en infrastructure/.env.
+      PIQS_CURSOR_SECRET: ${PIQS_CURSOR_SECRET}
+      PIQS_CURSOR_SECRET_PREVIOUS: ${PIQS_CURSOR_SECRET_PREVIOUS:-}
+      PIQS_CURSOR_TTL_SECONDS: ${PIQS_CURSOR_TTL_SECONDS:-900}
+      PIQS_REFERENCE_CACHE_SECONDS: ${PIQS_REFERENCE_CACHE_SECONDS:-300}
+      # Identidad técnica propia (client_credentials, D5).
+      KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+      PIQS_CLIENT_ID: product-inventory-query-service
+      PIQS_CLIENT_SECRET: ${PRODUCT_INVENTORY_QUERY_SERVICE_CLIENT_SECRET}
+    ports:
+      - "127.0.0.1:${PRODUCT_INVENTORY_QUERY_SERVICE_PORT:-8112}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - sio-network
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

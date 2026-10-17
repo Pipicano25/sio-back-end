@@ -3,6 +3,8 @@
 import os
 from dataclasses import dataclass
 
+IMAGE_REF_SECRET_MIN_BYTES = 32
+
 
 @dataclass(frozen=True, slots=True)
 class Settings:
@@ -18,6 +20,12 @@ class Settings:
         asset_storage_*: Almacenamiento de objetos compatible con S3 del contenido
             de los activos (`ASSET_STORAGE_*`); opcional: sin él, `/content`
             responde 503.
+        public_base_url: URL pública base con la que se construye `image_url`
+            (`PRODUCT_CATALOG_PUBLIC_BASE_URL`, spec 022, FR-022-96).
+        image_ref_secret / image_ref_secret_previous: secreto HMAC de las
+            referencias de imagen y el saliente durante una rotación
+            (`PRODUCT_IMAGE_REF_SECRET[_PREVIOUS]`, FR-022-97). Sin secreto o sin
+            URL pública base no se entregan `image_url` ni existe la ruta pública.
     """
 
     docs_enabled: bool
@@ -30,6 +38,32 @@ class Settings:
     asset_storage_secret_key: str | None = None
     asset_storage_region: str = "us-east-1"
     asset_storage_timeout_seconds: float = 5.0
+    public_base_url: str | None = None
+    image_ref_secret: str | None = None
+    image_ref_secret_previous: str | None = None
+
+    def __post_init__(self) -> None:
+        for name, value in (
+            ("PRODUCT_IMAGE_REF_SECRET", self.image_ref_secret),
+            ("PRODUCT_IMAGE_REF_SECRET_PREVIOUS", self.image_ref_secret_previous),
+        ):
+            if value is not None and len(value.encode("utf-8")) < IMAGE_REF_SECRET_MIN_BYTES:
+                raise RuntimeError(f"{name} debe tener al menos {IMAGE_REF_SECRET_MIN_BYTES} bytes.")
+        if self.image_ref_secret_previous is not None and self.image_ref_secret is None:
+            raise RuntimeError("PRODUCT_IMAGE_REF_SECRET_PREVIOUS requiere PRODUCT_IMAGE_REF_SECRET.")
+
+    def __repr__(self) -> str:  # nunca muestra secretos ni la URL de la base
+        return f"Settings(docs_enabled={self.docs_enabled!r}, public_images={self.public_images_enabled!r})"
+
+    @property
+    def public_images_enabled(self) -> bool:
+        """La URL pública de imágenes existe solo con secreto y URL base configurados (FR-022-99)."""
+        return bool(self.image_ref_secret and self.public_base_url)
+
+    @property
+    def image_ref_secrets(self) -> list[str]:
+        """Secretos aceptados al verificar una referencia: el actual y, en rotación, el anterior."""
+        return [secret for secret in (self.image_ref_secret, self.image_ref_secret_previous) if secret]
 
     @property
     def asset_storage_configured(self) -> bool:
@@ -65,6 +99,9 @@ def load_settings() -> Settings:
         asset_storage_secret_key=_optional_text("ASSET_STORAGE_SECRET_KEY"),
         asset_storage_region=_read_text(name="ASSET_STORAGE_REGION", default="us-east-1"),
         asset_storage_timeout_seconds=_read_float(name="ASSET_STORAGE_TIMEOUT_SECONDS", default=5.0),
+        public_base_url=(_optional_text("PRODUCT_CATALOG_PUBLIC_BASE_URL") or "").rstrip("/") or None,
+        image_ref_secret=_optional_text("PRODUCT_IMAGE_REF_SECRET"),
+        image_ref_secret_previous=_optional_text("PRODUCT_IMAGE_REF_SECRET_PREVIOUS"),
     )
 
 

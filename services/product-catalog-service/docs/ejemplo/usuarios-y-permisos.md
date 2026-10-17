@@ -94,6 +94,8 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 | `GET /api/v1/products/{id}/identifiers` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 5 |
 | `POST /api/v1/products/{id}/assets` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | 5 |
 | `POST /api/v1/products/{id}/deactivate` | `perm:product-catalog:products:deactivate` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 5 |
+| `POST /api/v1/products/summaries/batch-lookup` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 5 |
+| `POST /api/v1/products/match` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 5 |
 
 ## Permisos que no son obvios
 

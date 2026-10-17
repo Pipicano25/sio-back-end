@@ -1,4 +1,4 @@
-# Paso 03 de 13 — Crear las categorías
+# Paso 03 de 14 — Crear las categorías
 
 Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](02-crear-marca.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](04-crear-atributos.md)
 

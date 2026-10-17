@@ -14,7 +14,7 @@ from functools import partial
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, exists, func, or_, select, tuple_
 
 from commercial_relationship_service.application.exceptions import (
     CompanyProductNotFoundError,
@@ -46,7 +46,9 @@ from commercial_relationship_service.infrastructure.models import (
 from commercial_relationship_service.application import audit_events
 from commercial_relationship_service.infrastructure.persistence import commit_or_translate, end_read
 from commercial_relationship_service.infrastructure.repository_base import (
+    ALL_STATUSES,
     SQLAlchemyRepositoryBase,
+    like_pattern,
 )
 
 
@@ -73,6 +75,71 @@ class CompanyProductRepository(SQLAlchemyRepositoryBase[CompanyProductModel]):
             CompanyProductModel.global_product_id == global_product_id,
         )
 
+
+    def search_progressive(self, company_id: UUID, criteria: Any) -> tuple[list[CompanyProductModel], bool]:
+        """CR-1 (spec 022, FR-022-80): búsqueda de solo lectura con continuación *keyset*.
+
+        Orden `<clave> <dir>, id <dir>`; con `after`, la comparación de filas `(clave, id) > (:k, :id)`
+        (`<` si es descendente) la hace PostgreSQL con su intercalación, la misma del `ORDER BY`. Se
+        piden `limit + 1` filas para saber si hay más, sin contar.
+        """
+        product = CompanyProductModel
+        presentation = CompanyProductPresentationModel
+        statement = select(product).where(product.company_id == company_id)
+
+        if criteria.status != ALL_STATUSES:
+            statement = statement.where(product.status == criteria.status)
+
+        for column in ("is_purchasable", "is_sellable", "inventory_control_enabled"):
+            value = getattr(criteria, column)
+            if value is not None:
+                statement = statement.where(getattr(product, column) == value)
+
+        if criteria.search:
+            pattern = like_pattern(criteria.search)
+            sku_match = exists().where(
+                presentation.company_id == company_id,
+                presentation.company_product_id == product.id,
+                presentation.sku.ilike(pattern, escape="\\"),
+            )
+            statement = statement.where(
+                or_(
+                    *(getattr(product, column).ilike(pattern, escape="\\") for column in self.search_columns),
+                    sku_match,
+                )
+            )
+
+        if criteria.internal_code:
+            statement = statement.where(func.lower(product.internal_code) == code_key(criteria.internal_code))
+
+        if criteria.sku:
+            statement = statement.where(
+                exists().where(
+                    presentation.company_id == company_id,
+                    presentation.company_product_id == product.id,
+                    func.lower(presentation.sku) == criteria.sku.strip().lower(),
+                )
+            )
+
+        if criteria.company_product_ids is not None:
+            statement = statement.where(product.id.in_(criteria.company_product_ids))
+
+        if criteria.global_product_ids is not None:
+            statement = statement.where(product.global_product_id.in_(criteria.global_product_ids))
+
+        key = getattr(product, criteria.sort_key)
+        descending = criteria.descending
+
+        if criteria.after is not None:
+            after_value, after_id = criteria.after
+            row = tuple_(key, product.id)
+            bound = tuple_(after_value, after_id)
+            statement = statement.where(row < bound if descending else row > bound)
+
+        order = (key.desc(), product.id.desc()) if descending else (key.asc(), product.id.asc())
+        rows = list(self.session.scalars(statement.order_by(*order).limit(criteria.limit + 1)))
+        end_read(self.session)
+        return rows[: criteria.limit], len(rows) > criteria.limit
 
     def lock_many(self, ids: list[UUID]) -> dict[UUID, CompanyProductModel]:
         """Bloquea (`FOR UPDATE`) los productos en orden de `id` para una escritura por lote (spec 021)."""
@@ -183,6 +250,20 @@ class CompanyProductPresentationRepository(SQLAlchemyRepositoryBase[CompanyProdu
         "uq_company_product_presentations_default_sale": VersionConflictError,
         "fk_company_product_presentations_company_product": _PRODUCT_FK,
     }
+
+    def list_by_products(
+        self, company_id: UUID, company_product_ids: list[UUID], *, status: str
+    ) -> list[CompanyProductPresentationModel]:
+        """CR-2 (spec 022, FR-022-81): presentaciones de varios productos de la empresa, en orden estable."""
+        model = CompanyProductPresentationModel
+        statement = select(model).where(model.company_id == company_id, model.company_product_id.in_(company_product_ids))
+
+        if status != ALL_STATUSES:
+            statement = statement.where(model.status == status)
+
+        rows = list(self.session.scalars(statement.order_by(model.company_product_id, model.id)))
+        end_read(self.session)
+        return rows
 
     def adoption_exists(self, company_product_id: UUID, global_product_presentation_id: UUID) -> bool:
         return self.exists_where(

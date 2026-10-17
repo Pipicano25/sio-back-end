@@ -1,4 +1,4 @@
-# Paso 01 de 13 — Consultar los datos base
+# Paso 01 de 14 — Consultar los datos base
 
 Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](02-crear-marca.md)
 

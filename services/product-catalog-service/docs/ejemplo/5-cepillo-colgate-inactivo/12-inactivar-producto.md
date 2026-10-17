@@ -1,4 +1,4 @@
-# Paso 12 de 13 — Inactivar el producto (`Estado = I`)
+# Paso 12 de 14 — Inactivar el producto (`Estado = I`)
 
 Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](11-crear-y-asignar-grupos.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](13-verificar-producto-inactivo.md)
 

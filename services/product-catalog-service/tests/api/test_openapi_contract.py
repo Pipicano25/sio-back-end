@@ -62,6 +62,9 @@ EXPECTED = (
         ("GET", f"{P}/products/{{product_id}}/applicable-attributes"),
         ("POST", f"{P}/products/batch-lookup"),
         ("GET", f"{P}/products/by-identifier/{{value}}"),
+        # Spec 022: PC-1 y PC-2 (lecturas por POST)
+        ("POST", f"{P}/products/summaries/batch-lookup"),
+        ("POST", f"{P}/products/match"),
         # Categorías del producto §6.2
         ("GET", f"{P}/products/{{product_id}}/categories"),
         ("POST", f"{P}/products/{{product_id}}/categories"),

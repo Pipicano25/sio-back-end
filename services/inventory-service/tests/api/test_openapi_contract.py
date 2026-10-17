@@ -43,6 +43,10 @@ EXPECTED_OPERATIONS = {
     ("/api/v1/companies/{company_id}/branches/{branch_id}/valuation", "get"),
     ("/api/v1/companies/{company_id}/branches/{branch_id}/valuation/{company_product_id}/layers", "get"),
     ("/api/v1/companies/{company_id}/inventory-movements/{movement_id}/cost-consumptions", "get"),
+    # Spec 022: lecturas por POST (INV-1, INV-2, INV-3).
+    ("/api/v1/companies/{company_id}/branches/{branch_id}/inventory-policies/lookup", "post"),
+    ("/api/v1/companies/{company_id}/inventory-product-sets", "post"),
+    ("/api/v1/companies/{company_id}/inventory-summary", "post"),
     ("/health/live", "get"),
     ("/health/ready", "get"),
 }
@@ -52,6 +56,8 @@ REVERSAL_STATUSES = OPERATION_STATUSES | {"404"}
 QUERY_STATUSES = {"200", "401", "403", "404", "422", "503"}
 WRITE_013_STATUSES = {"401", "403", "404", "409", "422", "503"}
 """Rutas de usuario humano de 013 (11, 14–18, 22–23, 26–28)."""
+READ_POSTS = ("/balances/lookup", "/inventory-policies/lookup", "/inventory-product-sets", "/inventory-summary")
+"""Lecturas por `POST`: publican los estados de consulta (spec 022)."""
 
 
 @pytest.fixture
@@ -85,7 +91,7 @@ def test_each_operation_publishes_its_contract_statuses(schema, path, method) ->
         expected = REVERSAL_STATUSES
     elif path in ("/api/v1/inventory-entries", "/api/v1/inventory-outputs"):
         expected = OPERATION_STATUSES
-    elif method in ("post", "put") and not path.endswith("/balances/lookup"):
+    elif method in ("post", "put") and not path.endswith(READ_POSTS):
         expected = WRITE_013_STATUSES
     else:
         expected = QUERY_STATUSES

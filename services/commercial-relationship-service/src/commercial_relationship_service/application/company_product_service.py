@@ -48,6 +48,28 @@ EDITABLE_FIELDS = (
 
 
 @dataclass(frozen=True, slots=True)
+class ProductSearchCriteria:
+    """Criterios de la búsqueda progresiva CR-1 (spec 022, FR-022-80), ya validados.
+
+    `after` es `(valor de la clave de orden, id)` con el valor ya tipado (texto o fecha).
+    """
+
+    status: str
+    limit: int
+    sort_key: str = "display_name"
+    descending: bool = False
+    search: str | None = None
+    internal_code: str | None = None
+    sku: str | None = None
+    is_purchasable: bool | None = None
+    is_sellable: bool | None = None
+    inventory_control_enabled: bool | None = None
+    company_product_ids: list[UUID] | None = None
+    global_product_ids: list[UUID] | None = None
+    after: tuple[Any, UUID] | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class BatchItem:
     """Elemento de la consulta por lotes: `model` es `None` si no se encontró."""
 
@@ -153,6 +175,12 @@ class CompanyProductService:
         model.status = next_status(model.status, REACTIVATE)
         _touch(model, actor)
         return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.REACTIVATE_COMPANY_PRODUCT, "CompanyProduct", model.company_id))
+
+    # ---------------------------------------------------- búsqueda (spec 022)
+
+    def search(self, company_id: UUID, criteria: ProductSearchCriteria) -> tuple[list[Any], bool]:
+        """CR-1: lectura progresiva; el alcance por empresa ya lo aplicó la ruta."""
+        return self._repository.search_progressive(company_id, criteria)
 
     # ------------------------------------------------------------------ lotes
 

@@ -1,6 +1,6 @@
-# Paso 13 de 13 — Verificar el comportamiento del producto inactivo
+# Paso 13 de 14 — Verificar el comportamiento del producto inactivo
 
-Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](12-inactivar-producto.md) · [Orden del ejercicio](ORDEN.md)
+Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](12-inactivar-producto.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](14-consultas-por-lotes.md)
 
 **Objetivo:** Ver qué se puede y qué no se puede hacer con un producto inactivo.
 
@@ -110,4 +110,4 @@ GET /api/v1/products/<PRODUCTO>?expand=detail
 
 ---
 
-[← Paso anterior](12-inactivar-producto.md) · [Orden del ejercicio](ORDEN.md)
+[← Paso anterior](12-inactivar-producto.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](14-consultas-por-lotes.md)

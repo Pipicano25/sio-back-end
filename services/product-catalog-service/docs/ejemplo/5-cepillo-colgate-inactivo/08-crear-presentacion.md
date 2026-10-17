@@ -1,4 +1,4 @@
-# Paso 08 de 13 — Crear la presentación
+# Paso 08 de 14 — Crear la presentación
 
 Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Paso anterior](07-clasificar-y-registrar-atributos.md) · [Orden del ejercicio](ORDEN.md) · [Paso siguiente →](09-codigo-interno-no-es-codigo-de-barras.md)
 

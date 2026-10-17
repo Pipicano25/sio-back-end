@@ -368,5 +368,46 @@ EX5 = dict(
                 ),
             ],
         ),
+        step(
+            "14-consultas-por-lotes.md",
+            "Consultar el producto por lotes y por filtros (spec 022)",
+            "Ver el resumen del catálogo de un lote de productos y buscar productos por marca, para consumidores como "
+            "el servicio de consultas consolidadas.",
+            [
+                call(
+                    "Resumen del producto por lotes",
+                    "POST", f"{API}/products/summaries/batch-lookup",
+                    body={"ids": ["<PRODUCTO>"]},
+                    why=[
+                        "Hasta 100 productos en una llamada: nombre canónico, marca, unidad base, categorías e "
+                        "identificadores `ACTIVE`, sin pedir cada producto por separado.",
+                        "`has_image: false`: la imagen del paso 10 es ilustrativa y no está en el almacenamiento de SIO "
+                        "con clave derivada de su SHA-256, así que **no es apta** para URL directa; `image_url` es `null`.",
+                    ],
+                    show=["items[].found", "items[].canonical_name", "items[].status", "items[].brand",
+                          "items[].base_unit", "items[].categories", "items[].identifiers", "items[].has_image",
+                          "items[].image_url"],
+                ),
+                call(
+                    "Productos de la marca, incluidos los inactivos",
+                    "POST", f"{API}/products/match",
+                    body={"brand_ids": ["<MARCA_COLGATE>"], "status": "ALL", "limit": 20},
+                    why=[
+                        "Modo conductor: los productos que cumplen los filtros en orden de nombre canónico normalizado e "
+                        "`id`, de a `limit`. Cada uno trae su `position` para seguir con `after`.",
+                        "Por defecto `status` es `ACTIVE`; el cepillo está inactivo, por eso se pide `ALL`.",
+                        "No hay conteos: `has_more` dice si quedan productos.",
+                    ],
+                    show=["items[].id", "items[].position", "has_more"],
+                ),
+                call(
+                    "¿El cepillo tiene una imagen apta?",
+                    "POST", f"{API}/products/match",
+                    body={"candidate_ids": ["<PRODUCTO>"], "has_image": True, "status": "ALL"},
+                    why=["Modo evaluador: devuelve los candidatos que cumplen. Ninguno: la imagen no es apta."],
+                    show=["ids"],
+                ),
+            ],
+        ),
     ],
 )

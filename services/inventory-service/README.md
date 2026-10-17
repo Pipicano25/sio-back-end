@@ -74,6 +74,23 @@ Cualquier dependencia no disponible responde `503` con `dependency` (`operationa
   `COMPLETE_INVENTORY_COUNT` (resumen), `SET_COMPANY_INVENTORY_POLICY` y `CREATE_`, `UPDATE_` y
   `DEACTIVATE_INVENTORY_POLICY`. Los rechazos solo quedan en el log.
 
+## Lecturas para el servicio de consultas (spec 022)
+
+Solo lectura sobre `inventory_balances` e `inventory_policies`, sin migraciones ni cambios en las
+escrituras; se filtran por la empresa de la ruta y nunca devuelven costos unitarios, costo promedio ni FIFO.
+
+- **INV-1** `POST /companies/{c}/branches/{b}/inventory-policies/lookup` (`product-policies:read`): la
+  política activa de 1 a 100 productos, o `null`.
+- **INV-2** `POST /companies/{c}/inventory-product-sets` (`balances:read` y `product-policies:read`):
+  productos con `stock_state = IN_STOCK` (suma de las sucursales `> 0`) y/o `minimum_state` (al menos una
+  sucursal; un par sin saldo cuenta con 0), en orden `company_product_id` con `after` y `limit`; con
+  `unit = PAIRS` (solo `BELOW_MINIMUM`), pares por faltante descendente. Sin conteos.
+- **INV-3** `POST /companies/{c}/inventory-summary` (`balances:read` y `product-policies:read`): por
+  sucursal y consolidado, productos con saldo positivo, con saldo registrado en cero (nunca los que no
+  tienen registro), con política activa y bajo mínimo, en una sola consulta agregada y sin límite de
+  productos. No filtra por estado comercial. `inventory_value` solo con `include_valuation` y
+  `perm:inventory:valuation:read`.
+
 ## Permisos
 
 | Permiso | Uso | Quién |

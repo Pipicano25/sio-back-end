@@ -30,6 +30,7 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | 11 | [11-crear-y-asignar-grupos.md](11-crear-y-asignar-grupos.md) | Conservar la agrupación del sistema anterior. | 9 | 01, 06 |
 | 12 | [12-inactivar-producto.md](12-inactivar-producto.md) | Comprobar que quedó completo y luego inactivarlo. | 2 | 06 |
 | 13 | [13-verificar-producto-inactivo.md](13-verificar-producto-inactivo.md) | Ver qué se puede y qué no se puede hacer con un producto inactivo. | 3 | 06 |
+| 14 | [14-consultas-por-lotes.md](14-consultas-por-lotes.md) | Ver el resumen del catálogo de un lote de productos y buscar productos por marca, para consumidores como el servicio de consultas consolidadas. | 3 | 02, 06 |
 
 ## Por qué este orden
 
@@ -53,7 +54,7 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | `<GT_GROUP_4>` | 01 | 11 |
 | `<PAIS_CO>` | 01 | — |
 | `<FABRICANTE_COLGATE>` | 01 | 06 |
-| `<MARCA_COLGATE>` | 02 | 06 |
+| `<MARCA_COLGATE>` | 02 | 06, 14 |
 | `<CAT_CUIDADO_ORAL>` | 03 | — |
 | `<CAT_CEPILLOS>` | 03 | 05, 07 |
 | `<ATR_DUREZA_CERDAS>` | 04 | 05, 07 |
@@ -64,7 +65,7 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | `<ATR_RANGO_EDAD>` | 04 | 05, 07 |
 | `<CA_DUREZA>` | 05 | — |
 | `<CA_RANGO_EDAD>` | 05 | — |
-| `<PRODUCTO>` | 06 | 07, 08, 09, 10, 11, 12, 13 |
+| `<PRODUCTO>` | 06 | 07, 08, 09, 10, 11, 12, 13, 14 |
 | `<PC_CEPILLOS>` | 07 | — |
 | `<PRES_PACK_X2>` | 08 | 09 |
 | `<ACTIVO_IMAGEN>` | 10 | — |
@@ -79,6 +80,6 @@ Las variables con `—` no se usan más en este ejercicio, pero conviene guardar
 
 ## Resultado esperado
 
-Al terminar el paso 13 ([13-verificar-producto-inactivo.md](13-verificar-producto-inactivo.md)) el producto queda como se describe allí.
+Al terminar el paso 14 ([14-consultas-por-lotes.md](14-consultas-por-lotes.md)) el producto queda como se describe allí.
 
 [Empezar → paso 01](01-consultar-datos-base.md)

@@ -234,6 +234,8 @@ class CatalogQueryService:
                     "status": unit.status,
                     "measurement_type": unit.measurement_type,
                     "allows_decimals": unit.allows_decimals,
+                    "code": unit.code,
+                    "name": unit.name,
                 }
             )
         return items

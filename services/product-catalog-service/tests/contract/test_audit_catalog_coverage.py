@@ -67,6 +67,9 @@ READS_BY_POST = {
     ("POST", f"{V}/units-of-measure/batch-lookup"),
     ("POST", f"{V}/products/batch-lookup"),
     ("POST", f"{V}/presentations/batch-lookup"),
+    # Spec 022 (PC-1, PC-2): lecturas por POST, sin auditoría.
+    ("POST", f"{V}/products/summaries/batch-lookup"),
+    ("POST", f"{V}/products/match"),
 }
 
 

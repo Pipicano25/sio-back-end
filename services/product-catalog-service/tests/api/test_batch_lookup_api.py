@@ -70,7 +70,9 @@ def test_unit_batch_lookup(api, session_factory) -> None:
     items = api.post("/api/v1/units-of-measure/batch-lookup", json={"ids": [str(unit.id)]}).json()["items"]
 
     assert items == [
-        {"id": str(unit.id), "found": True, "status": "ACTIVE", "measurement_type": "UNIT", "allows_decimals": True}
+        # Spec 022 (PC-3): `code` y `name` son aditivos; los demás campos no cambian.
+        {"id": str(unit.id), "found": True, "status": "ACTIVE", "measurement_type": "UNIT", "allows_decimals": True,
+         "code": "KG", "name": "Kg"}
     ]
 
 

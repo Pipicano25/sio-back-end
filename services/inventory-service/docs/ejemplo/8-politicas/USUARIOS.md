@@ -1,15 +1,15 @@
 # Usuarios del ejercicio 8
 
-| Usuario | Paso 1 | Paso 2 | Paso 3 | Paso 4 | Paso 5 | Paso 6 | Paso 7 | Paso 8 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `inventory-test-operator` | — (no consulta) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | — (no consulta) |
-| `admin.test` | `200` | `201` | `200` | `422` | `201` | `409` | `200` | `200` |
-| `supervisor.test` | `200` | `—` | `—` | `—` | `—` | `—` | `—` | `200` |
-| `compras.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `ventas.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `inventario.test` | `200` | `403` | `403` | `403` | `403` | `403` | `403` | `200` |
-| `reportes.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `consulta.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
+| Usuario | Paso 1 | Paso 2 | Paso 3 | Paso 4 | Paso 5 | Paso 6 | Paso 7 | Paso 8 | Paso 9 | Paso 10 | Paso 11 | Paso 12 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `inventory-test-operator` | — (no consulta) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | — (no consulta) | `403` (cuenta de servicio) | — (no consulta) | — (no consulta) | — (no consulta) |
+| `admin.test` | `200` | `201` | `200` | `422` | `201` | `409` | `200` | `200` | `201` | `200` | `200` | `200` |
+| `supervisor.test` | `200` | `—` | `—` | `—` | `—` | `—` | `—` | `200` | `—` | `200` | `200` | `200` |
+| `compras.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `ventas.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `inventario.test` | `200` | `403` | `403` | `403` | `403` | `403` | `403` | `200` | `403` | `200` | `200` | `200` |
+| `reportes.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `consulta.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
 
 ## Permiso por URL
 
@@ -23,6 +23,10 @@
 | 6 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `perm:inventory:product-policies:update` |
 | 7 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies/<POLITICA>/deactivate` | `perm:inventory:product-policies:update` |
 | 8 | `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies?branch_id=d44b0000-0000-4000-8000-000000000001` | `perm:inventory:product-policies:read` |
+| 9 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `perm:inventory:product-policies:update` |
+| 10 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/branches/d44b0000-0000-4000-8000-000000000001/inventory-policies/lookup` | `perm:inventory:product-policies:read` |
+| 11 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-product-sets` | `perm:inventory:balances:read` |
+| 12 | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-summary` | `perm:inventory:balances:read` |
 
 ## Ejemplos
 

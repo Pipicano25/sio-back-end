@@ -51,8 +51,8 @@ GET /api/v1/company-summaries
   ],
   "page": 1,
   "page_size": 1,
-  "total_records": 9,
-  "total_pages": 9
+  "total_records": 10,
+  "total_pages": 10
 }
 ```
 
