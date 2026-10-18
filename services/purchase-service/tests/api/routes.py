@@ -1,4 +1,4 @@
-"""Las 19 rutas de `contracts/rest-api.md` con su permiso (T028)."""
+"""Las 19 rutas de `contracts/rest-api.md` con su permiso (T028), la recepción (spec 020) y PUR-R1 (spec 023)."""
 
 from __future__ import annotations
 
@@ -29,6 +29,8 @@ ROUTES: list[tuple[str, str, str]] = [
     ("PUT", C + "/purchase-sequences/{sequence}", "perm:purchase:purchase_sequences:update"),
     ("POST", C + "/purchase-sequences/{sequence}/deactivate", "perm:purchase:purchase_sequences:update"),
     ("POST", C + "/purchase-sequences/{sequence}/reactivate", "perm:purchase:purchase_sequences:update"),
+    # Spec 023 (contracts/owner-extensions.md, PUR-R1): compras del período para business-reporting-service.
+    ("GET", C + "/purchase-reports/period?date_from=2026-01-01&date_to=2026-01-31", "perm:purchase:purchases:read"),
 ]
 
 

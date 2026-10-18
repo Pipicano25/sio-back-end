@@ -54,6 +54,12 @@ ROUTES: list[tuple[str, str, str]] = [
     ("POST", f"{_C}/branches/{BRANCH}/inventory-policies/lookup", "perm:inventory:product-policies:read"),
     ("POST", f"{_C}/inventory-product-sets", "perm:inventory:balances:read"),
     ("POST", f"{_C}/inventory-summary", "perm:inventory:balances:read"),
+    # Spec 023: INV-R1 (solo cantidades; permiso propio, DR-11).
+    ("GET", f"{_C}/branches/{BRANCH}/stock-evolution?from=2026-01-01T00:00:00-05:00&to=2026-02-01T00:00:00-05:00",
+     "perm:inventory:stock_evolution:read"),
+    # Spec 023: INV-R1C (consolidada por producto; mismo permiso).
+    ("GET", f"{_C}/stock-evolution?branch_id={BRANCH}&from=2026-01-01T00:00:00-05:00&to=2026-02-01T00:00:00-05:00",
+     "perm:inventory:stock_evolution:read"),
 ]
 
 HUMAN_ONLY: set[tuple[str, str]] = {

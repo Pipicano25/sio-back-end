@@ -12,6 +12,7 @@ TAG_PURCHASES = "Compras y líneas"
 TAG_OPERATIONS = "Confirmación, anulación y operaciones"
 TAG_EVENTS = "Hitos logísticos"
 TAG_SEQUENCES = "Secuencias de numeración"
+TAG_REPORTS = "Consultas para reportes"
 
 OPENAPI_TAGS = [
     {"name": "health"},
@@ -47,6 +48,13 @@ OPENAPI_TAGS = [
         "description": (
             "Numeración por empresa o sucursal con contador independiente por período (`NEVER`, año o año-mes "
             "según la fecha de la compra). A lo sumo una activa por empresa, sucursal y tipo."
+        ),
+    },
+    {
+        "name": TAG_REPORTS,
+        "description": (
+            "Spec 023: consultas de solo lectura para `business-reporting-service`: cabeceras del período sin líneas "
+            "y totales calculados en la base, por moneda y categoría (recibidas, pendientes de recepción, anuladas)."
         ),
     },
 ]

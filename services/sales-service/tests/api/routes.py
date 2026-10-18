@@ -1,4 +1,4 @@
-"""Las 18 rutas de `contracts/rest-api.md` con su permiso (T030)."""
+"""Las 18 rutas de `contracts/rest-api.md` con su permiso (T030) y las agregaciones de la spec 023 (SAL-R1, SAL-R2)."""
 
 from __future__ import annotations
 
@@ -27,6 +27,9 @@ ROUTES: list[tuple[str, str, str]] = [
     ("PUT", C + "/sale-sequences/{sequence}", "perm:sales:sale_sequences:update"),
     ("POST", C + "/sale-sequences/{sequence}/deactivate", "perm:sales:sale_sequences:update"),
     ("POST", C + "/sale-sequences/{sequence}/reactivate", "perm:sales:sale_sequences:update"),
+    # Spec 023 (contracts/owner-extensions.md): agregaciones de solo lectura para business-reporting-service.
+    ("GET", C + "/sales-aggregates/by-product?date_from=2026-01-01&date_to=2026-01-31", "perm:sales:sales:read"),
+    ("GET", C + "/sales-aggregates/by-branch?date_from=2026-01-01&date_to=2026-01-31", "perm:sales:sales:read"),
 ]
 
 

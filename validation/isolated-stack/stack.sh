@@ -122,14 +122,14 @@ exec_in() {
 up() {
     verify
     say "Construyendo imágenes sio-it/*:spec022 (no reemplaza las imágenes del entorno persistente)"
-    "${COMPOSE[@]}" build "${APP_SERVICES[@]}" product-inventory-query-service
+    "${COMPOSE[@]}" build "${APP_SERVICES[@]}" product-inventory-query-service business-reporting-service
     say "Levantando Keycloak, almacenamiento y bases"
     "${COMPOSE[@]}" up -d --wait keycloak-db keycloak object-storage geography-db party-identity-db \
         operational-context-db payment-reference-db product-catalog-db commercial-relationship-db inventory-db \
         purchase-db sales-db audit-db
     "${COMPOSE[@]}" --profile bootstrap run --rm object-storage-bootstrap
     say "Levantando los servicios"
-    "${COMPOSE[@]}" up -d --wait "${APP_SERVICES[@]}" product-inventory-query-service
+    "${COMPOSE[@]}" up -d --wait "${APP_SERVICES[@]}" product-inventory-query-service business-reporting-service
 
     say "Migraciones"
     for service in geography-service product-catalog-service payment-reference-service operational-context-service \
@@ -182,6 +182,7 @@ export PAYMENT_REFERENCE_INTEGRATION_BASE_URL=http://127.0.0.1:18105
 export GEOGRAPHY_INTEGRATION_BASE_URL=http://127.0.0.1:18102
 export AUDIT_INTEGRATION_BASE_URL=http://127.0.0.1:18110/api/v1
 export PRODUCT_INVENTORY_QUERY_INTEGRATION_BASE_URL=http://127.0.0.1:18112/api/v1
+export BUSINESS_REPORTING_INTEGRATION_BASE_URL=http://127.0.0.1:18113/api/v1
 EOF
 }
 

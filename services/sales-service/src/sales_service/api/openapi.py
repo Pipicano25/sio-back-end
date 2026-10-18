@@ -11,6 +11,7 @@ from fastapi.openapi.utils import get_openapi
 TAG_SALES = "Ventas y líneas"
 TAG_OPERATIONS = "Confirmación, anulación y operaciones"
 TAG_SEQUENCES = "Secuencias de numeración"
+TAG_REPORTS = "Agregaciones para reportes"
 
 OPENAPI_TAGS = [
     {"name": "health"},
@@ -45,6 +46,13 @@ OPENAPI_TAGS = [
         "description": (
             "Numeración por empresa o sucursal con contador independiente por período (`NEVER`, año o año-mes "
             "según la fecha de la venta). A lo sumo una activa por empresa, sucursal y tipo."
+        ),
+    },
+    {
+        "name": TAG_REPORTS,
+        "description": (
+            "Spec 023: agregaciones de solo lectura para `business-reporting-service`, calculadas en la base (sin "
+            "descargar ventas). Solo ventas `CONFIRMED` por `operation_date`; importes por moneda; sin costos."
         ),
     },
 ]

@@ -155,3 +155,13 @@ No hay datos iniciales (`seed`): los saldos nacen de las entradas y las capas de
 migración `0002` son una transformación de los saldos existentes. El servicio sigue la práctica
 vigente del repositorio de un único proyecto Compose en `infrastructure/services/`; la reconciliación
 del Principio IV ("`docker-compose.yml` propio") está pendiente por separado (G1).
+
+## Evolución de existencias para reportes (spec 023)
+
+Solo lectura, para `business-reporting-service`: `GET /api/v1/companies/{c}/branches/{b}/stock-evolution`
+(INV-R1). Permiso **propio** `perm:inventory:stock_evolution:read` (DR-11), que no abre el kardex ni la valoración.
+Por producto, en unidad base: saldo inicial (último movimiento antes de `from`), entradas, salidas, reversos,
+ajustes y saldo final de `[from, to)`; nunca costos ni valores. Sin índices nuevos ni migraciones.
+
+`GET /api/v1/companies/{c}/stock-evolution` (INV-R1C): la misma consulta, consolidada **por producto** sobre las
+sucursales de `branch_id` (repetible, obligatorio, ≤ 100), con `branch_count`. Mismo permiso.

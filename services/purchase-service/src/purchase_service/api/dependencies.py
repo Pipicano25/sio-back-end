@@ -28,6 +28,7 @@ from purchase_service.application.receipt_service import ReceiptService
 from purchase_service.application.reference_validation import ReferenceResolver
 from purchase_service.application.sequence_service import SequenceService
 from purchase_service.infrastructure.database import Database
+from purchase_service.infrastructure.report_repository import PurchaseReportRepository
 from purchase_service.infrastructure.repository import PurchaseRepository
 from purchase_service.infrastructure.sequence_repository import SequenceRepository
 
@@ -98,6 +99,10 @@ class Services:
 
     def queries(self) -> QueryService:
         return QueryService(self.repository)
+
+    def reports(self) -> PurchaseReportRepository:
+        """Consultas de solo lectura para reportes (spec 023), en la misma sesión."""
+        return PurchaseReportRepository(self.repository.session)
 
 
 def get_services(request: Request) -> Iterator[Services]:

@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from sio_auth import SIOAuth
 
-from purchase_service.api import lifecycle_events, operations, purchases, sequences
+from purchase_service.api import lifecycle_events, operations, purchase_reports, purchases, sequences
 
 
 def include_api_routers(app: FastAPI, auth: SIOAuth, *, prefix: str) -> None:
@@ -13,3 +13,4 @@ def include_api_routers(app: FastAPI, auth: SIOAuth, *, prefix: str) -> None:
     app.include_router(operations.build_router(auth), prefix=prefix)
     app.include_router(lifecycle_events.build_router(auth), prefix=prefix)
     app.include_router(sequences.build_router(auth), prefix=prefix)
+    app.include_router(purchase_reports.build_router(auth), prefix=prefix)

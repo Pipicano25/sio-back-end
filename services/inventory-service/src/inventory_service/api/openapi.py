@@ -15,6 +15,7 @@ TAG_VALUATION = "Valoración FIFO"
 TAG_ADJUSTMENTS = "Ajustes de inventario (usuarios asignados a la sucursal)"
 TAG_COUNTS = "Conteos físicos (usuarios asignados a la sucursal)"
 TAG_POLICIES = "Políticas de inventario"
+TAG_REPORTS = "Consultas para reportes"
 
 OPENAPI_TAGS = [
     {"name": "health"},
@@ -72,6 +73,13 @@ OPENAPI_TAGS = [
             "Política de la empresa (una; solo `FIFO`; `is_active` solo de lectura) y niveles de reposición "
             "por producto y sucursal (una activa). Solo configuración: no generan compras ni movimientos. "
             "Escritura por usuarios humanos miembros con el permiso (comodín de administradores y supervisores)."
+        ),
+    },
+    {
+        "name": TAG_REPORTS,
+        "description": (
+            "Spec 023: evolución de existencias de una sucursal para `business-reporting-service`, calculada en la "
+            "base. Solo cantidades en unidad base, sin costos; permiso propio `perm:inventory:stock_evolution:read`."
         ),
     },
 ]

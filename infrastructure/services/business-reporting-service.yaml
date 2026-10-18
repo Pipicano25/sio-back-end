@@ -1,0 +1,51 @@
+name: business-reporting-service
+
+# Proyecto compose "business-reporting-service" (única definición Compose del microservicio, regla 3 de
+# docs/port-map.md). Servicio de solo lectura y SIN base de datos, colas ni tareas programadas (spec 023): solo el
+# contenedor de la aplicación, unido a "sio-network", creada por el proyecto "sio" (infrastructure/compose.yaml).
+# Sin cliente técnico: consulta Sales, Purchase, Inventory, OC, CR y PC con el token del usuario (DR-07).
+# Sin dependencia de arranque: si un propietario no está disponible, cada reporte responde 503.
+
+services:
+  business-reporting-service:
+    build:
+      context: ../..
+      dockerfile: services/business-reporting-service/Dockerfile
+    image: sio/business-reporting-service:${SIO_SERVICES_VERSION}
+    container_name: sio-business-reporting-service
+    restart: unless-stopped
+    environment:
+      # El issuer debe coincidir con KEYCLOAK_PUBLIC_URL; las llaves se obtienen dentro de sio-network.
+      SIO_AUTH_ISSUER: ${KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+      SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+      SIO_AUTH_AUDIENCE: sio-api
+      SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+      SALES_SERVICE_BASE_URL: http://sales-service:8000/api/v1
+      PURCHASE_SERVICE_BASE_URL: http://purchase-service:8000/api/v1
+      INVENTORY_SERVICE_BASE_URL: http://inventory-service:8000/api/v1
+      COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
+      PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
+      BRS_DEPENDENCY_TIMEOUT_SECONDS: ${BRS_DEPENDENCY_TIMEOUT_SECONDS:-5}
+      BRS_JSON_BUDGET_SECONDS: ${BRS_JSON_BUDGET_SECONDS:-10}
+      BRS_CSV_BUDGET_SECONDS: ${BRS_CSV_BUDGET_SECONDS:-120}
+      BRS_MAX_PARALLEL_CALLS: ${BRS_MAX_PARALLEL_CALLS:-4}
+      BRS_MAX_PERIOD_DAYS: ${BRS_MAX_PERIOD_DAYS:-366}
+      BRS_CSV_MAX_ROWS: ${BRS_CSV_MAX_ROWS:-50000}
+    ports:
+      - "127.0.0.1:${BUSINESS_REPORTING_SERVICE_PORT:-8113}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      # Prácticamente inactivo en reposo (RNF-023-1): solo este chequeo, cada 60 s; rápido al arrancar.
+      interval: 60s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+      start_interval: 2s
+    networks:
+      - sio-network
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

@@ -362,6 +362,29 @@ services:
       PIQS_CLIENT_SECRET: ${PRODUCT_INVENTORY_QUERY_SERVICE_CLIENT_SECRET}
     ports: ["127.0.0.1:18112:8000"]
 
+  business-reporting-service:
+    # Spec 023: reportes bajo demanda; sin base ni cliente técnico (consulta con el token del usuario, DR-07).
+    <<: *isolated
+    build: {context: ../.., dockerfile: services/business-reporting-service/Dockerfile}
+    image: sio-it/business-reporting-service:${SIO_IT_TAG}
+    container_name: sio-it-business-reporting-service
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 60s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+      start_interval: 2s
+    environment:
+      <<: *auth
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+      SALES_SERVICE_BASE_URL: http://sales-service:8000/api/v1
+      PURCHASE_SERVICE_BASE_URL: http://purchase-service:8000/api/v1
+      INVENTORY_SERVICE_BASE_URL: http://inventory-service:8000/api/v1
+      COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
+      PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
+    ports: ["127.0.0.1:18113:8000"]
+
   # ------------------------------------------------------------------ trabajadores
   commercial-relationship-price-worker:
     <<: *isolated

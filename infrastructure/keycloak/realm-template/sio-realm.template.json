@@ -1763,6 +1763,10 @@
           "description": "Consultar la valoración FIFO (valor, capas y consumos) de las empresas del usuario"
         },
         {
+          "name": "perm:inventory:stock_evolution:read",
+          "description": "Spec 023: evolución de existencias por producto y sucursal (solo cantidades, sin costos ni kardex)"
+        },
+        {
           "name": "perm:product-inventory-query:product_overviews:read",
           "description": "Spec 022: consultar el listado consolidado de productos (product-inventory-query-service)"
         },
@@ -1785,6 +1789,22 @@
         {
           "name": "perm:product-inventory-query:inventory_valuation:read",
           "description": "Spec 022: reservado para una spec futura de valoración; ningún endpoint lo evalúa (D-022-12)"
+        },
+        {
+          "name": "perm:business-reporting:top_selling_products:read",
+          "description": "Spec 023: reporte de productos más vendidos (business-reporting-service, JSON y CSV)"
+        },
+        {
+          "name": "perm:business-reporting:sales_by_branch:read",
+          "description": "Spec 023: reporte de ventas por sucursal (business-reporting-service, JSON y CSV)"
+        },
+        {
+          "name": "perm:business-reporting:purchases:read",
+          "description": "Spec 023: reporte de compras del período (business-reporting-service, JSON y CSV)"
+        },
+        {
+          "name": "perm:business-reporting:stock_evolution:read",
+          "description": "Spec 023: reporte de evolución de existencias (business-reporting-service, JSON y CSV)"
         }
       ]
     }
@@ -1864,7 +1884,8 @@
           "perm:commercial-relationship:price_lists:read",
           "perm:commercial-relationship:price_list_items:read",
           "perm:commercial-relationship:supplier_evaluations:read",
-          "perm:operational-context:all:read"
+          "perm:operational-context:all:read",
+          "perm:business-reporting:purchases:read"
         ]
       }
     },
@@ -1905,7 +1926,8 @@
           "perm:operational-context:all:read",
           "perm:product-inventory-query:product_overviews:read",
           "perm:product-inventory-query:inventory_overviews:read",
-          "perm:product-inventory-query:stock:read"
+          "perm:product-inventory-query:stock:read",
+          "perm:business-reporting:top_selling_products:read"
         ]
       }
     },
@@ -1931,7 +1953,9 @@
           "perm:product-inventory-query:inventory_overviews:read",
           "perm:product-inventory-query:inventory_summary:read",
           "perm:product-inventory-query:low_stock_products:read",
-          "perm:product-inventory-query:stock:read"
+          "perm:product-inventory-query:stock:read",
+          "perm:inventory:stock_evolution:read",
+          "perm:business-reporting:stock_evolution:read"
         ]
       }
     },
@@ -1993,7 +2017,12 @@
           "perm:sales:sale_sequences:read",
           "perm:sales:sales:read",
           "perm:payment_reference:global_payment_condition_types:read",
-          "perm:payment_reference:global_payment_methods:read"
+          "perm:payment_reference:global_payment_methods:read",
+          "perm:inventory:stock_evolution:read",
+          "perm:business-reporting:top_selling_products:read",
+          "perm:business-reporting:sales_by_branch:read",
+          "perm:business-reporting:purchases:read",
+          "perm:business-reporting:stock_evolution:read"
         ]
       }
     },

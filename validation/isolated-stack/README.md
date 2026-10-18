@@ -32,6 +32,7 @@ llegar a un puerto publicado por exactamente un contenedor con la etiqueta. `doc
 | Product Catalog (con la ruta pública de imágenes) | 18103 | Inventory | 18109 |
 | Operational Context | 18104 | Audit | 18110 |
 | Payment Reference | 18105 | product-inventory-query-service | 18112 |
+| | | business-reporting-service (spec 023) | 18113 |
 | Almacenamiento de objetos (API S3) | 18902 | | |
 
 Además: una base PostgreSQL por servicio y por Keycloak, y los trabajadores de auditoría, precios y conciliación.

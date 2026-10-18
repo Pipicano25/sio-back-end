@@ -83,6 +83,9 @@ LATER_ADDITIONS = {
         "perm:product-inventory-query:inventory_summary:read",
         "perm:product-inventory-query:low_stock_products:read",
         "perm:product-inventory-query:stock:read",
+        # Spec 023 (DR-11): evolución de existencias (solo cantidades) y su reporte. No afectan a Party Identity.
+        "perm:inventory:stock_evolution:read",
+        "perm:business-reporting:stock_evolution:read",
     },
 }
 

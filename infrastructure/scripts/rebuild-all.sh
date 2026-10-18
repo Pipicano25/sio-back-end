@@ -116,9 +116,11 @@ SERVICES=(
 )
 
 # Microservicios con imagen propia y SIN base de datos (no se migran ni se siembran):
-# product-inventory-query-service es de solo lectura y compone por HTTP (spec 022).
+# product-inventory-query-service (spec 022) y business-reporting-service (spec 023) son de solo lectura y
+# componen por HTTP.
 STATELESS_SERVICES=(
     product-inventory-query-service
+    business-reporting-service
 )
 
 # Proyectos compose del entorno: primero la infraestructura, luego uno por

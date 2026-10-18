@@ -27,6 +27,7 @@ from sales_service.application.query_service import QueryService
 from sales_service.application.reference_validation import ReferenceResolver
 from sales_service.application.sequence_service import SequenceService
 from sales_service.infrastructure.database import Database
+from sales_service.infrastructure.aggregate_repository import SalesAggregateRepository
 from sales_service.infrastructure.repository import SaleRepository
 from sales_service.infrastructure.sequence_repository import SequenceRepository
 
@@ -96,6 +97,10 @@ class Services:
 
     def queries(self) -> QueryService:
         return QueryService(self.repository)
+
+    def aggregates(self) -> SalesAggregateRepository:
+        """Agregaciones de solo lectura para reportes (spec 023), en la misma sesión."""
+        return SalesAggregateRepository(self.repository.session)
 
 
 def get_services(request: Request) -> Iterator[Services]:

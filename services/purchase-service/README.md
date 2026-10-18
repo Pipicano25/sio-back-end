@@ -165,3 +165,10 @@ Proyecto Compose único `infrastructure/services/purchase-service.yaml` (proyect
 
 **Limitación (R-12):** el impuesto de compra forma parte del costo real que usa la actualización automática de
 precios; Sales no agrega impuesto a la venta (provisional, **no es una solución fiscal**).
+
+## Compras del período para reportes (spec 023)
+
+Solo lectura, para `business-reporting-service`: `GET /api/v1/companies/{c}/purchase-reports/period` (PUR-R1).
+Permiso `perm:purchase:purchases:read` y membresía. Cabeceras sin líneas, paginadas, con `category` `RECEIVED`,
+`PENDING_RECEIPT` o `CANCELLED` (anulada aunque se hubiera recibido) y totales del período por moneda;
+`effective_total` excluye las anuladas. `receipt_status` conserva su significado. Sin migraciones.

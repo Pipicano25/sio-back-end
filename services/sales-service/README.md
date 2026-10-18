@@ -157,3 +157,11 @@ notas crédito.
 Proyecto Compose único `infrastructure/services/sales-service.yaml` (proyecto `sales-service`):
 `sales-db`, `sales-test-db` (perfil `test`), `sales-service`, `sales-audit-outbox-worker`,
 `sales-reconciler`.
+
+## Agregaciones para reportes (spec 023)
+
+Solo lectura, para `business-reporting-service` (que las llama con el token del usuario): `GET
+/api/v1/companies/{c}/sales-aggregates/by-product` (SAL-R1) y `…/by-branch` (SAL-R2). Permiso
+`perm:sales:sales:read` y membresía; solo ventas `CONFIRMED` con `operation_date` en el período (máximo 366 días);
+cantidades en unidad base con el factor guardado en la línea; importes por moneda; sin costos ni márgenes. Se
+calculan con `GROUP BY` sobre `ix_sales_company_date` y `uq_sale_details_line_number`, sin migraciones.

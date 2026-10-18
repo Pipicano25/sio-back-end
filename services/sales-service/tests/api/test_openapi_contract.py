@@ -56,7 +56,7 @@ def test_contract_route_table_lists_the_same_routes() -> None:
     assert ("POST", "/companies/{c}/sales/{id}/confirmation") in paths
     assert ("GET", "/companies/{c}/sales/{id}/availability") in paths
     assert ("DELETE", "/companies/{c}/sales/{id}/details/{detail_id}") in paths
-    assert len(ROUTES) == 19  # 18 filas del contrato + reactivate
+    assert len(ROUTES) == 21  # 18 filas del contrato + reactivate + 2 agregaciones de la spec 023
 
 
 def test_profitability_fields_are_optional_and_documented(test_client) -> None:

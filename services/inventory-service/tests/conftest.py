@@ -64,6 +64,7 @@ COMPANY_POLICIES_READ = "perm:inventory:company-policies:read"
 PRODUCT_POLICIES_UPDATE = "perm:inventory:product-policies:update"
 PRODUCT_POLICIES_READ = "perm:inventory:product-policies:read"
 VALUATION_READ = "perm:inventory:valuation:read"
+STOCK_EVOLUTION_READ = "perm:inventory:stock_evolution:read"  # spec 023, DR-11: solo INV-R1, sin costos
 READS_013 = (ADJUSTMENTS_READ, COUNTS_READ, COMPANY_POLICIES_READ, PRODUCT_POLICIES_READ, VALUATION_READ)
 OPERATOR_ROLES = (*ALL_INVENTORY, *READS_013)
 """Roles de `inventory-test-operator` en la plantilla: los cinco de la Fase A y las cinco lecturas (R-13)."""
@@ -89,8 +90,11 @@ USER_ROLES: dict[str, tuple[str, ...]] = {
         ADJUSTMENTS_CREATE,
         COUNTS_CREATE,
         *READS_013,
+        STOCK_EVOLUTION_READ,
     ),
-    "reportes.test": ("perm:operational-context:application_users:read", "perm:commercial-relationship:company_products:read"),
+    # Spec 023 (DR-11): `reportes` recibe solo `stock_evolution:read` de Inventory (nunca `movements:read`).
+    "reportes.test": ("perm:operational-context:application_users:read", "perm:commercial-relationship:company_products:read",
+                      STOCK_EVOLUTION_READ),
     "consulta.test": ("perm:operational-context:application_users:read", "perm:commercial-relationship:company_products:read"),
 }
 
