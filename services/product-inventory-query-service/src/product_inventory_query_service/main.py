@@ -6,9 +6,13 @@ si `SIO_DOCS_ENABLED`, la documentación son públicas, por ruta exacta (Princip
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from sio_auth import SIOAuth
 
+from product_inventory_query_service.api.dependencies import Dependencies, PortsFactory, build_http_dependencies, build_runtime
 from product_inventory_query_service.api.errors import register_error_handlers
 from product_inventory_query_service.api.health import ReadinessProbe
 from product_inventory_query_service.api.health import build_router as build_health_router
@@ -33,13 +37,28 @@ def create_app(
     *,
     auth: SIOAuth | None = None,
     jwks_probe: ReadinessProbe | None = None,
+    ports_factory: PortsFactory | None = None,
 ) -> FastAPI:
     """Construye la aplicación FastAPI.
 
-    Los parámetros solo los inyectan las pruebas; si se omiten se usan los adaptadores reales.
+    Los parámetros solo los inyectan las pruebas; si se omiten se usan los adaptadores reales (HTTP hacia OC, CR,
+    PC e Inventory y token técnico de Keycloak).
     """
     current_settings = settings or load_settings()
     configure_logging()
+
+    if ports_factory is None:
+        dependencies = build_http_dependencies(current_settings)
+    else:
+        async def nothing() -> None:
+            return None
+
+        dependencies = Dependencies(ports_factory, build_runtime(current_settings), nothing)
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        yield
+        await dependencies.close()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -53,8 +72,10 @@ def create_app(
         docs_url="/docs" if current_settings.docs_enabled else None,
         redoc_url=None,
         openapi_url="/openapi.json" if current_settings.docs_enabled else None,
+        lifespan=lifespan,
     )
     app.state.settings = current_settings
+    app.state.dependencies = dependencies
 
     public_paths = set(HEALTH_PUBLIC_PATHS)
 

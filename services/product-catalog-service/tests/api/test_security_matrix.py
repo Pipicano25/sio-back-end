@@ -17,7 +17,8 @@ _PARAM = re.compile(r"\{[^}]+\}")
 def _protected_routes():
     schema = create_app().openapi()
     for path, operations in schema["paths"].items():
-        if not path.startswith("/api/v1"):
+        if not path.startswith("/api/v1") or path.startswith("/api/v1/public/"):
+            # Spec 022: la ruta pública exacta de imágenes no exige token (test_public_product_images.py).
             continue
         for method in operations:
             yield method.upper(), _PARAM.sub(str(uuid4()), path)

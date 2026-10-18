@@ -470,6 +470,45 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "product-inventory-query-service",
+      "name": "Product Inventory Query Service",
+      "description": "Identidad técnica de product-inventory-query-service (client_credentials, spec 022): solo lectura en Commercial Relationship, Product Catalog e Inventory; sin escritura ni auditoría.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${PRODUCT_INVENTORY_QUERY_SERVICE_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "acr",
+        "basic",
+        "email",
+        "profile",
+        "roles",
+        "web-origins",
+        "service_account"
+      ],
+      "protocolMappers": [
+        {
+          "name": "sio-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sio-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "roles": {
@@ -1722,6 +1761,30 @@
         {
           "name": "perm:inventory:valuation:read",
           "description": "Consultar la valoración FIFO (valor, capas y consumos) de las empresas del usuario"
+        },
+        {
+          "name": "perm:product-inventory-query:product_overviews:read",
+          "description": "Spec 022: consultar el listado consolidado de productos (product-inventory-query-service)"
+        },
+        {
+          "name": "perm:product-inventory-query:inventory_overviews:read",
+          "description": "Spec 022: consultar el listado consolidado de inventario por sucursal y empresa"
+        },
+        {
+          "name": "perm:product-inventory-query:inventory_summary:read",
+          "description": "Spec 022: consultar el resumen de inventario por sucursal y consolidado"
+        },
+        {
+          "name": "perm:product-inventory-query:low_stock_products:read",
+          "description": "Spec 022: consultar los productos bajo el mínimo"
+        },
+        {
+          "name": "perm:product-inventory-query:stock:read",
+          "description": "Spec 022: ver existencias en las consultas consolidadas, sin costos ni valoración"
+        },
+        {
+          "name": "perm:product-inventory-query:inventory_valuation:read",
+          "description": "Spec 022: reservado para una spec futura de valoración; ningún endpoint lo evalúa (D-022-12)"
         }
       ]
     }
@@ -1839,7 +1902,10 @@
           "perm:commercial-relationship:price_lists:read",
           "perm:commercial-relationship:price_list_items:read",
           "perm:commercial-relationship:supplier_evaluations:read",
-          "perm:operational-context:all:read"
+          "perm:operational-context:all:read",
+          "perm:product-inventory-query:product_overviews:read",
+          "perm:product-inventory-query:inventory_overviews:read",
+          "perm:product-inventory-query:stock:read"
         ]
       }
     },
@@ -1860,7 +1926,12 @@
           "perm:inventory:counts:read",
           "perm:inventory:company-policies:read",
           "perm:inventory:product-policies:read",
-          "perm:inventory:valuation:read"
+          "perm:inventory:valuation:read",
+          "perm:product-inventory-query:product_overviews:read",
+          "perm:product-inventory-query:inventory_overviews:read",
+          "perm:product-inventory-query:inventory_summary:read",
+          "perm:product-inventory-query:low_stock_products:read",
+          "perm:product-inventory-query:stock:read"
         ]
       }
     },
@@ -2355,6 +2426,27 @@
           "perm:inventory:movements:read",
           "perm:inventory:platform:lookup",
           "perm:audit:audit-events:create"
+        ]
+      }
+    },
+    {
+      "id": "7d3f9a12-4c5e-4b8a-9e21-6f7a8b9c0d22",
+      "username": "service-account-product-inventory-query-service",
+      "enabled": true,
+      "serviceAccountClientId": "product-inventory-query-service",
+      "clientRoles": {
+        "sio-api": [
+          "perm:commercial-relationship:platform:lookup",
+          "perm:commercial-relationship:company_products:read",
+          "perm:commercial-relationship:company_product_presentations:read",
+          "perm:commercial-relationship:price_list_items:read",
+          "perm:product-catalog:products:read",
+          "perm:product-catalog:brands:read",
+          "perm:product-catalog:categories:read",
+          "perm:product-catalog:units-of-measure:read",
+          "perm:inventory:platform:lookup",
+          "perm:inventory:balances:read",
+          "perm:inventory:product-policies:read"
         ]
       }
     }

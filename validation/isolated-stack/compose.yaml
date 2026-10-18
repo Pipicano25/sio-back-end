@@ -1,0 +1,517 @@
+name: sio-it
+
+# Pila de integración AISLADA de SIO (spec 022, T129; FR-022-123, research R-14). Nunca comparte nada con el
+# entorno persistente:
+#
+# - proyecto "sio-it" y contenedores "sio-it-*", todos con la etiqueta sio.integration.isolated=true
+#   (validation/isolation_guard.py solo acepta destinos con esa etiqueta);
+# - red propia "sio-it-network" (no usa "sio-network");
+# - SIN volúmenes: toda base y el almacenamiento de objetos van en tmpfs y se pierden al retirar la pila;
+# - puertos solo en 127.0.0.1 y en el rango 18xxx (los persistentes usan 81xx, 54xx, 8081, 9000 a 9003);
+# - imágenes con etiqueta propia "sio-it/<servicio>:${SIO_IT_TAG}": construir la pila no reemplaza las imágenes
+#   "sio/<servicio>:<versión>" que usan los contenedores persistentes. Keycloak, PostgreSQL y MinIO reutilizan
+#   imágenes locales existentes, sin reconstruirlas;
+# - secretos generados para esta pila en validation/isolated-stack/.env (no versionado), nunca los del entorno
+#   persistente.
+#
+# Uso: validation/isolated-stack/stack.sh (README.md). No levantar con "docker compose" a mano sin --project-name
+# sio-it y --env-file validation/isolated-stack/.env.
+
+x-isolated: &isolated
+  labels:
+    sio.integration.isolated: "true"
+  networks: [sio-it-network]
+  restart: "no"
+
+x-postgres: &postgres
+  <<: *isolated
+  image: postgres:${POSTGRES_VERSION}
+  tmpfs: [/var/lib/postgresql/data]
+  environment: &postgres-env
+    POSTGRES_USER: ${SIO_IT_DB_USER}
+    POSTGRES_PASSWORD: ${SIO_IT_DB_PASSWORD}
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+    # En reposo cada 30 s; al arrancar, cada 2 s durante start_period para no retrasar depends_on y --wait.
+    interval: 30s
+    timeout: 5s
+    retries: 30
+    start_period: 30s
+    start_interval: 2s
+
+x-app-health: &app-health
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+    interval: 30s
+    timeout: 5s
+    retries: 30
+    start_period: 30s
+    start_interval: 2s
+
+x-auth: &auth
+  SIO_AUTH_ISSUER: ${SIO_IT_KEYCLOAK_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
+  SIO_AUTH_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
+  SIO_AUTH_AUDIENCE: sio-api
+  SIO_DOCS_ENABLED: "true"
+
+x-worker-health: &worker-health
+  healthcheck:
+    test: ["CMD", "python", "-m", "sio_audit.worker", "--check"]
+    # --check importa la aplicación y abre la base (1,7 a 6 s de CPU): en reposo cada 60 s.
+    interval: 60s
+    timeout: 5s
+    retries: 5
+    start_period: 30s
+    start_interval: 5s
+
+x-outbox: &outbox
+  AUDIT_SERVICE_BASE_URL: http://audit-service:8000/api/v1
+  KEYCLOAK_BASE_URL: http://keycloak:8080
+  KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+  AUDIT_OUTBOX_POLL_INTERVAL_SECONDS: "2"
+
+x-purchase-env: &purchase-env
+  <<: *auth
+  DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@purchase-db:5432/purchase
+  OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+  COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
+  PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
+  PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
+  PAYMENT_REFERENCE_SERVICE_BASE_URL: http://payment-reference-service:8000
+  INVENTORY_SERVICE_BASE_URL: http://inventory-service:8000/api/v1
+  INVENTORY_TIMEOUT_SECONDS: "10"
+  PURCHASE_RECONCILER_INTERVAL_SECONDS: "60"
+  PURCHASE_RECONCILER_THRESHOLD_SECONDS: "300"
+  PURCHASE_PRICE_WORKER_INTERVAL_SECONDS: "5"
+  KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+  PURCHASE_CLIENT_ID: purchase-service
+  PURCHASE_CLIENT_SECRET: ${PURCHASE_SERVICE_CLIENT_SECRET}
+
+x-sales-env: &sales-env
+  <<: *auth
+  DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@sales-db:5432/sales
+  OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+  COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
+  PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
+  PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
+  PAYMENT_REFERENCE_SERVICE_BASE_URL: http://payment-reference-service:8000
+  INVENTORY_SERVICE_BASE_URL: http://inventory-service:8000/api/v1
+  INVENTORY_TIMEOUT_SECONDS: "10"
+  SALES_RECONCILER_INTERVAL_SECONDS: "60"
+  SALES_RECONCILER_THRESHOLD_SECONDS: "300"
+  KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+  SALES_CLIENT_ID: sales-service
+  SALES_CLIENT_SECRET: ${SALES_SERVICE_CLIENT_SECRET}
+
+services:
+  # ------------------------------------------------------------------ identidad
+  keycloak-db:
+    <<: *postgres
+    container_name: sio-it-keycloak-db
+    environment: {<<: *postgres-env, POSTGRES_DB: keycloak}
+
+  keycloak:
+    <<: *isolated
+    image: sio/keycloak:${KEYCLOAK_VERSION}
+    container_name: sio-it-keycloak
+    init: true
+    command: [start, --optimized, --import-realm]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${SIO_IT_KEYCLOAK_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${SIO_IT_KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: ${SIO_IT_DB_USER}
+      KC_DB_PASSWORD: ${SIO_IT_DB_PASSWORD}
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: ${SIO_IT_KEYCLOAK_PUBLIC_URL}
+      KC_HEALTH_ENABLED: "true"
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      SIO_WEB_ORIGIN: http://localhost:13000
+      SIO_WEB_REDIRECT_URI: http://localhost:13000/*
+      KEYCLOAK_TEST_USER_PASSWORD: ${KEYCLOAK_TEST_USER_PASSWORD}
+      PARTY_IDENTITY_CLIENT_SECRET: ${PARTY_IDENTITY_CLIENT_SECRET}
+      OPERATIONAL_CONTEXT_CLIENT_SECRET: ${OPERATIONAL_CONTEXT_CLIENT_SECRET}
+      COMMERCIAL_RELATIONSHIP_CLIENT_SECRET: ${COMMERCIAL_RELATIONSHIP_CLIENT_SECRET}
+      AUDIT_TEST_EMITTER_CLIENT_SECRET: ${AUDIT_TEST_EMITTER_CLIENT_SECRET}
+      INVENTORY_SERVICE_CLIENT_SECRET: ${INVENTORY_SERVICE_CLIENT_SECRET}
+      INVENTORY_TEST_OPERATOR_CLIENT_SECRET: ${INVENTORY_TEST_OPERATOR_CLIENT_SECRET}
+      SIO_DATA_IMPORTER_CLIENT_SECRET: ${SIO_DATA_IMPORTER_CLIENT_SECRET}
+      PURCHASE_SERVICE_CLIENT_SECRET: ${PURCHASE_SERVICE_CLIENT_SECRET}
+      SALES_SERVICE_CLIENT_SECRET: ${SALES_SERVICE_CLIENT_SECRET}
+      PRODUCT_CATALOG_SERVICE_CLIENT_SECRET: ${PRODUCT_CATALOG_SERVICE_CLIENT_SECRET}
+      PRODUCT_INVENTORY_QUERY_SERVICE_CLIENT_SECRET: ${PRODUCT_INVENTORY_QUERY_SERVICE_CLIENT_SECRET}
+    ports: ["127.0.0.1:18081:8080"]
+    volumes:
+      # La plantilla versionada, en solo lectura: Keycloak sustituye los ${...} con el entorno de ESTA pila.
+      - ../../infrastructure/keycloak/realm-template/sio-realm.template.json:/opt/keycloak/data/import/sio-realm.json:ro
+    depends_on: {keycloak-db: {condition: service_healthy}}
+    healthcheck:
+      test: ["CMD-SHELL", "{ printf 'HEAD /health/ready HTTP/1.0\r\n\r\n' >&0; grep 'HTTP/1.0 200'; } 0<>/dev/tcp/127.0.0.1/9000"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  # ------------------------------------------------------------------ almacenamiento de objetos
+  object-storage:
+    <<: *isolated
+    image: cgr.dev/chainguard/minio@sha256:7df55d002b698e4494a131b848dd553361bbe58b7e19f62d9623c29af1ba9ccf
+    container_name: sio-it-object-storage
+    command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+    tmpfs: [/data]
+    environment:
+      MINIO_ROOT_USER: ${SIO_IT_MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${SIO_IT_MINIO_ROOT_PASSWORD}
+      MINIO_BROWSER_REDIRECT: "false"
+      MC_CONFIG_DIR: /tmp/.mc
+    ports: ["127.0.0.1:18902:9000"]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  object-storage-bootstrap:
+    <<: *isolated
+    image: cgr.dev/chainguard/minio@sha256:7df55d002b698e4494a131b848dd553361bbe58b7e19f62d9623c29af1ba9ccf
+    container_name: sio-it-object-storage-bootstrap
+    profiles: ["bootstrap"]
+    entrypoint: ["/bin/sh", "/bootstrap/bootstrap.sh"]
+    environment:
+      OBJECT_STORAGE_URL: http://object-storage:9000
+      OBJECT_STORAGE_BUCKET: sio-it-product-assets
+      MINIO_ROOT_USER: ${SIO_IT_MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${SIO_IT_MINIO_ROOT_PASSWORD}
+      PRODUCT_CATALOG_ASSET_STORAGE_ACCESS_KEY: ${SIO_IT_PC_STORAGE_ACCESS_KEY}
+      PRODUCT_CATALOG_ASSET_STORAGE_SECRET_KEY: ${SIO_IT_PC_STORAGE_SECRET_KEY}
+      MIGRATION_ASSET_STORAGE_ACCESS_KEY: ${SIO_IT_WRITER_STORAGE_ACCESS_KEY}
+      MIGRATION_ASSET_STORAGE_SECRET_KEY: ${SIO_IT_WRITER_STORAGE_SECRET_KEY}
+      MC_CONFIG_DIR: /tmp/.mc
+    volumes: ["../../infrastructure/object-storage:/bootstrap:ro"]
+    depends_on: {object-storage: {condition: service_healthy}}
+
+  # ------------------------------------------------------------------ bases de los servicios
+  geography-db: {<<: *postgres, container_name: sio-it-geography-db, environment: {<<: *postgres-env, POSTGRES_DB: geography}}
+  party-identity-db: {<<: *postgres, container_name: sio-it-party-identity-db, environment: {<<: *postgres-env, POSTGRES_DB: party_identity}}
+  operational-context-db: {<<: *postgres, container_name: sio-it-operational-context-db, environment: {<<: *postgres-env, POSTGRES_DB: operational_context}}
+  payment-reference-db: {<<: *postgres, container_name: sio-it-payment-reference-db, environment: {<<: *postgres-env, POSTGRES_DB: payment_reference}}
+  product-catalog-db: {<<: *postgres, container_name: sio-it-product-catalog-db, environment: {<<: *postgres-env, POSTGRES_DB: product_catalog}}
+  commercial-relationship-db: {<<: *postgres, container_name: sio-it-commercial-relationship-db, environment: {<<: *postgres-env, POSTGRES_DB: commercial_relationship}}
+  inventory-db: {<<: *postgres, container_name: sio-it-inventory-db, environment: {<<: *postgres-env, POSTGRES_DB: inventory}}
+  purchase-db: {<<: *postgres, container_name: sio-it-purchase-db, environment: {<<: *postgres-env, POSTGRES_DB: purchase}}
+  sales-db: {<<: *postgres, container_name: sio-it-sales-db, environment: {<<: *postgres-env, POSTGRES_DB: sales}}
+  audit-db: {<<: *postgres, container_name: sio-it-audit-db, environment: {<<: *postgres-env, POSTGRES_DB: audit}}
+
+  # ------------------------------------------------------------------ servicios
+  geography-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/geography-service/Dockerfile}
+    image: sio-it/geography-service:${SIO_IT_TAG}
+    container_name: sio-it-geography-service
+    environment:
+      <<: *auth
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@geography-db:5432/geography
+    ports: ["127.0.0.1:18102:8000"]
+    depends_on: {geography-db: {condition: service_healthy}}
+
+  party-identity-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/party-identity-service/Dockerfile}
+    image: sio-it/party-identity-service:${SIO_IT_TAG}
+    container_name: sio-it-party-identity-service
+    environment:
+      <<: *auth
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@party-identity-db:5432/party_identity
+      GEOGRAPHY_SERVICE_BASE_URL: http://geography-service:8000
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+      KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+      PARTY_IDENTITY_CLIENT_ID: party-identity-service
+      PARTY_IDENTITY_CLIENT_SECRET: ${PARTY_IDENTITY_CLIENT_SECRET}
+    ports: ["127.0.0.1:18101:8000"]
+    depends_on: {party-identity-db: {condition: service_healthy}}
+
+  operational-context-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/operational-context-service/Dockerfile}
+    image: sio-it/operational-context-service:${SIO_IT_TAG}
+    container_name: sio-it-operational-context-service
+    environment:
+      <<: *auth
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@operational-context-db:5432/operational_context
+      PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
+      GEOGRAPHY_SERVICE_BASE_URL: http://geography-service:8000
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      OPERATIONAL_CONTEXT_CLIENT_ID: operational-context-service
+      OPERATIONAL_CONTEXT_CLIENT_SECRET: ${OPERATIONAL_CONTEXT_CLIENT_SECRET}
+      SIO_API_CLIENT_ID: sio-api
+    ports: ["127.0.0.1:18104:8000"]
+    depends_on: {operational-context-db: {condition: service_healthy}}
+
+  payment-reference-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/payment-reference-service/Dockerfile}
+    image: sio-it/payment-reference-service:${SIO_IT_TAG}
+    container_name: sio-it-payment-reference-service
+    environment:
+      <<: *auth
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@payment-reference-db:5432/payment_reference
+    ports: ["127.0.0.1:18105:8000"]
+    depends_on: {payment-reference-db: {condition: service_healthy}}
+
+  product-catalog-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/product-catalog-service/Dockerfile}
+    image: sio-it/product-catalog-service:${SIO_IT_TAG}
+    container_name: sio-it-product-catalog-service
+    environment:
+      <<: *auth
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@product-catalog-db:5432/product_catalog
+      PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
+      ASSET_STORAGE_ENDPOINT: http://object-storage:9000
+      ASSET_STORAGE_BUCKET: sio-it-product-assets
+      ASSET_STORAGE_ACCESS_KEY: ${SIO_IT_PC_STORAGE_ACCESS_KEY}
+      ASSET_STORAGE_SECRET_KEY: ${SIO_IT_PC_STORAGE_SECRET_KEY}
+      # Ruta pública de imágenes habilitada SOLO en esta pila (FR-022-99: el entorno persistente sigue sin ella).
+      PRODUCT_CATALOG_PUBLIC_BASE_URL: http://127.0.0.1:18103
+      PRODUCT_IMAGE_REF_SECRET: ${SIO_IT_PRODUCT_IMAGE_REF_SECRET}
+    ports: ["127.0.0.1:18103:8000"]
+    depends_on: {product-catalog-db: {condition: service_healthy}}
+
+  commercial-relationship-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/commercial-relationship-service/Dockerfile}
+    image: sio-it/commercial-relationship-service:${SIO_IT_TAG}
+    container_name: sio-it-commercial-relationship-service
+    environment: &cr-env
+      <<: *auth
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@commercial-relationship-db:5432/commercial_relationship
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+      PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
+      PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
+      PAYMENT_REFERENCE_SERVICE_BASE_URL: http://payment-reference-service:8000
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      COMMERCIAL_RELATIONSHIP_CLIENT_ID: commercial-relationship-service
+      COMMERCIAL_RELATIONSHIP_CLIENT_SECRET: ${COMMERCIAL_RELATIONSHIP_CLIENT_SECRET}
+    ports: ["127.0.0.1:18106:8000"]
+    depends_on: {commercial-relationship-db: {condition: service_healthy}}
+
+  inventory-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/inventory-service/Dockerfile}
+    image: sio-it/inventory-service:${SIO_IT_TAG}
+    container_name: sio-it-inventory-service
+    environment:
+      <<: *auth
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@inventory-db:5432/inventory
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+      COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
+      KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+      INVENTORY_CLIENT_ID: inventory-service
+      INVENTORY_CLIENT_SECRET: ${INVENTORY_SERVICE_CLIENT_SECRET}
+    ports: ["127.0.0.1:18109:8000"]
+    depends_on: {inventory-db: {condition: service_healthy}}
+
+  purchase-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/purchase-service/Dockerfile}
+    image: sio-it/purchase-service:${SIO_IT_TAG}
+    container_name: sio-it-purchase-service
+    environment: *purchase-env
+    ports: ["127.0.0.1:18107:8000"]
+    depends_on: {purchase-db: {condition: service_healthy}}
+
+  sales-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/sales-service/Dockerfile}
+    image: sio-it/sales-service:${SIO_IT_TAG}
+    container_name: sio-it-sales-service
+    environment: *sales-env
+    ports: ["127.0.0.1:18108:8000"]
+    depends_on: {sales-db: {condition: service_healthy}}
+
+  audit-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/audit-service/Dockerfile}
+    image: sio-it/audit-service:${SIO_IT_TAG}
+    container_name: sio-it-audit-service
+    environment:
+      <<: *auth
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@audit-db:5432/audit
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+    ports: ["127.0.0.1:18110:8000"]
+    depends_on: {audit-db: {condition: service_healthy}}
+
+  product-inventory-query-service:
+    <<: [*isolated, *app-health]
+    build: {context: ../.., dockerfile: services/product-inventory-query-service/Dockerfile}
+    image: sio-it/product-inventory-query-service:${SIO_IT_TAG}
+    container_name: sio-it-product-inventory-query-service
+    environment:
+      <<: *auth
+      OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+      COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
+      PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
+      INVENTORY_SERVICE_BASE_URL: http://inventory-service:8000/api/v1
+      PIQS_CURSOR_SECRET: ${SIO_IT_PIQS_CURSOR_SECRET}
+      PIQS_MAX_BATCHES_PER_REQUEST: ${SIO_IT_PIQS_MAX_BATCHES:-5}
+      KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+      PIQS_CLIENT_ID: product-inventory-query-service
+      PIQS_CLIENT_SECRET: ${PRODUCT_INVENTORY_QUERY_SERVICE_CLIENT_SECRET}
+    ports: ["127.0.0.1:18112:8000"]
+
+  # ------------------------------------------------------------------ trabajadores
+  commercial-relationship-price-worker:
+    <<: *isolated
+    image: sio-it/commercial-relationship-service:${SIO_IT_TAG}
+    container_name: sio-it-commercial-relationship-price-worker
+    command: ["python", "-m", "commercial_relationship_service.price_worker"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "commercial_relationship_service.price_worker", "--check"]
+      interval: 60s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+      start_interval: 5s
+    environment:
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@commercial-relationship-db:5432/commercial_relationship
+      CR_PRICE_WORKER_INTERVAL_SECONDS: "2"
+    depends_on: {commercial-relationship-service: {condition: service_healthy}}
+
+  purchase-price-update-worker:
+    <<: *isolated
+    image: sio-it/purchase-service:${SIO_IT_TAG}
+    container_name: sio-it-purchase-price-update-worker
+    command: ["python", "-m", "purchase_service.price_update_worker"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "purchase_service.price_update_worker", "--check"]
+      interval: 60s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+      start_interval: 5s
+    environment: *purchase-env
+    depends_on: {purchase-service: {condition: service_healthy}}
+
+  purchase-reconciler:
+    <<: *isolated
+    image: sio-it/purchase-service:${SIO_IT_TAG}
+    container_name: sio-it-purchase-reconciler
+    command: ["python", "-m", "purchase_service.reconciler"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "purchase_service.reconciler", "--check"]
+      interval: 60s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+      start_interval: 5s
+    environment: *purchase-env
+    depends_on: {purchase-service: {condition: service_healthy}}
+
+  sales-reconciler:
+    <<: *isolated
+    image: sio-it/sales-service:${SIO_IT_TAG}
+    container_name: sio-it-sales-reconciler
+    command: ["python", "-m", "sales_service.reconciler"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "sales_service.reconciler", "--check"]
+      interval: 60s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+      start_interval: 5s
+    environment: *sales-env
+    depends_on: {sales-service: {condition: service_healthy}}
+
+  operational-context-audit-outbox-worker:
+    <<: [*isolated, *worker-health]
+    image: sio-it/operational-context-service:${SIO_IT_TAG}
+    container_name: sio-it-operational-context-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    environment:
+      <<: *outbox
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@operational-context-db:5432/operational_context
+      AUDIT_CLIENT_ID: operational-context-service
+      AUDIT_CLIENT_SECRET: ${OPERATIONAL_CONTEXT_CLIENT_SECRET}
+    depends_on: {operational-context-service: {condition: service_healthy}}
+
+  party-identity-audit-outbox-worker:
+    <<: [*isolated, *worker-health]
+    image: sio-it/party-identity-service:${SIO_IT_TAG}
+    container_name: sio-it-party-identity-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    environment:
+      <<: *outbox
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@party-identity-db:5432/party_identity
+      AUDIT_CLIENT_ID: party-identity-service
+      AUDIT_CLIENT_SECRET: ${PARTY_IDENTITY_CLIENT_SECRET}
+    depends_on: {party-identity-service: {condition: service_healthy}}
+
+  product-catalog-audit-outbox-worker:
+    <<: [*isolated, *worker-health]
+    image: sio-it/product-catalog-service:${SIO_IT_TAG}
+    container_name: sio-it-product-catalog-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    environment:
+      <<: *outbox
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@product-catalog-db:5432/product_catalog
+      AUDIT_CLIENT_ID: product-catalog-service
+      AUDIT_CLIENT_SECRET: ${PRODUCT_CATALOG_SERVICE_CLIENT_SECRET}
+    depends_on: {product-catalog-service: {condition: service_healthy}}
+
+  commercial-relationship-audit-outbox-worker:
+    <<: [*isolated, *worker-health]
+    image: sio-it/commercial-relationship-service:${SIO_IT_TAG}
+    container_name: sio-it-commercial-relationship-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    environment:
+      <<: *outbox
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@commercial-relationship-db:5432/commercial_relationship
+      AUDIT_CLIENT_ID: commercial-relationship-service
+      AUDIT_CLIENT_SECRET: ${COMMERCIAL_RELATIONSHIP_CLIENT_SECRET}
+    depends_on: {commercial-relationship-service: {condition: service_healthy}}
+
+  inventory-audit-outbox-worker:
+    <<: [*isolated, *worker-health]
+    image: sio-it/inventory-service:${SIO_IT_TAG}
+    container_name: sio-it-inventory-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    environment:
+      <<: *outbox
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@inventory-db:5432/inventory
+      AUDIT_CLIENT_ID: inventory-service
+      AUDIT_CLIENT_SECRET: ${INVENTORY_SERVICE_CLIENT_SECRET}
+    depends_on: {inventory-service: {condition: service_healthy}}
+
+  purchase-audit-outbox-worker:
+    <<: [*isolated, *worker-health]
+    image: sio-it/purchase-service:${SIO_IT_TAG}
+    container_name: sio-it-purchase-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    environment:
+      <<: *outbox
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@purchase-db:5432/purchase
+      AUDIT_CLIENT_ID: purchase-service
+      AUDIT_CLIENT_SECRET: ${PURCHASE_SERVICE_CLIENT_SECRET}
+    depends_on: {purchase-service: {condition: service_healthy}}
+
+  sales-audit-outbox-worker:
+    <<: [*isolated, *worker-health]
+    image: sio-it/sales-service:${SIO_IT_TAG}
+    container_name: sio-it-sales-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    environment:
+      <<: *outbox
+      DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@sales-db:5432/sales
+      AUDIT_CLIENT_ID: sales-service
+      AUDIT_CLIENT_SECRET: ${SALES_SERVICE_CLIENT_SECRET}
+    depends_on: {sales-service: {condition: service_healthy}}
+
+networks:
+  sio-it-network:
+    name: sio-it-network
+    driver: bridge
+    labels:
+      sio.integration.isolated: "true"

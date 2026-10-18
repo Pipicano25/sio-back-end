@@ -75,6 +75,15 @@ LATER_ADDITIONS = {
         "perm:commercial-relationship:automatic_price_applications:resolve",
         "perm:purchase:purchase_line_taxes:override",
     },
+    # Spec 022 (FR-022-111): permisos del servicio de consultas consolidadas para `inventario`. No afectan a Party
+    # Identity.
+    "inventario": {
+        "perm:product-inventory-query:product_overviews:read",
+        "perm:product-inventory-query:inventory_overviews:read",
+        "perm:product-inventory-query:inventory_summary:read",
+        "perm:product-inventory-query:low_stock_products:read",
+        "perm:product-inventory-query:stock:read",
+    },
 }
 
 

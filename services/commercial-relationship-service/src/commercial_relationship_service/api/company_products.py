@@ -131,9 +131,15 @@ def build_router(auth: SIOAuth) -> APIRouter:
         response_model=PaginatedResponse[CompanyProductResponse],
         dependencies=[permission("read")],
         summary="Listar los productos de una empresa",
+        description=(
+            "Productos de la empresa con paginación por página. Lo leen los miembros de la empresa y, en solo "
+            "lectura, las cuentas de servicio con `perm:commercial-relationship:platform:lookup` y este permiso "
+            "(spec 022: `product-inventory-query-service` cuenta los adoptados con `total_records`)."
+        ),
     )
     def list_products(
-        company_id: UUID = Depends(_company(write=False)),
+        # Spec 022 (decisión del 2026-10-17): misma vía técnica de solo lectura que CR-1 (`lookup=True`).
+        company_id: UUID = Depends(company_dependency(write=False, lookup=True)),
         pagination: PaginationParams = Depends(),
         filters: CompanyProductFilters = Depends(),
         repository=Depends(get_product_repository),

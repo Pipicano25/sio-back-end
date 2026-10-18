@@ -81,8 +81,9 @@ proveedores; las pruebas inyectan dobles por la fábrica `create_app`.
   → `403 OPERATIONAL_ACCESS_DENIED`; si no está disponible → `503`.
 - Empresa `INACTIVE`: las lecturas y las inactivaciones continúan; las demás escrituras (incluido el
   `PUT`) → `422 COMPANY_INACTIVE`.
-- **Exención técnica** (solo lecturas por UUID, las consultas por lotes de productos y presentaciones y
-  el precio aplicable): una identidad
+- **Exención técnica** (solo lecturas por UUID, las consultas por lotes de productos y presentaciones,
+  el precio aplicable, la búsqueda CR-1 y, desde la spec 022, el listado
+  `GET /companies/{company_id}/company-products`): una identidad
   técnica (claims `client_id` y `preferred_username = service-account-{client_id}`) **con**
   `perm:commercial-relationship:platform:lookup` lee sin membresía. Un usuario humano nunca la
   obtiene, aunque tenga el permiso.
@@ -282,7 +283,9 @@ base detenida: `docker start sio-commercial-relationship-db`.
   `id`), `limit` de 1 a 100 y `after` (la `position` del último elemento usado). Sin `total_records`:
   `has_more` indica si hay más. Con `company_product_ids` o `global_product_ids` (hasta 100) evalúa los
   filtros solo sobre esos productos. Exige `company_products:read`; la cuenta técnica usa
-  `platform:lookup`. El listado `GET` no cambia.
+  `platform:lookup`. El listado `GET` conserva su contrato; desde la spec 022 también admite la cuenta
+  técnica con `platform:lookup` y `company_products:read`, en solo lectura, para que
+  `product-inventory-query-service` cuente los productos adoptados con `total_records`.
 - Presentaciones por productos (spec 022, CR-2):
   `POST /api/v1/companies/{company_id}/company-product-presentations/by-products` con hasta 100
   `company_product_ids` y `status` (`ALL` por defecto); orden `company_product_id, id`. Exige

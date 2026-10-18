@@ -130,7 +130,8 @@ def _implemented() -> set[tuple[str, str]]:
 
 
 def test_openapi_matches_contract() -> None:
-    implemented = _implemented()
+    # Spec 022: la ruta pública de imágenes solo existe con secreto y URL pública base (FR-022-99).
+    implemented = _implemented() - {("GET", f"{P}/public/product-images")}
     assert implemented - EXPECTED == set(), "Rutas sin contrato"
     assert EXPECTED - implemented == set(), "Rutas del contrato sin implementar"
 

@@ -9,7 +9,9 @@ El middleware es el más externo de la aplicación:
   librería responde con `{"detail": ...}` antes de llegar a los manejadores.
 
 `configure_logging()` agrega el `trace_id` a todo registro de los loggers del
-servicio y de uvicorn (D3: el `trace_id` también DEBE registrarse en los logs).
+servicio y de uvicorn (D3: el `trace_id` también DEBE registrarse en los logs) y
+oculta la referencia firmada de la ruta pública de imágenes en el log de acceso
+(spec 022, FR-022-77: nunca se registran referencias de imagen completas).
 """
 
 from __future__ import annotations
@@ -41,6 +43,26 @@ AUTH_LOGGER = "sio_auth"
 TRACED_LOGGERS = ("product_catalog_service", AUTH_LOGGER, "uvicorn", "uvicorn.error", "uvicorn.access")
 
 
+_IMAGE_REF = re.compile(r"(?<=[?&]ref=)[^&\s\"]+")
+REDACTED = "[REDACTADO]"
+
+
+def redact_image_ref(text: str) -> str:
+    """Reemplaza el valor de `ref=` de una URL por un marcador."""
+    return _IMAGE_REF.sub(REDACTED, text)
+
+
+class ImageRefRedactionFilter(logging.Filter):
+    """Oculta `ref=…` en los registros (uvicorn pasa la ruta con su consulta en `record.args`)."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.args, tuple):
+            record.args = tuple(redact_image_ref(item) if isinstance(item, str) else item for item in record.args)
+        if isinstance(record.msg, str):
+            record.msg = redact_image_ref(record.msg)
+        return True
+
+
 class TraceIdFilter(logging.Filter):
     """Copia el `trace_id` de la solicitud en curso en cada registro de log."""
 
@@ -68,6 +90,10 @@ def configure_logging() -> None:
             if not any(isinstance(item, TraceIdFilter) for item in handler.filters):
                 handler.addFilter(TraceIdFilter())
             handler.setFormatter(formatter)
+
+    access = logging.getLogger("uvicorn.access")
+    if not any(isinstance(item, ImageRefRedactionFilter) for item in access.filters):
+        access.addFilter(ImageRefRedactionFilter())
 
     for name in ("product_catalog_service", AUTH_LOGGER):
         service_logger = logging.getLogger(name)

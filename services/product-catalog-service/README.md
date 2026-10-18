@@ -216,6 +216,10 @@ base detenida: `docker start sio-product-catalog-db`.
   `after` y `limit` (1 a 100) y `has_more`, sin conteos. Filtros: marcas, categorías (con
   descendientes), identificador exacto, tipo, estado (`ACTIVE` por defecto) y `has_image`.
 - Lote de unidades: desde la spec 022 incluye `code` y `name` (campos aditivos).
+- Imagen pública (spec 022): `GET /api/v1/public/product-images?ref=…`, sin token, para `<img src={image_url}>`.
+  Solo existe con `PRODUCT_IMAGE_REF_SECRET` y `PRODUCT_CATALOG_PUBLIC_BASE_URL`; caché pública inmutable con
+  `ETag` y `304`; cualquier referencia inválida da el mismo `404`. Configuración, rotación del secreto y
+  verificación previa de solo lectura: [docs/imagen-publica.md](docs/imagen-publica.md).
 
 ## Permisos
 

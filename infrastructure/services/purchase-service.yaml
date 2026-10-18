@@ -61,10 +61,11 @@ services:
       - purchase_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${PURCHASE_DB_USER} -d ${PURCHASE_DB_NAME}"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 10
-      start_period: 10s
+      start_period: 30s
+      start_interval: 2s
 
   # Base de pruebas (perfil "test"): solo se levanta a pedido, desde la raíz:
   #   docker compose --file infrastructure/services/purchase-service.yaml --env-file infrastructure/.env --profile test up -d purchase-test-db
@@ -107,10 +108,11 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 10
-      start_period: 15s
+      start_period: 30s
+      start_interval: 2s
     networks:
       - sio-network
 
@@ -139,10 +141,11 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-m", "sio_audit.worker", "--check"]
-      interval: 30s
+      interval: 60s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 30s
+      start_interval: 5s
     networks:
       - sio-network
 
@@ -160,10 +163,11 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-m", "purchase_service.reconciler", "--check"]
-      interval: 30s
+      interval: 60s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 30s
+      start_interval: 5s
     networks:
       - sio-network
 
@@ -182,10 +186,11 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-m", "purchase_service.price_update_worker", "--check"]
-      interval: 30s
+      interval: 60s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 30s
+      start_interval: 5s
     networks:
       - sio-network
 

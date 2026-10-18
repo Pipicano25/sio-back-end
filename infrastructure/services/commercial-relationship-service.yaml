@@ -23,10 +23,11 @@ services:
       - commercial_relationship_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${COMMERCIAL_RELATIONSHIP_DB_USER} -d ${COMMERCIAL_RELATIONSHIP_DB_NAME}"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 10
-      start_period: 10s
+      start_period: 30s
+      start_interval: 2s
 
   # Base de pruebas (perfil "test"): solo se levanta a pedido, desde la raíz:
   #   docker compose --file infrastructure/services/commercial-relationship-service.yaml --env-file infrastructure/.env --profile test up -d commercial-relationship-test-db
@@ -98,10 +99,11 @@ services:
 
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 10
-      start_period: 15s
+      start_period: 30s
+      start_interval: 2s
 
     networks:
       - sio-network
@@ -132,10 +134,11 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-m", "sio_audit.worker", "--check"]
-      interval: 30s
+      interval: 60s
       timeout: 20s
       retries: 3
-      start_period: 15s
+      start_period: 30s
+      start_interval: 5s
     networks:
       - sio-network
 
@@ -157,10 +160,11 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-m", "commercial_relationship_service.price_worker", "--check"]
-      interval: 30s
+      interval: 60s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 30s
+      start_interval: 5s
     networks:
       - sio-network
 

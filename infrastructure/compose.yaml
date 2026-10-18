@@ -36,10 +36,11 @@ services:
           "CMD-SHELL",
           "pg_isready -U ${KEYCLOAK_DB_USER} -d ${KEYCLOAK_DB_NAME}"
         ]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 10
-      start_period: 10s
+      start_period: 30s
+      start_interval: 2s
 
   keycloak:
     build:
@@ -89,6 +90,7 @@ services:
       PURCHASE_SERVICE_CLIENT_SECRET: ${PURCHASE_SERVICE_CLIENT_SECRET}
       SALES_SERVICE_CLIENT_SECRET: ${SALES_SERVICE_CLIENT_SECRET}
       PRODUCT_CATALOG_SERVICE_CLIENT_SECRET: ${PRODUCT_CATALOG_SERVICE_CLIENT_SECRET}
+      PRODUCT_INVENTORY_QUERY_SERVICE_CLIENT_SECRET: ${PRODUCT_INVENTORY_QUERY_SERVICE_CLIENT_SECRET}
 
     ports:
       - "127.0.0.1:${KEYCLOAK_HTTP_PORT}:8080"

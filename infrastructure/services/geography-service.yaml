@@ -24,10 +24,11 @@ services:
       - geography_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${GEOGRAPHY_DB_USER} -d ${GEOGRAPHY_DB_NAME}"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 10
-      start_period: 10s
+      start_period: 30s
+      start_interval: 2s
 
   # Base de pruebas (perfil "test"): solo se levanta a pedido, desde la raíz:
   #   docker compose --file infrastructure/services/geography-service.yaml --env-file infrastructure/.env --profile test up -d geography-test-db
@@ -86,10 +87,11 @@ services:
 
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 10
-      start_period: 15s
+      start_period: 30s
+      start_interval: 2s
 
     networks:
       - sio-network

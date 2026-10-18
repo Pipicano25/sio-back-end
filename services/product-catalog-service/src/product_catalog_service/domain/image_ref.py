@@ -38,9 +38,13 @@ def sha_from_key(key: str) -> str | None:
     return match.group(1) if match else None
 
 
-def eligible_image_sha(asset: Any, bucket: str) -> str | None:
-    """SHA-256 del contenido si el activo es una imagen principal apta para URL (FR-022-46)."""
-    if asset.asset_type != "IMAGE" or asset.status != "ACTIVE" or not asset.is_primary:
+def eligible_image_sha(asset: Any, bucket: str, *, require_primary: bool = True) -> str | None:
+    """SHA-256 del contenido si el activo es una imagen apta para URL (FR-022-46).
+
+    `has_image` exige la imagen principal; la ruta pública (`require_primary=False`) sigue sirviendo una URL ya
+    emitida mientras su activo esté `ACTIVE` (historia 2, escenario 3).
+    """
+    if asset.asset_type != "IMAGE" or asset.status != "ACTIVE" or (require_primary and not asset.is_primary):
         return None
     if asset.mime_type not in ALLOWED_IMAGE_TYPES:
         return None

@@ -13,6 +13,8 @@ from product_catalog_service.audit_context import bind_audit_actor
 from product_catalog_service.api.errors import register_error_handlers
 from product_catalog_service.api.health import build_router as build_health_router
 from product_catalog_service.api.openapi import configure_bearer_openapi
+from product_catalog_service.api.public_images import PUBLIC_IMAGE_PATH
+from product_catalog_service.api.public_images import build_router as build_public_images_router
 from product_catalog_service.api.routers import include_domain_routers
 from product_catalog_service.api.security import build_auth
 from product_catalog_service.api.tracing import TracingMiddleware, configure_logging
@@ -97,6 +99,10 @@ def create_app(
 
     register_error_handlers(app)
     app.include_router(build_health_router(database))
+    # Spec 022 (FR-022-90, FR-022-99): ruta pública exacta de imágenes, solo con secreto y URL pública base.
+    if current_settings.public_images_enabled:
+        app.include_router(build_public_images_router())
+        public_paths.add(PUBLIC_IMAGE_PATH)
     include_domain_routers(app, current_auth)
 
     current_auth.protect(app, public_paths=public_paths)
