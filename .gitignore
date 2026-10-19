@@ -95,3 +95,9 @@ tools/data-migration/data/
 tools/data-migration/DAO/
 # Excepción: plantilla estándar de información requerida (versionada con los esquemas)
 !tools/data-migration/templates/required_information.xlsx
+
+
+meet/
+backups/
+infrastructure/scripts/sio-migration/neon-migration.env
+services/get_token_siodev_empresas.py
