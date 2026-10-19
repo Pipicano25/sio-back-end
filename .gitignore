@@ -101,3 +101,4 @@ meet/
 backups/
 infrastructure/scripts/sio-migration/neon-migration.env
 services/get_token_siodev_empresas.py
+docs/slidev/

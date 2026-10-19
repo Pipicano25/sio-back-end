@@ -60,6 +60,31 @@ auth.protect(
 
 Cualquier otra ruta exige automáticamente un Bearer Access Token válido.
 
+## CORS para navegadores
+
+```python
+from sio_auth import install_cors
+
+auth.protect(app, public_paths=...)
+install_cors(app)  # al final de la fábrica de la aplicación
+```
+
+`install_cors` abre las API a cualquier origen web sin tocar la autenticación:
+
+| Cabecera | Valor |
+| --- | --- |
+| `Access-Control-Allow-Origin` | `*` |
+| `Access-Control-Allow-Credentials` | nunca se envía (SIO no usa cookies) |
+| `Access-Control-Allow-Methods` | `GET, POST, PUT, PATCH, DELETE, OPTIONS` |
+| `Access-Control-Allow-Headers` | los que pida el navegador (`Authorization`, `Content-Type`, `Idempotency-Key`, `traceparent`…) |
+| `Access-Control-Expose-Headers` | `X-Trace-Id, Content-Disposition` |
+| `Access-Control-Max-Age` | `600` |
+
+- El preflight `OPTIONS` se responde antes de `SIOAuthMiddleware`, sin token.
+- Envuelve toda la pila, incluido el manejador de errores de Starlette: los `401`, `403`,
+  `422` y `500` también llevan las cabeceras, y el navegador puede leer el error.
+- CORS no autoriza nada: sin token sigue el `401` y sin permiso el `403`.
+
 ## Exigir un permiso
 
 El permiso requerido por un endpoint se declara en el propio microservicio:
@@ -143,6 +168,7 @@ evaluate_permission(roles, required)  # True
 
 | Versión | Cambio |
 | --- | --- |
+| `0.5.0` | Nueva función pública `install_cors(app)`: CORS abierto como capa más externa (compatible). |
 | `0.3.0` | Nueva función pública `evaluate_permission(roles, required)` (compatible). |
 | `0.2.0` | Versión previa. |
 

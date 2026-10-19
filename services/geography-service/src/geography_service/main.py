@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from sio_auth import SIOAuth
+from sio_auth import SIOAuth, install_cors
 
 from geography_service.api.errors import register_database_unavailable_handler
 from geography_service.api.global_countries import (
@@ -115,6 +115,8 @@ def create_app() -> FastAPI:
         app,
         public_paths=public_paths,
     )
+    # CORS abierto envuelve toda la pila, incluido el manejo de errores (sio-auth 0.5.0).
+    install_cors(app)
 
     return app
 

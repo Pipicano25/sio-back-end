@@ -5,7 +5,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
-from sio_auth import SIOAuth
+from sio_auth import SIOAuth, install_cors
 
 import operational_context_service.application.audit_events  # noqa: F401  (registra la outbox de auditoría, feature 016)
 from operational_context_service.audit_context import bind_audit_actor
@@ -199,6 +199,8 @@ def create_app(
     current_auth.protect(app, public_paths=public_paths)
     # Último middleware agregado = más externo: envuelve también a sio-auth.
     app.add_middleware(TracingMiddleware)
+    # CORS abierto envuelve toda la pila, incluido el manejo de errores (sio-auth 0.5.0).
+    install_cors(app)
 
     return app
 

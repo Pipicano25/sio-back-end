@@ -10,7 +10,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from sio_auth import SIOAuth
+from sio_auth import SIOAuth, install_cors
 
 from product_inventory_query_service.api.dependencies import Dependencies, PortsFactory, build_http_dependencies, build_runtime
 from product_inventory_query_service.api.errors import register_error_handlers
@@ -92,6 +92,8 @@ def create_app(
     current_auth.protect(app, public_paths=public_paths)
     # Último middleware agregado = más externo: envuelve también a sio-auth.
     app.add_middleware(TracingMiddleware)
+    # CORS abierto envuelve toda la pila, incluido el manejo de errores (sio-auth 0.5.0).
+    install_cors(app)
 
     return app
 

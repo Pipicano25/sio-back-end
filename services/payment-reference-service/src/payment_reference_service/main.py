@@ -1,7 +1,7 @@
 """Punto de entrada de Payment Reference Service."""
 
 from fastapi import FastAPI
-from sio_auth import SIOAuth
+from sio_auth import SIOAuth, install_cors
 
 from payment_reference_service.api.errors import register_error_handlers
 from payment_reference_service.api.global_payment_condition_types import (
@@ -83,6 +83,8 @@ def create_app(
         app,
         public_paths=public_paths,
     )
+    # CORS abierto envuelve toda la pila, incluido el manejo de errores (sio-auth 0.5.0).
+    install_cors(app)
 
     return app
 

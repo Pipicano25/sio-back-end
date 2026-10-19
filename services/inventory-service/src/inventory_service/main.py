@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from uuid import UUID
 
 from fastapi import FastAPI, Request
-from sio_auth import SIOAuth
+from sio_auth import SIOAuth, install_cors
 
 from inventory_service.api.dependencies import (
     AccessDirectoryFactory,
@@ -136,6 +136,8 @@ def create_app(
     current_auth.protect(app, public_paths=public_paths)
     # Último middleware agregado = más externo: envuelve también a sio-auth.
     app.add_middleware(TracingMiddleware)
+    # CORS abierto envuelve toda la pila, incluido el manejo de errores (sio-auth 0.5.0).
+    install_cors(app)
 
     return app
 

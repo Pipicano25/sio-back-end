@@ -11,6 +11,7 @@ from .auth import (
     SIOAuth,
 )
 from .config import AuthSettings
+from .cors import install_cors
 from .dependencies import (
     CurrentClaims,
     CurrentSubject,
@@ -40,6 +41,7 @@ __all__ = [
     "SIOAuthError",
     "SioPermission",
     "evaluate_permission",
+    "install_cors",
     "TokenClaims",
     "get_current_claims",
     "get_current_subject",
