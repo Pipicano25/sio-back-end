@@ -152,6 +152,113 @@ El realm incluye:
 
 No contiene datos de empresas, sucursales ni usuarios productivos.
 
+### Sesiones y tokens de `sio-web`
+
+| Parámetro | Valor | Efecto |
+| --- | --- | --- |
+| `accessTokenLifespan` | 300 s | Vida del Access Token |
+| `ssoSessionIdleTimeout` | 1800 s | Sin renovar en 30 min, el Refresh Token vence y hay que volver a iniciar sesión |
+| `ssoSessionMaxLifespan` | 36000 s | Ninguna sesión dura más de 10 h, aunque haya actividad |
+| `revokeRefreshToken` / `refreshTokenMaxReuse` | `true` / `0` | Rotación: cada renovación entrega un Refresh Token nuevo y el anterior deja de servir. Reutilizar uno ya usado (también dos renovaciones simultáneas) **cierra la sesión**: Keycloak invalida además el Refresh Token vigente |
+| Scopes de `sio-web` | sin `offline_access` | No se emiten tokens offline |
+| `directAccessGrantsEnabled` | `${SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED:false}` | Grant `password` solo donde la variable vale `true` |
+
+- El flujo del frontend es Authorization Code + PKCE S256. El grant `password` existe solo para desarrollo y
+  pruebas (`services/get_token.py`, `docs/ejemplo/`, pruebas de integración): `compose.yaml` y la pila aislada
+  definen `SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED=true`; un despliegue de producción no la define (o la define en
+  `false`) y la plantilla lo deja desactivado.
+- Los clientes técnicos usan `client_credentials` y no reciben Refresh Token: piden un token nuevo al vencer.
+- `--import-realm` no reimporta un realm existente: estos valores llegan a un Keycloak ya creado solo al
+  reconstruirlo o aplicándolos con la Admin API. En el realm habitual de desarrollo se aplicaron así el
+  2026-10-19 (rotación y retiro de `offline_access`; el grant `password` sigue activo).
+- Pruebas (solo en la pila aislada): `libs/sio-auth/tests/integration/` (permisos en login y renovación,
+  rotación, reutilización, concurrencia, logout, expiración y clientes técnicos). Uso de los permisos en el
+  frontend: `docs/frontend-permissions.md`.
+
+### Validación manual con cURL
+
+Requiere `curl` y `jq`. Cada bloque indica su entorno: **desarrollo** (`sio-*`, Keycloak `8081`) o **pila
+aislada** (`sio-it-*`, Keycloak `18081`). Ambos tienen la misma política de rotación; el paso 5 cierra la sesión
+usada (se vuelve a empezar por el paso 1). Si la contraseña llega vacía o errónea en dos intentos seguidos, la
+protección contra fuerza bruta bloquea al usuario 60 s y Keycloak responde `Invalid user credentials` incluso con
+la contraseña correcta: esperar un minuto.
+
+```bash
+# --- Desarrollo (realm habitual): contraseña de los usuarios *.test, sin mostrarla
+export KEYCLOAK_TEST_USER_PASSWORD="$(grep '^KEYCLOAK_TEST_USER_PASSWORD=' infrastructure/.env | cut -d= -f2-)"
+export KC_URL=http://localhost:8081 GEOGRAPHY_URL=http://127.0.0.1:8102
+
+# --- Pila aislada (en lugar del bloque anterior; levantada con validation/isolated-stack/stack.sh)
+export KEYCLOAK_TEST_USER_PASSWORD="$(grep '^KEYCLOAK_TEST_USER_PASSWORD=' validation/isolated-stack/.env | cut -d= -f2-)"
+export KC_URL=http://localhost:18081 GEOGRAPHY_URL=http://127.0.0.1:18102
+
+# --- Común
+export KC_TOKEN_URL="$KC_URL/realms/sio/protocol/openid-connect/token" SIO_USER=consulta.test
+jwt_payload() { local p; p=$(cut -d. -f2 <<<"$1" | tr '_-' '/+'); while (( ${#p} % 4 )); do p+="="; done; base64 -d <<<"$p" | jq "${2:-.}"; }
+```
+
+1. Login (`access_token`, `refresh_token`, `expires_in`):
+
+```bash
+RESP=$(curl -s -X POST "$KC_TOKEN_URL" -d grant_type=password -d client_id=sio-web -d scope=openid \
+  -d username="$SIO_USER" --data-urlencode password="$KEYCLOAK_TEST_USER_PASSWORD")
+echo "$RESP" | jq '{token_type, expires_in, refresh_expires_in, access_token: (.access_token[0:20]+"…"), refresh_token: (.refresh_token[0:20]+"…")}'
+export ACCESS_TOKEN=$(jq -r .access_token <<<"$RESP") REFRESH_TOKEN=$(jq -r .refresh_token <<<"$RESP")
+# {"token_type": "Bearer", "expires_in": 300, "refresh_expires_in": 1800, "access_token": "eyJhbGciOiJSUzI1NiIs…", ...}
+```
+
+2. Refresh Token (renovar sin credenciales):
+
+```bash
+export OLD_REFRESH_TOKEN=$REFRESH_TOKEN
+RESP=$(curl -s -X POST "$KC_TOKEN_URL" -d grant_type=refresh_token -d client_id=sio-web \
+  --data-urlencode refresh_token="$REFRESH_TOKEN")
+echo "$RESP" | jq '{expires_in, refresh_expires_in, refresh_token_nuevo: (.refresh_token != env.OLD_REFRESH_TOKEN)}'
+export ACCESS_TOKEN=$(jq -r .access_token <<<"$RESP") REFRESH_TOKEN=$(jq -r .refresh_token <<<"$RESP")
+# {"expires_in": 300, "refresh_expires_in": 1800, "refresh_token_nuevo": true}
+```
+
+3. Permisos del Access Token (repetir tras el login y tras cada renovación):
+
+```bash
+jwt_payload "$ACCESS_TOKEN" '{preferred_username, aud, exp, permisos: .resource_access["sio-api"].roles}'
+# {"preferred_username": "consulta.test", "aud": ["sio-api", "account"], "exp": 1792380564,
+#  "permisos": ["consulta", "perm:geography:global_countries:read", "perm:operational-context:branches:read", ...]}
+```
+
+Los permisos son los valores `perm:{servicio}:{recurso}:{accion}` de `resource_access.sio-api.roles` (`all` es
+comodín); el valor sin `perm:` (`consulta`) es el perfil del grupo y no concede nada. Detalle en
+`docs/frontend-permissions.md`.
+
+4. API protegida (Geography, permiso `perm:geography:global_countries:read`):
+
+```bash
+curl -s "$GEOGRAPHY_URL/global-countries?page_size=2" -H "Authorization: Bearer $ACCESS_TOKEN" | jq '{page, total_records, items: [.items[].name]}'
+# 200 con la página de países (en la pila aislada, sin seed, "total_records": 0)
+curl -s "$GEOGRAPHY_URL/global-countries" | jq .
+# {"detail": "Se requiere un token de acceso Bearer"}   (401 sin token)
+```
+
+5. Rotación (después del paso 2; cierra esa sesión):
+
+```bash
+curl -s -X POST "$KC_TOKEN_URL" -d grant_type=refresh_token -d client_id=sio-web \
+  --data-urlencode refresh_token="$OLD_REFRESH_TOKEN" | jq .
+# {"error": "invalid_grant", "error_description": "Maximum allowed refresh token reuse exceeded"}
+curl -s -X POST "$KC_TOKEN_URL" -d grant_type=refresh_token -d client_id=sio-web \
+  --data-urlencode refresh_token="$REFRESH_TOKEN" | jq .error
+# "invalid_grant"   (la reutilización invalidó también el token vigente: volver al paso 1)
+```
+
+Cerrar la sesión (con un Refresh Token vigente, p. ej. tras repetir los pasos 1 y 2; el Access Token emitido vale
+hasta su `exp`):
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -X POST "$KC_URL/realms/sio/protocol/openid-connect/logout" \
+  -d client_id=sio-web --data-urlencode refresh_token="$REFRESH_TOKEN"   # 204
+unset KEYCLOAK_TEST_USER_PASSWORD ACCESS_TOKEN REFRESH_TOKEN OLD_REFRESH_TOKEN RESP
+```
+
 ## Comandos principales
 
 ### Levantar todo el entorno

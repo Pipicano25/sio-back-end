@@ -164,3 +164,21 @@ pytest tests/validar_token_env.py
 La variable de entorno tiene prioridad sobre `infrastructure/.env`. `infrastructure/.env` no se
 versiona; `infrastructure/.env.example` documenta las variables con valores ficticios. Sin
 contraseña, las pruebas se omiten. Ningún valor secreto se escribe en el código.
+
+## Sesiones y permisos en tokens (pila aislada)
+
+Pruebas activas contra Keycloak y Geography de la pila aislada `sio-it-*`; se omiten sin `SIO_TEST_TARGET=isolated`:
+
+| Módulo | Comprueba |
+| --- | --- |
+| `tests/integration/test_permisos_en_tokens.py` | `resource_access.sio-api.roles` con los client roles efectivos al iniciar sesión y al renovar; altas y bajas reflejadas en la siguiente renovación (usuario temporal) |
+| `tests/integration/test_renovacion_y_logout.py` | Renovación, rotación (reutilización y concurrencia rechazadas), refresh inválido, logout, sin tokens offline y clientes técnicos sin Refresh Token |
+| `tests/integration/test_expiracion_de_sesion.py` | Access Token expirado (`401`), Refresh Token vencido por inactividad y vida máxima de la sesión (cliente temporal con tiempos cortos) |
+
+```bash
+SIO_TEST_TARGET=isolated .venv/bin/pytest tests/integration
+```
+
+Necesita en la pila Keycloak y Geography con su migración aplicada. Guía cURL manual: `infrastructure/README.md`.
+
+Cómo debe usar el frontend estos permisos: `docs/frontend-permissions.md`.

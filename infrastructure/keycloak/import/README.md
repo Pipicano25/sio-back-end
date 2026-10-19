@@ -28,6 +28,9 @@ realm de desarrollo para SIO con:
 - `${KEYCLOAK_REALM}`: nombre del realm importado.
 - `${SIO_WEB_ORIGIN}`: URL base del frontend.
 - `${SIO_WEB_REDIRECT_URI}`: URI de redirección para el cliente web.
+- `${SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED:false}`: grant `password` de `sio-web`. Sin la variable queda en
+  `false` (producción); `compose.yaml` y la pila aislada la definen en `true` para las herramientas de desarrollo y
+  las pruebas.
 - `${KEYCLOAK_TEST_USER_PASSWORD}`: contraseña común para los usuarios de prueba.
 - `${PARTY_IDENTITY_CLIENT_SECRET}`, `${OPERATIONAL_CONTEXT_CLIENT_SECRET}`,
   `${COMMERCIAL_RELATIONSHIP_CLIENT_SECRET}`: secretos de los clientes técnicos (solo en `.env`).
@@ -155,6 +158,9 @@ Este cliente representa el backend y solo admite tokens de acceso.
 - `clientId`: `sio-web`
 - `publicClient`: `true`
 - `standardFlowEnabled`: `true`
+- `directAccessGrantsEnabled`: `${SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED:false}` (solo desarrollo y pruebas)
+- `defaultClientScopes`: `web-origins`, `acr`, `roles`, `profile`, `basic`, `email`
+- `optionalClientScopes`: `address`, `phone`, `organization`, `microprofile-jwt` (sin `offline_access`)
 - `redirectUris`: incluye `${SIO_WEB_REDIRECT_URI}`
 - `webOrigins`: incluye `${SIO_WEB_ORIGIN}`
 - `attributes.pkce.code.challenge.method`: `S256`

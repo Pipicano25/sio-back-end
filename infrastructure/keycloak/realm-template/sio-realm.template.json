@@ -23,6 +23,8 @@
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
   "offlineSessionIdleTimeout": 2592000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
   "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1)",
   "clients": [
     {
@@ -50,7 +52,7 @@
       "bearerOnly": false,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": "${SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED:false}",
       "serviceAccountsEnabled": false,
       "rootUrl": "${SIO_WEB_ORIGIN}",
       "baseUrl": "/",
@@ -62,6 +64,8 @@
       ],
       "frontchannelLogout": true,
       "fullScopeAllowed": true,
+      "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
+      "optionalClientScopes": ["address", "phone", "organization", "microprofile-jwt"],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "${SIO_WEB_REDIRECT_URI}"
