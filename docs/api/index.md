@@ -2,8 +2,6 @@
 
 Documentación técnica de los 12 microservicios de SIO desplegados en Render (entorno de desarrollo `siodev`), dirigida al desarrollador frontend y a cualquier equipo que integre SIO mediante API HTTP. Esta carpeta Markdown se consulta directamente en GitHub y es la única ubicación oficial de la documentación de integración.
 
-> **Estado:** completa. Las 411 operaciones de los 12 microservicios desplegados en Render están documentadas y contrastadas con el código y con los contratos OpenAPI (ver el [registro de avance](#registro-de-avance)). Los datos que no pudieron confirmarse están marcados **NO VERIFICADO** en cada documento.
-
 **Fuente de verdad:** el código fuente de cada microservicio (routers, modelos Pydantic, permisos declarados), las especificaciones en `specs/` y los contratos OpenAPI publicados en `/openapi.json` de cada servicio. Cuando un dato no pudo confirmarse se marca expresamente **NO VERIFICADO**.
 
 ## Comienza aquí
