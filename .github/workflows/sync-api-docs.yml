@@ -1,0 +1,61 @@
+name: Sincronizar documentación SIO
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/api/**"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sio-docs-sync
+  cancel-in-progress: false
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Obtener repositorio privado
+        uses: actions/checkout@v4
+        with:
+          path: backend
+
+      - name: Obtener repositorio público
+        uses: actions/checkout@v4
+        with:
+          repository: Pipicano25/sio-api-docs
+          ref: main
+          token: ${{ secrets.SIO_DOCS_SYNC_TOKEN }}
+          path: public-docs
+
+      - name: Sincronizar archivos Markdown
+        run: |
+          mkdir -p public-docs/docs
+
+          rsync -av --delete \
+            --exclude='/README.md' \
+            backend/docs/api/ \
+            public-docs/docs/
+
+      - name: Publicar cambios
+        working-directory: public-docs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add docs/
+
+          if git diff --cached --quiet; then
+            echo "No hay cambios en la documentación."
+            exit 0
+          fi
+
+          git commit -m "docs: sincronizar documentación SIO"
+          git push origin HEAD:main
