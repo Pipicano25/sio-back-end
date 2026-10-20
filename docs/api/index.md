@@ -96,6 +96,7 @@ Cobertura contra los contratos OpenAPI desplegados en Render el 2026-10-19: **41
 | servicios/business-reporting.md | Hecho | 10 | 10 |
 | **Total** | | **411** | **411** |
 
+
 ## Cobertura de ejemplos
 
 Revisión individual de las 411 operaciones realizada el 2026-10-19 (auditoría automática sección por sección más validación de cada JSON contra el contrato OpenAPI desplegado y contra los modelos Pydantic del propio servicio):
