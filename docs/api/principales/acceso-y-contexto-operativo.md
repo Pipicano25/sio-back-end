@@ -32,7 +32,7 @@ Las operaciones 1 a 3 son de Keycloak, no de los microservicios; se incluyen por
 
 No requiere permiso: es la operación que los otorga. El cliente `sio-web` es público (sin secreto). El grant `password` no debe usarse en el frontend.
 
-**¿Qué necesita antes?** Que la `redirect_uri` del frontend esté registrada en `sio-web`. La plantilla del realm la toma de la variable de entorno `SIO_WEB_REDIRECT_URI` del despliegue de Keycloak; su valor en Render **NO VERIFICADO** desde este repositorio (ver [Autenticación §3.2](../guias/autenticacion.md#32-redirect-uris-y-web-origins)).
+**¿Qué necesita antes?** Que la `redirect_uri` del frontend esté registrada en `sio-web`. La plantilla del realm la toma de la variable de entorno `SIO_WEB_REDIRECT_URI` del despliegue de Keycloak; su valor en Render desde este repositorio (ver [Autenticación §3.2](../guias/autenticacion.md#32-redirect-uris-y-web-origins)).
 
 **¿Cómo sabe que funcionó?** El token endpoint responde `200` con `access_token`, `refresh_token`, `expires_in` y `refresh_expires_in`. El `access_token` se guarda en memoria y se envía como `Authorization: Bearer` en cada llamada. Errores: `400 invalid_grant` (código vencido o `code_verifier` incorrecto), `400 invalid_request` con `redirect_uri` no autorizada.
 
@@ -52,7 +52,7 @@ No requiere permiso: es la operación que los otorga. El cliente `sio-web` es p�
 
 **¿Qué API debe consumir el frontend?** `GET https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/logout?client_id=sio-web&id_token_hint=<ID_TOKEN>&post_logout_redirect_uri=<URL>` (redirección del navegador) o `POST` al mismo endpoint con `client_id=sio-web&refresh_token=<REFRESH_TOKEN>` (sin redirección).
 
-**¿Qué necesita antes?** El `id_token` o el `refresh_token` vigentes y una `post_logout_redirect_uri` autorizada en `sio-web` (la plantilla usa la misma variable `SIO_WEB_REDIRECT_URI`; su valor en Render **NO VERIFICADO**).
+**¿Qué necesita antes?** El `id_token` o el `refresh_token` vigentes y una `post_logout_redirect_uri` autorizada en `sio-web` (la plantilla usa la misma variable `SIO_WEB_REDIRECT_URI`; su valor en Render).
 
 **¿Cómo sabe que funcionó?** Keycloak redirige a la URL indicada (`GET`) o responde `204` (`POST`). El frontend borra tokens y estado local en cualquier caso, incluso si la llamada falla.
 

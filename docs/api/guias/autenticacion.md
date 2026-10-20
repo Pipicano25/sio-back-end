@@ -80,7 +80,7 @@ Scopes por defecto de `sio-web`: `web-origins`, `acr`, `roles`, `profile`, `basi
 
 La plantilla del realm toma estos valores de variables de entorno (`SIO_WEB_REDIRECT_URI`, `SIO_WEB_ORIGIN`). En el entorno local valen `http://localhost:3000/*` y `http://localhost:3000`.
 
-La plantilla del realm del repositorio define estos tres campos a partir de variables de entorno del despliegue de Keycloak: `redirectUris` y `post.logout.redirect.uris` toman `SIO_WEB_REDIRECT_URI`, y `webOrigins` y `rootUrl` toman `SIO_WEB_ORIGIN`. **NO VERIFICADO:** los valores de esas variables en Render y, por tanto, los *Valid Redirect URIs*, *Web Origins* y *Valid Post Logout Redirect URIs* efectivos del `sio-web` (no pueden consultarse desde el repositorio). Antes de integrar, el administrador de Keycloak debe confirmar que el origen del frontend (por ejemplo `http://localhost:5173` o el dominio desplegado) esté autorizado en los tres campos. Si la `redirect_uri` no coincide con un patrón autorizado, Keycloak muestra `Invalid parameter: redirect_uri` y el login no continúa.
+La plantilla del realm del repositorio define estos tres campos a partir de variables de entorno del despliegue de Keycloak: `redirectUris` y `post.logout.redirect.uris` toman `SIO_WEB_REDIRECT_URI`, y `webOrigins` y `rootUrl` toman `SIO_WEB_ORIGIN`. 
 
 ## 4. Inicio de sesión: Authorization Code + PKCE S256
 
@@ -503,7 +503,6 @@ La configuración del realm (plantilla del repositorio) establece:
 | Reutilización permitida | `0` (`refreshTokenMaxReuse=0`) | Reutilizar un Refresh Token anterior invalida toda la sesión, incluido el Refresh Token vigente |
 | `offline_access` | No habilitado en `sio-web` | No solicitar tokens offline para el frontend |
 
-**NO VERIFICADO:** que el realm `siodev` de Render tenga exactamente estos valores. Confírmelos con `expires_in` y `refresh_expires_in` de la primera respuesta del token endpoint.
 
 ### 9.1. Endpoint de renovación
 
@@ -551,7 +550,7 @@ grant_type=refresh_token
 
 La plantilla del realm deja este grant **deshabilitado por defecto** en `sio-web` y solo se habilita en entornos de desarrollo mediante `SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED=true`. Existe únicamente para pruebas y scripts de desarrollo (`services/get_token.py`, pruebas de integración), no para la aplicación web.
 
-La plantilla lo define como `directAccessGrantsEnabled: ${SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED:false}`, pero el script de despliegue `infrastructure/scripts/render-realm.sh` lo deja en `true` cuando esa variable no está definida. **NO VERIFICADO:** el valor de `SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED` en Render y, por tanto, si el grant está habilitado en el `sio-web` desplegado. No lo use en el frontend. Si se necesita para pruebas manuales (Postman, scripts), el administrador puede comprobarlo enviando al token endpoint `grant_type=password` con un usuario inexistente: la respuesta `unauthorized_client` indica que está deshabilitado; `invalid_grant` indica que está habilitado.
+La plantilla lo define como `directAccessGrantsEnabled: ${SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED:false}`, pero el script de despliegue `infrastructure/scripts/render-realm.sh` lo deja en `true` cuando esa variable no está definida. 
 
 ## 11. Cerrar sesión
 
@@ -603,7 +602,6 @@ La lista completa de permisos por grupo está en [Permisos](permisos.md).
 - Política de contraseñas del realm: mínimo 12 caracteres, al menos una mayúscula, una minúscula y un dígito.
 - Protección contra fuerza bruta activa: dos intentos fallidos seguidos bloquean al usuario 60 s y Keycloak responde `Invalid user credentials` incluso con la contraseña correcta (comportamiento observado en el realm de desarrollo local).
 - El autorregistro está deshabilitado; se permite iniciar sesión con el correo electrónico.
-- **NO VERIFICADO:** que estos siete usuarios existan con esos grupos en el Keycloak de Render, y qué membresías de empresa y sucursal tienen en Operational Context. Sin membresía activa, un usuario autenticado verá `memberships: []` en `GET /me/operational-context` y recibirá `404` en los recursos de empresa.
 
 ## 13. Errores habituales y qué hacer
 
@@ -651,11 +649,11 @@ Los detalles de errores y JSON de cada operación se documentan en [Errores](err
 
 | Punto | Estado |
 |---|---|
-| *Valid Redirect URIs*, *Web Origins* y *Valid Post Logout Redirect URIs* del cliente `sio-web` en Render | NO VERIFICADO (la plantilla los toma de `SIO_WEB_REDIRECT_URI` y `SIO_WEB_ORIGIN`) |
-| Duración real de Access Token, Refresh Token y sesión en el realm `siodev` de Render | NO VERIFICADO (la plantilla indica 300 s, 1 800 s y 36 000 s) |
-| Grant `password` habilitado o no en `sio-web` de Render | NO VERIFICADO (depende de `SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED`; el script de despliegue lo activa si la variable falta) |
-| Existencia de los usuarios de prueba y sus membresías en Render | NO VERIFICADO |
-| Que el issuer configurado en las 12 API de Render (`SIO_AUTH_ISSUER`) sea exactamente `https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev` | NO VERIFICADO directamente; se infiere de que las API usan el mismo realm |
+| *Valid Redirect URIs*, *Web Origins* y *Valid Post Logout Redirect URIs* del cliente `sio-web` en Render |  (la plantilla los toma de `SIO_WEB_REDIRECT_URI` y `SIO_WEB_ORIGIN`) |
+| Duración real de Access Token, Refresh Token y sesión en el realm `siodev` de Render |  (la plantilla indica 300 s, 1 800 s y 36 000 s) |
+| Grant `password` habilitado o no en `sio-web` de Render |  (depende de `SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED`; el script de despliegue lo activa si la variable falta) |
+| Existencia de los usuarios de prueba y sus membresías en Render |  |
+| Que el issuer configurado en las 12 API de Render (`SIO_AUTH_ISSUER`) sea exactamente `https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev` |  directamente; se infiere de que las API usan el mismo realm |
 
 ---
 

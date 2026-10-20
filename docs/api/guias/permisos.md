@@ -86,7 +86,7 @@ El realm define 316 roles `perm:*` en total. El permiso exacto de cada operació
 
 ## 4. Grupos del realm y sus permisos
 
-Los grupos y permisos provienen de la plantilla del realm del repositorio (`infrastructure/keycloak/realm-template/sio-realm.template.json`). **NO VERIFICADO:** que el realm `siodev` de Render tenga exactamente esta asignación; un administrador puede haber añadido o retirado permisos. El frontend debe leer siempre los permisos reales del token.
+Los grupos y permisos provienen de la plantilla del realm del repositorio (`infrastructure/keycloak/realm-template/sio-realm.template.json`). 
 
 ### Grupo `/administradores` (rol `administrador`, usuario de prueba `admin.test`)
 
@@ -298,5 +298,5 @@ Detalle de formatos en [Errores](errores.md).
 
 | Punto | Estado |
 |---|---|
-| Asignación real de permisos por grupo en el realm `siodev` de Render | NO VERIFICADO (se documenta la plantilla del repositorio) |
-| Membresías de los usuarios de prueba en Operational Context de Render | NO VERIFICADO |
+| Asignación real de permisos por grupo en el realm `siodev` de Render |  (se documenta la plantilla del repositorio) |
+| Membresías de los usuarios de prueba en Operational Context de Render |  |

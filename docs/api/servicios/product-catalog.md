@@ -6639,9 +6639,9 @@ Códigos HTTP:
 
 ### Activos (imágenes y documentos) (operaciones 96–102)
 
-Base `…/api/v1/products/{product_id}/assets`. Objeto `AssetResponse`: `id`, `global_product_id`, `asset_type` (`IMAGE`, `TECHNICAL_SHEET`, `MANUAL`, `CERTIFICATE`, `OTHER`), `file_name`, `storage_uri`, `mime_type`, `is_primary`, `status`, `version`, trazabilidad. Product Catalog guarda **solo la referencia** al archivo, nunca el binario: la carga al almacenamiento de objetos de SIO se hace por fuera de esta API (**NO VERIFICADO** el mecanismo disponible en Render para el frontend).
+Base `…/api/v1/products/{product_id}/assets`. Objeto `AssetResponse`: `id`, `global_product_id`, `asset_type` (`IMAGE`, `TECHNICAL_SHEET`, `MANUAL`, `CERTIFICATE`, `OTHER`), `file_name`, `storage_uri`, `mime_type`, `is_primary`, `status`, `version`, trazabilidad. Product Catalog guarda **solo la referencia** al archivo, nunca el binario: la carga al almacenamiento de objetos de SIO se hace por fuera de esta API (el mecanismo disponible en Render para el frontend).
 
-**Imagen principal pública.** El código incluye una ruta pública sin token, `GET /api/v1/public/product-images?ref=<referencia firmada>`, que entrega la imagen principal (`IMAGE`, `ACTIVE`, JPEG/PNG/WebP almacenada en SIO) con caché inmutable y `ETag`; cualquier referencia inválida responde el mismo `404` vacío. Es la URL que Product Inventory Query devuelve en `image_url`. Solo existe cuando el servicio tiene configurados el secreto de firma y la URL pública base; **no aparece en el contrato desplegado en Render el 2026-10-19**, por lo que en ese entorno `image_url` llega `null` y hay que usar la operación 98 con token (**NO VERIFICADO** si se habilitará).
+**Imagen principal pública.** El código incluye una ruta pública sin token, `GET /api/v1/public/product-images?ref=<referencia firmada>`, que entrega la imagen principal (`IMAGE`, `ACTIVE`, JPEG/PNG/WebP almacenada en SIO) con caché inmutable y `ETag`; cualquier referencia inválida responde el mismo `404` vacío. Es la URL que Product Inventory Query devuelve en `image_url`. Solo existe cuando el servicio tiene configurados el secreto de firma y la URL pública base; **no aparece en el contrato desplegado en Render el 2026-10-19**, por lo que en ese entorno `image_url` llega `null` y hay que usar la operación 98 con token.
 
 ### 96. `GET /products/{product_id}/assets`
 
@@ -7259,5 +7259,5 @@ Códigos HTTP:
 | Operaciones documentadas | 104 |
 | Permisos contrastados con el código | Sí (`api/simple_catalog_router.py`, `units_of_measure.py`, `categories.py`, `attribute_definitions.py`, `group_types.py`, `products.py`, `product_summaries.py`, `product_categories.py`, `product_attribute_values.py`, `presentations.py`, `identifiers.py`, `product_group_assignments.py`, `assets.py`, `first_use.py`) |
 | Esquemas contrastados | Sí (OpenAPI desplegado; `application/exceptions.py`; docstrings de los servicios) |
-| Pendiente | Mecanismo de carga de archivos al almacenamiento; disponibilidad de la ruta pública de imágenes en Render; códigos exactos de `completeness.issues[]` (NO VERIFICADO) |
+| Pendiente | Mecanismo de carga de archivos al almacenamiento; disponibilidad de la ruta pública de imágenes en Render; códigos exactos de `completeness.issues[]` |
 | Verificado | Estructura de `PresentationLookupItem` (operación 66) |

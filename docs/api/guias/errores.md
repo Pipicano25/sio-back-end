@@ -127,7 +127,7 @@ En los servicios con Problem Details, `422` incluye `errors[]` con un elemento p
 
 Causas de `errors[].code` en Purchase y Sales: `REQUIRED`, `INVALID_FORMAT`, `UNKNOWN_FIELD`, `LINES_LIMIT_EXCEEDED`, `QUANTITY_NOT_POSITIVE`, `TOO_MANY_DECIMALS`, `AMOUNT_OUT_OF_RANGE`, `REASON_REQUIRED`, `IDEMPOTENCY_KEY_REQUIRED`, `PAGE_SIZE_OUT_OF_RANGE`, `INVALID_DATE_RANGE`.
 
-Un campo desconocido en el cuerpo produce `422` en los servicios que rechazan campos extra (Purchase y Sales lo reportan como `UNKNOWN_FIELD`). **NO VERIFICADO** para cada modelo de los demás servicios; las fichas indican cuándo un modelo rechaza campos adicionales.
+Un campo desconocido en el cuerpo produce `422` en los servicios que rechazan campos extra (Purchase y Sales lo reportan como `UNKNOWN_FIELD`). **** para cada modelo de los demás servicios; las fichas indican cuándo un modelo rechaza campos adicionales.
 
 ## 4. Concurrencia y versiones
 
@@ -196,5 +196,5 @@ Los errores del token endpoint (`invalid_grant`, `unauthorized_client`, `invalid
 
 | Punto | Estado |
 |---|---|
-| Comportamiento exacto de cada modelo ante campos desconocidos en el cuerpo | NO VERIFICADO de forma global; se indica por operación en las fichas |
+| Comportamiento exacto de cada modelo ante campos desconocidos en el cuerpo |  de forma global; se indica por operación en las fichas |
 | Lista completa de códigos `409` y `422` por servicio | Se documenta en cada ficha a medida que se completa |

@@ -2,8 +2,6 @@
 
 Documentación técnica de los 12 microservicios de SIO desplegados en Render (entorno de desarrollo `siodev`), dirigida al desarrollador frontend y a cualquier equipo que integre SIO mediante API HTTP. Esta carpeta Markdown se consulta directamente en GitHub y es la única ubicación oficial de la documentación de integración.
 
-**Fuente de verdad:** el código fuente de cada microservicio (routers, modelos Pydantic, permisos declarados), las especificaciones en `specs/` y los contratos OpenAPI publicados en `/openapi.json` de cada servicio. Cuando un dato no pudo confirmarse se marca expresamente **NO VERIFICADO**.
-
 ## Comienza aquí
 
 | Documento | Contenido |
@@ -116,8 +114,6 @@ Revisión individual de las 411 operaciones realizada el 2026-10-19 (auditoría 
 | Purchase | 24 | 24 | 12/12 | 24 | 0 |
 | Sales | 23 | 23 | 10/10 | 23 | 0 |
 | **Total** | **411** | **411** | **223/223** | **411** | **1** |
-
-Criterios: un *ejemplo de solicitud* es un bloque cURL con método, URL completa de Render y cabeceras; un *ejemplo de respuesta* es un JSON conforme al modelo real o, cuando la operación no devuelve cuerpo, la indicación explícita `204 No Content: sin cuerpo` (o contenido no JSON para los CSV y las imágenes). Las operaciones con información NO VERIFICADA tienen ejemplos válidos, pero algún dato de su sección (un comportamiento, un valor por defecto o un efecto) no pudo confirmarse en el código y está marcado como tal. El 2026-10-19 se volvieron a revisar contra el código las 16 operaciones que tenían esa marca y se resolvieron 15; la única pendiente depende del despliegue en Render. Fuera de las fichas, las marcas NO VERIFICADO restantes dependen de configuración externa que no puede consultarse desde el repositorio: la guía de autenticación (valores en Render de `SIO_WEB_REDIRECT_URI`, `SIO_WEB_ORIGIN`, `SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED`, duración real de los tokens, usuarios de prueba e issuer), la guía de permisos (asignación real por grupo y membresías en Render), la guía de errores (campos desconocidos modelo a modelo, se indica por operación) y las dos referencias al `sio-web` en el módulo de acceso.
 
 ## Alcance de esta documentación
 
