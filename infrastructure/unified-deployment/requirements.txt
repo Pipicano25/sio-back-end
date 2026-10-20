@@ -1,0 +1,18 @@
+# Paquetes locales del despliegue unificado, en orden de instalación (rutas desde /app).
+# El Dockerfile instala cada uno desde su propia carpeta, igual que el Dockerfile del
+# servicio: así `sio-auth @ file:../../libs/sio-auth` resuelve a la misma librería.
+# Las dependencias externas son las que declara cada pyproject.toml, sin fijar otras.
+libs/sio-auth
+libs/sio-audit
+services/geography-service
+services/party-identity-service
+services/product-catalog-service
+services/operational-context-service
+services/payment-reference-service
+services/commercial-relationship-service
+services/purchase-service
+services/sales-service
+services/inventory-service
+services/audit-service
+services/product-inventory-query-service
+services/business-reporting-service
