@@ -14,7 +14,7 @@
 
 ## Opción recomendada: contexto operativo del usuario
 
-Devuelve solo las empresas en las que el usuario autenticado tiene membresía, con sus sucursales. Es la consulta que debe hacerse justo después del login.
+**¿Qué hace?** Devuelve, para el usuario del token, sus membresías (una por empresa), el estado de cada una y las sucursales que tiene asignadas con el acceso efectivo (`allowed`). No pagina ni filtra. Es la consulta que debe hacerse justo después del login y la forma recomendada de obtener `company_id`; está descrita paso a paso en [Acceso y contexto operativo, API 5](../principales/acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario).
 
 | | |
 |---|---|
@@ -25,8 +25,10 @@ Devuelve solo las empresas en las que el usuario autenticado tiene membresía, c
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-operational-context-dev.onrender.com/api/v1/me/operational-context' \
-  -H "Authorization: Bearer $ACCESS_TOKEN" -H 'Accept: application/json'
+curl -X GET \
+  'https://sio-operational-context-dev.onrender.com/api/v1/me/operational-context' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (modelo `MeOperationalContextResponse`; identificadores ilustrativos):
@@ -56,7 +58,17 @@ Respuesta `200` (modelo `MeOperationalContextResponse`; identificadores ilustrat
 
 **Campo exacto:** `memberships[].company_id`. Usa solo las membresías con `status` y `company_status` en `ACTIVE`. Si `memberships` está vacío, el usuario no pertenece a ninguna empresa y recibirá `404` en todas las rutas de empresa: pide al administrador que cree su usuario de aplicación.
 
+**Posibles errores de esta API:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `OPERATIONAL_CONTEXT.FORBIDDEN` | Falta `perm:operational-context:application_users:read` | Mostrar que faltan permisos y el `trace_id` |
+| `503` | `OPERATIONAL_CONTEXT.DEPENDENCY_UNAVAILABLE` | La base de datos no responde | Reintentar más tarde |
+
 ## Opción alternativa: listar empresas
+
+**¿Qué hace?** Lista, con paginación, las empresas en las que el usuario tiene membresía `ACTIVE` (todas, para un administrador de plataforma), con sus datos de contacto, dirección, zona horaria y moneda. Por defecto solo empresas `ACTIVE`. Útil para la administración de empresas; para la sesión del usuario basta el contexto operativo. Descrita en [Administración empresarial, API 2](../principales/administracion-empresarial.md#2-consultar-las-empresas-del-usuario).
 
 | | |
 |---|---|
@@ -68,8 +80,10 @@ Respuesta `200` (modelo `MeOperationalContextResponse`; identificadores ilustrat
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-operational-context-dev.onrender.com/api/v1/companies?page=1&page_size=20' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-operational-context-dev.onrender.com/api/v1/companies?page=1&page_size=20' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (modelo `PaginatedResponse[CompanyResponse]`; valores ilustrativos):
@@ -106,14 +120,37 @@ Respuesta `200` (modelo `PaginatedResponse[CompanyResponse]`; valores ilustrativ
 }
 ```
 
-**Campo exacto:** `items[].id`. La empresa **no tiene campo `name`**: su razón social está en la identidad de organización (`organization_identity_id`) de [Party Identity](organization-identity-id.md), campo `legal_name`. Para mostrar el nombre de la empresa hay que consultar `GET /api/v1/organization-identities/{organization_identity_id}` en Party Identity.
+**Campo exacto:** `items[].id`. La empresa **no tiene campo `name`**: su razón social está en la identidad de organización (`organization_identity_id`) de [Party Identity](organization-identity-id.md), campo `legal_name`. Para mostrar el nombre de la empresa hay que consultar `GET https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}` (permiso `perm:party-identity:organization_identities:read`) y leer `legal_name`.
+
+**Posibles errores de esta API:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `OPERATIONAL_CONTEXT.FORBIDDEN` | El token no tiene `perm:operational-context:companies:read` | Mostrar que faltan permisos y el `trace_id` |
+| `422` | `OPERATIONAL_CONTEXT.VALIDATION_ERROR` | `page` < 1, `page_size` fuera de 1–100, `status` distinto de `ACTIVE`/`INACTIVE` o un filtro UUID mal formado | Corregir los parámetros |
+| `503` | `OPERATIONAL_CONTEXT.DEPENDENCY_UNAVAILABLE` | La base de datos no responde | Reintentar más tarde |
 
 ## Si la empresa no existe todavía
 
-Crear una empresa es una operación de plataforma (`WRITE`): `POST /api/v1/companies` en Operational Context exige `perm:operational-context:companies:create` **y** `perm:operational-context:platform:administer`. El `company_id` es el campo `id` de la respuesta `201`. Detalle en la ficha de [Operational Context](../servicios/operational-context.md).
+**¿Qué hace la API de creación?** `POST https://sio-operational-context-dev.onrender.com/api/v1/companies` da de alta la empresa vinculándola a una identidad de organización de Party Identity. Es una operación de plataforma: exige `perm:operational-context:companies:create` **y** `perm:operational-context:platform:administer`. No crea sucursales ni membresías. El `company_id` es el campo `id` de la respuesta `201`. Cuerpo, respuesta y errores completos en [Administración empresarial, API 1](../principales/administracion-empresarial.md#1-crear-empresa).
+
+**Posibles errores al crear:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `OPERATIONAL_CONTEXT.FORBIDDEN` | Falta `companies:create` o `platform:administer` | Mostrar que faltan permisos y el `trace_id` |
+| `409` | `OPERATIONAL_CONTEXT.DUPLICATE_ORGANIZATION_IDENTITY` | La organización ya tiene una empresa | Buscar la empresa existente |
+| `422` | `OPERATIONAL_CONTEXT.ORGANIZATION_IDENTITY_NOT_FOUND` / `_INACTIVE` | La identidad no existe o está inactiva en Party Identity | Registrarla o reactivarla |
+| `422` | `OPERATIONAL_CONTEXT.COUNTRY_NOT_FOUND`, `ADMINISTRATIVE_DIVISION_NOT_FOUND`, `CITY_NOT_FOUND`, `LOCATION_INACTIVE`, `GEOGRAPHY_INCOHERENT` | Ubicación inválida | Corregir la ubicación |
+| `422` | `OPERATIONAL_CONTEXT.VALIDATION_ERROR` | Formato inválido o campo desconocido | Corregir el formulario |
+| `503` | `OPERATIONAL_CONTEXT.DEPENDENCY_UNAVAILABLE` | Party Identity o Geography no responden | Reintentar más tarde |
+
 
 ## Cómo usarlo después
 
+- En [Administración empresarial](../principales/administracion-empresarial.md): es el `{company_id}` de la ruta de las API 3 a 6, 9, 10 y 16 a 21; nunca va en el cuerpo. Lo devuelve la API 1 (crear empresa) en el campo `id`.
 - En la ruta: `GET https://sio-sales-dev.onrender.com/api/v1/companies/{company_id}/sales`.
 - Como filtro de alcance en `GET /api/v1/operational-access?company_id=…` ([Permisos §6](../guias/permisos.md#6-comprobar-el-acceso-antes-de-actuar)).
 - Nunca lo guardes fijo en el código: cambia por usuario y por entorno.

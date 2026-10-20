@@ -24,8 +24,10 @@
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/price-lists?status=ACTIVE&currency_code=COP' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/price-lists?status=ACTIVE&currency_code=COP' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (`PaginatedResponse[PriceListResponse]`; valores ilustrativos):

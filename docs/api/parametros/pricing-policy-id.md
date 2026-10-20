@@ -26,8 +26,10 @@
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/price-lists/5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b/pricing-policies?status=ACTIVE' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/price-lists/5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b/pricing-policies?status=ACTIVE' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (`PaginatedResponse[PricingPolicyResponse]`; valores ilustrativos):

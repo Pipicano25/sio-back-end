@@ -23,6 +23,9 @@ Guías reutilizables de los identificadores que piden las API de SIO. Cada una i
 | `sale_id` | Venta de la empresa | Sales | [sale-id.md](sale-id.md) |
 | `purchase_id` | Compra de la empresa | Purchase | [purchase-id.md](purchase-id.md) |
 | `country_id`, `administrative_division_id`, `city_id` | Jerarquía geográfica global | Geography | [country-id.md](country-id.md) |
+| `keycloak_user_id` | Cuenta del usuario en Keycloak (`sub` del token) | Keycloak, vía Operational Context | [keycloak-user-id.md](keycloak-user-id.md) |
+| `user_branch_id` | Asignación de un usuario a una sucursal | Operational Context | [user-branch-id.md](user-branch-id.md) |
+| `sequence_id` | Secuencia de numeración de ventas o compras | Sales · Purchase | [sequence-id.md](sequence-id.md) |
 
 ## Cadena habitual para una venta
 
@@ -40,7 +43,8 @@ Para una compra, sustituye el cliente por [`company_supplier_id`](supplier-id.md
 1. [`country_id`, `administrative_division_id` y `city_id`](country-id.md) desde Geography.
 2. [`organization_identity_id`](organization-identity-id.md) de la empresa y [`person_identity_id`](person-identity-id.md) de cada usuario, desde Party Identity.
 3. [`company_id`](company-id.md) y [`branch_id`](branch-id.md) al crearlos en Operational Context.
-4. [`application_user_id`](application-user-id.md) al asociar cada usuario a la empresa; con él se asignan las sucursales.
+4. [`application_user_id`](application-user-id.md) al asociar cada usuario a la empresa (con su [`keycloak_user_id`](keycloak-user-id.md) o `username`); con él se asignan las sucursales, lo que genera un [`user_branch_id`](user-branch-id.md) por sucursal.
+5. [`sequence_id`](sequence-id.md) al crear la secuencia de numeración de ventas y la de compras; sin ellas no se confirman documentos.
 
 ## Cadena habitual para precios
 
@@ -54,4 +58,4 @@ Para una compra, sustituye el cliente por [`company_supplier_id`](supplier-id.md
 - Todos son UUID en texto. El servidor los genera al crear el recurso; el valor está en el campo `id` de la respuesta `201`.
 - Un identificador de empresa (cliente, proveedor, producto empresarial, presentación) solo es válido dentro de su `company_id`. Enviarlo en otra empresa produce `404` o `409 REFERENCES_NOT_ELIGIBLE`.
 - Los identificadores globales (producto global, método de pago, identidades) no dependen de la empresa.
-- Otros identificadores menos frecuentes (`price_list_item_id`, `supplier_payment_condition_id`, `customer_payment_condition_id`, `user_branch_id`, `detail_id`, `inventory_operation_id`, `count_id`, …) se explican dentro de la ficha del servicio que los genera.
+- Otros identificadores menos frecuentes (`price_list_item_id`, `supplier_payment_condition_id`, `customer_payment_condition_id`, `detail_id`, `inventory_operation_id`, `count_id`, …) se explican dentro de la ficha del servicio que los genera.

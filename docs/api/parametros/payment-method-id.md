@@ -23,8 +23,10 @@
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-payment-reference-dev.onrender.com/global-payment-methods?status=ACTIVE' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-payment-reference-dev.onrender.com/global-payment-methods?status=ACTIVE' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (modelo `PaginatedResponse[GlobalPaymentMethodResponse]`; valores ilustrativos):

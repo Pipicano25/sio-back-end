@@ -14,6 +14,8 @@
 
 ## Cómo obtenerlo
 
+**¿Qué hace?** Lista, con paginación, las presentaciones (unidades de venta o compra) que la empresa adoptó, filtrando normalmente por `company_product_id` para ver solo las del producto elegido, con sus banderas de compra/venta, las predeterminadas y su estado. Es la fuente de `company_product_presentation_id` para líneas de venta y compra y para precios. Ficha técnica: [Commercial Relationship 26](../servicios/commercial-relationship.md#26-get-companiescompany_idcompany-product-presentations); guía principal: [Productos y precios](../principales/productos-y-precios.md).
+
 | | |
 |---|---|
 | Método y ruta | `GET /api/v1/companies/{company_id}/company-product-presentations` |
@@ -24,8 +26,10 @@
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/company-product-presentations?company_product_id=e3f4a5b6-c7d8-4e9f-8a0b-1c2d3e4f5a61&is_sellable=true' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/company-product-presentations?company_product_id=e3f4a5b6-c7d8-4e9f-8a0b-1c2d3e4f5a61&is_sellable=true' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (modelo `PaginatedResponse[CompanyProductPresentationResponse]`; valores ilustrativos):
@@ -62,9 +66,22 @@ Respuesta `200` (modelo `PaginatedResponse[CompanyProductPresentationResponse]`;
 
 **Campo exacto:** `items[].id`. Preselecciona la que tenga `is_default_sale: true` (ventas) o `is_default_purchase: true` (compras). El nombre y la cantidad base de la presentación («caja × 100») no están en este objeto: provienen de la presentación global (`global_product_presentation_id`) en Product Catalog, o directamente de [Product Inventory Query](../servicios/product-inventory-query.md), que ya combina ambos.
 
+**Posibles errores de esta API:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `COMMERCIAL_RELATIONSHIP.FORBIDDEN` | Falta `perm:commercial-relationship:company_product_presentations:read` | Mostrar que faltan permisos y el `trace_id` |
+| `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Operational Context rechazó la comprobación de membresía (suele faltar `perm:operational-context:application_users:read`) | Revisar los permisos del usuario |
+| `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | Sin membresía `ACTIVE` en la empresa, o empresa inexistente | Volver a leer el contexto operativo |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Paginación fuera de rango, `search` > 100, `status` o un booleano inválido, UUID mal formado | Corregir los parámetros |
+| `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Operational Context, Party Identity o Product Catalog no responden (`dependency` lo indica) | Reintentar más tarde |
+
 ## Si la presentación no está adoptada todavía (operación `WRITE`)
 
 1. Lista las presentaciones globales del producto en Product Catalog:
+
+**¿Qué hace?** Devuelve, sin paginación, las presentaciones definidas en el catálogo global para un producto (unidad, caja, blíster…), con su cantidad base y si son elegibles para adopción. Ficha técnica: [Product Catalog](../servicios/product-catalog.md). Sus errores son `401`, `403` (falta `perm:product-catalog:products:read`) y `404 PRODUCT_CATALOG.NOT_FOUND` si el producto no existe.
 
 | | |
 |---|---|
@@ -77,6 +94,8 @@ Respuesta `200` (modelo `PaginatedResponse[CompanyProductPresentationResponse]`;
 El `global_product_presentation_id` es el campo `id` de cada elemento.
 
 2. Adóptala en la empresa:
+
+**¿Qué hace la API de adopción?** Crea la presentación empresarial enlazando un producto empresarial de la empresa con una presentación global del mismo producto global, con banderas de compra/venta y predeterminadas. Devuelve `201` con la presentación; su `id` es el `company_product_presentation_id`. Ficha técnica: [Commercial Relationship 27](../servicios/commercial-relationship.md#27-post-companiescompany_idcompany-product-presentations).
 
 | | |
 |---|---|
@@ -110,8 +129,26 @@ Cuerpo (modelo `CompanyProductPresentationCreate`; no admite campos adicionales)
 
 La respuesta `201` devuelve la presentación empresarial; el identificador es su campo `id`.
 
+**Posibles errores al adoptar:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `COMMERCIAL_RELATIONSHIP.FORBIDDEN` | Falta `perm:commercial-relationship:company_product_presentations:create` | Mostrar que faltan permisos y el `trace_id` |
+| `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Operational Context rechazó la comprobación de membresía (suele faltar `perm:operational-context:application_users:read`) | Revisar los permisos del usuario |
+| `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | Sin membresía `ACTIVE` en la empresa, o empresa inexistente | Volver a leer el contexto operativo |
+| `409` | `COMMERCIAL_RELATIONSHIP.DUPLICATE_PRESENTATION_ADOPTION` | La empresa ya adoptó esa presentación global | Buscar la presentación existente |
+| `409` | `COMMERCIAL_RELATIONSHIP.DUPLICATE_SKU` | Ya existe una presentación con ese `sku` en la empresa | Pedir otro SKU |
+| `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_PRODUCT_NOT_FOUND` / `_INACTIVE` | El producto empresarial no es de la empresa o está inactivo | Elegir otro producto |
+| `422` | `COMMERCIAL_RELATIONSHIP.GLOBAL_PRESENTATION_NOT_FOUND` / `GLOBAL_PRESENTATION_INACTIVE` / `GLOBAL_PRESENTATION_NOT_ELIGIBLE` | La presentación global no existe, está inactiva o no es elegible para adopción | Elegir otra presentación global |
+| `422` | `COMMERCIAL_RELATIONSHIP.GLOBAL_PRESENTATION_OF_OTHER_PRODUCT` | La presentación global no pertenece al producto global del producto empresarial | Listar las presentaciones del producto correcto |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Campo obligatorio ausente, formato inválido o campo desconocido | Corregir el formulario |
+| `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Operational Context, Party Identity o Product Catalog no responden (`dependency` lo indica) | Reintentar más tarde |
+
+
 ## Cómo usarlo después
 
+- En [Administración empresarial](../principales/administracion-empresarial.md#17-consultar-el-historial-de-una-venta-una-compra-o-un-producto): `{entity_id}` de la ruta de la API 17 con `entity_type=CompanyProductPresentation`.
 - `lines[].company_product_presentation_id` en `POST /companies/{company_id}/sales` y `POST /companies/{company_id}/purchases`, siempre junto con `lines[].company_product_id` del mismo producto.
 - Precios por presentación en listas de precios (`price-list-items`) y políticas de ganancia.
 

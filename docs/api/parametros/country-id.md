@@ -17,6 +17,8 @@ Los tres identificadores forman una jerarquía global (país → división admin
 
 ## Cómo obtener `country_id`
 
+**¿Qué hace?** Lista los países del catálogo global, con paginación y búsqueda por nombre o código ISO. Es el primer selector en cascada de una dirección y la fuente del país de identificación en Party Identity. Ficha técnica: [Geography 3](../servicios/geography.md#3-get-global-countries).
+
 | | |
 |---|---|
 | Método y ruta | `GET /global-countries` |
@@ -26,8 +28,10 @@ Los tres identificadores forman una jerarquía global (país → división admin
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-geography-dev.onrender.com/global-countries?iso2_code=CO' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-geography-dev.onrender.com/global-countries?iso2_code=CO' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (valores ilustrativos):
@@ -36,7 +40,7 @@ Respuesta `200` (valores ilustrativos):
 {
   "items": [
     {
-      "id": "e6d7d0c7-a0be-4f4b-8bca-631867ff85c8",
+      "id": "c0a80101-0000-4000-8000-000000000001",
       "iso2_code": "CO",
       "iso3_code": "COL",
       "name": "Colombia",
@@ -56,9 +60,20 @@ Respuesta `200` (valores ilustrativos):
 }
 ```
 
-**Campo exacto:** `items[].id`.
+**Campo exacto:** `items[].id` → se envía como `country_id`.
+
+**Posibles errores de esta API** (Geography responde errores planos de FastAPI, sin Problem Details):
+
+| HTTP | Cuerpo | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar |
+| `403` | `{"detail": …}` | Falta `perm:geography:global_countries:read` | Mostrar que faltan permisos |
+| `422` | `{"detail": [ {"loc": …, "msg": …} ]}` | `page_size` fuera de 1–100, `search` > 120, código ISO con longitud distinta de la exigida, `status` inválido o UUID mal formado | Leer `loc` y `msg` y corregir el parámetro |
+| `503` | `{"detail": "La base de datos del servicio no está disponible temporalmente. Intente de nuevo más tarde."}` | Base de datos caída | Reintentar más tarde |
 
 ## Cómo obtener `administrative_division_id`
+
+**¿Qué hace?** Lista las divisiones administrativas (departamentos, estados, provincias) del catálogo global; con `country_id` devuelve solo las del país elegido, que es el uso habitual en el segundo selector en cascada. Ficha técnica: [Geography 8](../servicios/geography.md#8-get-global-administrative-divisions).
 
 | | |
 |---|---|
@@ -69,8 +84,10 @@ Respuesta `200` (valores ilustrativos):
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-geography-dev.onrender.com/global-administrative-divisions?country_id=c0a80101-0000-4000-8000-000000000001&page_size=100' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-geography-dev.onrender.com/global-administrative-divisions?country_id=c0a80101-0000-4000-8000-000000000001&page_size=100' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (valores ilustrativos):
@@ -79,9 +96,9 @@ Respuesta `200` (valores ilustrativos):
 {
   "items": [
     {
-      "id": "e6d7d0c7-a0be-4f4b-8bca-631867ff85c8",
+      "id": "c0a80101-0000-4000-8000-000000000002",
       "country_id": "c0a80101-0000-4000-8000-000000000001",
-      "parent_division_id": "c0a80101-0000-4000-8000-000000000002",
+      "parent_division_id": null,
       "code": "CUN",
       "name": "Cundinamarca",
       "division_type": "DEPARTMENT",
@@ -100,9 +117,20 @@ Respuesta `200` (valores ilustrativos):
 }
 ```
 
-**Campo exacto:** `items[].id`. Comprueba que `country_id` del elemento coincida con el país elegido.
+**Campo exacto:** `items[].id` → se envía como `administrative_division_id`. Comprueba que `country_id` del elemento coincida con el país elegido.
+
+**Posibles errores de esta API** (Geography responde errores planos de FastAPI, sin Problem Details):
+
+| HTTP | Cuerpo | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar |
+| `403` | `{"detail": …}` | Falta `perm:geography:global_administrative_divisions:read` | Mostrar que faltan permisos |
+| `422` | `{"detail": [ {"loc": …, "msg": …} ]}` | `page_size` fuera de 1–100, `search` > 120, código ISO con longitud distinta de la exigida, `status` inválido o UUID mal formado | Leer `loc` y `msg` y corregir el parámetro |
+| `503` | `{"detail": "La base de datos del servicio no está disponible temporalmente. Intente de nuevo más tarde."}` | Base de datos caída | Reintentar más tarde |
 
 ## Cómo obtener `city_id`
+
+**¿Qué hace?** Lista las ciudades o municipios del catálogo global; con `administrative_division_id` devuelve solo las de la división elegida (tercer selector en cascada). Cada ciudad trae su división y su país, con lo que se puede comprobar la coherencia antes de enviar los tres. Ficha técnica: [Geography 13](../servicios/geography.md#13-get-global-cities).
 
 | | |
 |---|---|
@@ -113,8 +141,10 @@ Respuesta `200` (valores ilustrativos):
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-geography-dev.onrender.com/global-cities?administrative_division_id=c0a80101-0000-4000-8000-000000000002&search=bogot' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-geography-dev.onrender.com/global-cities?administrative_division_id=c0a80101-0000-4000-8000-000000000002&search=bogot' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (valores ilustrativos):
@@ -123,7 +153,7 @@ Respuesta `200` (valores ilustrativos):
 {
   "items": [
     {
-      "id": "e6d7d0c7-a0be-4f4b-8bca-631867ff85c8",
+      "id": "c0a80101-0000-4000-8000-000000000003",
       "country_id": "c0a80101-0000-4000-8000-000000000001",
       "administrative_division_id": "c0a80101-0000-4000-8000-000000000002",
       "code": "BOG",
@@ -145,11 +175,21 @@ Respuesta `200` (valores ilustrativos):
 }
 ```
 
-**Campo exacto:** `items[].id`. La ciudad trae `administrative_division_id` y `country_id`; los tres deben ser coherentes entre sí cuando se envían juntos.
+**Campo exacto:** `items[].id` → se envía como `city_id`. La ciudad trae `administrative_division_id` y `country_id`; los tres deben ser coherentes entre sí cuando se envían juntos.
+
+**Posibles errores de esta API** (Geography responde errores planos de FastAPI, sin Problem Details):
+
+| HTTP | Cuerpo | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar |
+| `403` | `{"detail": …}` | Falta `perm:geography:global_cities:read` | Mostrar que faltan permisos |
+| `422` | `{"detail": [ {"loc": …, "msg": …} ]}` | `page_size` fuera de 1–100, `search` > 120, código ISO con longitud distinta de la exigida, `status` inválido o UUID mal formado | Leer `loc` y `msg` y corregir el parámetro |
+| `503` | `{"detail": "La base de datos del servicio no está disponible temporalmente. Intente de nuevo más tarde."}` | Base de datos caída | Reintentar más tarde |
 
 ## Cómo usarlos después
 
-- Crear o actualizar una empresa o sucursal en Operational Context: campos `country_id`, `administrative_division_id` y `city_id` de la dirección ([Crear una empresa y una sucursal](../ejemplos/crear-empresa-y-sucursal.md)). Operational Context valida la jerarquía contra Geography y responde `422` si la ciudad no pertenece a la división o al país.
+- En [Administración empresarial](../principales/administracion-empresarial.md): campos `country_id`, `administrative_division_id` y `city_id` del cuerpo de las API 1, 4, 5 y 8; filtros `country_id` y `city_id` de la API 2 y `city_id` de la API 6.
+- Crear o actualizar una empresa o sucursal en Operational Context: campos `country_id`, `administrative_division_id` y `city_id` de la dirección. Operational Context valida la jerarquía contra Geography y responde `422 GEOGRAPHY_INCOHERENT`, `LOCATION_INACTIVE` o `*_NOT_FOUND`; qué hace cada API y sus errores en [Administración empresarial](../principales/administracion-empresarial.md), API 1, 4, 5 y 8, y el flujo en [Crear una empresa y una sucursal](../ejemplos/crear-empresa-y-sucursal.md).
 - Registrar identidades en Party Identity: `identification_country_id` (personas) y `country_id` de registro (organizaciones) ([person_identity_id](person-identity-id.md), [organization_identity_id](organization-identity-id.md)).
 - Direcciones de clientes y proveedores en Commercial Relationship.
 - Filtrar empresas: `GET https://sio-operational-context-dev.onrender.com/api/v1/companies?country_id=…&city_id=…`.

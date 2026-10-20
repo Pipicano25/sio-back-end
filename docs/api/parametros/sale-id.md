@@ -14,9 +14,11 @@
 
 ## Cómo obtenerlo
 
-**Al crear la venta:** la respuesta `201` de `POST https://sio-sales-dev.onrender.com/api/v1/companies/{company_id}/sales` trae el campo `id`. El frontend debe guardarlo junto con `version` para las operaciones siguientes.
+**Al crear la venta:** `POST https://sio-sales-dev.onrender.com/api/v1/companies/{company_id}/sales` crea el borrador (`DRAFT`) de una venta en una sucursal, para un cliente y un método de pago, opcionalmente con líneas; la respuesta `201` trae el campo `id`, que es el `sale_id`. Guárdalo junto con `version` para las operaciones siguientes. Qué hace, cuerpo y errores (`403 BRANCH_ACCESS_DENIED`, `409 REFERENCES_NOT_ELIGIBLE`, `422 VALIDATION_ERROR`, entre otros) en [Ventas](../principales/ventas.md) y en la [ficha de Sales, operación 3](../servicios/sales.md#3-post-companiescompany_idsales).
 
 **Para buscar una venta existente:**
+
+**¿Qué hace?** Lista, con paginación, las ventas de la empresa ordenadas de la más reciente a la más antigua, con filtros por estado, sucursal, cliente, rango de fechas y número de documento. Devuelve el encabezado de cada venta (sin líneas). Ficha técnica: [Sales 4](../servicios/sales.md#4-get-companiescompany_idsales).
 
 | | |
 |---|---|
@@ -28,8 +30,10 @@
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-sales-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/sales?status=CONFIRMED&branch_id=7c9e6679-7425-40de-944b-e07fc1f90ae7&operation_date_from=2026-10-01&operation_date_to=2026-10-31' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-sales-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/sales?status=CONFIRMED&branch_id=7c9e6679-7425-40de-944b-e07fc1f90ae7&operation_date_from=2026-10-01&operation_date_to=2026-10-31' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (`PaginatedResponse[SaleResponse]`; valores ilustrativos):
@@ -120,8 +124,19 @@ Respuesta `200` (`PaginatedResponse[SaleResponse]`; valores ilustrativos):
 
 **Campo exacto:** `items[].id`. `number` es el consecutivo legible (vacío mientras la venta está en `DRAFT`), `version` el valor que debe enviarse en la siguiente operación de escritura y `status` el estado actual.
 
+**Posibles errores de esta API:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `SALES.FORBIDDEN` | Falta `perm:sales:sales:read` o el token es de una cuenta de servicio | Mostrar que faltan permisos y el `trace_id` |
+| `404` | `SALES.NOT_FOUND` | El usuario no tiene membresía `ACTIVE` en la empresa o la empresa no existe | Volver a leer el contexto operativo |
+| `422` | `SALES.VALIDATION_ERROR` | Paginación fuera de rango, `status` inválido, fecha mal formada o UUID mal formado (`errors[].field` lo indica) | Corregir los parámetros |
+| `503` | `SALES.DEPENDENCY_UNAVAILABLE` | Base de datos u Operational Context no disponibles | Reintentar más tarde |
+
 ## Cómo usarlo después
 
+- En [Administración empresarial](../principales/administracion-empresarial.md#17-consultar-el-historial-de-una-venta-una-compra-o-un-producto): `{entity_id}` de la ruta de la API 17 con `entity_type=Sale`, para ver el historial de la venta.
 - Consultar la venta con líneas y totales: `GET …/companies/{company_id}/sales/{sale_id}` ([operación 5](../servicios/sales.md#5-get-companiescompany_idsalessale_id)).
 - Agregar, modificar o eliminar líneas: `POST`/`PUT`/`DELETE …/sales/{sale_id}/details[/{detail_id}]` (operaciones 7, 9 y 10; siempre con `version`).
 - Verificar existencias antes de confirmar: `GET …/sales/{sale_id}/availability` (operación 15).

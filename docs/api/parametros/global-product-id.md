@@ -23,8 +23,10 @@
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-product-catalog-dev.onrender.com/api/v1/products?search=acetaminofen&status=ACTIVE&page_size=10' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-product-catalog-dev.onrender.com/api/v1/products?search=acetaminofen&status=ACTIVE&page_size=10' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (modelo `PaginatedResponse[ProductResponse]`; valores ilustrativos; los objetos `completeness`, `warnings` y `detail` se describen en la ficha del servicio):

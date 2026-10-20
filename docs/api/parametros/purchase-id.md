@@ -14,9 +14,11 @@
 
 ## Cómo obtenerlo
 
-**Al crear la compra:** la respuesta `201` de `POST https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases` trae el campo `id`. Guárdalo junto con `version`.
+**Al crear la compra:** `POST https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases` crea el borrador (`DRAFT`) de una compra en una sucursal, a un proveedor, con método de pago y opcionalmente líneas con costo; la respuesta `201` trae el campo `id`, que es el `purchase_id`. Guárdalo junto con `version`. Qué hace, cuerpo y errores (`403 BRANCH_ACCESS_DENIED`, `409 REFERENCES_NOT_ELIGIBLE`, `422 VALIDATION_ERROR`, entre otros) en [Compras](../principales/compras.md) y en la [ficha de Purchase, operación 3](../servicios/purchase.md#3-post-companiescompany_idpurchases).
 
 **Para buscar una compra existente:**
+
+**¿Qué hace?** Lista, con paginación, las compras de la empresa ordenadas de la más reciente a la más antigua, con filtros por estado, sucursal, proveedor, rango de fechas y número. Devuelve el encabezado de cada compra, incluido `receipt_status`. Ficha técnica: [Purchase 4](../servicios/purchase.md#4-get-companiescompany_idpurchases).
 
 | | |
 |---|---|
@@ -28,8 +30,10 @@
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-purchase-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/purchases?status=CONFIRMED&company_supplier_id=d2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f60' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-purchase-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/purchases?status=CONFIRMED&company_supplier_id=d2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f60' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (`PaginatedResponse[PurchaseResponse]`; valores ilustrativos):
@@ -121,8 +125,19 @@ Respuesta `200` (`PaginatedResponse[PurchaseResponse]`; valores ilustrativos):
 
 **Campo exacto:** `items[].id`. Observa también `status`, `receipt_status` (una compra confirmada con `receipt_status: PENDING` todavía no ha entrado al inventario) y `version`.
 
+**Posibles errores de esta API:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `PURCHASE.FORBIDDEN` | Falta `perm:purchase:purchases:read` o el token es de una cuenta de servicio | Mostrar que faltan permisos y el `trace_id` |
+| `404` | `PURCHASE.NOT_FOUND` | El usuario no tiene membresía `ACTIVE` en la empresa o la empresa no existe | Volver a leer el contexto operativo |
+| `422` | `PURCHASE.VALIDATION_ERROR` | Paginación fuera de rango, `status` inválido, fecha mal formada o UUID mal formado | Corregir los parámetros |
+| `503` | `PURCHASE.DEPENDENCY_UNAVAILABLE` | Base de datos u Operational Context no disponibles | Reintentar más tarde |
+
 ## Cómo usarlo después
 
+- En [Administración empresarial](../principales/administracion-empresarial.md#17-consultar-el-historial-de-una-venta-una-compra-o-un-producto): `{entity_id}` de la ruta de la API 17 con `entity_type=Purchase`, para ver el historial de la compra.
 - Consultar la compra con líneas, impuestos y totales: `GET …/companies/{company_id}/purchases/{purchase_id}` ([operación 5](../servicios/purchase.md#5-get-companiescompany_idpurchasespurchase_id)).
 - Agregar, modificar o eliminar líneas: `POST`/`PUT`/`DELETE …/purchases/{purchase_id}/details[/{detail_id}]` (siempre con `version`).
 - Confirmar: `POST …/purchases/{purchase_id}/confirmation` con `{"version": n}` y `Idempotency-Key`. Registrar la recepción física completa: `POST …/purchases/{purchase_id}/receipt` con `{"version": n, "full_receipt_confirmed": true}` y `Idempotency-Key`.

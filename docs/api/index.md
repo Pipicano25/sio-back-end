@@ -11,7 +11,7 @@ Documentación técnica de los 12 microservicios de SIO desplegados en Render (e
 | [Permisos y contexto operativo](guias/permisos.md) | Formato `perm:{servicio}:{recurso}:{accion}`, comodines `all`, grupos del realm, membresías por empresa y sucursal, aislamiento multi-tenant |
 | [Errores y diagnóstico](guias/errores.md) | Problem Details, `code`, `trace_id`, códigos HTTP por tipo de error en cada servicio |
 | [API principales por módulo](principales/README.md) | Nueve módulos funcionales (acceso y contexto operativo, administración empresarial, clientes, proveedores, productos y precios, ventas, compras, inventario, reportes): qué puede hacer el usuario, qué API consumir, qué necesita antes y cómo saber que funcionó |
-| [Cómo obtener cada identificador](parametros/README.md) | Diecisiete guías reutilizables: `company_id`, `branch_id`, `company_customer_id`, `company_supplier_id`, `company_product_id`, `company_product_presentation_id`, `global_product_id`, `global_product_presentation_id`, `payment_method_id`, `person_identity_id`, `organization_identity_id`, `application_user_id`, `price_list_id`, `policy_id`, `sale_id`, `purchase_id` y los geográficos |
+| [Cómo obtener cada identificador](parametros/README.md) | Veinte guías reutilizables: `company_id`, `branch_id`, `company_customer_id`, `company_supplier_id`, `company_product_id`, `company_product_presentation_id`, `global_product_id`, `global_product_presentation_id`, `payment_method_id`, `person_identity_id`, `organization_identity_id`, `application_user_id`, `keycloak_user_id`, `user_branch_id`, `price_list_id`, `policy_id`, `sale_id`, `purchase_id`, `sequence_id` y los geográficos |
 | [Ejemplos de flujos completos](ejemplos/README.md) | Crear una venta, registrar una compra, consultar inventario, configurar una lista de precios, crear una empresa y una sucursal |
 
 ## API por microservicio
@@ -77,7 +77,7 @@ Cobertura contra los contratos OpenAPI desplegados en Render el 2026-10-19: **41
 | guias/autenticacion.md | Hecho | — | — |
 | guias/permisos.md | Hecho | — | — |
 | guias/errores.md | Hecho | — | — |
-| parametros/* (17 guías) | Hecho | — | — |
+| parametros/* (20 guías) | Hecho | — | — |
 | ejemplos/* (5 flujos) | Hecho | — | — |
 | principales/* (índice + 9 módulos) | Hecho | — | — |
 | servicios/geography.md | Hecho | 17 | 17 |

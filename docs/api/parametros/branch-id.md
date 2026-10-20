@@ -14,7 +14,7 @@
 
 ## Opción recomendada: contexto operativo del usuario
 
-Devuelve, dentro de cada membresía, las sucursales asignadas al usuario y si puede operar en ellas ahora (`allowed`).
+**¿Qué hace?** Devuelve, dentro de cada membresía del usuario, las sucursales que tiene asignadas y si puede operar en cada una ahora mismo (`allowed`, con `reason` cuando no). Es la fuente de `branch_id` para la sesión de trabajo: solo deben ofrecerse las que tengan `allowed: true`. Descrita en [Acceso y contexto operativo, API 5](../principales/acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario).
 
 | | |
 |---|---|
@@ -25,8 +25,10 @@ Devuelve, dentro de cada membresía, las sucursales asignadas al usuario y si pu
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-operational-context-dev.onrender.com/api/v1/me/operational-context' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-operational-context-dev.onrender.com/api/v1/me/operational-context' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (fragmento; el documento completo está en [company_id](company-id.md)):
@@ -61,7 +63,17 @@ Respuesta `200` (fragmento; el documento completo está en [company_id](company-
 
 Esta respuesta no incluye el nombre de la sucursal; para mostrarlo usa la lista siguiente y cruza por `id`.
 
+**Posibles errores de esta API:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `OPERATIONAL_CONTEXT.FORBIDDEN` | Falta `perm:operational-context:application_users:read` | Mostrar que faltan permisos y el `trace_id` |
+| `503` | `OPERATIONAL_CONTEXT.DEPENDENCY_UNAVAILABLE` | La base de datos no responde | Reintentar más tarde |
+
 ## Opción alternativa: listar las sucursales de la empresa
+
+**¿Qué hace?** Lista, con paginación y búsqueda por código o nombre, **todas** las sucursales de la empresa, tenga o no el usuario acceso a cada una, con su zona horaria efectiva y su estado. Por defecto solo `ACTIVE`. Es la fuente de `branch_id` para la administración (asignar usuarios, crear secuencias) y para mostrar el nombre de cada sucursal. Descrita en [Administración empresarial, API 6](../principales/administracion-empresarial.md#6-consultar-las-sucursales-de-una-empresa).
 
 | | |
 |---|---|
@@ -74,8 +86,10 @@ Esta respuesta no incluye el nombre de la sucursal; para mostrarlo usa la lista 
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-operational-context-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/branches?status=ACTIVE' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-operational-context-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/branches?status=ACTIVE' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (modelo `PaginatedResponse[BranchResponse]`; valores ilustrativos):
@@ -117,12 +131,37 @@ Respuesta `200` (modelo `PaginatedResponse[BranchResponse]`; valores ilustrativo
 
 **Campo exacto:** `items[].id`. Esta lista muestra todas las sucursales de la empresa, tenga o no el usuario acceso a cada una; para saber en cuáles puede operar, cruza con `/me/operational-context`.
 
+**Posibles errores de esta API:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `OPERATIONAL_CONTEXT.FORBIDDEN` | El token no tiene `perm:operational-context:branches:read` | Mostrar que faltan permisos y el `trace_id` |
+| `404` | `OPERATIONAL_CONTEXT.NOT_FOUND` | La empresa no existe o el usuario no tiene membresía `ACTIVE` en ella (ni `platform:administer`) | Volver a leer el contexto operativo |
+| `422` | `OPERATIONAL_CONTEXT.VALIDATION_ERROR` | Paginación fuera de rango, `search` > 160, `status` inválido o UUID mal formado | Corregir los parámetros |
+| `503` | `OPERATIONAL_CONTEXT.DEPENDENCY_UNAVAILABLE` | La base de datos no responde | Reintentar más tarde |
+
 ## Si la sucursal no existe todavía
 
-`POST /api/v1/companies/{company_id}/branches` (`WRITE`, permiso `perm:operational-context:branches:create`) devuelve `201` con el `id` de la nueva sucursal. Para que un usuario pueda operar en ella, además hay que asignársela (`user_branches`). Detalle en la ficha de [Operational Context](../servicios/operational-context.md).
+**¿Qué hace la API de creación?** `POST https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}/branches` (`WRITE`, permiso `perm:operational-context:branches:create`) registra un punto de operación de una empresa `ACTIVE`, con código único por empresa y zona horaria propia o heredada. Devuelve `201` con el `id` de la nueva sucursal. No la asigna a ningún usuario: para que alguien opere en ella hay que crear la asignación ([user_branch_id](user-branch-id.md)). Cuerpo, respuesta y errores completos en [Administración empresarial, API 5](../principales/administracion-empresarial.md#5-crear-una-sucursal).
+
+**Posibles errores al crear:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `OPERATIONAL_CONTEXT.FORBIDDEN` | El token no tiene `perm:operational-context:branches:create` | Mostrar que faltan permisos y el `trace_id` |
+| `404` | `OPERATIONAL_CONTEXT.NOT_FOUND` | La empresa no existe o el usuario no tiene membresía `ACTIVE` en ella (ni `platform:administer`) | Volver a leer el contexto operativo |
+| `409` | `OPERATIONAL_CONTEXT.DUPLICATE_BRANCH_CODE` | Ya existe una sucursal con ese `code` en la empresa | Pedir otro código |
+| `422` | `OPERATIONAL_CONTEXT.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden crear sucursales en ella |
+| `422` | `OPERATIONAL_CONTEXT.COUNTRY_NOT_FOUND`, `ADMINISTRATIVE_DIVISION_NOT_FOUND`, `CITY_NOT_FOUND`, `LOCATION_INACTIVE`, `GEOGRAPHY_INCOHERENT` | Ubicación inválida | Corregir la ubicación |
+| `422` | `OPERATIONAL_CONTEXT.VALIDATION_ERROR` | `code` o `name` vacíos, `name` > 160, correo o zona horaria inválidos, campo desconocido | Corregir el formulario |
+| `503` | `OPERATIONAL_CONTEXT.DEPENDENCY_UNAVAILABLE` | Geography no responde | Reintentar más tarde |
+
 
 ## Cómo usarlo después
 
+- En [Administración empresarial](../principales/administracion-empresarial.md): `{branch_id}` de la ruta de las API 7, 8 y 13; campo `branch_id` del cuerpo de la [API 12 (asignar un usuario a una sucursal)](../principales/administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal) y de la [API 19 (crear una secuencia)](../principales/administracion-empresarial.md#19-crear-una-secuencia-de-numeración); filtro `branch_id` de la API 16. Lo devuelve la API 5 (crear sucursal) en el campo `id`.
 - En cuerpos de creación: `"branch_id"` de `POST /companies/{company_id}/sales` y `POST /companies/{company_id}/purchases`.
 - En rutas por sucursal: `GET https://sio-product-inventory-query-dev.onrender.com/api/v1/companies/{company_id}/branches/{branch_id}/inventory-overviews`.
 - Como filtro: `?branch_id=` en Inventory, Sales, Purchase y Business Reporting.

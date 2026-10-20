@@ -14,6 +14,8 @@
 
 ## Cómo obtenerlo
 
+**¿Qué hace?** Lista, con paginación y búsqueda, los productos que la empresa ha adoptado del catálogo global, con su código interno, nombre, moneda, banderas de inventario y de compra/venta y estado. Por defecto solo `ACTIVE`. Es la fuente de `company_product_id` para líneas de venta y compra, inventario y precios. Ficha técnica: [Commercial Relationship 3](../servicios/commercial-relationship.md#3-get-companiescompany_idcompany-products); guía principal: [Productos y precios](../principales/productos-y-precios.md).
+
 | | |
 |---|---|
 | Método y ruta | `GET /api/v1/companies/{company_id}/company-products` |
@@ -24,8 +26,10 @@
 | Clasificación | `READ` |
 
 ```bash
-curl -sS 'https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/company-products?is_sellable=true&status=ACTIVE' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
+curl -X GET \
+  'https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/company-products?is_sellable=true&status=ACTIVE' \
+  -H 'Authorization: Bearer TU_ACCESS_TOKEN' \
+  -H 'Accept: application/json'
 ```
 
 Respuesta `200` (modelo `PaginatedResponse[CompanyProductResponse]`; valores ilustrativos):
@@ -67,10 +71,23 @@ Respuesta `200` (modelo `PaginatedResponse[CompanyProductResponse]`; valores ilu
 
 **Alternativa para pantallas de consulta:** [Product Inventory Query](../servicios/product-inventory-query.md) devuelve en una sola llamada el producto empresarial con precios y existencias (`GET /companies/{company_id}/product-overviews`); allí el identificador aparece también como `company_product_id`.
 
+**Posibles errores de esta API:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `COMMERCIAL_RELATIONSHIP.FORBIDDEN` | Falta `perm:commercial-relationship:company_products:read` | Mostrar que faltan permisos y el `trace_id` |
+| `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Operational Context rechazó la comprobación de membresía (suele faltar `perm:operational-context:application_users:read`) | Revisar los permisos del usuario |
+| `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | Sin membresía `ACTIVE` en la empresa, o empresa inexistente | Volver a leer el contexto operativo |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Paginación fuera de rango, `search` > 100, `status` o un booleano inválido, UUID mal formado | Corregir los parámetros |
+| `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Operational Context, Party Identity o Product Catalog no responden (`dependency` lo indica) | Reintentar más tarde |
+
 ## Si el producto no está adoptado todavía (operación `WRITE`)
 
 1. Localiza el producto en el catálogo global: [global_product_id](global-product-id.md).
 2. Adóptalo en la empresa:
+
+**¿Qué hace la API de adopción?** Crea el producto empresarial a partir de un producto del catálogo global elegible, con código interno único, nombre propio, moneda y banderas de inventario y comerciales. Devuelve `201` con el producto empresarial; su `id` es el `company_product_id`. Ficha técnica: [Commercial Relationship 4](../servicios/commercial-relationship.md#4-post-companiescompany_idcompany-products).
 
 | | |
 |---|---|
@@ -109,8 +126,24 @@ Cuerpo (modelo `CompanyProductCreate`; no admite campos adicionales):
 
 La respuesta `201` devuelve el producto empresarial; el `company_product_id` es su campo `id`. Después hay que adoptar al menos una [presentación empresarial](company-product-presentation-id.md), porque las líneas de venta y compra exigen ambas cosas.
 
+**Posibles errores al adoptar:**
+
+| HTTP | Código | Motivo | Qué debe hacer el frontend |
+|---|---|---|---|
+| `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
+| `403` | `COMMERCIAL_RELATIONSHIP.FORBIDDEN` | Falta `perm:commercial-relationship:company_products:create` | Mostrar que faltan permisos y el `trace_id` |
+| `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Operational Context rechazó la comprobación de membresía (suele faltar `perm:operational-context:application_users:read`) | Revisar los permisos del usuario |
+| `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | Sin membresía `ACTIVE` en la empresa, o empresa inexistente | Volver a leer el contexto operativo |
+| `409` | `COMMERCIAL_RELATIONSHIP.DUPLICATE_ADOPTION` | La empresa ya adoptó ese producto global | Buscar el producto empresarial existente |
+| `409` | `COMMERCIAL_RELATIONSHIP.DUPLICATE_INTERNAL_CODE` | Ya existe un producto con ese `internal_code` | Pedir otro código |
+| `422` | `COMMERCIAL_RELATIONSHIP.GLOBAL_PRODUCT_NOT_ELIGIBLE` | El producto global no está completo o activo para adoptarse | Revisar `completeness` en Product Catalog |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `global_product_id` inexistente, campo obligatorio ausente, formato inválido o campo desconocido | Corregir el formulario |
+| `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Operational Context, Party Identity o Product Catalog no responden (`dependency` lo indica) | Reintentar más tarde |
+
+
 ## Cómo usarlo después
 
+- En [Administración empresarial](../principales/administracion-empresarial.md#17-consultar-el-historial-de-una-venta-una-compra-o-un-producto): `{entity_id}` de la ruta de la API 17 con `entity_type=CompanyProduct`.
 - Líneas de venta y compra: `lines[].company_product_id` junto con `lines[].company_product_presentation_id`.
 - Existencias: filtro `?company_product_id=` en Inventory y ruta de políticas por producto.
 - Precios: listas de precios y políticas de ganancia en Commercial Relationship.
