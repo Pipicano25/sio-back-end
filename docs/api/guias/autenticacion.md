@@ -157,18 +157,11 @@ Secuencia:
 
 ### 4.1. Solicitud de autorización
 
-El navegador abre una URL con esta estructura (ejemplo ilustrativo; el *code challenge* y el estado se generan para cada intento):
+El navegador abre la URL del *authorization endpoint* con los parámetros de la tabla (ejemplo ilustrativo; el *code challenge* y el estado se generan para cada intento). Este endpoint devuelve una página HTML de login y termina en una redirección, así que no se consume desde código; el cURL siguiente muestra la URL completa y sirve para comprobar qué responde Keycloak a los parámetros del frontend:
 
-```http
-GET /realms/siodev/protocol/openid-connect/auth
-    ?client_id=sio-web
-    &response_type=code
-    &scope=openid%20profile%20email
-    &redirect_uri=https%3A%2F%2Fmi-frontend.example.com%2Fauth%2Fcallback
-    &state=f3c1a2b4c5d6e7f8
-    &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
-    &code_challenge_method=S256
-Host: fastapi-postgrest-online-keycloak.onrender.com
+```bash
+curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' \
+  'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/auth?client_id=sio-web&response_type=code&scope=openid%20profile%20email&redirect_uri=https%3A%2F%2Fmi-frontend.example.com%2Fauth%2Fcallback&state=f3c1a2b4c5d6e7f8&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
 ```
 
 | Parámetro | Obligatorio | Función | Origen |
@@ -189,12 +182,7 @@ https://mi-frontend.example.com/auth/callback?code=CODIGO_TEMPORAL&state=f3c1a2b
 
 La aplicación comprueba `state` y canjea el código utilizando el `code_verifier` original. Un código es de corta duración y solo puede utilizarse una vez.
 
-**cURL (solo diagnóstico).** Este endpoint lo abre el navegador, porque devuelve una página HTML de login y termina en una redirección; no se consume desde código. Con cURL solo se comprueba qué responde Keycloak a los parámetros del frontend:
-
-```bash
-curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' \
-  'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/auth?client_id=sio-web&response_type=code&scope=openid%20profile%20email&redirect_uri=https%3A%2F%2Fmi-frontend.example.com%2Fauth%2Fcallback&state=f3c1a2b4c5d6e7f8&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
-```
+**Qué responde el cURL anterior:**
 
 | Resultado | Significado |
 |---|---|
@@ -205,19 +193,7 @@ Sustituye `redirect_uri` por la URL exacta de tu frontend para saber si ya está
 
 ### 4.2. Canje del código por tokens
 
-```http
-POST /realms/siodev/protocol/openid-connect/token
-Host: fastapi-postgrest-online-keycloak.onrender.com
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=authorization_code
-&client_id=sio-web
-&code=CODIGO_TEMPORAL
-&redirect_uri=https%3A%2F%2Fmi-frontend.example.com%2Fauth%2Fcallback
-&code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
-```
-
-**cURL equivalente.** Es la llamada que hace el frontend (o la biblioteca OIDC) al volver a `/auth/callback`; sirve para reproducir a mano un canje y ver la respuesta completa. El `code` caduca en segundos y solo vale una vez, y el `code_verifier` debe ser el mismo que generó el `code_challenge` de §4.1:
+`POST` al *token endpoint* con un formulario `application/x-www-form-urlencoded`. Es la llamada que hace el frontend (o la biblioteca OIDC) al volver a `/auth/callback`; sirve para reproducir a mano un canje y ver la respuesta completa. El `code` caduca en segundos y solo vale una vez, y el `code_verifier` debe ser el mismo que generó el `code_challenge` de §4.1:
 
 ```bash
 curl -sS -X POST 'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/token' \
@@ -313,25 +289,9 @@ Una aplicación con **varias pestañas** debe coordinar la renovación entre ell
 
 ## 6. Consumir una API de SIO con el Access Token
 
-### 6.1. ¿De dónde sale cada dato?
-
-| Dato | Lo entrega | Cómo obtenerlo |
-|---|---|---|
-| Access Token | Keycloak | Se obtiene al completar el login (§4.2); la biblioteca OIDC expone el vigente tras cada renovación |
-| Dirección de la API | Render | Se consulta en [el índice de servicios](../index.md#api-por-microservicio) |
-| Empresa activa (`company_id`) | Operational Context | [Cómo obtener `company_id`](../parametros/company-id.md) |
-| Sucursal (`branch_id`) | Operational Context | [Cómo obtener `branch_id`](../parametros/branch-id.md) |
-
 ### 6.2. Primera consulta recomendada: contexto operativo
 
-**Método:** `GET`
-**URL completa:**
-
-```http
-GET https://sio-operational-context-dev.onrender.com/api/v1/me/operational-context
-Authorization: Bearer <ACCESS_TOKEN>
-Accept: application/json
-```
+**Método y URL:** `GET https://sio-operational-context-dev.onrender.com/api/v1/me/operational-context`
 
 | Encabezado | Obligatorio | Ejemplo | Origen |
 |---|---|---|---|
@@ -447,31 +407,6 @@ El frontend puede leer `resource_access["sio-api"].roles` para mostrar u ocultar
 
 **Atención:** el Access Token **no contiene la lista de empresas y sucursales** del usuario. Ese contexto se consulta en Operational Context. Para ampliar, visita [Permisos](permisos.md).
 
-### 7.1. Comprobar el token con `userinfo` (opcional)
-
-Sirve para verificar desde la terminal que un Access Token está vigente y fue emitido por este realm, y para leer la identidad básica sin decodificar el JWT. Las API de SIO **no** lo usan (validan la firma localmente) y el frontend no lo necesita si ya tiene el ID Token:
-
-```bash
-curl -sS 'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/userinfo' \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
-```
-
-Respuesta `200` (campos estándar de Keycloak con los scopes `openid profile email`; valores ilustrativos):
-
-```json
-{
-  "sub": "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b",
-  "email_verified": true,
-  "name": "Ventas Prueba",
-  "preferred_username": "ventas.test",
-  "given_name": "Ventas",
-  "family_name": "Prueba",
-  "email": "ventas.test@example.com"
-}
-```
-
-Sin cabecera `Authorization`, o con un token vencido o de otro realm, responde `401` sin cuerpo JSON (observado en vivo el 2026-10-20) y la cabecera `WWW-Authenticate` indica el motivo. `sub` es el mismo `keycloak_user_id` que usa Operational Context para las membresías.
-
 ## 8. Qué comprueban las API al recibir el token
 
 Las 12 API usan la misma librería (`libs/sio-auth`) como middleware global. Comportamiento verificado en el código:
@@ -551,17 +486,7 @@ La configuración del realm (plantilla del repositorio) establece:
 
 ### 9.1. Endpoint de renovación
 
-```http
-POST /realms/siodev/protocol/openid-connect/token
-Host: fastapi-postgrest-online-keycloak.onrender.com
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=refresh_token
-&client_id=sio-web
-&refresh_token=REFRESH_TOKEN_VIGENTE
-```
-
-**cURL.** Es la llamada que el frontend repite en segundo plano antes de que venza el Access Token (300 s). El Refresh Token va en el cuerpo del formulario, nunca en la cabecera `Authorization`:
+`POST` al mismo *token endpoint* de §4.2, con `grant_type=refresh_token`. Es la llamada que el frontend repite en segundo plano antes de que venza el Access Token (300 s). El Refresh Token va en el cuerpo del formulario, nunca en la cabecera `Authorization`:
 
 ```bash
 curl -sS -X POST 'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/token' \
@@ -610,67 +535,33 @@ curl -sS -X POST 'https://fastapi-postgrest-online-keycloak.onrender.com/realms/
 - Después de cada renovación, recalcula los permisos representados en la interfaz: pueden haber cambiado.
 - Estrategia recomendada ante las API: si una llamada devuelve `401`, renovar una vez y reintentar una vez. Si vuelve a fallar, cerrar sesión localmente y redirigir al login.
 
-## 10. Grant `password` (Direct Access Grants)
+## 10. Cerrar sesión
 
-La plantilla del realm deja este grant **deshabilitado por defecto** en `sio-web` y solo se habilita en entornos de desarrollo mediante `SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED=true`. Existe únicamente para pruebas y scripts de desarrollo (`services/get_token.py`, pruebas de integración), no para la aplicación web.
-
-La plantilla lo define como `directAccessGrantsEnabled: ${SIO_WEB_DIRECT_ACCESS_GRANTS_ENABLED:false}`, pero el script de despliegue `infrastructure/scripts/render-realm.sh` lo deja en `true` cuando esa variable no está definida. 
-
-**cURL (solo desarrollo y pruebas).** Sirve para obtener un Access Token desde la terminal y probar las API con cURL o Postman sin pasar por el navegador. Usuario y contraseña se toman de variables de entorno de la sesión; no los escribas en scripts ni en la documentación:
+**Redirección del navegador** (cierra la sesión SSO y vuelve al frontend). El navegador abre el *end session endpoint* con `client_id`, `id_token_hint` (el ID Token de la sesión) y `post_logout_redirect_uri`; la biblioteca OIDC construye esta URL al cerrar sesión. El cURL muestra la URL completa y permite comprobar la respuesta sin abrir el navegador:
 
 ```bash
-curl -sS -X POST 'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/token' \
+curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' \
+  "https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/logout?client_id=sio-web&id_token_hint=$ID_TOKEN&post_logout_redirect_uri=https%3A%2F%2Fmi-frontend.example.com%2F"
+```
+ejemplo desde consolda
+
+```bash
+curl -sS -X POST \
+  'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/token' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  --data-urlencode 'grant_type=password' \
+  --data-urlencode 'grant_type=refresh_token' \
   --data-urlencode 'client_id=sio-web' \
-  --data-urlencode 'scope=openid' \
-  --data-urlencode "username=$SIO_USER" \
-  --data-urlencode "password=$SIO_PASSWORD"
+  --data-urlencode 'refresh_token=TU_REFRESH_TOKEN' | jq
 ```
 
-La respuesta `200` tiene el mismo formato que en §4.2 (`access_token`, `refresh_token`, `expires_in`, …). Para guardar solo el Access Token en la variable que usan los demás ejemplos de esta documentación:
+| Resultado | Significado |
+|---|---|
+| `302` y `redirect_url` igual a la `post_logout_redirect_uri` | Sesión cerrada; Keycloak devuelve al frontend |
+| `400` | `post_logout_redirect_uri` no autorizada en *Valid Post Logout Redirect URIs* de `sio-web` o `id_token_hint` inválido. Observado en vivo el 2026-10-20 con la URL de ejemplo, que no está registrada |
 
-```bash
-export ACCESS_TOKEN=$(curl -sS -X POST 'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/token' \
-  --data-urlencode 'grant_type=password' --data-urlencode 'client_id=sio-web' --data-urlencode 'scope=openid' \
-  --data-urlencode "username=$SIO_USER" --data-urlencode "password=$SIO_PASSWORD" | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
-```
+`sio-web` tiene *front-channel logout* habilitado.
 
-| HTTP | Respuesta | Significado |
-|---|---|---|
-| `200` | Tokens | El grant está habilitado y las credenciales son correctas |
-| `400` `unauthorized_client` | `Client not allowed for direct access grants` | El grant está **deshabilitado** en `sio-web`: usa el flujo del navegador |
-| `401` `invalid_grant` | `Invalid user credentials` | Grant habilitado, pero usuario o contraseña incorrectos, o usuario bloqueado 60 s por fuerza bruta |
-| `400` `invalid_grant` | `Account is not fully set up` | El usuario tiene acciones pendientes (por ejemplo, cambiar la contraseña) |
-
-Para saber si el grant está habilitado sin conocer ninguna contraseña, envía un usuario inexistente: `unauthorized_client` significa deshabilitado; `invalid_grant` significa habilitado.
-
-
-## 11. Cerrar sesión
-
-Redirección del navegador (cierra la sesión SSO y vuelve al frontend):
-
-```http
-GET /realms/siodev/protocol/openid-connect/logout
-    ?client_id=sio-web
-    &id_token_hint=ID_TOKEN_DE_LA_SESION
-    &post_logout_redirect_uri=https%3A%2F%2Fmi-frontend.example.com%2F
-Host: fastapi-postgrest-online-keycloak.onrender.com
-```
-
-`post_logout_redirect_uri` debe estar autorizada en el cliente (*Valid Post Logout Redirect URIs*). `sio-web` tiene *front-channel logout* habilitado; la biblioteca OIDC construye esta URL al cerrar sesión.
-
-Alternativa sin redirección (revoca la sesión desde el cliente):
-
-```http
-POST /realms/siodev/protocol/openid-connect/logout
-Host: fastapi-postgrest-online-keycloak.onrender.com
-Content-Type: application/x-www-form-urlencoded
-
-client_id=sio-web&refresh_token=REFRESH_TOKEN_VIGENTE
-```
-
-**cURL.** Útil para cerrar la sesión desde un script o para un botón de «salir» que no quiera abandonar la página. Revoca el Refresh Token y la sesión SSO en Keycloak:
+**Alternativa sin redirección** (`POST` al mismo endpoint con `client_id` y `refresh_token` en el formulario). Útil para cerrar la sesión desde un script o para un botón de «salir» que no quiera abandonar la página. Revoca el Refresh Token y la sesión SSO en Keycloak:
 
 ```bash
 curl -sS -X POST 'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/logout' \
@@ -682,28 +573,7 @@ curl -sS -X POST 'https://fastapi-postgrest-online-keycloak.onrender.com/realms/
 
 Respuesta `204 No Content`. Si el Refresh Token ya no es válido (sesión vencida, token rotado o inventado), Keycloak responde `400` con `{"error": "invalid_grant", "error_description": "Invalid refresh token"}` (observado en vivo el 2026-10-20); en ese caso la sesión ya no existe y basta con borrar los tokens locales. La variante `GET …/logout` con `id_token_hint` y `post_logout_redirect_uri` es solo para el navegador: responde con una redirección, no con un cuerpo utilizable desde cURL. Después, borre los tokens de memoria. Los Access Tokens ya emitidos siguen siendo válidos para las API hasta su vencimiento (máximo 5 min), porque las API validan la firma y no consultan la sesión en Keycloak.
 
-## 12. Usuarios y grupos de prueba del realm
-
-La plantilla del realm define grupos con roles y permisos ya asignados, y un usuario de prueba por grupo (con `id` fijo, de modo que su `sub` se conserve entre reconstrucciones):
-
-| Usuario | Grupo | Rol de negocio | Permisos del grupo (resumen) |
-|---|---|---|---|
-| `admin.test` | `/administradores` | `administrador` | `perm:all:all:all` |
-| `supervisor.test` | `/supervisores` | `supervisor` | `perm:all:all:read`, `perm:all:all:create`, `perm:all:all:update` y 4 permisos específicos |
-| `compras.test` | `/compras` | `compras` | 47 permisos de Purchase y lecturas de apoyo |
-| `ventas.test` | `/ventas` | `ventas` | 34 permisos de Sales y lecturas de apoyo |
-| `inventario.test` | `/inventario` | `inventario` | 20 permisos de Inventory y lecturas de apoyo |
-| `reportes.test` | `/reportes` | `reportes` | 59 permisos de solo lectura |
-| `consulta.test` | `/consulta` | `consulta` | 54 permisos de solo lectura |
-
-La lista completa de permisos por grupo está en [Permisos](permisos.md).
-
-- La contraseña de estos usuarios se define por variable de entorno al renderizar el realm y **no se publica** en esta documentación. Solicítela al administrador.
-- Política de contraseñas del realm: mínimo 12 caracteres, al menos una mayúscula, una minúscula y un dígito.
-- Protección contra fuerza bruta activa: dos intentos fallidos seguidos bloquean al usuario 60 s y Keycloak responde `Invalid user credentials` incluso con la contraseña correcta (comportamiento observado en el realm de desarrollo local).
-- El autorregistro está deshabilitado; se permite iniciar sesión con el correo electrónico.
-
-## 13. Errores habituales y qué hacer
+## 12. Errores habituales y qué hacer
 
 | Situación | Dónde sucede | Respuesta habitual | Acción para el frontend |
 |---|---|---|---|
@@ -718,7 +588,7 @@ La lista completa de permisos por grupo está en [Permisos](permisos.md).
 
 Los detalles de errores y JSON de cada operación se documentan en [Errores](errores.md) y en la ficha de cada microservicio.
 
-## 14. Seguridad y buenas prácticas
+## 13. Seguridad y buenas prácticas
 
 - Utiliza siempre **HTTPS** para Keycloak y para las API públicas de Render.
 - Use solo `sio-web` con Authorization Code + PKCE S256. No use `client_credentials`, `grant_type=password` ni ningún secreto de cliente técnico en el navegador.
@@ -732,7 +602,7 @@ Los detalles de errores y JSON de cada operación se documentan en [Errores](err
 - Cada operación sensible (`WRITE`, `HIGH_RISK`) debe confirmarse con el usuario antes de enviarse; las API no piden confirmación.
 - Los ejemplos de esta guía usan dominios, identificadores y credenciales ficticios.
 
-## 15. Lista de verificación de integración
+## 14. Lista de verificación de integración
 
 - [ ] El frontend conoce URL de Keycloak, realm `siodev` y el `client_id` `sio-web`.
 - [ ] Su URL de retorno, su origen y su URL de post-logout están registrados en `sio-web`.
@@ -745,7 +615,7 @@ Los detalles de errores y JSON de cada operación se documentan en [Errores](err
 - [ ] Ante `403` se muestra el `trace_id` de la cabecera `X-Trace-Id` o del cuerpo.
 - [ ] El logout termina la sesión y limpia el estado local del frontend.
 
-## 16. Información pendiente de verificar
+## 15. Información pendiente de verificar
 
 | Punto | Estado |
 |---|---|
