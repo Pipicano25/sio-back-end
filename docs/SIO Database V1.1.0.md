@@ -1499,6 +1499,7 @@ No almacena stock actual, movimientos, lotes reales ni niveles de reposición po
 | `created_at`                  | `TIMESTAMPTZ`   | NN                  | Fecha de creación.                                                                            |
 | `updated_at`                  | `TIMESTAMPTZ`   | NN                  | Última modificación.                                                                          |
 
+
 ### Reglas y restricciones
 
 - La combinación `company_id` y `global_product_id` debe ser única en cualquier estado: un producto inactivo se reactiva, no se vuelve a adoptar.
