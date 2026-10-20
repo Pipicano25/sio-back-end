@@ -299,64 +299,17 @@ No se envía `client_secret`: `sio-web` es público.
 
 > **Consejo:** utiliza una biblioteca probada como `keycloak-js` para generar y validar los elementos del flujo PKCE. No implementes criptografía de PKCE ni almacenamiento de sesión manualmente si puedes evitarlo.
 
-## 5. Ejemplo para React, Vue o JavaScript con `keycloak-js`
+## 5. Integración con una biblioteca OIDC
 
-Instalación:
+El frontend no debe implementar a mano el flujo de §4. Cualquier biblioteca OpenID Connect para navegador (por ejemplo `keycloak-js`, que publica el propio Keycloak) lo resuelve con tres datos públicos: la URL del servidor, el realm `siodev` y el `client_id` `sio-web`. Al configurarla, comprueba que:
 
-```bash
-npm install keycloak-js
-```
+- usa **Authorization Code + PKCE `S256`** (es obligatorio en `sio-web`);
+- inicia sesión con redirección al login de Keycloak y vuelve a una URL de retorno registrada (§3.2);
+- renueva el Access Token antes de que venza (vida de 300 s; renovar con 30–60 s de margen) y **sustituye siempre** el Refresh Token por el nuevo (§9);
+- expone el Access Token vigente para adjuntarlo como `Authorization: Bearer` en cada llamada a las API (§6);
+- cierra sesión con el *end session endpoint* (§11).
 
-Configuración pública de ejemplo para Vite (`.env.development`):
-
-```dotenv
-VITE_KEYCLOAK_URL=https://fastapi-postgrest-online-keycloak.onrender.com
-VITE_KEYCLOAK_REALM=siodev
-VITE_KEYCLOAK_CLIENT_ID=sio-web
-VITE_OPERATIONAL_CONTEXT_API=https://sio-operational-context-dev.onrender.com/api/v1
-```
-
-Crea `src/auth/keycloak.ts`:
-
-```ts
-import Keycloak from "keycloak-js";
-
-export const keycloak = new Keycloak({
-  url: import.meta.env.VITE_KEYCLOAK_URL,
-  realm: import.meta.env.VITE_KEYCLOAK_REALM,
-  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
-});
-
-// Inicializar una sola vez al arrancar la aplicación.
-export async function iniciarSesion(): Promise<void> {
-  await keycloak.init({
-    onLoad: "login-required",
-    pkceMethod: "S256",
-    checkLoginIframe: false,
-  });
-}
-
-export async function obtenerAccessToken(): Promise<string> {
-  if (!keycloak.authenticated) {
-    throw new Error("El usuario no tiene sesión activa");
-  }
-
-  // keycloak-js coordina las renovaciones dentro de una misma página.
-  await keycloak.updateToken(60);
-
-  if (!keycloak.token) {
-    throw new Error("No fue posible obtener un Access Token vigente");
-  }
-
-  return keycloak.token;
-}
-
-export async function cerrarSesion(): Promise<void> {
-  await keycloak.logout({ redirectUri: window.location.origin });
-}
-```
-
-> La página y la URL de retorno deben estar autorizadas en `sio-web`. El código anterior es un ejemplo inicial; una aplicación con **varias pestañas** debe coordinar la renovación entre ellas (ver la sección 9).
+Una aplicación con **varias pestañas** debe coordinar la renovación entre ellas (§9.2). Los tokens se guardan en memoria; no en `localStorage` ni en cookies accesibles por script (§14).
 
 ## 6. Consumir una API de SIO con el Access Token
 
@@ -364,7 +317,7 @@ export async function cerrarSesion(): Promise<void> {
 
 | Dato | Lo entrega | Cómo obtenerlo |
 |---|---|---|
-| Access Token | Keycloak | Se obtiene al completar el login; con `keycloak-js` se lee mediante `obtenerAccessToken()` |
+| Access Token | Keycloak | Se obtiene al completar el login (§4.2); la biblioteca OIDC expone el vigente tras cada renovación |
 | Dirección de la API | Render | Se consulta en [el índice de servicios](../index.md#api-por-microservicio) |
 | Empresa activa (`company_id`) | Operational Context | [Cómo obtener `company_id`](../parametros/company-id.md) |
 | Sucursal (`branch_id`) | Operational Context | [Cómo obtener `branch_id`](../parametros/branch-id.md) |
@@ -435,38 +388,6 @@ curl --request GET \
 | `memberships[].branches[].reason` | string \| null | Causa estable cuando `allowed` es `false` |
 
 Un usuario autenticado sin membresías recibe `memberships: []`. Esta respuesta permite elegir la empresa y la sucursal activas; el detalle completo está en la ficha de [Operational Context](../servicios/operational-context.md).
-
-### 6.3. Ejemplo desde JavaScript
-
-```ts
-import { obtenerAccessToken } from "./auth/keycloak";
-
-export async function consultarContextoOperativo() {
-  const token = await obtenerAccessToken();
-  const respuesta = await fetch(
-    "https://sio-operational-context-dev.onrender.com/api/v1/me/operational-context",
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-    }
-  );
-
-  if (respuesta.status === 401) {
-    throw new Error("Sesión no válida o expirada; revisar renovación de token");
-  }
-  if (respuesta.status === 403) {
-    const traceId = respuesta.headers.get("X-Trace-Id");
-    throw new Error(`El usuario no tiene permiso para esta operación (trace_id: ${traceId})`);
-  }
-  if (!respuesta.ok) {
-    throw new Error(`Error consultando Operational Context: ${respuesta.status}`);
-  }
-
-  return respuesta.json();
-}
-```
 
 **Siguiente paso:** [obtener la empresa](../parametros/company-id.md), [obtener la sucursal](../parametros/branch-id.md) y consultar el [catálogo de servicios](../index.md).
 
@@ -737,11 +658,7 @@ GET /realms/siodev/protocol/openid-connect/logout
 Host: fastapi-postgrest-online-keycloak.onrender.com
 ```
 
-`post_logout_redirect_uri` debe estar autorizada en el cliente (*Valid Post Logout Redirect URIs*). `sio-web` tiene *front-channel logout* habilitado. Con `keycloak-js`:
-
-```ts
-await keycloak.logout({ redirectUri: window.location.origin });
-```
+`post_logout_redirect_uri` debe estar autorizada en el cliente (*Valid Post Logout Redirect URIs*). `sio-web` tiene *front-channel logout* habilitado; la biblioteca OIDC construye esta URL al cerrar sesión.
 
 Alternativa sin redirección (revoca la sesión desde el cliente):
 
