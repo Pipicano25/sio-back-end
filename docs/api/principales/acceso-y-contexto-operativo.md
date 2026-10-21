@@ -39,7 +39,7 @@ Antes necesita: un usuario del realm `siodev` con su contraseña (los entrega el
 ### ¿Cómo se realiza la solicitud?
 
 ```bash
-curl -sS -X POST \
+curl -X POST \
   'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/token' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'grant_type=password' \
@@ -218,7 +218,7 @@ Antes necesita: el `refresh_token` vigente (API 1 o la última renovación).
 ### ¿Cómo se realiza la solicitud?
 
 ```bash
-curl -sS -X POST \
+curl -X POST \
   'https://fastapi-postgrest-online-keycloak.onrender.com/realms/siodev/protocol/openid-connect/logout' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'client_id=sio-web' \
@@ -487,12 +487,14 @@ curl -X GET \
 
 **Parámetros de consulta:**
 
-| Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
-|---|---|---|---|---|---|
-| `company_id` | UUID | Uno de los dos | Empresa a evaluar. No se combina con `branch_id` | `550e8400-e29b-41d4-a716-446655440000` | `memberships[].company_id` de la API 5 |
-| `branch_id` | UUID | Uno de los dos | Sucursal a evaluar; la empresa se deduce de ella. No se combina con `company_id` | `7c9e6679-7425-40de-944b-e07fc1f90ae7` | `branches[].branch_id` de la API 5 |
-| `permission` | string (≤ 255) | No | Permiso concreto a evaluar junto con el acceso, en formato `perm:{servicio}:{recurso}:{accion}`, sin el comodín `all`. Si se omite, no se evalúa ningún permiso | `perm:sales:sales:create` | Permiso de la operación que se va a ejecutar (ver cada módulo) |
-| `keycloak_user_id` | string (≤ 255) | No | Evalúa a **otro** usuario. Exige `perm:operational-context:platform:lookup`; no es para el frontend | — | No usar |
+| Nombre | Tipo | Obligatorio | Descripción | Valores admitidos y ejemplo | Cómo se agrega a la URL | Origen |
+|---|---|---|---|---|---|---|
+| `company_id` | UUID | Uno de los dos | Empresa a evaluar. No se combina con `branch_id` | UUID; p. ej. `550e8400-e29b-41d4-a716-446655440000` | `?company_id=550e8400-e29b-41d4-a716-446655440000` | `memberships[].company_id` de la API 5 |
+| `branch_id` | UUID | Uno de los dos | Sucursal a evaluar; la empresa se deduce de ella. No se combina con `company_id` | UUID; p. ej. `7c9e6679-7425-40de-944b-e07fc1f90ae7` | `&branch_id=7c9e6679-7425-40de-944b-e07fc1f90ae7` | `branches[].branch_id` de la API 5 |
+| `permission` | string (≤ 255) | No | Permiso concreto a evaluar junto con el acceso, en formato `perm:{servicio}:{recurso}:{accion}`, sin el comodín `all`. Si se omite, no se evalúa ningún permiso | Texto libre (≤ 255 caracteres); p. ej. `perm:sales:sales:create` | `&permission=perm:sales:sales:create` | Permiso de la operación que se va a ejecutar (ver cada módulo) |
+| `keycloak_user_id` | string (≤ 255) | No | Evalúa a **otro** usuario. Exige `perm:operational-context:platform:lookup`; no es para el frontend | Identificador `sub` de Keycloak (texto); p. ej. `3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c` | `&keycloak_user_id=3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c` | No usar |
+
+Los parámetros de consulta se agregan al final de la URL: el primero después de `?` y los siguientes unidos con `&`; se envían solo los que se necesiten, en cualquier orden, y los valores con espacios, tildes o símbolos deben codificarse (por ejemplo `Pérez` → `P%C3%A9rez`). URL armada del ejemplo anterior: `https://sio-operational-context-dev.onrender.com/api/v1/operational-access?branch_id=7c9e6679-7425-40de-944b-e07fc1f90ae7&permission=perm:sales:sales:create`
 
 **Encabezados:**
 

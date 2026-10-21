@@ -230,14 +230,16 @@ curl -X GET \
 
 **Parámetros de consulta:**
 
-| Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
-|---|---|---|---|---|---|
-| `page` | integer ≥ 1 | No; por defecto `1` | Número de página | `1` | Paginación de la interfaz |
-| `page_size` | integer 1–100 | No; por defecto `20` | Registros por página | `20` | Paginación de la interfaz |
-| `status` | `ACTIVE` \| `INACTIVE` | No; por defecto `ACTIVE` | Estado de las empresas a listar | `ACTIVE` | Filtro de la interfaz |
-| `organization_identity_id` | UUID | No | Solo la empresa de esa organización | `0f1e2d3c-4b5a-4968-8776-655443322111` | `items[].id` de `GET https://sio-party-identity-dev.onrender.com/api/v1/organization-identities` (busca organizaciones por identificación o nombre) o `id` de la respuesta `201` de su `POST` (registra la organización) · qué hacen y sus errores en la guía [organization_identity_id](../parametros/organization-identity-id.md) |
-| `country_id` | UUID | No | Empresas con dirección en ese país | `c0a80101-0000-4000-8000-000000000001` | `items[].id` de `GET https://sio-geography-dev.onrender.com/global-countries` (lista los países del catálogo global) · qué hace y errores en la guía [country_id](../parametros/country-id.md#cómo-obtener-country_id) |
-| `city_id` | UUID | No | Empresas con dirección en esa ciudad | `c0a80101-0000-4000-8000-000000000003` | `items[].id` de `GET https://sio-geography-dev.onrender.com/global-cities?administrative_division_id=…` (lista las ciudades de la división) · qué hace y errores en la guía [city_id](../parametros/country-id.md#cómo-obtener-city_id) |
+| Nombre | Tipo | Obligatorio | Descripción | Valores admitidos y ejemplo | Cómo se agrega a la URL | Origen |
+|---|---|---|---|---|---|---|
+| `page` | integer ≥ 1 | No; por defecto `1` | Número de página | Entero desde `1`; p. ej. `1` | `?page=1` | Paginación de la interfaz |
+| `page_size` | integer 1–100 | No; por defecto `20` | Registros por página | Entero de `1` a `100`; p. ej. `20` | `&page_size=20` | Paginación de la interfaz |
+| `status` | `ACTIVE` \| `INACTIVE` | No; por defecto `ACTIVE` | Estado de las empresas a listar | Uno de: `ACTIVE` (por defecto), `INACTIVE`; p. ej. `ACTIVE` | `&status=ACTIVE` | Filtro de la interfaz |
+| `organization_identity_id` | UUID | No | Solo la empresa de esa organización | UUID; p. ej. `0f1e2d3c-4b5a-4968-8776-655443322111` | `&organization_identity_id=0f1e2d3c-4b5a-4968-8776-655443322111` | `items[].id` de `GET https://sio-party-identity-dev.onrender.com/api/v1/organization-identities` (busca organizaciones por identificación o nombre) o `id` de la respuesta `201` de su `POST` (registra la organización) · qué hacen y sus errores en la guía [organization_identity_id](../parametros/organization-identity-id.md) |
+| `country_id` | UUID | No | Empresas con dirección en ese país | UUID; p. ej. `c0a80101-0000-4000-8000-000000000001` | `&country_id=c0a80101-0000-4000-8000-000000000001` | `items[].id` de `GET https://sio-geography-dev.onrender.com/global-countries` (lista los países del catálogo global) · qué hace y errores en la guía [country_id](../parametros/country-id.md#cómo-obtener-country_id) |
+| `city_id` | UUID | No | Empresas con dirección en esa ciudad | UUID; p. ej. `c0a80101-0000-4000-8000-000000000003` | `&city_id=c0a80101-0000-4000-8000-000000000003` | `items[].id` de `GET https://sio-geography-dev.onrender.com/global-cities?administrative_division_id=…` (lista las ciudades de la división) · qué hace y errores en la guía [city_id](../parametros/country-id.md#cómo-obtener-city_id) |
+
+Los parámetros de consulta se agregan al final de la URL: el primero después de `?` y los siguientes unidos con `&`; se envían solo los que se necesiten, en cualquier orden, y los valores con espacios, tildes o símbolos deben codificarse (por ejemplo `Pérez` → `P%C3%A9rez`). URL armada del ejemplo anterior: `https://sio-operational-context-dev.onrender.com/api/v1/companies?page=1&page_size=20&status=ACTIVE`
 
 **Encabezados:** `Authorization` (obligatorio) y `Accept: application/json` (opcional).
 
@@ -678,13 +680,15 @@ curl -X GET \
 
 **Parámetros de consulta:**
 
-| Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
-|---|---|---|---|---|---|
-| `page` | integer ≥ 1 | No; por defecto `1` | Página | `1` | Interfaz |
-| `page_size` | integer 1–100 | No; por defecto `20` | Registros por página | `20` | Interfaz |
-| `search` | string (≤ 160) | No | Búsqueda parcial, sin distinguir mayúsculas, en `code` y `name` | `norte` | Interfaz |
-| `status` | `ACTIVE` \| `INACTIVE` | No; por defecto `ACTIVE` | Estado de las sucursales | `ACTIVE` | Interfaz |
-| `city_id` | UUID | No | Solo sucursales de esa ciudad | `c0a80101-0000-4000-8000-000000000003` | `items[].id` de `GET https://sio-geography-dev.onrender.com/global-cities?administrative_division_id=…` (lista las ciudades de la división) · qué hace y errores en la guía [city_id](../parametros/country-id.md#cómo-obtener-city_id) |
+| Nombre | Tipo | Obligatorio | Descripción | Valores admitidos y ejemplo | Cómo se agrega a la URL | Origen |
+|---|---|---|---|---|---|---|
+| `page` | integer ≥ 1 | No; por defecto `1` | Página | Entero desde `1`; p. ej. `1` | `?page=1` | Interfaz |
+| `page_size` | integer 1–100 | No; por defecto `20` | Registros por página | Entero de `1` a `100`; p. ej. `20` | `&page_size=20` | Interfaz |
+| `search` | string (≤ 160) | No | Búsqueda parcial, sin distinguir mayúsculas, en `code` y `name` | Texto libre (≤ 160 caracteres); p. ej. `norte` | `&search=norte` | Interfaz |
+| `status` | `ACTIVE` \| `INACTIVE` | No; por defecto `ACTIVE` | Estado de las sucursales | Uno de: `ACTIVE` (por defecto), `INACTIVE`; p. ej. `ACTIVE` | `&status=ACTIVE` | Interfaz |
+| `city_id` | UUID | No | Solo sucursales de esa ciudad | UUID; p. ej. `c0a80101-0000-4000-8000-000000000003` | `&city_id=c0a80101-0000-4000-8000-000000000003` | `items[].id` de `GET https://sio-geography-dev.onrender.com/global-cities?administrative_division_id=…` (lista las ciudades de la división) · qué hace y errores en la guía [city_id](../parametros/country-id.md#cómo-obtener-city_id) |
+
+Los parámetros de consulta se agregan al final de la URL: el primero después de `?` y los siguientes unidos con `&`; se envían solo los que se necesiten, en cualquier orden, y los valores con espacios, tildes o símbolos deben codificarse (por ejemplo `Pérez` → `P%C3%A9rez`). URL armada del ejemplo anterior: `https://sio-operational-context-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/branches?page=1&page_size=20&status=ACTIVE&search=norte`
 
 **Encabezados:** `Authorization` (obligatorio) y `Accept: application/json` (opcional).
 
@@ -978,14 +982,16 @@ curl -X GET \
 
 **Parámetros de consulta:**
 
-| Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
-|---|---|---|---|---|---|
-| `page` | integer ≥ 1 | No; por defecto `1` | Página | `1` | Interfaz |
-| `page_size` | integer 1–100 | No; por defecto `20` | Registros por página | `20` | Interfaz |
-| `status` | `ACTIVE` \| `INACTIVE` | No; por defecto `ACTIVE` | Estado de la membresía | `ACTIVE` | Interfaz |
-| `search` | string (≤ 160) | No | Búsqueda parcial, sin distinguir mayúsculas, en `display_name` y `reference_email` | `ana` | Interfaz |
-| `keycloak_user_id` | string (≤ 255) | No | Solo la membresía de esa cuenta de Keycloak (`sub`) | `3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c` | `sub` del token |
-| `person_identity_id` | UUID | No | Solo la membresía de esa persona | `a0e1d2c3-b4a5-4968-8776-655443322110` | `items[].id` de `GET https://sio-party-identity-dev.onrender.com/api/v1/person-identities` (busca personas por identificación o nombre) o `id` de la respuesta `201` de su `POST` (registra la persona) · qué hacen y sus errores en la guía [person_identity_id](../parametros/person-identity-id.md) |
+| Nombre | Tipo | Obligatorio | Descripción | Valores admitidos y ejemplo | Cómo se agrega a la URL | Origen |
+|---|---|---|---|---|---|---|
+| `page` | integer ≥ 1 | No; por defecto `1` | Página | Entero desde `1`; p. ej. `1` | `?page=1` | Interfaz |
+| `page_size` | integer 1–100 | No; por defecto `20` | Registros por página | Entero de `1` a `100`; p. ej. `20` | `&page_size=20` | Interfaz |
+| `status` | `ACTIVE` \| `INACTIVE` | No; por defecto `ACTIVE` | Estado de la membresía | Uno de: `ACTIVE` (por defecto), `INACTIVE`; p. ej. `ACTIVE` | `&status=ACTIVE` | Interfaz |
+| `search` | string (≤ 160) | No | Búsqueda parcial, sin distinguir mayúsculas, en `display_name` y `reference_email` | Texto libre (≤ 160 caracteres); p. ej. `ana` | `&search=ana` | Interfaz |
+| `keycloak_user_id` | string (≤ 255) | No | Solo la membresía de esa cuenta de Keycloak (`sub`) | Identificador `sub` de Keycloak (texto); p. ej. `3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c` | `&keycloak_user_id=3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c` | `sub` del token |
+| `person_identity_id` | UUID | No | Solo la membresía de esa persona | UUID; p. ej. `a0e1d2c3-b4a5-4968-8776-655443322110` | `&person_identity_id=a0e1d2c3-b4a5-4968-8776-655443322110` | `items[].id` de `GET https://sio-party-identity-dev.onrender.com/api/v1/person-identities` (busca personas por identificación o nombre) o `id` de la respuesta `201` de su `POST` (registra la persona) · qué hacen y sus errores en la guía [person_identity_id](../parametros/person-identity-id.md) |
+
+Los parámetros de consulta se agregan al final de la URL: el primero después de `?` y los siguientes unidos con `&`; se envían solo los que se necesiten, en cualquier orden, y los valores con espacios, tildes o símbolos deben codificarse (por ejemplo `Pérez` → `P%C3%A9rez`). URL armada del ejemplo anterior: `https://sio-operational-context-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/application-users?page=1&page_size=20&status=ACTIVE&search=ana`
 
 **Encabezados:** `Authorization` (obligatorio) y `Accept: application/json` (opcional).
 
@@ -1198,11 +1204,13 @@ curl -X GET \
 
 **Parámetros de consulta:**
 
-| Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
-|---|---|---|---|---|---|
-| `status` | `ACTIVE` \| `INACTIVE` | No; por defecto `ACTIVE` | Estado de la asignación | `ACTIVE` | Interfaz |
-| `page` | integer ≥ 1 | No; por defecto `1` | Página | `1` | Interfaz |
-| `page_size` | integer 1–100 | No; por defecto `20` | Registros por página | `20` | Interfaz |
+| Nombre | Tipo | Obligatorio | Descripción | Valores admitidos y ejemplo | Cómo se agrega a la URL | Origen |
+|---|---|---|---|---|---|---|
+| `status` | `ACTIVE` \| `INACTIVE` | No; por defecto `ACTIVE` | Estado de la asignación | Uno de: `ACTIVE` (por defecto), `INACTIVE`; p. ej. `ACTIVE` | `?status=ACTIVE` | Interfaz |
+| `page` | integer ≥ 1 | No; por defecto `1` | Página | Entero desde `1`; p. ej. `1` | `&page=1` | Interfaz |
+| `page_size` | integer 1–100 | No; por defecto `20` | Registros por página | Entero de `1` a `100`; p. ej. `20` | `&page_size=20` | Interfaz |
+
+Los parámetros de consulta se agregan al final de la URL: el primero después de `?` y los siguientes unidos con `&`; se envían solo los que se necesiten, en cualquier orden, y los valores con espacios, tildes o símbolos deben codificarse (por ejemplo `Pérez` → `P%C3%A9rez`). URL armada del ejemplo anterior: `https://sio-operational-context-dev.onrender.com/api/v1/application-users/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/user-branches?status=ACTIVE&page=1&page_size=20`
 
 **Encabezados:** `Authorization` (obligatorio) y `Accept: application/json` (opcional).
 
@@ -1834,12 +1842,14 @@ curl -X GET \
 
 **Parámetros de consulta:**
 
-| Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
-|---|---|---|---|---|---|
-| `page` | integer ≥ 1 | No; por defecto `1` | Página | `1` | Interfaz |
-| `page_size` | integer 1–100 | No; por defecto `20` | Registros por página | `20` | Interfaz |
-| `occurred_at_from`, `occurred_at_to` | date-time con zona horaria | No | Rango de fechas (`from` ≤ `to`) | `2026-10-01T00:00:00Z` | Interfaz |
-| `result` | `SUCCESS` \| `FAILURE` | No | Solo exitosos o fallidos | `SUCCESS` | Interfaz |
+| Nombre | Tipo | Obligatorio | Descripción | Valores admitidos y ejemplo | Cómo se agrega a la URL | Origen |
+|---|---|---|---|---|---|---|
+| `page` | integer ≥ 1 | No; por defecto `1` | Página | Entero desde `1`; p. ej. `1` | `?page=1` | Interfaz |
+| `page_size` | integer 1–100 | No; por defecto `20` | Registros por página | Entero de `1` a `100`; p. ej. `20` | `&page_size=20` | Interfaz |
+| `occurred_at_from`, `occurred_at_to` | date-time con zona horaria | No | Rango de fechas (`from` ≤ `to`) | Fecha y hora ISO 8601 con zona horaria; p. ej. `2026-10-01T00:00:00Z` | `&occurred_at_from=2026-10-01T00:00:00Z` | Interfaz |
+| `result` | `SUCCESS` \| `FAILURE` | No | Solo exitosos o fallidos | Uno de: `SUCCESS`, `FAILURE`; p. ej. `SUCCESS` | `&result=SUCCESS` | Interfaz |
+
+Los parámetros de consulta se agregan al final de la URL: el primero después de `?` y los siguientes unidos con `&`; se envían solo los que se necesiten, en cualquier orden, y los valores con espacios, tildes o símbolos deben codificarse (por ejemplo `Pérez` → `P%C3%A9rez`). URL armada del ejemplo anterior: `https://sio-audit-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/entity-history/Sale/9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a?page=1&page_size=20`
 
 **Encabezados:** `Authorization` (obligatorio) y `Accept: application/json` (opcional).
 

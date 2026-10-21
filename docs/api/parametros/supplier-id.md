@@ -16,7 +16,7 @@
 
 ## Cómo obtenerlo
 
-**¿Qué hace?** Lista, con paginación y búsqueda, los proveedores de la empresa con su código interno, nombre para mostrar, organización en Party Identity y estado (`ACTIVE`, `INACTIVE` o `BLOCKED`). Por defecto solo `ACTIVE`. Es el buscador de proveedores al registrar una compra y la fuente de `company_supplier_id`. Ficha técnica: [Commercial Relationship 19](../servicios/commercial-relationship.md#19-get-companiescompany_idcompany-suppliers); guía principal: [Gestión de proveedores](../principales/gestion-de-proveedores.md).
+**¿Qué hace?** Lista, con paginación y búsqueda, los proveedores de la empresa con su código interno, nombre para mostrar, organización en Party Identity y estado (`ACTIVE`, `INACTIVE` o `BLOCKED`). Por defecto solo `ACTIVE`. Es el buscador de proveedores al registrar una compra y la fuente de `company_supplier_id`. Ficha técnica: [Commercial Relationship 19](../servicios/commercial-relationship.md#19-get-companiescompany_idcompany-suppliers); guía principal: [Gestión de proveedores, API 2](../principales/gestion-de-proveedores.md#2-buscar-y-listar-los-proveedores-de-la-empresa).
 
 | | |
 |---|---|
@@ -120,16 +120,22 @@ La respuesta `201` devuelve el proveedor; el `company_supplier_id` es su campo `
 | `409` | `COMMERCIAL_RELATIONSHIP.DUPLICATE_SUPPLIER` | Esa organización ya es proveedor de la empresa | Buscar el proveedor existente |
 | `409` | `COMMERCIAL_RELATIONSHIP.DUPLICATE_INTERNAL_CODE` | Ya existe un proveedor con ese `internal_code` | Pedir otro código |
 | `422` | `COMMERCIAL_RELATIONSHIP.SELF_RELATIONSHIP_NOT_ALLOWED` | La organización es la identidad de la propia empresa | Elegir otra organización |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Organización inexistente o inactiva en Party Identity, campo obligatorio ausente, formato inválido o campo desconocido | Corregir el formulario |
-| `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Operational Context, Party Identity o Product Catalog no responden (`dependency` lo indica) | Reintentar más tarde |
+| `422` | `COMMERCIAL_RELATIONSHIP.ORGANIZATION_IDENTITY_NOT_FOUND` / `ORGANIZATION_IDENTITY_INACTIVE` | La organización no existe o está `INACTIVE` en Party Identity | Volver a buscarla o reactivar la identidad |
+| `422` | `COMMERCIAL_RELATIONSHIP.CONTACT_PERSON_INVALID` | `preferred_contact_person_id` no es un contacto activo de la organización | Elegir un contacto activo |
+| `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden registrar proveedores en ella |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Campo obligatorio ausente, formato inválido o campo desconocido | Corregir el formulario |
+| `403` | `COMMERCIAL_RELATIONSHIP.PARTY_IDENTITY_ACCESS_DENIED` | Falta permiso de lectura en Party Identity para validar la organización o el contacto | Pedir los permisos de lectura de Party Identity |
+| `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Operational Context o Party Identity no responden (`dependency` lo indica) | Reintentar más tarde |
 
+Documentación completa con cURL, cuerpo y ejemplos de error: [Gestión de proveedores, API 1](../principales/gestion-de-proveedores.md#1-registrar-un-proveedor-de-la-empresa).
 
 ## Cómo usarlo después
 
 - En [Administración empresarial](../principales/administracion-empresarial.md#17-consultar-el-historial-de-una-venta-una-compra-o-un-producto): `{entity_id}` de la ruta de la API 17 con `entity_type=CompanySupplier`.
-- `POST https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases` → campo `company_supplier_id`.
-- Filtro `?company_supplier_id=` al listar compras y condiciones de pago del proveedor (`supplier-payment-conditions`).
-- Productos que ofrece el proveedor (`supplier-products`) y evaluaciones (`supplier-evaluations`) en Commercial Relationship.
+- `POST https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases` → campo `company_supplier_id` (proveedor `ACTIVE`; ver [Compras](../principales/compras.md)).
+- [Gestión de proveedores, API 3](../principales/gestion-de-proveedores.md#3-consultar-un-proveedor) (consulta la ficha del proveedor) y API [5 a 9](../principales/gestion-de-proveedores.md#5-actualizar-un-proveedor) (actualizar, inactivar, reactivar, bloquear y desbloquear): ruta `/company-suppliers/{company_supplier_id}`.
+- [API 11](../principales/gestion-de-proveedores.md#11-consultar-las-condiciones-de-pago-de-los-proveedores) y [API 13](../principales/gestion-de-proveedores.md#13-consultar-los-productos-que-suministran-los-proveedores): filtro `?company_supplier_id=` para listar condiciones de pago y productos del proveedor.
+- [API 12](../principales/gestion-de-proveedores.md#12-registrar-una-condición-de-pago-del-proveedor) y [API 14](../principales/gestion-de-proveedores.md#14-registrar-un-producto-que-suministra-el-proveedor): campo `company_supplier_id` del cuerpo (proveedor `ACTIVE`; si no, `422 COMPANY_SUPPLIER_INACTIVE` o `COMPANY_SUPPLIER_BLOCKED`).
 
 ## Errores frecuentes
 
