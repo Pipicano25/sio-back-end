@@ -1,0 +1,3 @@
+# Contexto de construcción de la imagen de Keycloak (infrastructure/keycloak). El Containerfile no
+# copia archivos de aquí; aun así, las credenciales del despliegue en la VPS no se envían al builder.
+.env.vps
