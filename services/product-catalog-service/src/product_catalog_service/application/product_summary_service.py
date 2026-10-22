@@ -84,6 +84,7 @@ class ProductSummaryService:
                         for identifier in rows.identifiers.get(product_id, [])
                     ],
                     "has_image": sha is not None,
+                    "image_asset_id": asset.id if sha is not None else None,
                     "image_url": self.image_url(asset.id, sha) if sha is not None else None,
                 }
             )

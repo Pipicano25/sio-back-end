@@ -100,7 +100,12 @@ class ProductIdentity(Out):
     identifiers: list[IdentifierOut]
     base_unit: ReferenceOut | None
     has_image: bool
-    image_url: str | None
+    asset_id: UUID | None = Field(
+        description="Activo de la imagen principal en Product Catalog (`/products/{global_product_id}/assets/{asset_id}`), o `null`."
+    )
+    image_url: str | None = Field(
+        description="URL pública firmada de la imagen principal, lista para `<img src>`; `null` sin imagen o con la ruta pública deshabilitada."
+    )
 
 
 class ProductOverview(ProductIdentity):

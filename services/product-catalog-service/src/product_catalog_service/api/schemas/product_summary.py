@@ -44,6 +44,7 @@ class ProductSummaryItem(BaseModel):
     categories: list[SummaryCategory] | None = None
     identifiers: list[SummaryIdentifier] | None = None
     has_image: bool | None = None
+    image_asset_id: UUID | None = None
     image_url: str | None = None
 
 

@@ -94,6 +94,7 @@ class HTTPProductCatalog:
                             ),
                             has_image=bool_of(item, "has_image"),
                             image_url=text_of(item, "image_url", optional=True),
+                            image_asset_id=uuid_of(item, "image_asset_id", optional=True),
                         )
                     )
                 return found

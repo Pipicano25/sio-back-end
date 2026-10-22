@@ -26,7 +26,7 @@ PAGE_FIELDS = {"items", "page_size", "has_next", "next_cursor", "pagination_rese
                "partial", "partial_reason", "sort_applied", "resolved_at"}
 IDENTITY = {"company_product_id", "global_product_id", "display_name", "canonical_name", "internal_code",
             "reference_code", "status", "global_status", "product_type", "brand", "categories", "identifiers",
-            "base_unit", "has_image", "image_url", "presentations"}
+            "base_unit", "has_image", "asset_id", "image_url", "presentations"}
 SCHEMAS = {
     "ProductOverview": IDENTITY | {"stock"},
     "InventoryOverview": IDENTITY | {"stock"},
@@ -39,7 +39,7 @@ SCHEMAS = {
     "BranchStockOut": {"branch_id", "base_quantity", "balance_state", "minimum_stock", "minimum_state"},
     "EquivalenceOut": {"company_product_presentation_id", "whole_units", "remainder_base_quantity"},
     "LowStockPair": {"company_product_id", "display_name", "internal_code", "base_unit", "branch_id", "base_quantity",
-                     "minimum_stock", "shortfall", "policy_status", "has_image", "image_url"},
+                     "minimum_stock", "shortfall", "policy_status", "has_image", "asset_id", "image_url"},
     "InventorySummaryOut": {"company_id", "resolved_at", "adopted_products", "branches", "consolidated"},
     "SummaryCountsOut": {"products_with_positive_balance", "products_with_zero_balance", "products_with_policy",
                          "products_below_minimum"},

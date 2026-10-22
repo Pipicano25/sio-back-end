@@ -23,4 +23,5 @@ class LowStockPair(Out):
     shortfall: str = Field(description="`minimum_stock − base_quantity`, siempre mayor que cero.")
     policy_status: Literal["ACTIVE"]
     has_image: bool
+    asset_id: UUID | None
     image_url: str | None

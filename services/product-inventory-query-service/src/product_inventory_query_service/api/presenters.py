@@ -52,6 +52,7 @@ def identity(view: ProductView) -> dict:
                         for i in (summary.identifiers if summary else ())],
         "base_unit": reference(summary.base_unit) if summary else None,
         "has_image": bool(summary and summary.has_image),
+        "asset_id": summary.image_asset_id if summary and summary.has_image else None,
         "image_url": summary.image_url if summary and summary.has_image else None,
     }
 
@@ -130,6 +131,7 @@ def low_stock_pair(view: PairView) -> LowStockPair:
         shortfall=fmt(view.pair.shortfall),
         policy_status="ACTIVE",
         has_image=bool(summary and summary.has_image),
+        asset_id=summary.image_asset_id if summary and summary.has_image else None,
         image_url=summary.image_url if summary and summary.has_image else None,
     )
 

@@ -159,6 +159,7 @@ class ProductSummary:
     identifiers: tuple[Identifier, ...]
     has_image: bool
     image_url: str | None
+    image_asset_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
