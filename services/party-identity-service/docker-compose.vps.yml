@@ -10,8 +10,8 @@ name: party-identity-service-vps
 #   bases ni ejecuta migraciones o seeds.
 # - Red externa sio-network (debe existir: `docker network create sio-network`). Los alias de
 #   servicio (party-identity-service, keycloak, audit-service...) son los nombres DNS entre contenedores.
-# - Puerto del host 8101 (docs/port-map.md), publicado solo en 127.0.0.1: el acceso público
-#   pasa por el proxy inverso de la VPS.
+# - Puerto del host 8101 (docs/port-map.md), publicado solo en 127.0.0.1. El acceso público
+#   es https://party.2.25.76.203.sslip.io vía Traefik (labels de la API).
 #
 # Desde la raíz del repositorio:
 #   docker compose -f services/party-identity-service/docker-compose.vps.yml --env-file services/party-identity-service/.env.vps build
@@ -34,6 +34,14 @@ services:
     container_name: sio-party-identity-service
     ports:
       - "127.0.0.1:${PARTY_IDENTITY_SERVICE_PORT:-8101}:8000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sio-party.rule=Host(`party.2.25.76.203.sslip.io`)"
+      - "traefik.http.routers.sio-party.entrypoints=websecure"
+      - "traefik.http.routers.sio-party.tls=true"
+      - "traefik.http.routers.sio-party.tls.certresolver=letsencrypt"
+      - "traefik.http.services.sio-party.loadbalancer.server.port=8000"
+      - "traefik.docker.network=sio-network"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
       interval: 30s

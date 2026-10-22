@@ -10,8 +10,9 @@ name: keycloak-vps
 #   el realm, así que realms, usuarios, clientes, roles, grupos y flujos se conservan tal como están.
 # - Red externa sio-network con el alias "keycloak": los microservicios piden tokens y llaves en
 #   http://keycloak:8080 (KEYCLOAK_TOKEN_URL, SIO_AUTH_JWKS_URL de sus .env.vps).
-# - Producción detrás de un proxy inverso con HTTPS: el proxy termina TLS y reenvía a
-#   127.0.0.1:8081 por HTTP con los encabezados X-Forwarded-*. La URL pública es KC_HOSTNAME.
+# - Producción detrás de Traefik con HTTPS (labels): https://auth.2.25.76.203.sslip.io (KC_HOSTNAME).
+#   Traefik termina TLS y reenvía al puerto 8080 del contenedor por HTTP con X-Forwarded-*.
+#   El puerto 8081 del host queda solo en 127.0.0.1 para acceso local.
 # - Puerto de administración (health y metrics, 9000) solo en 127.0.0.1; nunca se publica en el proxy.
 #
 # Desde la raíz del repositorio:
@@ -37,6 +38,14 @@ services:
     ports:
       - "127.0.0.1:${KEYCLOAK_HTTP_PORT:-8081}:8080"
       - "127.0.0.1:${KEYCLOAK_MANAGEMENT_PORT:-9000}:9000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sio-keycloak.rule=Host(`auth.2.25.76.203.sslip.io`)"
+      - "traefik.http.routers.sio-keycloak.entrypoints=websecure"
+      - "traefik.http.routers.sio-keycloak.tls=true"
+      - "traefik.http.routers.sio-keycloak.tls.certresolver=letsencrypt"
+      - "traefik.http.services.sio-keycloak.loadbalancer.server.port=8080"
+      - "traefik.docker.network=sio-network"
     healthcheck:
       test:
         [

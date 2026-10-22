@@ -9,8 +9,8 @@ name: product-inventory-query-service-vps
 # - Sin base de datos.
 # - Red externa sio-network (debe existir: `docker network create sio-network`). Los alias de
 #   servicio (product-inventory-query-service, keycloak, audit-service...) son los nombres DNS entre contenedores.
-# - Puerto del host 8112 (docs/port-map.md), publicado solo en 127.0.0.1: el acceso público
-#   pasa por el proxy inverso de la VPS.
+# - Puerto del host 8112 (docs/port-map.md), publicado solo en 127.0.0.1. El acceso público
+#   es https://product-inventory.2.25.76.203.sslip.io vía Traefik (labels de la API).
 #
 # Desde la raíz del repositorio:
 #   docker compose -f services/product-inventory-query-service/docker-compose.vps.yml --env-file services/product-inventory-query-service/.env.vps build
@@ -33,6 +33,14 @@ services:
     container_name: sio-product-inventory-query-service
     ports:
       - "127.0.0.1:${PRODUCT_INVENTORY_QUERY_SERVICE_PORT:-8112}:8000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sio-product-inventory.rule=Host(`product-inventory.2.25.76.203.sslip.io`)"
+      - "traefik.http.routers.sio-product-inventory.entrypoints=websecure"
+      - "traefik.http.routers.sio-product-inventory.tls=true"
+      - "traefik.http.routers.sio-product-inventory.tls.certresolver=letsencrypt"
+      - "traefik.http.services.sio-product-inventory.loadbalancer.server.port=8000"
+      - "traefik.docker.network=sio-network"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
       interval: 30s
