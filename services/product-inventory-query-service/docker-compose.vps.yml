@@ -1,0 +1,47 @@
+name: product-inventory-query-service-vps
+
+# Despliegue de product-inventory-query-service en la VPS (Docker Compose). No reemplaza ni modifica la definición de
+# desarrollo (infrastructure/services/product-inventory-query-service.yaml):
+# - Proyecto "product-inventory-query-service-vps": en un equipo de desarrollo no toma los contenedores del proyecto
+#   "product-inventory-query-service" (un `up` falla por nombre de contenedor repetido en vez de recrearlos).
+# - Configuración: .env.vps de esta carpeta (plantilla .env.vps.example), entregada como
+#   env_file a la API; misma imagen para todos, solo cambia el comando.
+# - Sin base de datos.
+# - Red externa sio-network (debe existir: `docker network create sio-network`). Los alias de
+#   servicio (product-inventory-query-service, keycloak, audit-service...) son los nombres DNS entre contenedores.
+# - Puerto del host 8112 (docs/port-map.md), publicado solo en 127.0.0.1: el acceso público
+#   pasa por el proxy inverso de la VPS.
+#
+# Desde la raíz del repositorio:
+#   docker compose -f services/product-inventory-query-service/docker-compose.vps.yml --env-file services/product-inventory-query-service/.env.vps build
+#   docker compose -f services/product-inventory-query-service/docker-compose.vps.yml --env-file services/product-inventory-query-service/.env.vps up -d
+
+x-product-inventory-query-vps: &product-inventory-query-vps
+  image: sio/product-inventory-query-service:${SIO_SERVICES_VERSION:-0.1.0}
+  restart: unless-stopped
+  env_file:
+    - .env.vps
+  networks:
+    - sio-network
+
+services:
+  product-inventory-query-service:
+    <<: *product-inventory-query-vps
+    build:
+      context: ../..
+      dockerfile: services/product-inventory-query-service/Dockerfile
+    container_name: sio-product-inventory-query-service
+    ports:
+      - "127.0.0.1:${PRODUCT_INVENTORY_QUERY_SERVICE_PORT:-8112}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+      start_interval: 2s
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

@@ -1,0 +1,61 @@
+name: operational-context-service-vps
+
+# Despliegue de operational-context-service en la VPS (Docker Compose). No reemplaza ni modifica la definición de
+# desarrollo (infrastructure/services/operational-context-service.yaml):
+# - Proyecto "operational-context-service-vps": en un equipo de desarrollo no toma los contenedores del proyecto
+#   "operational-context-service" (un `up` falla por nombre de contenedor repetido en vez de recrearlos).
+# - Configuración: .env.vps de esta carpeta (plantilla .env.vps.example), entregada como
+#   env_file a la API y a sus workers; misma imagen para todos, solo cambia el comando.
+# - Base: contenedor existente sio-postgres-18 (PostgreSQL 18) en sio-network; este archivo NO crea
+#   bases ni ejecuta migraciones o seeds.
+# - Red externa sio-network (debe existir: `docker network create sio-network`). Los alias de
+#   servicio (operational-context-service, keycloak, audit-service...) son los nombres DNS entre contenedores.
+# - Puerto del host 8104 (docs/port-map.md), publicado solo en 127.0.0.1: el acceso público
+#   pasa por el proxy inverso de la VPS.
+#
+# Desde la raíz del repositorio:
+#   docker compose -f services/operational-context-service/docker-compose.vps.yml --env-file services/operational-context-service/.env.vps build
+#   docker compose -f services/operational-context-service/docker-compose.vps.yml --env-file services/operational-context-service/.env.vps up -d
+
+x-operational-context-vps: &operational-context-vps
+  image: sio/operational-context-service:${SIO_SERVICES_VERSION:-0.1.0}
+  restart: unless-stopped
+  env_file:
+    - .env.vps
+  networks:
+    - sio-network
+
+services:
+  operational-context-service:
+    <<: *operational-context-vps
+    build:
+      context: ../..
+      dockerfile: services/operational-context-service/Dockerfile
+    container_name: sio-operational-context-service
+    ports:
+      - "127.0.0.1:${OPERATIONAL_CONTEXT_SERVICE_PORT:-8104}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+      start_interval: 2s
+
+  # Entrega la outbox de auditoría a Audit.
+  operational-context-audit-outbox-worker:
+    <<: *operational-context-vps
+    container_name: sio-operational-context-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "sio_audit.worker", "--check"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+      start_interval: 5s
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

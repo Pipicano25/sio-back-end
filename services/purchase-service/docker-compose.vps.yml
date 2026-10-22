@@ -1,0 +1,87 @@
+name: purchase-service-vps
+
+# Despliegue de purchase-service en la VPS (Docker Compose). No reemplaza ni modifica la definición de
+# desarrollo (infrastructure/services/purchase-service.yaml):
+# - Proyecto "purchase-service-vps": en un equipo de desarrollo no toma los contenedores del proyecto
+#   "purchase-service" (un `up` falla por nombre de contenedor repetido en vez de recrearlos).
+# - Configuración: .env.vps de esta carpeta (plantilla .env.vps.example), entregada como
+#   env_file a la API y a sus workers; misma imagen para todos, solo cambia el comando.
+# - Base: contenedor existente sio-postgres-18 (PostgreSQL 18) en sio-network; este archivo NO crea
+#   bases ni ejecuta migraciones o seeds.
+# - Red externa sio-network (debe existir: `docker network create sio-network`). Los alias de
+#   servicio (purchase-service, keycloak, audit-service...) son los nombres DNS entre contenedores.
+# - Puerto del host 8107 (docs/port-map.md), publicado solo en 127.0.0.1: el acceso público
+#   pasa por el proxy inverso de la VPS.
+#
+# Desde la raíz del repositorio:
+#   docker compose -f services/purchase-service/docker-compose.vps.yml --env-file services/purchase-service/.env.vps build
+#   docker compose -f services/purchase-service/docker-compose.vps.yml --env-file services/purchase-service/.env.vps up -d
+
+x-purchase-vps: &purchase-vps
+  image: sio/purchase-service:${SIO_SERVICES_VERSION:-0.1.0}
+  restart: unless-stopped
+  env_file:
+    - .env.vps
+  networks:
+    - sio-network
+
+services:
+  purchase-service:
+    <<: *purchase-vps
+    build:
+      context: ../..
+      dockerfile: services/purchase-service/Dockerfile
+    container_name: sio-purchase-service
+    ports:
+      - "127.0.0.1:${PURCHASE_SERVICE_PORT:-8107}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+      start_interval: 2s
+
+  # Entrega la outbox de auditoría a Audit.
+  purchase-audit-outbox-worker:
+    <<: *purchase-vps
+    container_name: sio-purchase-audit-outbox-worker
+    command: ["python", "-m", "sio_audit.worker"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "sio_audit.worker", "--check"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      start_interval: 5s
+
+  # Concilia operaciones PENDING consultando Inventory por clave.
+  purchase-reconciler:
+    <<: *purchase-vps
+    container_name: sio-purchase-reconciler
+    command: ["python", "-m", "purchase_service.reconciler"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "purchase_service.reconciler", "--check"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      start_interval: 5s
+
+  # Entrega las solicitudes de precio a Commercial Relationship (spec 021).
+  purchase-price-update-worker:
+    <<: *purchase-vps
+    container_name: sio-purchase-price-update-worker
+    command: ["python", "-m", "purchase_service.price_update_worker"]
+    healthcheck:
+      test: ["CMD", "python", "-m", "purchase_service.price_update_worker", "--check"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      start_interval: 5s
+
+networks:
+  sio-network:
+    name: sio-network
+    external: true

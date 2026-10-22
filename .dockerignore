@@ -12,6 +12,9 @@
 **/.ruff_cache
 
 **/.env
+# Credenciales reales del despliegue en la VPS (services/<servicio>/docker-compose.vps.yml): cada Dockerfile copia
+# services/<servicio> completo, así que sin esta línea quedarían dentro de la imagen.
+**/.env.vps
 
 **/dist
 **/build

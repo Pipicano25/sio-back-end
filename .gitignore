@@ -26,6 +26,10 @@ htmlcov/
 **/.env
 **/.env.*
 !**/.env.example
+# Despliegue en la VPS (services/<servicio>/docker-compose.vps.yml): .env.vps lleva credenciales reales y nunca se
+# versiona; solo la plantilla .env.vps.example.
+**/.env.vps
+!**/.env.vps.example
 
 docs/contratos-solicitud-forntent-a-backend.pdf
 .claude/
