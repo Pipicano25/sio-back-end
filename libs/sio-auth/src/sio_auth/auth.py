@@ -57,12 +57,17 @@ class SIOAuth:
         *,
         public_paths: Collection[str] = (),
     ) -> None:
-        """Protege todas las rutas HTTP excepto las rutas públicas declaradas de forma exacta."""
+        """Protege todas las rutas HTTP excepto las rutas públicas declaradas de forma exacta.
+
+        Las rutas de documentación que la propia aplicación registra (`openapi_url`, `docs_url`,
+        su `swagger_ui_oauth2_redirect_url` y `redoc_url`) son siempre públicas, también de forma
+        exacta; si la aplicación las deshabilita (None) no se agrega nada.
+        """
 
         app.add_middleware(
             SIOAuthMiddleware,
             decoder=self._decoder,
-            public_paths=frozenset(public_paths),
+            public_paths=frozenset(public_paths) | _documentation_paths(app),
         )
 
     def require_permission(
@@ -116,3 +121,18 @@ class SIOAuth:
 
         if self._owns_jwks_client:
             self._jwks_client.close()
+
+
+def _documentation_paths(app: FastAPI) -> frozenset[str]:
+    """Rutas exactas de Swagger UI, ReDoc y el esquema OpenAPI que `app` tiene habilitadas."""
+
+    if not app.openapi_url:
+        return frozenset()
+    paths = {app.openapi_url}
+    if app.docs_url:
+        paths.add(app.docs_url)
+        if app.swagger_ui_oauth2_redirect_url:
+            paths.add(app.swagger_ui_oauth2_redirect_url)
+    if app.redoc_url:
+        paths.add(app.redoc_url)
+    return frozenset(paths)
