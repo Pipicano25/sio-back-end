@@ -40,6 +40,7 @@ def product_view(
     warnings=(),
     queries: CatalogQueryService | None = None,
     expand_detail: bool = False,
+    include_images: bool = True,
 ) -> ProductResponse:
     detail = None
 
@@ -58,7 +59,11 @@ def product_view(
             group_assignments=[
                 GroupAssignmentResponse.model_validate(item) for item in sections["group_assignments"]
             ],
-            assets=[AssetResponse.model_validate(item) for item in sections["assets"]],
+            assets=[
+                AssetResponse.model_validate(item)
+                for item in sections["assets"]
+                if include_images or item.asset_type != "IMAGE"
+            ],
         )
 
     return ProductResponse.build(product, completeness, warnings, detail)

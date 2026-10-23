@@ -1,4 +1,8 @@
-"""Historia 9: activos digitales (FR-067 a FR-069)."""
+"""Historia 9: activos digitales (FR-067 a FR-069).
+
+Spec 024 (DD-024-1): las imágenes pertenecen a las presentaciones; las rutas por producto siguen igual para los
+demás tipos, que se prueban aquí con una ficha técnica. Las imágenes por producto: `test_product_asset_routes_stages.py`.
+"""
 
 from tests import factories
 
@@ -9,7 +13,7 @@ def _url(product_id) -> str:
 
 def _image(**overrides) -> dict:
     return {
-        "asset_type": "IMAGE",
+        "asset_type": "TECHNICAL_SHEET",
         "file_name": "frente.png",
         "storage_uri": "s3://sio-assets/productos/frente.png",
         "mime_type": "image/png",
@@ -29,6 +33,10 @@ def test_register_asset(api, session_factory) -> None:
 
     assert response.status_code == 201
     assert response.json()["is_primary"] is True
+    assert response.json()["global_product_presentation_id"] is None
+
+    image = api.post(_url(product.id), json=_image(asset_type="IMAGE"))
+    assert image.status_code == 422 and image.json()["code"] == "PRODUCT_CATALOG.IMAGE_REQUIRES_PRESENTATION"
 
 
 def test_primary_switch_per_type(api, session_factory) -> None:

@@ -207,7 +207,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 | `items[].display_name`, `internal_code`, `reference_code` | string \| null | Nombre y códigos de la empresa para mostrar y buscar |
 | `items[].status`, `global_status` | string | Estado del producto empresarial y del producto global |
 | `items[].brand`, `categories[]`, `identifiers[]`, `base_unit` | objeto \| lista | Datos del catálogo global: marca, categorías (con la principal), códigos de barras u otros identificadores y unidad base |
-| `items[].has_image`, `image_url` | boolean, string \| null | Imagen principal; la URL se usa tal cual y es `null` si `has_image` es `false` |
+| `items[].has_image`, `image_url` | boolean, string \| null | Imagen principal; la URL se usa tal cual y es `null` si `has_image` es `false`. Spec 024 (pendiente de despliegue): pasan a cada presentación (`presentations[].has_image`, `asset_id`, `image_url`); ver [Product Inventory Query](../servicios/product-inventory-query.md#imágenes-por-presentación-spec-024-pendiente-de-despliegue) |
 | `items[].presentations[]` | lista | Presentaciones con `company_product_presentation_id` ([guía](../parametros/company-product-presentation-id.md)), `sku`, `is_sellable` y `base_quantity_factor` (unidades base por presentación) |
 | `items[].presentations[].price` | objeto | Solo con permiso de precios. `unit_price` tiene valor cuando `resolution` es `PRICE_LIST_ITEM`; con `NO_PRICE_IN_LIST`, `NO_APPLICABLE_PRICE_LIST` o `PRICE_LIST_NOT_APPLICABLE` viene `null` |
 | `items[].stock` | objeto \| null | Solo con permiso de existencias; `null` si el producto no tiene control de inventario |

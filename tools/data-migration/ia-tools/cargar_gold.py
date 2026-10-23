@@ -20,6 +20,10 @@ Para cada fila de Gold, en orden de dependencias:
 - 401 (tras renovar el token), 403, 5xx o servicio caído detienen la ejecución; el resto de errores se registra y se
   continúa con las filas independientes.
 - No borra, no sube archivos (MinIO) y no envía filas cuyo dato faltante la API convertiría en un valor por defecto.
+- Spec 024: las imágenes se registran por referencia en su presentación
+  (`POST /products/{id}/presentations/{presentation_id}/assets`, columna `product_presentation_ref`). La respuesta
+  no expone `storage_uri`, así que la identidad no se busca por GET: un `409 DUPLICATE_ASSET_CONTENT` con
+  `existing_asset_id` (la misma imagen ya está en la presentación) se toma como `REUSADO` con ese id.
 """
 
 from __future__ import annotations
@@ -71,7 +75,9 @@ CATALOGOS_COMPLETOS = {"packaging_types", "attribute_definitions", "categories",
 SIN_VALOR_POR_DEFECTO = {"company_products": ("sale_price", "reference_cost")}
 TIPOS_DE_IDENTIDAD = ("GTIN", "EAN", "UPC", "BARCODE", "IUM")
 PARAMETROS_DE_RUTA = {"company_id": "company_ref", "product_id": "product_ref", "category_id": "category_ref",
-                      "definition_id": "attribute_definition_ref", "company_product_id": "company_product_ref"}
+                      "definition_id": "attribute_definition_ref", "company_product_id": "company_product_ref",
+                      "presentation_id": "product_presentation_ref"}
+DUPLICADO_EN_LA_PRESENTACION = "PRODUCT_CATALOG.DUPLICATE_ASSET_CONTENT"
 CATALOGO_SIO = {  # propiedad del contrato -> (columna del CSV, catálogo global de SIO)
     "country_id": ("country_iso3", "country"), "base_unit_id": ("base_unit_code", "unit"),
     "content_unit_id": ("content_unit_code", "unit"), "unit_of_measure_id": ("unit_code", "unit"),
@@ -373,8 +379,8 @@ class Cargador:
         if tabla == "product_attribute_values":
             definicion = ruta.rsplit("/", 1)[1]
             return [i for i in lista("product-catalog", ruta.rsplit("/", 1)[0]) if i["attribute_definition_id"] == definicion]
-        if tabla == "product_assets":
-            return [i for i in lista("product-catalog", ruta) if i["storage_uri"] == cuerpo["storage_uri"]]
+        if tabla == "product_assets":  # spec 024: sin storage_uri en la respuesta; la identidad la resuelve el 409
+            return []
         if tabla == "company_products":
             return lista("commercial-relationship", ruta, {"global_product_id": cuerpo["global_product_id"]})
         if tabla == "company_product_presentations":
@@ -495,6 +501,9 @@ class Cargador:
             raise Detener(f"{servicio} respondió HTTP {status} {codigo} (token o permisos)")
         if status >= 500:
             raise Detener(f"{servicio} respondió HTTP {status} {codigo}")
+        if status == 409 and codigo == DUPLICADO_EN_LA_PRESENTACION and body.get("existing_asset_id"):
+            return {**r, "resultado": "REUSADO", "sio_id": body["existing_asset_id"],
+                    "detalle": "la presentación ya tiene esta imagen (no se modifica)"}
         resultado = "CONFLICTO" if status == 409 else "ERROR"
         return {**r, "resultado": resultado, "codigo": codigo, "detalle": str(detalle)[:500]}
 

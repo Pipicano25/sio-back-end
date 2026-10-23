@@ -70,6 +70,8 @@ def mask(obj, reverse):
         return masked
     if isinstance(obj, str) and UUID_RE.match(obj):
         return f"<{reverse[obj]}>" if obj in reverse else "<id generado>"
+    if isinstance(obj, str) and "/" in obj:  # rutas con ids (p. ej. `content_url`, spec 024)
+        return "/".join(mask(part, reverse) if UUID_RE.match(part) else part for part in obj.split("/"))
     return obj
 
 
@@ -154,6 +156,18 @@ def render_call(number, c, record, reverse):
             "",
         ]
     out += ["```http", f"{c['method']} {c['path']}", "```", ""]
+    if c.get("upload"):
+        name = c["upload"]["file_name"]
+        out += [
+            "Cuerpo `multipart/form-data` con **un solo campo**, `file`, que contiene el archivo de la imagen. Con cURL:",
+            "",
+            "```bash",
+            f'curl -X {c["method"]} "http://localhost:8003{c["path"]}" \\',
+            '  -H "Authorization: Bearer $TOKEN" \\',
+            f'  -F "file=@{name}"',
+            "```",
+            "",
+        ]
     if c["body"] is not None:
         out += ["```json", dumps(c["body"]), "```", ""]
     permission = (record or {}).get("permission") or c.get("perm")

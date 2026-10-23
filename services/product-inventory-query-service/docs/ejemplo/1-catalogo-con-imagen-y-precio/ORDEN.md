@@ -10,6 +10,7 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 | --- | --- | --- | --- | --- |
 | 1 | [01-primera-pagina.md](01-primera-pagina.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&has_image=true&page_size=2` | `ventas.test` | `200` |
 | 2 | [02-segunda-pagina.md](02-segunda-pagina.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&has_image=true&page_size=2&cursor=<CURSOR>` | `ventas.test` | `200` |
+| 3 | [03-todas-las-imagenes.md](03-todas-las-imagenes.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&has_image=true&page_size=2&include_images=true` | `ventas.test` | `200` |
 
 ## Por qué este orden
 

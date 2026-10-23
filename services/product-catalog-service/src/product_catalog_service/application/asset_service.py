@@ -1,6 +1,15 @@
 """Activos digitales del producto (FR-067 a FR-069, DS-15).
 
 Solo se guarda la referencia al recurso externo; nunca el binario.
+
+Spec 024 (DD-024-7, FR-024-31 a FR-024-33): las imágenes pertenecen a una presentación y se gestionan por
+`PresentationImageService`. Estas rutas por producto conservan su comportamiento para los demás tipos y, para
+`IMAGE`, dependen de la etapa (`PRODUCT_IMAGE_MIGRATION_STAGE`):
+
+- `transition` (entrega 1): el alta de `IMAGE` → `422`; las modificaciones de imágenes → `409
+  IMAGE_MIGRATION_IN_PROGRESS`; las lecturas siguen e informan la presentación.
+- `completed` (entrega 2): ninguna operación sobre imágenes (`422 IMAGE_REQUIRES_PRESENTATION`) y el listado
+  las excluye.
 """
 
 from __future__ import annotations
@@ -16,6 +25,8 @@ from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
     AssetContentNotStoredError,
+    ImageMigrationInProgressError,
+    ImageRequiresPresentationError,
     InvalidStorageUriError,
     NotFoundError,
     ReferenceInactiveError,
@@ -58,14 +69,38 @@ def validate_mime_type(value: str | None) -> str | None:
     return mime
 
 
+IMAGE = "IMAGE"
+
+
+def image_requires_presentation() -> ImageRequiresPresentationError:
+    return ImageRequiresPresentationError(
+        "Las imágenes pertenecen a una presentación: use /products/{product_id}/presentations/{presentation_id}/assets."
+    )
+
+
 class AssetService:
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, *, images_migrated: bool = False) -> None:
         self.session = session
+        self.images_migrated = images_migrated
+
+    def _guard_image_change(self, asset: ProductAssetModel) -> None:
+        """Las modificaciones de imágenes por producto se congelan (entrega 1) o no existen (entrega 2)."""
+        if asset.asset_type != IMAGE:
+            return
+        if self.images_migrated:
+            raise image_requires_presentation()
+        raise ImageMigrationInProgressError(
+            "Las imágenes se están migrando a sus presentaciones: modifíquelas por la ruta de su presentación."
+        )
 
     def list(self, product_id: UUID, status: str | None = None, asset_type: str | None = None):
         if self.session.get(GlobalProductModel, product_id) is None:
             raise NotFoundError(f"El producto {product_id} no existe.")
+        if self.images_migrated and asset_type == IMAGE:
+            raise image_requires_presentation()
         statement = select(ProductAssetModel).where(ProductAssetModel.global_product_id == product_id)
+        if self.images_migrated:
+            statement = statement.where(ProductAssetModel.asset_type != IMAGE)
         if status is not None:
             statement = statement.where(ProductAssetModel.status == status)
         if asset_type is not None:
@@ -85,6 +120,8 @@ class AssetService:
         is_primary: bool,
         actor: str,
     ) -> ProductAssetModel:
+        if asset_type == IMAGE:
+            raise image_requires_presentation()
         product = lock_product(self.session, product_id)
         ensure_product_active_for_dependents(product)
 
@@ -122,6 +159,7 @@ class AssetService:
         product = lock_product(self.session, product_id)
         ensure_product_active_for_dependents(product)
         asset = self._asset(product_id, asset_id)
+        self._guard_image_change(asset)
         lifecycle.check_version(asset, version)
         asset.file_name = validate_file_name(file_name)
         asset.storage_uri = validate_storage_uri(storage_uri)
@@ -135,6 +173,7 @@ class AssetService:
         product = lock_product(self.session, product_id)
         ensure_product_active_for_dependents(product)
         asset = self._asset(product_id, asset_id)
+        self._guard_image_change(asset)
         lifecycle.check_version(asset, version)
         if asset.status != ACTIVE:
             raise ReferenceInactiveError("Solo un activo vigente puede ser principal.")
@@ -146,6 +185,7 @@ class AssetService:
     def deactivate(self, product_id: UUID, asset_id: UUID, *, version: int, actor: str) -> ProductAssetModel:
         lock_product(self.session, product_id)
         asset = self._asset(product_id, asset_id)
+        self._guard_image_change(asset)
         lifecycle.deactivate(asset, version, actor)
         audit.track_update(self.session, asset, action=audit.DEACTIVATE_PRODUCT_ASSET, entity_type="ProductAsset")
         self.session.commit()
@@ -155,6 +195,7 @@ class AssetService:
         product = lock_product(self.session, product_id)
         ensure_product_active_for_dependents(product)
         asset = self._asset(product_id, asset_id)
+        self._guard_image_change(asset)
         lifecycle.reactivate(asset, version, actor)
         audit.track_update(self.session, asset, action=audit.REACTIVATE_PRODUCT_ASSET, entity_type="ProductAsset")
         self.session.commit()
@@ -190,6 +231,8 @@ class AssetService:
         if self.session.get(GlobalProductModel, product_id) is None:
             raise NotFoundError(f"El producto {product_id} no existe.")
         asset = self._asset(product_id, asset_id)
+        if self.images_migrated and asset.asset_type == IMAGE:
+            raise image_requires_presentation()
         if asset.status != ACTIVE:
             raise NotFoundError(f"El activo {asset_id} no está vigente.")
         parsed = urlparse(asset.storage_uri)

@@ -19,6 +19,9 @@ dependencies = [
     "alembic>=1.14,<2.0",
     "python-dotenv>=1.0,<2.0",
     "boto3>=1.35,<2.0",
+    # Spec 024: validación de imágenes cargadas y formulario multipart.
+    "pillow>=11.0,<13.0",
+    "python-multipart>=0.0.18,<1.0",
 
     "sio-auth @ file:../../libs/sio-auth",
     "sio-audit @ file:../../libs/sio-audit",

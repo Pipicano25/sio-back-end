@@ -273,11 +273,85 @@ EX5 = dict(
         ),
         step(
             "10-agregar-imagen.md",
-            "Agregar la imagen del producto",
-            "Registrar un activo digital (foto).",
+            "Agregar la imagen de la presentación",
+            "Cargar la foto del pack x 2 y dejarla como imagen principal de esa presentación (spec 024).",
             [
                 call(
-                    "Registrar la imagen principal",
+                    "Cargar la imagen de la presentación",
+                    "POST", f"{API}/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets/upload",
+                    upload={"file_name": "colgate-cepillo-infantil-2-5-nina-pack-x2.png", "content": "png",
+                            "color": [40, 120, 200]},
+                    why=[
+                        "El Excel no trae imágenes: la foto de este paso es **ficticia** (un PNG generado) y solo "
+                        "muestra cómo se carga una.",
+                        "Las imágenes pertenecen a una **presentación**, no al producto: cada presentación puede "
+                        "tener su propia foto. Esta es la del pack x 2.",
+                        "Se envía el archivo (`multipart/form-data`, campo `file`). El catálogo lo guarda en el "
+                        "almacenamiento de SIO y responde sin exponer bucket ni clave: `content_url` (con token) e "
+                        "`image_url` (URL pública firmada, o `null` si está deshabilitada).",
+                        "La última imagen cargada queda **principal** automáticamente.",
+                        "El tipo se toma del **contenido** (JPEG, PNG o WebP); la extensión y el tipo declarado se ignoran.",
+                    ],
+                    save={"ACTIVO_IMAGEN": "id"},
+                    show=["id", "global_product_presentation_id", "asset_type", "file_name", "mime_type", "is_primary",
+                          "status", "content_url"],
+                ),
+                call(
+                    "Error esperado: cargar otra vez el mismo archivo",
+                    "POST", f"{API}/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets/upload",
+                    upload={"file_name": "copia-del-mismo-archivo.png", "content": "png", "color": [40, 120, 200]},
+                    expect=409,
+                    why=["El catálogo compara el **contenido** (SHA-256), no el nombre: la presentación ya tiene esa "
+                         "imagen. `existing_asset_id` dice cuál es; no se crea otra ni se vuelve a guardar el archivo."],
+                    show=["status", "code", "existing_asset_id"],
+                ),
+                call(
+                    "Cargar una segunda imagen (foto lateral)",
+                    "POST", f"{API}/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets/upload",
+                    upload={"file_name": "colgate-cepillo-infantil-pack-x2-lateral.png", "content": "png",
+                            "color": [230, 90, 150]},
+                    why=["Una presentación puede tener varias imágenes. La recién cargada pasa a ser la principal; "
+                         "la anterior sigue `ACTIVE` como secundaria."],
+                    save={"ACTIVO_IMAGEN_2": "id", "VERSION_IMAGEN_2": "version"},
+                    show=["id", "file_name", "is_primary", "status"],
+                ),
+                call(
+                    "Listar las imágenes de la presentación",
+                    "GET", f"{API}/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets",
+                    why=["Solo las `ACTIVE`, la principal primero. Para ver las eliminadas: `?status=INACTIVE`."],
+                    show=["[].id", "[].file_name", "[].is_primary", "[].status"],
+                ),
+                call(
+                    "Eliminar la segunda imagen",
+                    "POST", f"{API}/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets/<ACTIVO_IMAGEN_2>/deactivate",
+                    body={"version": "<VERSION_IMAGEN_2>"},
+                    why=["La eliminación es lógica: la imagen queda `INACTIVE` y el archivo **no** se borra del "
+                         "almacenamiento.",
+                         "Era la principal, así que la imagen `ACTIVE` más reciente (la foto del frente) vuelve a "
+                         "serlo automáticamente.",
+                         "Exige `perm:product-catalog:products:deactivate`."],
+                    save={"VERSION_IMAGEN_2": "version"},
+                    show=["id", "is_primary", "status", "version"],
+                ),
+                call(
+                    "Reactivar la segunda imagen",
+                    "POST", f"{API}/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets/<ACTIVO_IMAGEN_2>/reactivate",
+                    body={"version": "<VERSION_IMAGEN_2>"},
+                    why=["Vuelve a `ACTIVE`, pero **no** se marca como principal: la principal sigue siendo la del frente."],
+                    save={"VERSION_IMAGEN_2": "version"},
+                    show=["id", "is_primary", "status", "version"],
+                ),
+                call(
+                    "Marcar la segunda imagen como principal",
+                    "POST", f"{API}/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets/<ACTIVO_IMAGEN_2>/set-primary",
+                    body={"version": "<VERSION_IMAGEN_2>"},
+                    why=["La principal anterior deja de serlo en la misma operación: nunca hay dos.",
+                         "El contenido de cada imagen se descarga con su `content_url` (con token) o se muestra con "
+                         "`image_url` en `<img src>`."],
+                    show=["id", "is_primary", "status", "version"],
+                ),
+                call(
+                    "Error esperado: registrar la imagen en el producto",
                     "POST", f"{API}/products/<PRODUCTO>/assets",
                     body={
                         "asset_type": "IMAGE",
@@ -286,14 +360,10 @@ EX5 = dict(
                         "mime_type": "image/jpeg",
                         "is_primary": True,
                     },
-                    why=[
-                        "El Excel no trae imágenes: este paso es **ilustrativo** para mostrar cómo se registra una.",
-                        "El catálogo **no guarda el archivo**, solo la referencia (`storage_uri`). El archivo se sube antes al almacenamiento.",
-                        "`storage_uri` debe ser un URI absoluto (`s3://…`, `https://…`); si no, `422 INVALID_STORAGE_URI`.",
-                        "`is_primary: true`: es la imagen que se muestra por defecto. Hay una principal por tipo de activo.",
-                    ],
-                    save={"ACTIVO_IMAGEN": "id"},
-                    show=["id", "asset_type", "file_name", "storage_uri", "mime_type", "is_primary", "status"],
+                    expect=422,
+                    why=["Los productos no tienen imágenes directas: `422 IMAGE_REQUIRES_PRESENTATION`. Las fichas "
+                         "técnicas, manuales y certificados sí se siguen registrando en el producto."],
+                    show=["status", "code", "detail"],
                 ),
             ],
         ),
@@ -364,7 +434,7 @@ EX5 = dict(
                     why=["Toda la información se conserva. Si se reactiva (`POST /products/{id}/reactivate` con la `version` actual), "
                          "vuelve a ser elegible sin recargar nada."],
                     show=["status", "eligible_for_adoption", "detail.presentations[].code", "detail.presentations[].status",
-                          "detail.assets[].file_name", "detail.identifiers"],
+                          "detail.identifiers"],
                 ),
             ],
         ),
@@ -381,12 +451,21 @@ EX5 = dict(
                     why=[
                         "Hasta 100 productos en una llamada: nombre canónico, marca, unidad base, categorías e "
                         "identificadores `ACTIVE`, sin pedir cada producto por separado.",
-                        "`has_image: false`: la imagen del paso 10 es ilustrativa y no está en el almacenamiento de SIO "
-                        "con clave derivada de su SHA-256, así que **no es apta** para URL directa; `image_url` es `null`.",
+                        "Las imágenes **no** vienen en este resumen: pertenecen a las presentaciones y se consultan "
+                        "por presentación (`POST /presentations/batch-lookup`, siguiente llamada).",
                     ],
                     show=["items[].found", "items[].canonical_name", "items[].status", "items[].brand",
-                          "items[].base_unit", "items[].categories", "items[].identifiers", "items[].has_image",
-                          "items[].image_url"],
+                          "items[].base_unit", "items[].categories", "items[].identifiers"],
+                ),
+                call(
+                    "Imagen de la presentación por lotes",
+                    "POST", f"{API}/presentations/batch-lookup?include_images=true",
+                    body={"ids": ["<PRES_PACK_X2>"]},
+                    why=[
+                        "Cada presentación trae su imagen principal: `has_image`, `image_asset_id` e `image_url`.",
+                        "Con `include_images=true` agrega `images[]` con todas sus imágenes `ACTIVE`, la principal primero.",
+                    ],
+                    show=["items[].code", "items[].has_image", "items[].image_asset_id", "items[].images[].is_primary"],
                 ),
                 call(
                     "Productos de la marca, incluidos los inactivos",
@@ -401,10 +480,11 @@ EX5 = dict(
                     show=["items[].id", "items[].position", "has_more"],
                 ),
                 call(
-                    "¿El cepillo tiene una imagen apta?",
+                    "¿El cepillo tiene alguna presentación con imagen?",
                     "POST", f"{API}/products/match",
                     body={"candidate_ids": ["<PRODUCTO>"], "has_image": True, "status": "ALL"},
-                    why=["Modo evaluador: devuelve los candidatos que cumplen. Ninguno: la imagen no es apta."],
+                    why=["Modo evaluador: devuelve los candidatos que cumplen. `has_image: true` significa \"al menos "
+                         "una presentación con imagen principal `ACTIVE`\": es solo una condición de búsqueda."],
                     show=["ids"],
                 ),
             ],

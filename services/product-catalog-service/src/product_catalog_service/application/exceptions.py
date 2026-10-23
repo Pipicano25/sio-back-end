@@ -299,6 +299,54 @@ class AssetContentNotStoredError(DomainError):
     title = "El contenido del activo no está en el almacenamiento de SIO"
 
 
+class ImageRequiresPresentationError(DomainError):
+    code = "IMAGE_REQUIRES_PRESENTATION"
+    status_code = 422
+    title = "Las imágenes se gestionan por presentación"
+
+
+class ImageMigrationInProgressError(DomainError):
+    code = "IMAGE_MIGRATION_IN_PROGRESS"
+    status_code = 409
+    title = "Migración de imágenes en curso"
+
+
+class PresentationInactiveError(DomainError):
+    code = "PRESENTATION_INACTIVE"
+    status_code = 422
+    title = "Presentación inactiva"
+
+
+class FileTooLargeError(DomainError):
+    code = "FILE_TOO_LARGE"
+    status_code = 413
+    title = "Archivo demasiado grande"
+
+
+class UnsupportedMediaTypeError(DomainError):
+    code = "UNSUPPORTED_MEDIA_TYPE"
+    status_code = 415
+    title = "Tipo de archivo no admitido"
+
+
+class InvalidImageError(DomainError):
+    code = "INVALID_IMAGE"
+    status_code = 422
+    title = "Imagen inválida"
+
+
+class ImageDimensionsExceededError(DomainError):
+    code = "IMAGE_DIMENSIONS_EXCEEDED"
+    status_code = 422
+    title = "Dimensiones de imagen excedidas"
+
+
+class DuplicateAssetContentError(DomainError):
+    code = "DUPLICATE_ASSET_CONTENT"
+    status_code = 409
+    title = "Contenido duplicado en la presentación"
+
+
 class AssetStorageUnavailableError(Exception):
     """El almacenamiento de objetos no respondió de forma utilizable (lo emite el adaptador)."""
 

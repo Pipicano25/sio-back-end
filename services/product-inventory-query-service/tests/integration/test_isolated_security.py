@@ -72,7 +72,7 @@ def test_altered_cursor_is_422(users, seed) -> None:
 def test_public_image_reference_is_signed_and_not_listable(users, seed) -> None:
     (item,) = users("ventas.test").get(f"{PIQ}/companies/{seed['company']}/product-overviews",
                                        params={"internal_code": f"P-0001-{seed['run']}"}).raise_for_status().json()["items"]
-    url = item["image_url"]
+    url = next(p["image_url"] for p in item["presentations"] if p["has_image"])  # spec 024: por presentación
     assert url.startswith("http://127.0.0.1:18103/api/v1/public/product-images?ref=")
     ref = url.split("ref=", 1)[1]
     altered = ref[:-1] + ("A" if ref[-1] != "A" else "B")

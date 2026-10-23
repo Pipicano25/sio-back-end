@@ -47,6 +47,7 @@ curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
 | --- | --- | --- | --- |
 | 1 | 1 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&has_image=true&page_size=2` | `perm:product-inventory-query:product_overviews:read` |
 | 1 | 2 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&has_image=true&page_size=2&cursor=<CURSOR>` | `perm:product-inventory-query:product_overviews:read` |
+| 1 | 3 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&has_image=true&page_size=2&include_images=true` | `perm:product-inventory-query:product_overviews:read` |
 | 2 | 1 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=2` | `perm:product-inventory-query:product_overviews:read` |
 | 2 | 2 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Abrilar&page_size=2&cursor=<CURSOR>` | `perm:product-inventory-query:product_overviews:read` |
 | 2 | 3 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=3&cursor=<CURSOR>` | `perm:product-inventory-query:product_overviews:read` |

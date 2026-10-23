@@ -102,6 +102,14 @@ def _check_access(call, clients, method, path, kwargs, expected, record):
             record["verified"][name] = response.status_code
 
 
+def upload_file(upload: dict) -> tuple[str, bytes, str]:
+    """Archivo de una carga multipart de ejemplo: imagen real generada con Pillow (dato ficticio)."""
+    from tests import images
+
+    content = getattr(images, upload.get("content", "png"))(tuple(upload.get("color", (200, 30, 30))))
+    return upload["file_name"], content, "application/octet-stream"
+
+
 def run_exercise(api, manufacturer_directory, exercise, clients=None):
     """Ejecuta un ejercicio. Devuelve (ctx, records) para generar la documentación."""
     ctx, records = {}, []
@@ -132,6 +140,8 @@ def run_exercise(api, manufacturer_directory, exercise, clients=None):
             path = substitute(call["path"], ctx)
             body = substitute(call["body"], ctx)
             kwargs = {"json": body} if body is not None else {}
+            if call.get("upload"):
+                kwargs = {"files": {"file": upload_file(call["upload"])}}
             expected = [call["expect"]] if call["expect"] else [200, 201]
 
             if clients is not None:

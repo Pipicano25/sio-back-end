@@ -6,6 +6,8 @@ from sqlalchemy.engine import Engine
 
 from tests.conftest import FUNCTIONAL_TABLES, build_alembic_config
 
+HEAD = "0006"
+
 EXPECTED_CONSTRAINTS = {
     "uq_global_units_of_measure_code",
     "ck_global_units_of_measure_code_normalized",
@@ -58,6 +60,9 @@ EXPECTED_CONSTRAINTS = {
     "fk_global_product_group_assignments_group_type",
     "ck_product_assets_asset_type",
     "ck_product_assets_primary_active",
+    "fk_product_assets_presentation_product",
+    "ck_product_assets_presentation_only_image",
+    "ck_product_assets_image_requires_presentation",
 }
 
 EXPECTED_INDEXES = {
@@ -77,6 +82,8 @@ EXPECTED_INDEXES = {
     "uq_global_product_identifiers_primary",
     "ix_global_product_group_assignments_product_type",
     "uq_product_assets_primary",
+    "uq_product_assets_presentation_primary",
+    "ix_product_assets_global_product_presentation_id",
     "ix_global_product_identifiers_global_product_id",
     "ix_global_product_group_assignments_global_product_id",
 }
@@ -199,9 +206,83 @@ def test_ium_migration_downgrade_refuses_existing_ium_rows(test_database_url: st
         with pytest.raises(IntegrityError, match="ck_global_product_identifiers_type"):
             command.downgrade(config, "0003")
         with engine.connect() as connection:
-            assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0004"
+            assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == HEAD
             assert connection.execute(
                 text("SELECT count(*) FROM global_product_identifiers WHERE identifier_type = 'IUM'")
             ).scalar_one() == 1
     finally:
+        engine.dispose()
+
+
+# ----------------------------------------------------------------- spec 024 (imágenes por presentación)
+
+SPEC024_OBJECTS = {
+    "fk_product_assets_presentation_product",
+    "ck_product_assets_presentation_only_image",
+    "uq_product_assets_presentation_primary",
+    "ix_product_assets_global_product_presentation_id",
+}
+
+
+def _objects(engine) -> set[str]:
+    with engine.connect() as connection:
+        names = set(connection.execute(text("SELECT indexname FROM pg_indexes")).scalars())
+        names |= set(connection.execute(text("SELECT conname FROM pg_constraint")).scalars())
+        columns = {column["name"] for column in inspect(connection).get_columns("product_assets")}
+    return names | ({"columna"} if "global_product_presentation_id" in columns else set())
+
+
+def test_presentation_image_migrations_downgrade_and_upgrade(test_database_url: str) -> None:
+    """0005 y 0006 agregan y retiran solo sus objetos; 0005 abajo restaura el principal por producto."""
+    config = build_alembic_config()
+    engine = create_engine(test_database_url)
+    try:
+        command.downgrade(config, "0005")
+        assert "ck_product_assets_image_requires_presentation" not in _objects(engine)
+        assert SPEC024_OBJECTS | {"columna"} <= _objects(engine)
+
+        command.downgrade(config, "0004")
+        remaining = _objects(engine)
+        assert not (SPEC024_OBJECTS & remaining) and "columna" not in remaining
+        with engine.connect() as connection:
+            definition = connection.execute(
+                text("SELECT indexdef FROM pg_indexes WHERE indexname = 'uq_product_assets_primary'")
+            ).scalar_one()
+        assert "global_product_presentation_id" not in definition
+
+        command.upgrade(config, "head")
+        assert SPEC024_OBJECTS | {"columna", "ck_product_assets_image_requires_presentation"} <= _objects(engine)
+    finally:
+        engine.dispose()
+
+
+def test_restriction_migration_refuses_images_without_presentation(test_database_url: str, session_factory) -> None:
+    """La guarda de 0006 aborta sin cambios si queda alguna imagen sin presentación (FR-024-46)."""
+    import pytest
+
+    from tests import factories
+    from tests.spec022_support import image_asset
+
+    config = build_alembic_config()
+    engine = create_engine(test_database_url)
+    try:
+        command.downgrade(config, "0005")
+        unit = factories.unit(session_factory)
+        product = factories.product(session_factory, unit.id, "Sin migrar")
+        legacy = image_asset(session_factory, product.id, presentation_id=None)
+        with pytest.raises(RuntimeError, match="1 imágenes sin presentación"):
+            command.upgrade(config, "0006")
+        with engine.connect() as connection:
+            assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0005"
+
+        box = factories.presentation(session_factory, product.id, "CAJA")
+        with engine.begin() as connection:
+            connection.execute(
+                text("UPDATE product_assets SET global_product_presentation_id = :p WHERE id = :a"),
+                {"p": box.id, "a": legacy.id},
+            )
+        command.upgrade(config, "head")
+        assert "ck_product_assets_image_requires_presentation" in _objects(engine)
+    finally:
+        command.upgrade(config, "head")
         engine.dispose()

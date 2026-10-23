@@ -7,7 +7,7 @@ La unidad es el par (producto, sucursal) con política activa y existencia **est
   filtros de catálogo.
 - Con `sort` explícito (R-F), conduce CR y el faltante se calcula por lote con `balances/lookup` e INV-1.
 
-El enriquecimiento solo pide PC-1 (unidad base e imagen): los datos del par ya están en la solicitud.
+El enriquecimiento solo pide PC-1 (unidad base; spec 024: low-stock no trae imágenes): los datos del par ya están en la solicitud.
 """
 
 from __future__ import annotations

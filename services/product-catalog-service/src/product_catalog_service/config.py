@@ -4,6 +4,9 @@ import os
 from dataclasses import dataclass
 
 IMAGE_REF_SECRET_MIN_BYTES = 32
+IMAGE_STAGE_TRANSITION = "transition"
+IMAGE_STAGE_COMPLETED = "completed"
+IMAGE_STAGES = (IMAGE_STAGE_TRANSITION, IMAGE_STAGE_COMPLETED)
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,6 +29,11 @@ class Settings:
             referencias de imagen y el saliente durante una rotación
             (`PRODUCT_IMAGE_REF_SECRET[_PREVIOUS]`, FR-022-97). Sin secreto o sin
             URL pública base no se entregan `image_url` ni existe la ruta pública.
+        asset_upload_max_bytes / asset_upload_max_pixels: límites de la carga directa de
+            imágenes (`ASSET_UPLOAD_MAX_BYTES`, `ASSET_UPLOAD_MAX_PIXELS`; spec 024, FR-024-12).
+        image_migration_stage: etapa de las rutas por producto frente a las imágenes
+            (`PRODUCT_IMAGE_MIGRATION_STAGE`; spec 024, research R2): `transition` (entrega 1,
+            por defecto) o `completed` (entrega 2, después de verificar la migración).
     """
 
     docs_enabled: bool
@@ -41,8 +49,15 @@ class Settings:
     public_base_url: str | None = None
     image_ref_secret: str | None = None
     image_ref_secret_previous: str | None = None
+    asset_upload_max_bytes: int = 5_242_880
+    asset_upload_max_pixels: int = 40_000_000
+    image_migration_stage: str = IMAGE_STAGE_TRANSITION
 
     def __post_init__(self) -> None:
+        if self.image_migration_stage not in IMAGE_STAGES:
+            raise RuntimeError("PRODUCT_IMAGE_MIGRATION_STAGE debe ser 'transition' o 'completed'.")
+        if self.asset_upload_max_bytes <= 0 or self.asset_upload_max_pixels <= 0:
+            raise RuntimeError("ASSET_UPLOAD_MAX_BYTES y ASSET_UPLOAD_MAX_PIXELS deben ser mayores que cero.")
         for name, value in (
             ("PRODUCT_IMAGE_REF_SECRET", self.image_ref_secret),
             ("PRODUCT_IMAGE_REF_SECRET_PREVIOUS", self.image_ref_secret_previous),
@@ -64,6 +79,11 @@ class Settings:
     def image_ref_secrets(self) -> list[str]:
         """Secretos aceptados al verificar una referencia: el actual y, en rotación, el anterior."""
         return [secret for secret in (self.image_ref_secret, self.image_ref_secret_previous) if secret]
+
+    @property
+    def image_migration_completed(self) -> bool:
+        """Entrega 2: las rutas por producto ya no gestionan imágenes (FR-024-32)."""
+        return self.image_migration_stage == IMAGE_STAGE_COMPLETED
 
     @property
     def asset_storage_configured(self) -> bool:
@@ -102,6 +122,9 @@ def load_settings() -> Settings:
         public_base_url=(_optional_text("PRODUCT_CATALOG_PUBLIC_BASE_URL") or "").rstrip("/") or None,
         image_ref_secret=_optional_text("PRODUCT_IMAGE_REF_SECRET"),
         image_ref_secret_previous=_optional_text("PRODUCT_IMAGE_REF_SECRET_PREVIOUS"),
+        asset_upload_max_bytes=_read_int(name="ASSET_UPLOAD_MAX_BYTES", default=5_242_880),
+        asset_upload_max_pixels=_read_int(name="ASSET_UPLOAD_MAX_PIXELS", default=40_000_000),
+        image_migration_stage=_read_text(name="PRODUCT_IMAGE_MIGRATION_STAGE", default=IMAGE_STAGE_TRANSITION).lower(),
     )
 
 
@@ -157,6 +180,24 @@ def _read_float(
         raise RuntimeError(
             f"La variable de entorno {name} debe ser mayor que cero."
         )
+
+    return number
+
+
+def _read_int(name: str, default: int) -> int:
+    """Obtiene una variable opcional entera mayor que cero."""
+    value = os.getenv(name)
+
+    if value is None or not value.strip():
+        return default
+
+    try:
+        number = int(value.strip())
+    except ValueError as exc:
+        raise RuntimeError(f"La variable de entorno {name} debe ser un número entero.") from exc
+
+    if number <= 0:
+        raise RuntimeError(f"La variable de entorno {name} debe ser mayor que cero.")
 
     return number
 

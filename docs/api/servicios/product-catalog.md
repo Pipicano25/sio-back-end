@@ -167,6 +167,8 @@ Global: cualquier usuario con el permiso ve todo el catálogo; no hay membresía
 
 La numeración de esta tabla es la de las fichas siguientes (las referencias de la tabla de permisos usan estos mismos números).
 
+Spec 024: las 8 operaciones de imágenes por presentación (I-1 a I-8) aún no están en el contrato desplegado en Render y se documentan aparte, en [Imágenes por presentación](#imágenes-por-presentación-spec-024-operaciones-i-1-a-i-8), sin alterar esta numeración.
+
 ## Operaciones
 
 Una ficha por operación, agrupadas por recurso. Cada ficha incluye la URL completa de Render, el permiso, los parámetros, el cuerpo (cuando aplica), un ejemplo de solicitud con `curl` y un ejemplo de respuesta con valores ilustrativos validados contra el contrato OpenAPI y los modelos del servicio.
@@ -3190,7 +3192,7 @@ Base `…/api/v1/products`. Objeto `ProductResponse`:
 | Alcance | Global (catálogo compartido por todas las empresas) |
 | Cabeceras | `Authorization`, `Content-Type: application/json` |
 
-Notas: Cuerpo `{"ids": [...]}` (1–100). Respuesta `items[]` con `id`, `found`, `canonical_name`, `product_type`, `status`, `brand` y `base_unit` (`{id, code, name}`), `categories[]`, `identifiers[]` activos, `has_image`, `image_url` (URL absoluta y firmada de la ruta pública, o `null`). Lo usa Product Inventory Query
+Notas: Cuerpo `{"ids": [...]}` (1–100). Respuesta `items[]` con `id`, `found`, `canonical_name`, `product_type`, `status`, `brand` y `base_unit` (`{id, code, name}`), `categories[]`, `identifiers[]` activos, `has_image`, `image_url` (URL absoluta y firmada de la ruta pública, o `null`). Lo usa Product Inventory Query. **Spec 024:** los campos de imagen son transitorios; con `PRODUCT_IMAGE_MIGRATION_STAGE=completed` se omiten, porque la imagen es de cada presentación (operación 66)
 
 Cuerpo (`BatchLookupRequest`; rechaza campos adicionales):
 
@@ -3278,7 +3280,7 @@ Códigos HTTP:
 | Alcance | Global (catálogo compartido por todas las empresas) |
 | Cabeceras | `Authorization`, `Content-Type: application/json` |
 
-Notas: Cuerpo (`ProductMatchRequest`): `brand_ids`, `category_ids` (≤ 100 cada uno), `include_descendants`, `identifier` (1–120), `product_type` (≤ 20), `status` (`ACTIVE` por defecto, `INACTIVE`, `ALL`), `has_image`, `candidate_ids` (modo evaluador, ≤ 100: devuelve cuáles cumplen, en el orden recibido) o `after` + `limit` (modo conductor: recorre por nombre canónico normalizado e `id`). Respuesta `items[]` (`id`, `position`) y `has_more`
+Notas: Cuerpo (`ProductMatchRequest`): `brand_ids`, `category_ids` (≤ 100 cada uno), `include_descendants`, `identifier` (1–120), `product_type` (≤ 20), `status` (`ACTIVE` por defecto, `INACTIVE`, `ALL`), `has_image` (spec 024: al menos una presentación con imagen principal `ACTIVE`; solo una condición de búsqueda), `candidate_ids` (modo evaluador, ≤ 100: devuelve cuáles cumplen, en el orden recibido) o `after` + `limit` (modo conductor: recorre por nombre canónico normalizado e `id`). Respuesta `items[]` (`id`, `position`) y `has_more`
 
 Cuerpo (`ProductMatchRequest`; rechaza campos adicionales):
 
@@ -4592,7 +4594,9 @@ Base `…/api/v1`. Objeto `PresentationResponse`: `id` (`global_product_presenta
 | Alcance | Global (catálogo compartido por todas las empresas) |
 | Cabeceras | `Authorization`, `Content-Type: application/json` |
 
-Notas: `{"ids": [...]}` → `items[]` (`PresentationLookupItem`: `id`, `found`, `global_product_id`, `code`, `name`, `status`, `eligible_for_adoption`, `base_quantity`, `first_used_at`; todos nulos salvo `id` y `found: false` cuando no existe; verificado en el código)
+Notas: `{"ids": [...]}` → `items[]` (`PresentationLookupItem`: `id`, `found`, `global_product_id`, `code`, `name`, `status`, `eligible_for_adoption`, `base_quantity`, `first_used_at`; todos nulos salvo `id` y `found: false` cuando no existe; verificado en el código).
+
+**Spec 024 (aún no desplegada en Render):** cada presentación encontrada agrega `has_image` (tiene imagen principal `ACTIVE`), `image_asset_id` e `image_url` (URL pública firmada o `null`). Con el parámetro de consulta `include_images=true` agrega además `images[]` (`{asset_id, image_url, is_primary}` de todas sus imágenes `ACTIVE`, la principal primero; `[]` si no tiene). Sin él, `images` se omite. Es la misma llamada por lotes: lo usa Product Inventory Query.
 
 Cuerpo (`BatchLookupRequest`; rechaza campos adicionales):
 
@@ -6639,9 +6643,11 @@ Códigos HTTP:
 
 ### Activos (imágenes y documentos) (operaciones 96–102)
 
-Base `…/api/v1/products/{product_id}/assets`. Objeto `AssetResponse`: `id`, `global_product_id`, `asset_type` (`IMAGE`, `TECHNICAL_SHEET`, `MANUAL`, `CERTIFICATE`, `OTHER`), `file_name`, `storage_uri`, `mime_type`, `is_primary`, `status`, `version`, trazabilidad. Product Catalog guarda **solo la referencia** al archivo, nunca el binario: la carga al almacenamiento de objetos de SIO se hace por fuera de esta API (el mecanismo disponible en Render para el frontend).
+Base `…/api/v1/products/{product_id}/assets`. Objeto `AssetResponse`: `id`, `global_product_id`, `global_product_presentation_id` (spec 024; `null` salvo en imágenes), `asset_type` (`IMAGE`, `TECHNICAL_SHEET`, `MANUAL`, `CERTIFICATE`, `OTHER`), `file_name`, `storage_uri`, `mime_type`, `is_primary`, `status`, `version`, trazabilidad. Por estas rutas Product Catalog guarda **solo la referencia** al archivo.
 
-**Imagen principal pública.** El código incluye una ruta pública sin token, `GET /api/v1/public/product-images?ref=<referencia firmada>`, que entrega la imagen principal (`IMAGE`, `ACTIVE`, JPEG/PNG/WebP almacenada en SIO) con caché inmutable y `ETag`; cualquier referencia inválida responde el mismo `404` vacío. Es la URL que Product Inventory Query devuelve en `image_url`. Solo existe cuando el servicio tiene configurados el secreto de firma y la URL pública base; **no aparece en el contrato desplegado en Render el 2026-10-19**, por lo que en ese entorno `image_url` llega `null` y hay que usar la operación 98 con token.
+**Spec 024 — imágenes por presentación.** Las imágenes ya no se gestionan por producto: se cargan y administran por presentación (operaciones I-1 a I-8, más abajo, aún no desplegadas en Render). Por estas rutas, `asset_type=IMAGE` responde `422 IMAGE_REQUIRES_PRESENTATION` al crear y, según la etapa de la migración, `409 IMAGE_MIGRATION_IN_PROGRESS` o `422` al modificar. Los demás tipos de activo no cambian.
+
+**Imagen principal pública.** El código incluye una ruta pública sin token, `GET /api/v1/public/product-images?ref=<referencia firmada>`, que entrega la imagen principal (`IMAGE`, `ACTIVE`, JPEG/PNG/WebP almacenada en SIO) con caché inmutable y `ETag`; cualquier referencia inválida responde el mismo `404` vacío. Es la URL que Product Inventory Query devuelve en `image_url` (spec 024: por presentación). Solo existe cuando el servicio tiene configurados el secreto de firma y la URL pública base; **no aparece en el contrato desplegado en Render el 2026-10-19**, por lo que en ese entorno `image_url` llega `null` y hay que usar la operación 98 con token.
 
 ### 96. `GET /products/{product_id}/assets`
 
@@ -7104,6 +7110,270 @@ Códigos HTTP:
 | `422 PRODUCT_CATALOG.VALIDATION_ERROR` | Datos inválidos; `errors[]` indica el campo. Otros códigos `422`/`409` propios en las notas |
 | `503 PRODUCT_CATALOG.DEPENDENCY_UNAVAILABLE` | `dependency`: `database`, `party-identity` o almacenamiento |
 
+### Imágenes por presentación (spec 024; operaciones I-1 a I-8)
+
+> **Estado:** implementadas en el código (`api/presentation_images.py`) y validadas por las pruebas del servicio; **aún no desplegadas en Render**. Las URL de las fichas son las que tendrán en Render; hasta el despliegue, en local se usa `http://localhost:8103/api/v1`. Las respuestas son ilustrativas y se contrastaron con el OpenAPI generado por el código el 2026-10-23.
+
+Desde la spec 024, **toda imagen pertenece a una presentación global** y se gestiona solo por estas rutas. Base `…/api/v1/products/{product_id}/presentations/{presentation_id}/assets`.
+
+- **Carga directa** (I-2): el frontend envía el archivo en `multipart/form-data` (campo único `file`). Product Catalog valida el contenido real (JPEG, PNG o WebP; hasta 5 MiB y 40 megapíxeles), calcula su SHA-256, lo guarda en el almacenamiento de SIO con clave `assets/<sha256>.<ext>` y lo marca como **imagen principal** de la presentación.
+- **Registro por referencia** (I-3): solo para imágenes **ya almacenadas en SIO** (cargue masivo). El objeto debe existir y su metadato `sha256` coincidir con la clave.
+- Objeto `PresentationImageResponse`: `id`, `global_product_id`, `global_product_presentation_id`, `asset_type` (`IMAGE`), `file_name`, `mime_type`, `is_primary`, `status`, `version`, trazabilidad, `content_url` (contenido con token, I-4) e `image_url` (URL pública firmada para `<img src>`, o `null`). **Nunca** incluye `storage_uri`, el bucket ni la clave del objeto.
+- Una presentación tiene a lo sumo una imagen principal `ACTIVE`. Al eliminar la principal, la sucede la imagen `ACTIVE` más reciente.
+- Solo `file_name` es modificable. Para cambiar una imagen de presentación: eliminarla (I-7) y cargarla en la correcta.
+- Permisos: `products:read` para leer, `products:update` para cargar, registrar, cambiar el nombre y cambiar la principal, y `products:deactivate` para eliminar y reactivar.
+
+**Rutas por producto (operaciones 96–102) durante la migración.** Las controla `PRODUCT_IMAGE_MIGRATION_STAGE`:
+
+| Ruta por producto | `transition` (entrega 1) | `completed` (entrega 2) |
+|---|---|---|
+| `POST` con `asset_type=IMAGE` (op. 97) | `422 IMAGE_REQUIRES_PRESENTATION` | `422 IMAGE_REQUIRES_PRESENTATION` |
+| Listado (op. 96) | Todos los activos, con `global_product_presentation_id` | Sin imágenes; `asset_type=IMAGE` → `422` |
+| Contenido de una imagen (op. 98) | Igual que antes | `422 IMAGE_REQUIRES_PRESENTATION` |
+| `PUT`, `set-primary`, `deactivate`, `reactivate` de una imagen (op. 99–102) | `409 IMAGE_MIGRATION_IN_PROGRESS` | `422 IMAGE_REQUIRES_PRESENTATION` |
+
+Los demás tipos de activo (`TECHNICAL_SHEET`, `MANUAL`, `CERTIFICATE`, `OTHER`) siguen por las rutas por producto sin cambios.
+
+| # | Método | Ruta (después de `/products/{product_id}/presentations/{presentation_id}`) | Permiso |
+|---|---|---|---|
+| I-1 | `GET` | `/assets` | `products:read` |
+| I-2 | `POST` | `/assets/upload` (multipart) | `products:update` |
+| I-3 | `POST` | `/assets` (por referencia) | `products:update` |
+| I-4 | `GET` | `/assets/{asset_id}/content` | `products:read` |
+| I-5 | `PUT` | `/assets/{asset_id}` | `products:update` |
+| I-6 | `POST` | `/assets/{asset_id}/set-primary` | `products:update` |
+| I-7 | `POST` | `/assets/{asset_id}/deactivate` | `products:deactivate` |
+| I-8 | `POST` | `/assets/{asset_id}/reactivate` | `products:deactivate` |
+
+Parámetros de ruta comunes:
+
+| Nombre | Dónde | Tipo | Obligatorio | Cómo obtenerlo |
+|---|---|---|---|---|
+| `product_id` | ruta | UUID | Sí | [global_product_id](../parametros/global-product-id.md) |
+| `presentation_id` | ruta | UUID | Sí | Campo `id` de una presentación del producto (operación 67) o `global_product_presentation_id` de Commercial Relationship y Product Inventory Query |
+| `asset_id` | ruta | UUID | I-4 a I-8 | Campo `id` de una imagen (I-1) |
+
+Errores comunes a todas: `401`, `403 PRODUCT_CATALOG.FORBIDDEN`, `404 PRODUCT_CATALOG.NOT_FOUND` (el producto, la presentación, o la imagen en esa presentación, no existen), `422 PRODUCT_CATALOG.PRESENTATION_OF_OTHER_PRODUCT` (la presentación es de otro producto), `422 PRODUCT_CATALOG.VALIDATION_ERROR` y `503 PRODUCT_CATALOG.DEPENDENCY_UNAVAILABLE` (`dependency`: `database` o `asset-storage`).
+
+### I-1. `GET /products/{product_id}/presentations/{presentation_id}/assets`
+
+| | |
+|---|---|
+| Clasificación | `READ` |
+| Descripción | Listar las imágenes de la presentación |
+| URL | `https://sio-product-catalog-dev.onrender.com/api/v1/products/{product_id}/presentations/{presentation_id}/assets` |
+| Permiso | `perm:product-catalog:products:read` |
+| Cabeceras | `Authorization` |
+
+Notas: **Array**. Por defecto solo las `ACTIVE`; `status=INACTIVE` devuelve solo las inactivas. Orden: principal primero, después `created_at` descendente e `id` descendente.
+
+Ejemplo de solicitud:
+
+```bash
+curl -sS 'https://sio-product-catalog-dev.onrender.com/api/v1/products/f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72/presentations/e6d7d0c7-a0be-4f4b-8bca-631867ff85c8/assets' \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+Ejemplo de respuesta `200` (valores ilustrativos):
+
+```json
+[
+  {
+    "id": "4c8291aa-edb7-46e7-8e38-83d456610944",
+    "version": 1,
+    "created_at": "2026-10-23T15:04:05Z",
+    "updated_at": "2026-10-23T15:04:05Z",
+    "created_by": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
+    "updated_by": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
+    "status": "ACTIVE",
+    "global_product_id": "f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72",
+    "global_product_presentation_id": "e6d7d0c7-a0be-4f4b-8bca-631867ff85c8",
+    "asset_type": "IMAGE",
+    "file_name": "caja-x-100-frente.jpg",
+    "mime_type": "image/jpeg",
+    "is_primary": true,
+    "content_url": "/api/v1/products/f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72/presentations/e6d7d0c7-a0be-4f4b-8bca-631867ff85c8/assets/4c8291aa-edb7-46e7-8e38-83d456610944/content",
+    "image_url": "https://sio-product-catalog-dev.onrender.com/api/v1/public/product-images?ref=<referencia firmada>"
+  }
+]
+```
+
+### I-2. `POST /products/{product_id}/presentations/{presentation_id}/assets/upload`
+
+| | |
+|---|---|
+| Clasificación | `WRITE` |
+| Descripción | Cargar una imagen a la presentación |
+| URL | `https://sio-product-catalog-dev.onrender.com/api/v1/products/{product_id}/presentations/{presentation_id}/assets/upload` |
+| Permiso | `perm:product-catalog:products:update` |
+| Cabeceras | `Authorization`, `Content-Type: multipart/form-data` (la pone `curl -F` o el navegador con `FormData`) |
+
+Notas: un único campo obligatorio, `file`. No acepta `is_primary`, URL, clave ni identificadores de almacenamiento: cualquier otro campo → `422`. El tipo se toma del **contenido real**, no de la extensión ni del `Content-Type` declarado. El nombre del archivo se sanea y queda como `file_name`. La imagen cargada queda como **principal** de la presentación.
+
+Validación, en orden: archivo presente y no vacío → tamaño (`413 FILE_TOO_LARGE`, con `max_bytes`) → firma de los primeros bytes (`415 UNSUPPORTED_MEDIA_TYPE`) → cabecera de la imagen y decodificación completa (`422 INVALID_IMAGE`) → píxeles = ancho × alto × cuadros (`422 IMAGE_DIMENSIONS_EXCEEDED`, con `max_pixels`).
+
+Resultados:
+
+| HTTP | Cuándo |
+|---|---|
+| `201` | Imagen nueva. Cabecera `Location` con la URL de la imagen |
+| `200` | Ya existía la misma imagen (mismo SHA-256) `INACTIVE` en la presentación: se reactiva con el **mismo id** y queda como principal |
+| `409 PRODUCT_CATALOG.DUPLICATE_ASSET_CONTENT` | La misma imagen ya está `ACTIVE` en la presentación; `existing_asset_id` trae su id |
+| `413 PRODUCT_CATALOG.FILE_TOO_LARGE` | Más de 5 MiB (5.242.880 bytes) |
+| `415 PRODUCT_CATALOG.UNSUPPORTED_MEDIA_TYPE` | No es JPEG, PNG ni WebP |
+| `422 PRODUCT_CATALOG.INVALID_IMAGE` / `IMAGE_DIMENSIONS_EXCEEDED` | Imagen corrupta o con más de 40 megapíxeles |
+| `422 PRODUCT_CATALOG.PRODUCT_INACTIVE` / `PRESENTATION_INACTIVE` | El producto o la presentación están `INACTIVE` |
+| `503` | El almacenamiento de objetos no responde (no queda registro) |
+
+Ejemplo de solicitud (archivo local `caja-x-100-frente.jpg`):
+
+```bash
+curl -sS -X POST 'https://sio-product-catalog-dev.onrender.com/api/v1/products/f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72/presentations/e6d7d0c7-a0be-4f4b-8bca-631867ff85c8/assets/upload' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -F 'file=@caja-x-100-frente.jpg'
+```
+
+Ejemplo de respuesta `201` (valores ilustrativos): el mismo objeto de I-1, con `is_primary: true`.
+
+Ejemplo ejecutado de punta a punta, con la respuesta real del servicio: [`services/product-catalog-service/docs/ejemplo/5-cepillo-colgate-inactivo/10-agregar-imagen.md`](../../../services/product-catalog-service/docs/ejemplo/5-cepillo-colgate-inactivo/10-agregar-imagen.md) (lo valida `tests/examples` en cada ejecución de las pruebas).
+
+**Desde el frontend:** se envía un `FormData` con el archivo en el campo `file` y la cabecera `Authorization`. No se fija `Content-Type` a mano: el navegador agrega el `boundary` del multipart.
+
+### I-3. `POST /products/{product_id}/presentations/{presentation_id}/assets`
+
+| | |
+|---|---|
+| Clasificación | `WRITE` |
+| Descripción | Registrar una imagen ya almacenada en SIO (registro por referencia) |
+| URL | `https://sio-product-catalog-dev.onrender.com/api/v1/products/{product_id}/presentations/{presentation_id}/assets` |
+| Permiso | `perm:product-catalog:products:update` |
+| Cabeceras | `Authorization`, `Content-Type: application/json` |
+
+Notas: para el cargue masivo (`tools/data-migration`). El objeto debe existir en el almacenamiento de SIO con clave `assets/<sha256>.<jpg|jpeg|png|webp>` y metadato `sha256` igual al de la clave; si no, `422 VALIDATION_ERROR` sobre `storage_uri`. Cualquier imagen con el mismo contenido en la presentación, `ACTIVE` o `INACTIVE`, → `409 DUPLICATE_ASSET_CONTENT` con `existing_asset_id` (el registro por referencia nunca reactiva). `201` con `Location`.
+
+Cuerpo (`PresentationImageReference`; rechaza campos adicionales):
+
+| Campo | Tipo | Obligatorio | Validación |
+|---|---|---|---|
+| `file_name` | string | Sí | 1–255 car. |
+| `storage_uri` | string | Sí | `s3://<bucket>/assets/<sha256>.<ext>`, ≤ 4000 car. |
+| `mime_type` | enum | Sí | `image/jpeg`, `image/png`, `image/webp`; coherente con la extensión |
+| `is_primary` | boolean | No | por defecto `false`; `true` la marca como principal |
+
+Ejemplo de solicitud:
+
+```bash
+curl -sS -X POST 'https://sio-product-catalog-dev.onrender.com/api/v1/products/f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72/presentations/e6d7d0c7-a0be-4f4b-8bca-631867ff85c8/assets' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "file_name": "caja-x-100-frente.jpg",
+    "storage_uri": "s3://sio-product-assets/assets/353f64fc3f525dcd00b67e7d74c53a6572f893aa58a8d5d1cad46ea36e80f103.jpg",
+    "mime_type": "image/jpeg",
+    "is_primary": true
+  }'
+```
+
+Respuesta `201`: el objeto de I-1.
+
+### I-4. `GET /products/{product_id}/presentations/{presentation_id}/assets/{asset_id}/content`
+
+| | |
+|---|---|
+| Clasificación | `READ` |
+| Descripción | Descargar el contenido de una imagen de la presentación (streaming) |
+| URL | `https://sio-product-catalog-dev.onrender.com/api/v1/products/{product_id}/presentations/{presentation_id}/assets/{asset_id}/content` |
+| Permiso | `perm:product-catalog:products:read` |
+| Cabeceras | `Authorization`, `If-None-Match` (opcional) |
+
+Notas: `200` con `Content-Type` de la imagen, `ETag` = SHA-256 y `Cache-Control: private, max-age=31536000, immutable`; `304` sin cuerpo si `If-None-Match` coincide. `404` si la imagen es de otra presentación, está `INACTIVE` o el objeto no existe. Para `<img src>` sin token, usar `image_url`.
+
+```bash
+curl -sS 'https://sio-product-catalog-dev.onrender.com/api/v1/products/f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72/presentations/e6d7d0c7-a0be-4f4b-8bca-631867ff85c8/assets/4c8291aa-edb7-46e7-8e38-83d456610944/content' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -o caja-x-100-frente.jpg
+```
+
+### I-5. `PUT /products/{product_id}/presentations/{presentation_id}/assets/{asset_id}`
+
+| | |
+|---|---|
+| Clasificación | `WRITE` |
+| Descripción | Cambiar el nombre de archivo (único campo modificable) |
+| Permiso | `perm:product-catalog:products:update` |
+| Cabeceras | `Authorization`, `Content-Type: application/json` |
+
+Cuerpo (`PresentationImageUpdate`): `version` (entero ≥ 1, obligatorio) y `file_name` (1–255, obligatorio). Cualquier otro campo (`storage_uri`, `mime_type`, `is_primary`, `status`, la presentación…) → `422 IMMUTABLE_FIELD`. `409 VERSION_CONFLICT` con versión desactualizada; `422 PRODUCT_INACTIVE` / `PRESENTATION_INACTIVE`.
+
+```bash
+curl -sS -X PUT 'https://sio-product-catalog-dev.onrender.com/api/v1/products/f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72/presentations/e6d7d0c7-a0be-4f4b-8bca-631867ff85c8/assets/4c8291aa-edb7-46e7-8e38-83d456610944' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "version": 1,
+    "file_name": "caja-x-100-frente-2026.jpg"
+  }'
+```
+
+Respuesta `200`: el objeto de I-1 con `version` incrementada.
+
+### I-6. `POST …/assets/{asset_id}/set-primary`
+
+| | |
+|---|---|
+| Clasificación | `WRITE` |
+| Descripción | Marcar la imagen como principal de la presentación |
+| Permiso | `perm:product-catalog:products:update` |
+
+Cuerpo `{"version": <versión vigente>}`. La principal anterior deja de serlo en la misma transacción. `409 VERSION_CONFLICT`; `422 REFERENCE_INACTIVE` si la imagen está `INACTIVE`; `422 PRODUCT_INACTIVE` / `PRESENTATION_INACTIVE`.
+
+```bash
+curl -sS -X POST 'https://sio-product-catalog-dev.onrender.com/api/v1/products/f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72/presentations/e6d7d0c7-a0be-4f4b-8bca-631867ff85c8/assets/4c8291aa-edb7-46e7-8e38-83d456610944/set-primary' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "version": 2
+  }'
+```
+
+### I-7. `POST …/assets/{asset_id}/deactivate`
+
+| | |
+|---|---|
+| Clasificación | `WRITE` |
+| Descripción | Eliminar lógicamente una imagen |
+| Permiso | `perm:product-catalog:products:deactivate` |
+
+Cuerpo `{"version": <versión vigente>}`. La imagen queda `INACTIVE` y deja de ser principal; **el objeto no se borra** del almacenamiento. Si era la principal, la sucede la imagen `ACTIVE` más reciente de la presentación (si hay). `409 VERSION_CONFLICT`.
+
+```bash
+curl -sS -X POST 'https://sio-product-catalog-dev.onrender.com/api/v1/products/f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72/presentations/e6d7d0c7-a0be-4f4b-8bca-631867ff85c8/assets/4c8291aa-edb7-46e7-8e38-83d456610944/deactivate' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "version": 3
+  }'
+```
+
+### I-8. `POST …/assets/{asset_id}/reactivate`
+
+| | |
+|---|---|
+| Clasificación | `WRITE` |
+| Descripción | Reactivar una imagen (no la marca como principal) |
+| Permiso | `perm:product-catalog:products:deactivate` |
+
+Cuerpo `{"version": <versión vigente>}`. Vuelve a `ACTIVE` sin cambiar la principal; para que lo sea, usar I-6. `409 VERSION_CONFLICT`; `422 PRODUCT_INACTIVE` / `PRESENTATION_INACTIVE`.
+
+```bash
+curl -sS -X POST 'https://sio-product-catalog-dev.onrender.com/api/v1/products/f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72/presentations/e6d7d0c7-a0be-4f4b-8bca-631867ff85c8/assets/4c8291aa-edb7-46e7-8e38-83d456610944/reactivate' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "version": 4
+  }'
+```
+
 ### Primer uso (operaciones 103–104)
 
 Base `…/api/v1/products/{product_id}/first-use`. Respuesta (`FirstUseResponse`): `global_product_id`, `product_first_used_at`, `product_first_use_source`, `global_product_presentation_id`, `presentation_first_used_at`, `presentation_first_use_source`.
@@ -7239,6 +7509,9 @@ Códigos HTTP:
 | `409 …BASE_PRESENTATION_EXISTS` / `422 BASE_QUANTITY_MUST_BE_ONE` | Reglas de la presentación base | Una sola base con cantidad 1 |
 | `409 …HAS_ACTIVE_CHILDREN` / `422 HIERARCHY_CYCLE` / `PARENT_INACTIVE` | Jerarquías | Revisar padre e hijos |
 | `409 …VERSION_CONFLICT` | Versión desactualizada | Recargar |
+| `422 …IMAGE_REQUIRES_PRESENTATION` / `409 …IMAGE_MIGRATION_IN_PROGRESS` | Imagen gestionada por la ruta del producto (spec 024) | Usar las rutas por presentación (I-1 a I-8) |
+| `409 …DUPLICATE_ASSET_CONTENT` | La misma imagen ya está en la presentación (`existing_asset_id`) | Usar la imagen existente |
+| `413 …FILE_TOO_LARGE` / `415 …UNSUPPORTED_MEDIA_TYPE` / `422 …INVALID_IMAGE` / `IMAGE_DIMENSIONS_EXCEEDED` | Archivo de más de 5 MiB, que no es JPEG/PNG/WebP, corrupto o de más de 40 megapíxeles | Reducir o convertir la imagen |
 | `400 …MALFORMED_REQUEST` | Parámetro de ruta o consulta no interpretable (por ejemplo UUID mal formado) | Corregir la URL |
 
 ## Dependencias
@@ -7259,5 +7532,6 @@ Códigos HTTP:
 | Operaciones documentadas | 104 |
 | Permisos contrastados con el código | Sí (`api/simple_catalog_router.py`, `units_of_measure.py`, `categories.py`, `attribute_definitions.py`, `group_types.py`, `products.py`, `product_summaries.py`, `product_categories.py`, `product_attribute_values.py`, `presentations.py`, `identifiers.py`, `product_group_assignments.py`, `assets.py`, `first_use.py`) |
 | Esquemas contrastados | Sí (OpenAPI desplegado; `application/exceptions.py`; docstrings de los servicios) |
-| Pendiente | Mecanismo de carga de archivos al almacenamiento; disponibilidad de la ruta pública de imágenes en Render; códigos exactos de `completeness.issues[]` |
+| Pendiente | Despliegue en Render de las rutas de imágenes por presentación (I-1 a I-8, spec 024) y de los campos de imagen de la operación 66; disponibilidad de la ruta pública de imágenes en Render; códigos exactos de `completeness.issues[]` |
+| Spec 024 | Operaciones I-1 a I-8 contrastadas con el OpenAPI generado por el código (2026-10-23) y con `api/presentation_images.py`; ejemplo de carga ejecutado por `tests/examples` |
 | Verificado | Estructura de `PresentationLookupItem` (operación 66) |

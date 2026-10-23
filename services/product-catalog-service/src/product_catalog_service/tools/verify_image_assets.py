@@ -10,9 +10,13 @@ Para cada activo `IMAGE` `ACTIVE` comprueba, sin modificar nada:
 El informe solo contiene ids de activos y de productos, el resultado y los totales: nunca bucket, claves,
 `storage_uri` ni credenciales. La base se abre en modo de solo lectura (`default_transaction_read_only`).
 
+Con `--orphans` (spec 024, FR-024-30) agrega la reconciliación del almacenamiento: los objetos `assets/*` que
+ningún activo referencia (cualquier tipo y estado), identificados solo por un prefijo de 12 caracteres de su
+SHA-256. Nunca borra: la limpieza la decide una persona.
+
 **No se ejecuta sobre el entorno persistente sin autorización.** Uso:
 
-    python -m product_catalog_service.tools.verify_image_assets --confirm-read-only > informe.json
+    python -m product_catalog_service.tools.verify_image_assets --confirm-read-only [--orphans] > informe.json
 """
 
 from __future__ import annotations
@@ -28,7 +32,7 @@ from typing import Any
 from product_catalog_service.application.exceptions import AssetStorageUnavailableError
 from product_catalog_service.application.ports import AssetStorage
 from product_catalog_service.domain.image_content import SNIFF_BYTES, matches_declared_type
-from product_catalog_service.domain.image_ref import eligible_image_sha
+from product_catalog_service.domain.image_ref import eligible_image_sha, sha_from_key
 
 OK = "OK"
 NOT_ELIGIBLE = "NOT_ELIGIBLE"
@@ -92,6 +96,41 @@ def verify(assets: Iterable[Any], storage: AssetStorage, bucket: str) -> dict:
     }
 
 
+ORPHAN_PREFIX = "assets/"
+ORPHAN_SHA_CHARS = 12
+
+
+def orphans(referenced_uris: Iterable[str | None], storage: AssetStorage, bucket: str) -> dict:
+    """Objetos `assets/*` sin referencia en la base (FR-024-30, caso 21). Solo lista; nunca borra."""
+    prefix = f"s3://{bucket}/"
+    referenced = {uri.removeprefix(prefix) for uri in referenced_uris if uri and uri.startswith(prefix)}
+    try:
+        keys = list(storage.list_keys(ORPHAN_PREFIX))
+    except AssetStorageUnavailableError:
+        return {"result": STORAGE_UNAVAILABLE, "objects": None, "orphans": None, "orphan_sha_prefixes": []}
+    unreferenced = sorted(key for key in keys if key not in referenced)
+    return {
+        "result": OK,
+        "objects": len(keys),
+        "orphans": len(unreferenced),
+        "orphan_sha_prefixes": [(sha_from_key(key) or "?")[:ORPHAN_SHA_CHARS] for key in unreferenced],
+    }
+
+
+def _load_referenced_uris(database_url: str) -> list[str]:  # pragma: no cover - solo en ejecución real autorizada
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import Session
+
+    from product_catalog_service.infrastructure.models import ProductAssetModel
+
+    engine = create_engine(database_url, connect_args={"options": "-c default_transaction_read_only=on"})
+    try:
+        with Session(engine) as session:
+            return list(session.scalars(select(ProductAssetModel.storage_uri)))
+    finally:
+        engine.dispose()
+
+
 def _load_assets(database_url: str) -> list[Any]:  # pragma: no cover - solo en ejecución real autorizada
     from sqlalchemy import create_engine, select
     from sqlalchemy.orm import Session
@@ -116,6 +155,7 @@ def _load_assets(database_url: str) -> list[Any]:  # pragma: no cover - solo en 
 def main(argv: list[str] | None = None) -> int:  # pragma: no cover - solo en ejecución real autorizada
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--confirm-read-only", action="store_true", help="Confirma que la ejecución está autorizada.")
+    parser.add_argument("--orphans", action="store_true", help="Agrega los objetos assets/* sin referencia (FR-024-30).")
     args = parser.parse_args(argv)
     if not args.confirm_read_only:
         print("Se requiere --confirm-read-only y autorización previa (FR-022-99).", file=sys.stderr)
@@ -130,6 +170,8 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - solo en ej
         print("El almacenamiento de objetos no está configurado.", file=sys.stderr)
         return 2
     report = verify(_load_assets(settings.database_url), storage, settings.asset_storage_bucket)
+    if args.orphans:
+        report["orphans"] = orphans(_load_referenced_uris(settings.database_url), storage, settings.asset_storage_bucket)
     json.dump(report, sys.stdout, ensure_ascii=False, indent=2)
     print()
     return 0

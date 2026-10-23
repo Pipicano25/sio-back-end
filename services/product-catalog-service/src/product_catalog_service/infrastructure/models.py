@@ -651,14 +651,38 @@ class ProductAssetModel(AuditVersionMixin, StatusMixin, Base):
             name="asset_type",
         ),
         CheckConstraint("NOT is_primary OR status = 'ACTIVE'", name="primary_active"),
+        # Spec 024 (data-model.md): las imágenes pertenecen a una presentación del mismo producto; los demás
+        # tipos siguen en el producto, con su principal por producto y tipo.
+        ForeignKeyConstraint(
+            ["global_product_presentation_id", "global_product_id"],
+            ["global_product_presentations.id", "global_product_presentations.global_product_id"],
+            name="fk_product_assets_presentation_product",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "asset_type = 'IMAGE' OR global_product_presentation_id IS NULL",
+            name="presentation_only_image",
+        ),
+        CheckConstraint(
+            "asset_type <> 'IMAGE' OR global_product_presentation_id IS NOT NULL",
+            name="image_requires_presentation",
+        ),
         Index(
             "uq_product_assets_primary",
             "global_product_id",
             "asset_type",
             unique=True,
-            postgresql_where=text("is_primary AND status = 'ACTIVE'"),
+            postgresql_where=text("is_primary AND status = 'ACTIVE' AND global_product_presentation_id IS NULL"),
+        ),
+        Index(
+            "uq_product_assets_presentation_primary",
+            "global_product_presentation_id",
+            "asset_type",
+            unique=True,
+            postgresql_where=text("is_primary AND status = 'ACTIVE' AND global_product_presentation_id IS NOT NULL"),
         ),
         Index("ix_product_assets_global_product_id", "global_product_id"),
+        Index("ix_product_assets_global_product_presentation_id", "global_product_presentation_id"),
     )
 
     global_product_id: Mapped[UUID] = mapped_column(
@@ -666,6 +690,7 @@ class ProductAssetModel(AuditVersionMixin, StatusMixin, Base):
         ForeignKey("global_products.id", ondelete="RESTRICT"),
         nullable=False,
     )
+    global_product_presentation_id: Mapped[UUID | None] = mapped_column(Uuid)
     asset_type: Mapped[str] = mapped_column(String(30), nullable=False)
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
     storage_uri: Mapped[str] = mapped_column(Text, nullable=False)

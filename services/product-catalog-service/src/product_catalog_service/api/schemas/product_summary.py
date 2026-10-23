@@ -43,9 +43,9 @@ class ProductSummaryItem(BaseModel):
     base_unit: SummaryReference | None = None
     categories: list[SummaryCategory] | None = None
     identifiers: list[SummaryIdentifier] | None = None
-    has_image: bool | None = None
-    image_asset_id: UUID | None = None
-    image_url: str | None = None
+    has_image: bool | None = Field(default=None, description="Solo en la transición de la spec 024; se retira.")
+    image_asset_id: UUID | None = Field(default=None, description="Solo en la transición de la spec 024; se retira.")
+    image_url: str | None = Field(default=None, description="Solo en la transición de la spec 024; se retira.")
 
 
 class ProductSummaryResponse(BaseModel):

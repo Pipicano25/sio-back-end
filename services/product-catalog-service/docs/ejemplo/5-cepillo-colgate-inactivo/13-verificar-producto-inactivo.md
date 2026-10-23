@@ -98,11 +98,6 @@ GET /api/v1/products/<PRODUCTO>?expand=detail
         "status": "ACTIVE"
       }
     ],
-    "assets": [
-      {
-        "file_name": "colgate-cepillo-infantil-2-5-nina-pack-x2.jpg"
-      }
-    ],
     "identifiers": []
   }
 }

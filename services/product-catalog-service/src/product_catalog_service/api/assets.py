@@ -59,12 +59,41 @@ def _unavailable(exc: Exception) -> DependencyUnavailableError:
     )
 
 
+def stream_asset_content(asset, key: str, storage: AssetStorage, if_none_match: str | None) -> Response:
+    """Contenido del objeto en streaming, con `ETag`, `304` y caché inmutable (también lo usa la spec 024)."""
+    try:
+        if if_none_match:
+            info = storage.head(key)
+            if info is None:
+                raise NotFoundError(f"El contenido del activo {asset.id} no está en el almacenamiento.")
+            etag, immutable = _etag(info)
+            if _matches(if_none_match, etag):
+                return Response(status_code=status.HTTP_304_NOT_MODIFIED,
+                                headers={"ETag": etag, "Cache-Control": IMMUTABLE_CACHE if immutable else REVALIDATE_CACHE})
+        found = storage.get(key)
+    except AssetStorageUnavailableError as exc:
+        raise _unavailable(exc) from exc
+    if found is None:
+        raise NotFoundError(f"El contenido del activo {asset.id} no está en el almacenamiento.")
+    info, chunks = found
+    etag, immutable = _etag(info)
+    headers = {
+        "Content-Length": str(info.size),
+        "Cache-Control": IMMUTABLE_CACHE if immutable else REVALIDATE_CACHE,
+        "X-Content-Type-Options": "nosniff",
+        "Content-Disposition": f'inline; filename="{re.sub(r"[^A-Za-z0-9._-]", "_", asset.file_name)}"',
+    }
+    if etag:
+        headers["ETag"] = etag
+    return StreamingResponse(chunks, media_type=asset.mime_type or info.content_type or "application/octet-stream", headers=headers)
+
+
 def build_router(auth: SIOAuth) -> APIRouter:
     """Construye el router de activos."""
     router = APIRouter(prefix="/products/{product_id}/assets", tags=["Productos: activos"])
 
-    def get_service(session: Session = Depends(get_db_session)) -> AssetService:
-        return AssetService(session)
+    def get_service(request: Request, session: Session = Depends(get_db_session)) -> AssetService:
+        return AssetService(session, images_migrated=request.app.state.settings.image_migration_completed)
 
     @router.get(
         "",
@@ -119,31 +148,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         if_none_match: str | None = Header(default=None),
     ):
         asset, key = service.content_key(product_id, asset_id, storage.bucket)
-        try:
-            if if_none_match:
-                info = storage.head(key)
-                if info is None:
-                    raise NotFoundError(f"El contenido del activo {asset_id} no está en el almacenamiento.")
-                etag, immutable = _etag(info)
-                if _matches(if_none_match, etag):
-                    return Response(status_code=status.HTTP_304_NOT_MODIFIED,
-                                    headers={"ETag": etag, "Cache-Control": IMMUTABLE_CACHE if immutable else REVALIDATE_CACHE})
-            found = storage.get(key)
-        except AssetStorageUnavailableError as exc:
-            raise _unavailable(exc) from exc
-        if found is None:
-            raise NotFoundError(f"El contenido del activo {asset_id} no está en el almacenamiento.")
-        info, chunks = found
-        etag, immutable = _etag(info)
-        headers = {
-            "Content-Length": str(info.size),
-            "Cache-Control": IMMUTABLE_CACHE if immutable else REVALIDATE_CACHE,
-            "X-Content-Type-Options": "nosniff",
-            "Content-Disposition": f'inline; filename="{re.sub(r"[^A-Za-z0-9._-]", "_", asset.file_name)}"',
-        }
-        if etag:
-            headers["ETag"] = etag
-        return StreamingResponse(chunks, media_type=asset.mime_type or info.content_type or "application/octet-stream", headers=headers)
+        return stream_asset_content(asset, key, storage, if_none_match)
 
     @router.put(
         "/{asset_id}",

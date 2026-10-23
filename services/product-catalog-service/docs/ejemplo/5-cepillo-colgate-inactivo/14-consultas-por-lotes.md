@@ -4,7 +4,7 @@ Ejercicio 5 — Cepillo Colgate infantil pack x 2 (producto inactivo) · [← Pa
 
 **Objetivo:** Ver el resumen del catálogo de un lote de productos y buscar productos por marca, para consumidores como el servicio de consultas consolidadas.
 
-**Necesita (de pasos anteriores):** `<PRODUCTO>`, `<MARCA_COLGATE>` — pasos [02](02-crear-marca.md), [06](06-crear-producto.md)
+**Necesita (de pasos anteriores):** `<PRODUCTO>`, `<PRES_PACK_X2>`, `<MARCA_COLGATE>` — pasos [02](02-crear-marca.md), [06](06-crear-producto.md), [08](08-crear-presentacion.md)
 
 ---
 
@@ -29,7 +29,7 @@ POST /api/v1/products/summaries/batch-lookup
 **Por qué se hace así**
 
 - Hasta 100 productos en una llamada: nombre canónico, marca, unidad base, categorías e identificadores `ACTIVE`, sin pedir cada producto por separado.
-- `has_image: false`: la imagen del paso 10 es ilustrativa y no está en el almacenamiento de SIO con clave derivada de su SHA-256, así que **no es apta** para URL directa; `image_url` es `null`.
+- Las imágenes **no** vienen en este resumen: pertenecen a las presentaciones y se consultan por presentación (`POST /presentations/batch-lookup`, siguiente llamada).
 
 **Respuesta esperada — `200 OK`** (abreviada)
 
@@ -58,15 +58,58 @@ POST /api/v1/products/summaries/batch-lookup
           "is_primary": true
         }
       ],
-      "identifiers": [],
-      "has_image": false,
-      "image_url": null
+      "identifiers": []
     }
   ]
 }
 ```
 
-## 2. Productos de la marca, incluidos los inactivos
+## 2. Imagen de la presentación por lotes
+
+```http
+POST /api/v1/presentations/batch-lookup?include_images=true
+```
+
+```json
+{
+  "ids": [
+    "<PRES_PACK_X2>"
+  ]
+}
+```
+
+**Permiso que exige la URL:** `perm:product-catalog:products:read`
+
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`), `reportes.test` (por `perm:product-catalog:products:read`), `consulta.test` (por `perm:product-catalog:products:read`)
+
+**Por qué se hace así**
+
+- Cada presentación trae su imagen principal: `has_image`, `image_asset_id` e `image_url`.
+- Con `include_images=true` agrega `images[]` con todas sus imágenes `ACTIVE`, la principal primero.
+
+**Respuesta esperada — `200 OK`** (abreviada)
+
+```json
+{
+  "items": [
+    {
+      "code": "PACK_X2",
+      "has_image": true,
+      "image_asset_id": "<ACTIVO_IMAGEN_2>",
+      "images": [
+        {
+          "is_primary": true
+        },
+        {
+          "is_primary": false
+        }
+      ]
+    }
+  ]
+}
+```
+
+## 3. Productos de la marca, incluidos los inactivos
 
 ```http
 POST /api/v1/products/match
@@ -111,7 +154,7 @@ POST /api/v1/products/match
 }
 ```
 
-## 3. ¿El cepillo tiene una imagen apta?
+## 4. ¿El cepillo tiene alguna presentación con imagen?
 
 ```http
 POST /api/v1/products/match
@@ -133,13 +176,15 @@ POST /api/v1/products/match
 
 **Por qué se hace así**
 
-- Modo evaluador: devuelve los candidatos que cumplen. Ninguno: la imagen no es apta.
+- Modo evaluador: devuelve los candidatos que cumplen. `has_image: true` significa "al menos una presentación con imagen principal `ACTIVE`": es solo una condición de búsqueda.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 
 ```json
 {
-  "ids": []
+  "ids": [
+    "<PRODUCTO>"
+  ]
 }
 ```
 

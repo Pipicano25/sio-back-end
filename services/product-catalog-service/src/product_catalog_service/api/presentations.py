@@ -5,7 +5,8 @@ T088 creó el archivo con `batch-lookup`; T119 agrega el resto de las rutas.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi.responses import JSONResponse
 from sio_auth import CurrentSubject, SIOAuth
 from sqlalchemy.orm import Session
 
@@ -50,9 +51,24 @@ def build_router(auth: SIOAuth) -> APIRouter:
         response_model=PresentationLookupResponse,
         dependencies=[permission(auth, RESOURCE, "read")],
         summary="Consultar hasta 100 presentaciones por identificador",
+        description=(
+            "Cada presentación encontrada trae su imagen principal: `has_image`, `image_asset_id` e `image_url` "
+            "(spec 024, PC-3). Con `include_images=true` agrega `images[]` con todas sus imágenes `ACTIVE`."
+        ),
     )
-    def batch_lookup(body: BatchLookupRequest, session: Session = Depends(get_db_session)):
-        return PresentationLookupResponse(items=CatalogQueryService(session).lookup_presentations(body.ids))
+    def batch_lookup(
+        body: BatchLookupRequest,
+        request: Request,
+        include_images: bool = Query(default=False, description="Agrega `images[]` a cada presentación."),
+        session: Session = Depends(get_db_session),
+    ):
+        items = CatalogQueryService(session).lookup_presentations(
+            body.ids, settings=request.app.state.settings, include_images=include_images
+        )
+        response = PresentationLookupResponse(items=items)
+        if not include_images:
+            return JSONResponse(response.model_dump(mode="json", exclude={"items": {"__all__": {"images"}}}))
+        return response
 
     @router.get(
         "/products/{product_id}/presentations",

@@ -14,6 +14,7 @@ from product_inventory_query_service.api.schemas.product_overview import (
     CategoryOut,
     EquivalenceOut,
     IdentifierOut,
+    PresentationImageOut,
     PresentationOut,
     PriceOut,
     ProductOverview,
@@ -51,15 +52,14 @@ def identity(view: ProductView) -> dict:
                                       global_product_presentation_id=i.global_product_presentation_id)
                         for i in (summary.identifiers if summary else ())],
         "base_unit": reference(summary.base_unit) if summary else None,
-        "has_image": bool(summary and summary.has_image),
-        "asset_id": summary.image_asset_id if summary and summary.has_image else None,
-        "image_url": summary.image_url if summary and summary.has_image else None,
     }
 
 
-def presentation_fields(view: PresentationView) -> dict:
+def presentation_fields(view: PresentationView, *, include_images: bool = False) -> dict:
+    """Spec 024: la imagen es de la presentación; `images` solo se asigna con `include_images=true`."""
     company, info = view.company, view.info
-    return {
+    has_image = bool(info and info.has_image)
+    fields = {
         "company_product_presentation_id": company.id,
         "global_product_presentation_id": company.global_product_presentation_id,
         "code": info.code if info else None,
@@ -69,7 +69,16 @@ def presentation_fields(view: PresentationView) -> dict:
         "status": company.status,
         "is_sellable": company.is_sellable,
         "base_quantity_factor": fmt(info.base_quantity) if info and info.base_quantity is not None else None,
+        "has_image": has_image,
+        "asset_id": info.image_asset_id if has_image else None,
+        "image_url": info.image_url if has_image else None,
     }
+    if include_images:
+        fields["images"] = [
+            PresentationImageOut(asset_id=image.asset_id, image_url=image.image_url, is_primary=image.is_primary)
+            for image in ((info.images or ()) if info else ())
+        ]
+    return fields
 
 
 def stock(view: ProductView, *, with_minimums: bool) -> StockOut | None:
@@ -95,10 +104,11 @@ def stock(view: ProductView, *, with_minimums: bool) -> StockOut | None:
     )
 
 
-def product_overview(view: ProductView, *, with_prices: bool, with_minimums: bool) -> ProductOverview:
+def product_overview(view: ProductView, *, with_prices: bool, with_minimums: bool,
+                     include_images: bool = False) -> ProductOverview:
     presentations = []
     for item in view.presentations:
-        fields = presentation_fields(item)
+        fields = presentation_fields(item, include_images=include_images)
         if with_prices:
             price = item.price
             fields["price"] = PriceOut(price_list_id=price.price_list_id, price_list_item_id=price.price_list_item_id,
@@ -111,8 +121,9 @@ def product_overview(view: ProductView, *, with_prices: bool, with_minimums: boo
     return ProductOverview(**fields)
 
 
-def inventory_overview(view: ProductView, *, with_minimums: bool) -> InventoryOverview:
-    fields = identity(view) | {"presentations": [PresentationOut(**presentation_fields(p)) for p in view.presentations]}
+def inventory_overview(view: ProductView, *, with_minimums: bool, include_images: bool = False) -> InventoryOverview:
+    fields = identity(view) | {"presentations": [
+        PresentationOut(**presentation_fields(p, include_images=include_images)) for p in view.presentations]}
     if view.stock is not None:
         fields["stock"] = stock(view, with_minimums=with_minimums)
     return InventoryOverview(**fields)
@@ -130,9 +141,6 @@ def low_stock_pair(view: PairView) -> LowStockPair:
         minimum_stock=fmt(view.pair.minimum_stock),
         shortfall=fmt(view.pair.shortfall),
         policy_status="ACTIVE",
-        has_image=bool(summary and summary.has_image),
-        asset_id=summary.image_asset_id if summary and summary.has_image else None,
-        image_url=summary.image_url if summary and summary.has_image else None,
     )
 
 

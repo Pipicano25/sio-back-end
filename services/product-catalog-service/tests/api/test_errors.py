@@ -124,6 +124,8 @@ def test_emitted_codes_are_in_catalog() -> None:
 
     catalog = Path(__file__).resolve().parents[4] / "specs/002-product-catalog-service/contracts/errors.md"
     documented = set(re.findall(r"^\| `([A-Z_]+)`", catalog.read_text(encoding="utf-8"), flags=re.M))
+    spec024 = catalog.parents[2] / "024-product-image-upload/contracts/errors.md"  # códigos de la spec 024
+    documented |= set(re.findall(r"^\| `([A-Z_]+)`", spec024.read_text(encoding="utf-8"), flags=re.M))
     documented |= {"CODE_USED_BY_PACKAGING_TYPE", "CODE_USED_BY_UNIT_OF_MEASURE"}
 
     emitted = {code for code, _ in errors._HTTP_CODES.values()} | {"HTTP_ERROR", "VALIDATION_ERROR", "IMMUTABLE_FIELD", "INTERNAL_ERROR"}

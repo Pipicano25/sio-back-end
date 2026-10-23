@@ -62,8 +62,8 @@ def test_product_fields_categories_and_brand(world, as_user) -> None:
     assert item["identifiers"][0]["value"] == "7701234"
     assert set(item) == {
         "company_product_id", "global_product_id", "display_name", "canonical_name", "internal_code", "reference_code",
-        "status", "global_status", "product_type", "brand", "categories", "identifiers", "base_unit", "has_image",
-        "image_url", "presentations", "stock",
+        "status", "global_status", "product_type", "brand", "categories", "identifiers", "base_unit",
+        "presentations", "stock",
     }
     assert item["base_unit"] == {"id": "00000000-0000-4000-8000-0000000000aa", "code": "UND", "name": "Unidad"}
 
@@ -87,11 +87,13 @@ def test_global_product_inactive_still_appears_with_its_global_status(world, as_
 
 
 def test_product_without_brand_image_or_price(world, as_user) -> None:
-    """Escenario 4: aparece con `brand = null`, `has_image = false`, `image_url = null` y precio no configurado."""
+    """Escenario 4: aparece con `brand = null`, presentación sin imagen (spec 024) y precio no configurado."""
     item = world.product("Sin datos")
     found = by_id(overviews(world, as_user("ventas.test")))[item.id]
-    assert found["brand"] is None and found["has_image"] is False and found["image_url"] is None
-    assert found["presentations"][0]["price"]["unit_price"] is None
+    presentation = found["presentations"][0]
+    assert found["brand"] is None
+    assert (presentation["has_image"], presentation["asset_id"], presentation["image_url"]) == (False, None, None)
+    assert presentation["price"]["unit_price"] is None
 
 
 def test_stock_block_only_with_stock_permission_and_without_minimums_for_ventas(world, as_user, make_token, as_token) -> None:

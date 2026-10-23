@@ -66,9 +66,7 @@ Estado `200`.
       "base_quantity": "120.0000",
       "minimum_stock": "150.0000",
       "shortfall": "30.0000",
-      "policy_status": "ACTIVE",
-      "has_image": false,
-      "image_url": null
+      "policy_status": "ACTIVE"
     },
     {
       "company_product_id": "d22e0000-0000-4000-8000-000000000007",
@@ -83,9 +81,7 @@ Estado `200`.
       "base_quantity": "3.0000",
       "minimum_stock": "5.0000",
       "shortfall": "2.0000",
-      "policy_status": "ACTIVE",
-      "has_image": false,
-      "image_url": null
+      "policy_status": "ACTIVE"
     }
   ],
   "page_size": 20,

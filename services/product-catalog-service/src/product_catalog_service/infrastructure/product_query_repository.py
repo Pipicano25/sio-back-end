@@ -202,6 +202,25 @@ class ProductQueryRepository:
             "assets": active(ProductAssetModel, ProductAssetModel.asset_type, ProductAssetModel.created_at),
         }
 
+    def presentation_images(self, presentation_ids: list[UUID]) -> dict[UUID, list[ProductAssetModel]]:
+        """Imágenes `ACTIVE` de un lote de presentaciones en una sola consulta (spec 024, FR-024-37)."""
+        if not presentation_ids:
+            return {}
+        asset = ProductAssetModel
+        grouped: dict[UUID, list[ProductAssetModel]] = {}
+        for row in self.session.scalars(
+            select(asset)
+            .where(
+                asset.global_product_presentation_id.in_(presentation_ids),
+                asset.asset_type == "IMAGE",
+                asset.status == ACTIVE,
+            )
+            .order_by(asset.global_product_presentation_id, asset.is_primary.desc(), asset.created_at.desc(),
+                      asset.id.desc())
+        ):
+            grouped.setdefault(row.global_product_presentation_id, []).append(row)
+        return grouped
+
     # -------------------------------------------------------------- por código
 
     def find_by_scanned_value(self, value: str) -> GlobalProductIdentifierModel | None:

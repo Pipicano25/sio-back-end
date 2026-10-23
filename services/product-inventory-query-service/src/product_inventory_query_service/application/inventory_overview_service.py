@@ -20,7 +20,7 @@ async def inventory_overviews(spec: QuerySpec, visibility: Visibility, ports: Po
         return await enrich_products(
             listing.gateway, [listing.product_of(item) for item in page.items], listing.branch_ids,
             with_prices=False, price_list_id=None, with_stock=visibility.stock,
-            with_minimums=visibility.stock and visibility.minimums,
+            with_minimums=visibility.stock and visibility.minimums, include_images=spec.include_images,
         )
 
     return await run_listing(spec, ports, runtime, enrich=enrich)

@@ -27,6 +27,7 @@ def call(
     sample_status=200,
     cond_text=None,
     perm=None,
+    upload=None,
 ):
     """Una llamada a la API.
 
@@ -36,6 +37,8 @@ def call(
     - `cond`: nombre de la variable de una consulta previa; la llamada solo se hace
       si esa consulta devolvió `items` vacío.
     - `external`: llamada a otro servicio (no se ejecuta en la validación).
+    - `upload`: carga multipart (spec 024): {"file_name": ..., "content": "png"|"jpeg"|"webp", "color": (r, g, b)};
+      la validación envía una imagen real generada (ficticia) en el campo `file`.
     """
     return dict(
         title=title,
@@ -54,6 +57,7 @@ def call(
         sample_status=sample_status,
         cond_text=cond_text,
         perm=perm,
+        upload=upload,
     )
 
 

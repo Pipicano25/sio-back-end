@@ -55,7 +55,7 @@ class World:
                 skus: tuple[str | None, ...] = (), unit: Reference = UNIT, product_type: str = "GOOD",
                 company: UUID | None = None) -> Item:
         global_id = uuid4()
-        self.fakes.pc.add_product(global_id, canonical or name.upper(), brand_id=brand, has_image=has_image,
+        self.fakes.pc.add_product(global_id, canonical or name.upper(), brand_id=brand, has_image=False,
                                   categories=categories, identifiers=identifiers, status=global_status,
                                   base_unit=unit, product_type=product_type)
         extra = {"internal_code": internal_code} if internal_code else {}
@@ -67,6 +67,8 @@ class World:
             sku = skus[index] if index < len(skus) else None
             rows.append(self.fakes.cr.add_presentation(product, info.id, sku=sku))
             globals_.append(info.id)
+            if has_image and index == 0:  # spec 024: la imagen es de la presentación (la primera)
+                self.fakes.pc.add_image(info.id)
         item = Item(product, rows, globals_)
         self.items.append(item)
         return item

@@ -61,6 +61,8 @@ Copie `.env.example` a `.env` (el `.env` no se versiona).
 | `PARTY_IDENTITY_TIMEOUT_SECONDS`                                 | Tiempo de espera de la validación del fabricante            | `3`                                                          |
 | `PRODUCT_CATALOG_PUBLIC_BASE_URL` | URL pública base con la que se construye `image_url` (spec 022) | `http://localhost:8103` |
 | `PRODUCT_IMAGE_REF_SECRET`, `PRODUCT_IMAGE_REF_SECRET_PREVIOUS` | Secreto HMAC de las referencias de imagen (al menos 32 bytes) y el saliente durante una rotación. Sin secreto o sin URL base no hay `image_url` | solo en `.env` |
+| `ASSET_UPLOAD_MAX_BYTES`, `ASSET_UPLOAD_MAX_PIXELS` | Límites de la carga directa de imágenes (spec 024) | `5242880`, `40000000` |
+| `PRODUCT_IMAGE_MIGRATION_STAGE` | `transition` (entrega 1: en las rutas por producto el alta de `IMAGE` da `422` y las modificaciones de imágenes `409 IMAGE_MIGRATION_IN_PROGRESS`; PC-1 conserva sus campos de imagen) o `completed` (entrega 2: esas rutas no operan imágenes, `422 IMAGE_REQUIRES_PRESENTATION`, y el listado las excluye) | `transition` |
 
 ## Arranque local
 
@@ -220,6 +222,24 @@ base detenida: `docker start sio-product-catalog-db`.
   Solo existe con `PRODUCT_IMAGE_REF_SECRET` y `PRODUCT_CATALOG_PUBLIC_BASE_URL`; caché pública inmutable con
   `ETag` y `304`; cualquier referencia inválida da el mismo `404`. Configuración, rotación del secreto y
   verificación previa de solo lectura: [docs/imagen-publica.md](docs/imagen-publica.md).
+- Imágenes por presentación (spec 024): una imagen pertenece a una presentación global. Rutas bajo
+  `/api/v1/products/{product_id}/presentations/{presentation_id}/assets`: listar (`?status=`), cargar el
+  archivo (`POST …/upload`, multipart `file`, JPEG, PNG o WebP; el contenido se valida, se calcula el SHA-256 y
+  se guarda en `assets/<sha256>.<ext>` con escritura condicional), registrar una referencia ya almacenada
+  (`POST …/assets`), renombrar, `set-primary`, `deactivate` y `reactivate`. La última imagen cargada o
+  registrada queda principal; al desactivar la principal, la `ACTIVE` más reciente toma su lugar; reactivar no
+  la vuelve principal. Errores: `409 DUPLICATE_ASSET_CONTENT` (mismo contenido en la presentación, con
+  `existing_asset_id`), `413`/`415`/`422` por tamaño, tipo o imagen inválida, `422 PRESENTATION_OF_OTHER_PRODUCT`,
+  `422 PRODUCT_INACTIVE`/`PRESENTATION_INACTIVE` y `503 DEPENDENCY_UNAVAILABLE` si el almacenamiento falla.
+  `POST /api/v1/presentations/batch-lookup` (PC-3) devuelve `has_image`, `image_asset_id` e `image_url` de la
+  principal, e `images[]` con `?include_images=true`. Las rutas de activos del producto rechazan el alta de
+  `IMAGE` con `422 IMAGE_REQUIRES_PRESENTATION` (véase `PRODUCT_IMAGE_MIGRATION_STAGE`). Ejercicio completo:
+  [docs/ejemplo/5-cepillo-colgate-inactivo/10-agregar-imagen.md](docs/ejemplo/5-cepillo-colgate-inactivo/10-agregar-imagen.md).
+- Migración de las imágenes existentes (spec 024): `python -m product_catalog_service.tools.migrate_presentation_images`
+  con los modos `plan` (solo lectura), `apply` (exige `--confirm-apply`) y `verify`; asocia cada imagen con su
+  presentación a partir de `product_presentation_ref` del Gold y `sio_ids.csv` sin mover ni volver a subir
+  archivos, y se detiene sin cambios ante un solo caso ambiguo. `tools/verify_image_assets.py --orphans` lista
+  objetos de `assets/` sin referencia (sin borrarlos).
 
 ## Permisos
 
@@ -252,5 +272,5 @@ Roles de cliente `sio-api` (plantilla `infrastructure/keycloak/realm-template/si
 | --- | --- |
 | `ASSET_STORAGE_ENDPOINT` | `http://object-storage:9000` dentro de `sio-network` |
 | `ASSET_STORAGE_BUCKET` | `sio-product-assets` |
-| `ASSET_STORAGE_ACCESS_KEY` / `ASSET_STORAGE_SECRET_KEY` | Cuenta de solo lectura (desde `PRODUCT_CATALOG_ASSET_STORAGE_*` de `infrastructure/.env`) |
+| `ASSET_STORAGE_ACCESS_KEY` / `ASSET_STORAGE_SECRET_KEY` | Cuenta de lectura y escritura condicional en `assets/`, sin borrado (política `sio-assets-write`; desde `PRODUCT_CATALOG_ASSET_STORAGE_*` de `infrastructure/.env`) |
 | `ASSET_STORAGE_REGION`, `ASSET_STORAGE_TIMEOUT_SECONDS` | Opcionales (`us-east-1`, `5`) |

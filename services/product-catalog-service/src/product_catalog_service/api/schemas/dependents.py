@@ -54,6 +54,7 @@ class GroupAssignmentResponse(StatusResourceResponse):
 
 class AssetResponse(StatusResourceResponse):
     global_product_id: UUID
+    global_product_presentation_id: UUID | None = None
     asset_type: str
     file_name: str
     storage_uri: str

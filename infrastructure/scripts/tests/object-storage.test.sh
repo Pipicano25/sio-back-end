@@ -94,7 +94,11 @@ if [ "${1:-}" = --live ]; then
     expect "migración no puede borrar" '! as "$MG_KEY" "$MG_SECRET" rm "t/$BUCKET/assets/abc.png" >/dev/null 2>&1'
     expect "migración no puede escribir fuera de assets/" '! as "$MG_KEY" "$MG_SECRET" cp /tmp/obj.png "t/$BUCKET/otro/abc.png" >/dev/null 2>&1'
     expect "Product Catalog puede leer assets/" '[ "$(as "$PC_KEY" "$PC_SECRET" cat "t/$BUCKET/assets/abc.png")" = contenido-de-prueba ]'
-    expect "Product Catalog no puede escribir" '! as "$PC_KEY" "$PC_SECRET" cp /tmp/obj.png "t/$BUCKET/assets/x.png" >/dev/null 2>&1'
+    # Spec 024: Product Catalog escribe las imágenes cargadas por la API, pero nunca borra ni sale de assets/.
+    expect "Product Catalog puede escribir en assets/" 'as "$PC_KEY" "$PC_SECRET" cp /tmp/obj.png "t/$BUCKET/assets/x.png" >/dev/null 2>&1'
+    expect "Product Catalog no puede borrar" '! as "$PC_KEY" "$PC_SECRET" rm "t/$BUCKET/assets/x.png" >/dev/null 2>&1'
+    expect "Product Catalog no puede escribir fuera de assets/" '! as "$PC_KEY" "$PC_SECRET" cp /tmp/obj.png "t/$BUCKET/otro/x.png" >/dev/null 2>&1'
+    expect "Product Catalog queda solo con sio-assets-write" '[[ "$(docker exec -e MC_HOST_r="http://$ROOT_USER:$ROOT_PASS@localhost:9000" "$SERVER" mc admin user info r "$PC_KEY")" != *sio-assets-read* ]]'
     status="$(docker run --rm --network "$NET" python:3.13-slim python -c "
 import urllib.request, urllib.error
 try:

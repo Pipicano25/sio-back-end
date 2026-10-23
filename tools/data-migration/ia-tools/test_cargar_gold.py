@@ -160,6 +160,9 @@ class SioFalso:
         existentes = self.datos[(service, path)]
         if "code" in body and any(plegar(o.get("code", "")) == plegar(body["code"]) for o in existentes):
             return 409, {"code": "DUPLICATE_CODE", "detail": "código repetido"}
+        if path.endswith("/assets") and any(a["storage_uri"] == body["storage_uri"] for a in existentes):
+            existente = next(a for a in existentes if a["storage_uri"] == body["storage_uri"])
+            return 409, {"code": "PRODUCT_CATALOG.DUPLICATE_ASSET_CONTENT", "existing_asset_id": existente["id"]}
         if path.endswith("/identifiers") and any(i["identifier_type"] == body["identifier_type"] and i["value"] == body["value"]
                                                  for i in self._identificadores()):
             return 409, {"code": "IDENTIFIER_COLLISION", "detail": "identificador en otro producto"}
@@ -506,7 +509,8 @@ def test_la_escritura_exige_confirmar_la_empresa(empresa: Path) -> None:
         cargar_gold.main([str(empresa), "--escribir", "--confirmar", "OTRA"])
 
 
-def test_imagenes_solo_con_habilitacion_sin_duplicar_y_en_su_producto(empresa: Path, tmp_path: Path) -> None:
+def test_imagenes_solo_con_habilitacion_sin_duplicar_y_en_su_presentacion(empresa: Path, tmp_path: Path) -> None:
+    """Spec 024: la imagen se registra por referencia en su presentación (`product_presentation_ref`)."""
     import hashlib
     contenido = b"\x89PNG\r\n\x1a\n imagen sintetica"
     sha = hashlib.sha256(contenido).hexdigest()
@@ -523,22 +527,29 @@ def test_imagenes_solo_con_habilitacion_sin_duplicar_y_en_su_producto(empresa: P
                 {c: fila.get(c, "") for c in (f["name"] for f in esquema["fields"])})
     api = SioFalso()
     contratos_con_activo = contratos(True)
-    contratos_con_activo["AssetCreate"] = _contrato(["asset_type", "file_name", "storage_uri"], asset_type=S,
-                                                     file_name=S, storage_uri=S, mime_type=S, is_primary=B)
+    contratos_con_activo["PresentationImageReference"] = _contrato(["file_name", "storage_uri", "mime_type"],
+                                                                    file_name=S, storage_uri=S, mime_type=S, is_primary=B)
     api.spec = lambda service: {"components": {"schemas": contratos_con_activo}}
     _, sin = cargar(api, empresa, escribir=True)
     assert sin["conteo"]["product_assets"] == {"OMITIDO": 1} and api.creados("/assets") == []
     cargador = Cargador(api, empresa, escribir=True, con_imagenes=True)
     con = cargador.ejecutar(validar_sio=False)
     assert con["conteo"]["product_assets"] == {"CREADO": 1}
-    activo = api.creados("/assets")[0]
+    ((_, _, ruta, activo),) = [envio for envio in api.envios if envio[2].endswith("/assets")]
     producto = next(p for p in api.creados("/api/v1/products") if p["canonical_name"] == "Producto sintético 1 g")
-    assert activo["global_product_id"] == producto["id"] and activo["storage_uri"] == fila["storage_uri"]
-    assert activo["is_primary"] is True
+    vial = next(p for p in api.creados("/presentations") if p["code"] == "VIAL-1G")
+    assert ruta == f"/api/v1/products/{producto['id']}/presentations/{vial['id']}/assets"
+    assert activo == {"file_name": fila["file_name"], "storage_uri": fila["storage_uri"], "mime_type": "image/png",
+                      "is_primary": True}  # sin asset_type ni ids en el cuerpo
+    creado = api.creados("/assets")[0]["id"]
     envios = len(api.envios)
     Cargador(api, empresa, escribir=True, con_imagenes=True).ejecutar(validar_sio=False)
+    assert len(api.envios) == envios  # el diario la da por cargada
+    # Sin diario: PC responde 409 DUPLICATE_ASSET_CONTENT con el id existente → REUSADO, sin duplicar.
     otra = Cargador(api, empresa, escribir=True, con_imagenes=True, salida=tmp_path / "sin-diario").ejecutar(validar_sio=False)
-    assert len(api.envios) == envios and otra["conteo"]["product_assets"] == {"REUSADO": 1}
+    assert otra["conteo"]["product_assets"] == {"REUSADO": 1}
+    assert next(f for f in reporte(otra) if f["csv"] == "product_assets")["sio_id"] == creado
+    assert len(api.creados("/assets")) == 1
 
 
 def test_spec_019_productos_de_empresa_sin_precio_ni_costo(empresa: Path) -> None:

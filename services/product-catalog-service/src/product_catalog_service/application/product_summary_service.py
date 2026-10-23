@@ -6,7 +6,6 @@ configurados; FR-022-99). `has_image` se calcula siempre con la misma regla (FR-
 
 from __future__ import annotations
 
-from urllib.parse import urlencode
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -15,13 +14,12 @@ from product_catalog_service.application.catalog_query_service import BATCH_LIMI
 from product_catalog_service.application.exceptions import BatchLimitExceededError, ValidationError
 from product_catalog_service.application.normalization import normalize_identifier_value
 from product_catalog_service.config import Settings
-from product_catalog_service.domain.image_ref import eligible_image_sha, sign_ref
+from product_catalog_service.application.image_urls import signed_image_url
+from product_catalog_service.domain.image_ref import eligible_image_sha
 from product_catalog_service.infrastructure.product_summary_repository import (
     ProductMatchFilters,
     ProductSummaryRepository,
 )
-
-PUBLIC_IMAGE_PATH = "/api/v1/public/product-images"
 
 
 def unique_ids(ids: list[UUID], *, field: str = "ids") -> list[UUID]:
@@ -39,13 +37,13 @@ class ProductSummaryService:
         self.settings = settings
 
     def image_url(self, asset_id: UUID, sha256_hex: str) -> str | None:
-        if not self.settings.public_images_enabled:
-            return None
-        ref = sign_ref(asset_id, sha256_hex, self.settings.image_ref_secret)
-        return f"{self.settings.public_base_url}{PUBLIC_IMAGE_PATH}?{urlencode({'ref': ref})}"
+        return signed_image_url(self.settings, asset_id, sha256_hex)
 
     def summaries(self, ids: list[UUID]) -> list[dict]:
+        """PC-1. Spec 024 (FR-024-38, research R9): sin campos de imagen en la etapa `completed`; en `transition`
+        los conserva (imagen principal del producto) para el PIQ anterior al despliegue."""
         requested = unique_ids(ids)
+        with_images = not self.settings.image_migration_completed
         rows = self.repository.summaries(requested)
         bucket = self.settings.asset_storage_bucket
         items = []
@@ -61,8 +59,7 @@ class ProductSummaryService:
             asset = rows.images.get(product_id)
             sha = eligible_image_sha(asset, bucket) if asset is not None else None
 
-            items.append(
-                {
+            item = {
                     "id": product_id,
                     "found": True,
                     "canonical_name": product.canonical_name,
@@ -83,11 +80,14 @@ class ProductSummaryService:
                         }
                         for identifier in rows.identifiers.get(product_id, [])
                     ],
-                    "has_image": sha is not None,
-                    "image_asset_id": asset.id if sha is not None else None,
-                    "image_url": self.image_url(asset.id, sha) if sha is not None else None,
-                }
-            )
+            }
+            if with_images:
+                item.update(
+                    has_image=sha is not None,
+                    image_asset_id=asset.id if sha is not None else None,
+                    image_url=self.image_url(asset.id, sha) if sha is not None else None,
+                )
+            items.append(item)
 
         return items
 

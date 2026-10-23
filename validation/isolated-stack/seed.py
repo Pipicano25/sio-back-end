@@ -240,22 +240,25 @@ def build() -> dict:
         ok(admin.post(f"{pc}/products/{product}/categories", json={"global_category_id": categories[category]}))
         identifier = f"SIOIT-{RUN}-{secrets.token_hex(4).upper()}"  # alfanumérico: nunca es un GTIN
         ok(admin.post(f"{pc}/products/{product}/identifiers", json={"identifier_type": "BARCODE", "value": identifier}), 200, 201)
-        if image:
-            images += 1
-            content = png(int(hashlib.sha256(f"{RUN}{name}".encode()).hexdigest()[:8], 16))
-            sha = hashlib.sha256(content).hexdigest()
-            storage.put_object(Bucket=BUCKET, Key=f"assets/{sha}.png", Body=content, ContentType="image/png",
-                               Metadata={"sha256": sha})
-            ok(admin.post(f"{pc}/products/{product}/assets", json={
-                "asset_type": "IMAGE", "file_name": f"imagen-{images}.png", "mime_type": "image/png",
-                "storage_uri": f"s3://{BUCKET}/assets/{sha}.png", "is_primary": True}))
         globals_ = []
         for position, (code, label, factor, _) in enumerate(presentations, start=1):
             body = {"code": f"{code}-{position}-{product[:8]}", "name": label, "is_base": factor == "1"}
             if factor != "1":
                 body.update({"base_quantity": factor, "display_order": position})
             globals_.append(ok(admin.post(f"{pc}/products/{product}/presentations", json=body))["id"])
-        return product, {"identifier": identifier, "global_presentations": globals_}
+        extra = {"identifier": identifier, "global_presentations": globals_}
+        if image:
+            # Spec 024: la imagen es de la presentación (la primera), registrada por referencia a un objeto de SIO.
+            images += 1
+            content = png(int(hashlib.sha256(f"{RUN}{name}".encode()).hexdigest()[:8], 16))
+            sha = hashlib.sha256(content).hexdigest()
+            storage.put_object(Bucket=BUCKET, Key=f"assets/{sha}.png", Body=content, ContentType="image/png",
+                               Metadata={"sha256": sha})
+            ok(admin.post(f"{pc}/products/{product}/presentations/{globals_[0]}/assets", json={
+                "file_name": f"imagen-{images}.png", "mime_type": "image/png",
+                "storage_uri": f"s3://{BUCKET}/assets/{sha}.png", "is_primary": True}))
+            extra["image_presentation_id"] = globals_[0]
+        return product, extra
 
     default_list = ok(admin.post(f"{cr}/companies/{company_a}/price-lists", json={
         "code": f"LP-{RUN}", "name": f"Lista ficticia predeterminada {RUN}", "currency_code": "COP", "is_default": True}))["id"]

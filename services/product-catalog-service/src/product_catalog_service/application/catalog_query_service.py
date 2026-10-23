@@ -17,9 +17,12 @@ from product_catalog_service.application.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from product_catalog_service.application.image_urls import asset_image_url, signed_image_url
 from product_catalog_service.application.normalization import normalize_identifier_value
 from product_catalog_service.application.pagination import PageResult, paginate
+from product_catalog_service.config import Settings
 from product_catalog_service.domain.completeness import ProductCompleteness
+from product_catalog_service.domain.image_ref import eligible_image_sha
 from product_catalog_service.infrastructure.models import (
     GlobalCategoryAttributeModel,
     GlobalProductIdentifierModel,
@@ -186,9 +189,14 @@ class CatalogQueryService:
             )
         return items
 
-    def lookup_presentations(self, ids: list[UUID]) -> list[dict]:
+    def lookup_presentations(
+        self, ids: list[UUID], *, settings: Settings | None = None, include_images: bool = False
+    ) -> list[dict]:
+        """PC-3. Con `settings`, cada presentación encontrada trae su imagen (spec 024, FR-024-37): una sola
+        consulta de imágenes por lote; `images` solo con `include_images`."""
         unique = self._unique_ids(ids)
         presentations = self.repository.presentations_by_ids(unique)
+        images = self.repository.presentation_images(list(presentations)) if settings is not None else {}
         product_ids = list({item.global_product_id for item in presentations.values()})
         products = self.repository.products_by_ids(product_ids)
         completeness = self.completeness.for_products(product_ids)
@@ -214,9 +222,27 @@ class CatalogQueryService:
                     ),
                     "base_quantity": presentation.base_quantity,
                     "first_used_at": presentation.first_used_at,
+                    **(self._image_fields(images.get(presentation_id, []), settings, include_images)
+                       if settings is not None else {}),
                 }
             )
         return items
+
+    @staticmethod
+    def _image_fields(assets: list, settings: Settings, include_images: bool) -> dict:
+        primary = next((asset for asset in assets if asset.is_primary), None)
+        sha = eligible_image_sha(primary, settings.asset_storage_bucket) if primary is not None else None
+        fields = {
+            "has_image": sha is not None,
+            "image_asset_id": primary.id if sha is not None else None,
+            "image_url": signed_image_url(settings, primary.id, sha) if sha is not None else None,
+        }
+        if include_images:
+            fields["images"] = [
+                {"asset_id": asset.id, "image_url": asset_image_url(settings, asset), "is_primary": asset.is_primary}
+                for asset in assets
+            ]
+        return fields
 
     def lookup_units(self, ids: list[UUID]) -> list[dict]:
         unique = self._unique_ids(ids)

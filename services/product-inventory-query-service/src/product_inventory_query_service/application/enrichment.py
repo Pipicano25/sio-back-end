@@ -7,14 +7,17 @@ paralela:
 |---|---|
 | PC-1 (resumen de catálogo e imagen) | Siempre |
 | CR-2 (presentaciones de la empresa) | Siempre |
-| `presentations/batch-lookup` de PC (código, nombre y factor) | Después de CR-2, en paralelo con los precios |
+| `presentations/batch-lookup` de PC (código, nombre, factor e imagen) | Después de CR-2, en paralelo con los precios |
 | Precios (`applicable-prices/resolve`) | Después de CR-2, solo en `product-overviews` con el bloque de precios |
 | `balances/lookup` por sucursal | Con el bloque de existencias; solo los ids que la búsqueda no trajo ya |
 | INV-1 por sucursal | Con existencias **y** mínimos; solo los ids que faltan |
 
 PC-3 no se usa: PC-1 ya entrega la unidad base con su código y nombre. Nada se inventa: un producto global que
-PC no encuentra queda sin datos de catálogo (`canonical_name = null`, `has_image = false`) y se registra; una
-presentación sin factor no tiene equivalencia.
+PC no encuentra queda sin datos de catálogo (`canonical_name = null`) y se registra; una presentación sin factor
+no tiene equivalencia.
+
+Spec 024: la imagen es de cada presentación y llega en la **misma** llamada por lotes de presentaciones;
+`include_images=true` solo agrega `images[]` a esa llamada (no hay llamadas adicionales ni consultas por fila).
 """
 
 from __future__ import annotations
@@ -97,7 +100,7 @@ async def stock_data(gateway: Gateway, branch_ids: list[UUID], ids: list[UUID], 
 
 async def enrich_products(gateway: Gateway, products: list[CompanyProduct], branch_ids: list[UUID], *,
                           with_prices: bool, price_list_id: UUID | None, with_stock: bool,
-                          with_minimums: bool) -> list[ProductView]:
+                          with_minimums: bool, include_images: bool = False) -> list[ProductView]:
     if not products:
         return []
     company_ids = [p.id for p in products]
@@ -113,8 +116,10 @@ async def enrich_products(gateway: Gateway, products: list[CompanyProduct], bran
         async def infos():
             if not global_ids:
                 return {}
-            return await gateway.registry.once("presentations", global_ids,
-                                               lambda: gateway.ports.pc.presentations(global_ids))
+            return await gateway.registry.once(
+                "presentations", (include_images, global_ids),
+                lambda: gateway.ports.pc.presentations(global_ids, include_images=include_images),
+            )
 
         async def prices():
             if not with_prices or not lines:

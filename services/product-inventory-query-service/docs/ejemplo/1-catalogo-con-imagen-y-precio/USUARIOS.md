@@ -1,14 +1,14 @@
 # Usuarios del ejercicio 1
 
-| Usuario | Paso 1 | Paso 2 |
-| --- | --- | --- |
-| `admin.test` | `200` | `200` |
-| `supervisor.test` | `200` | `200` |
-| `compras.test` | `403` | `403` |
-| `ventas.test` | `200` | `200` |
-| `inventario.test` | `200` | `200` |
-| `reportes.test` | `403` | `403` |
-| `consulta.test` | `403` | `403` |
+| Usuario | Paso 1 | Paso 2 | Paso 3 |
+| --- | --- | --- | --- |
+| `admin.test` | `200` | `200` | `200` |
+| `supervisor.test` | `200` | `200` | `200` |
+| `compras.test` | `403` | `403` | `403` |
+| `ventas.test` | `200` | `200` | `200` |
+| `inventario.test` | `200` | `200` | `200` |
+| `reportes.test` | `403` | `403` | `403` |
+| `consulta.test` | `403` | `403` | `403` |
 
 ## Permiso por URL
 
@@ -16,6 +16,7 @@
 | --- | --- | --- |
 | 1 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&has_image=true&page_size=2` | `perm:product-inventory-query:product_overviews:read` |
 | 2 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&has_image=true&page_size=2&cursor=<CURSOR>` | `perm:product-inventory-query:product_overviews:read` |
+| 3 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&has_image=true&page_size=2&include_images=true` | `perm:product-inventory-query:product_overviews:read` |
 
 ## Ejemplos
 

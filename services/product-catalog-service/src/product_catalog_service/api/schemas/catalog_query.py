@@ -24,6 +24,14 @@ class ProductLookupItem(BaseModel):
     first_used_at: datetime | None = None
 
 
+class PresentationImageItem(BaseModel):
+    """Imagen `ACTIVE` de la presentación (spec 024, FR-024-37), solo con `include_images=true`."""
+
+    asset_id: UUID
+    image_url: str | None
+    is_primary: bool
+
+
 class PresentationLookupItem(BaseModel):
     id: UUID
     found: bool
@@ -35,6 +43,13 @@ class PresentationLookupItem(BaseModel):
     eligible_for_adoption: bool | None = None
     base_quantity: Decimal | None = None
     first_used_at: datetime | None = None
+    # Spec 024 (FR-024-37): imagen principal de **esta** presentación (regla de aptitud de FR-022-46).
+    has_image: bool | None = None
+    image_asset_id: UUID | None = None
+    image_url: str | None = None
+    images: list[PresentationImageItem] | None = Field(
+        default=None, description="Solo con `include_images=true`: imágenes `ACTIVE`, principal primero."
+    )
 
 
 class UnitLookupItem(BaseModel):

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.orm import sessionmaker
 
@@ -44,13 +44,24 @@ def image_asset(
     is_primary: bool = True,
     storage_uri: str | None = None,
     file_name: str = "frente.png",
+    presentation_id: UUID | None | str = "auto",
 ):
-    """Activo registrado directamente (sin pasar por la API de activos)."""
+    """Activo registrado directamente (sin pasar por la API de activos).
+
+    Spec 024: toda imagen pertenece a una presentación. Con `presentation_id="auto"` (por defecto) una imagen
+    recibe una presentación nueva de su producto; `None` la deja sin presentación (solo antes de la revisión 0006).
+    """
     uri = storage_uri or f"s3://{BUCKET}/assets/{sha_of(content)}.png"
+    if presentation_id == "auto":
+        presentation_id = (
+            factories.presentation(factory, product_id, f"IMG{uuid4().hex[:8].upper()}").id
+            if asset_type == "IMAGE" else None
+        )
     return factories._save(
         factory,
         models.ProductAssetModel(
             global_product_id=product_id,
+            global_product_presentation_id=presentation_id,
             asset_type=asset_type,
             file_name=file_name,
             storage_uri=uri,

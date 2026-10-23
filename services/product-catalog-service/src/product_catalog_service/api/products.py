@@ -3,7 +3,7 @@
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 from sqlalchemy.orm import Session
 
@@ -134,6 +134,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def get_product(
         product_id: UUID,
+        request: Request,
         expand: Literal["detail"] | None = Query(default=None),
         service: ProductService = Depends(get_service),
         queries: CatalogQueryService = Depends(get_queries),
@@ -144,6 +145,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
             queries.completeness.for_product(product.id),
             queries=queries,
             expand_detail=expand == "detail",
+            # Spec 024 (FR-024-32): en la entrega 2 las imágenes se consultan solo por presentación.
+            include_images=not request.app.state.settings.image_migration_completed,
         )
 
     @router.get(

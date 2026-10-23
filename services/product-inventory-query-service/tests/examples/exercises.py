@@ -89,14 +89,13 @@ def seed(fakes: Fakes) -> None:
         global_id = UUID(uid("f", number))
         summary = fakes.pc.add_product(global_id, product["canonical"],
                                        brand_id=UUID(BRAND) if product.get("brand", True) else None,
-                                       has_image=product["image"], categories={UUID(CATEGORY)},
+                                       categories={UUID(CATEGORY)},
                                        identifiers={f"7700000{number:06d}"}, base_unit=product.get("unit", UNIT))
-        # Nombres legibles de marca y categoría, y la URL tal como la construiría PC-1 (referencia firmada opaca).
+        # Nombres legibles de marca y categoría.
         fakes.pc.products[global_id] = replace(
             summary,
             brand=Reference(UUID(BRAND), "COLGATE", "Colgate (ficticia)") if summary.brand else None,
             categories=(Category(UUID(CATEGORY), "CUIDADO", "Cuidado personal (ficticia)", True),),
-            image_url=f"{IMAGE_BASE}?ref=EJEMPLO-{number:02d}" if product["image"] else None,
         )
         company_product = fakes.cr.add_product(
             company, product["name"], id=UUID(uid("e", number)), global_product_id=global_id,
@@ -105,6 +104,10 @@ def seed(fakes: Fakes) -> None:
         )
         for index, (code, label, factor, price) in enumerate(product["presentations"], start=1):
             info = fakes.pc.add_presentation(global_id, code, label, factor, id=UUID(uid("7", number * 10 + index)))
+            if product["image"] and index == 1:
+                # Spec 024: la imagen es de la presentación; URL tal como la construiría PC-3 (referencia firmada opaca).
+                fakes.pc.add_image(info.id, asset_id=UUID(uid("6", number * 10 + index)),
+                                   image_url=f"{IMAGE_BASE}?ref=EJEMPLO-{number:02d}")
             row = fakes.cr.add_presentation(company_product, info.id, sku=f"SKU-{number:02d}{index}",
                                             id=UUID(uid("8", number * 10 + index)))
             if price is not None:
@@ -145,7 +148,12 @@ EXERCISES = [
                  ["`search` lo evalúa Commercial Relationship y `has_image` Product Catalog, antes de elegir la página.",
                   "De los 4 «Colgate», 3 tienen imagen: la primera página trae 2, en orden `display_name:asc`, y "
                   "`has_next = true`.",
+                  "La imagen es de cada presentación (spec 024): `presentations[].has_image`, `asset_id` e "
+                  "`image_url`. `has_image=true` como filtro significa «al menos una presentación con imagen "
+                  "principal»: una presentación sin imagen propia trae `has_image = false` aunque otra presentación del "
+                  "producto tenga imagen (la «Caja x 12» del paso 2).",
                   "`image_url` es la URL directa que construye Product Catalog: se usa sin token en `<img src>`.",
+                  "Sin `include_images`, las presentaciones no traen `images`.",
                   "`ventas.test` ve precios y existencias, pero no los mínimos."],
                  save={"CURSOR": "next_cursor"}),
             step("02-segunda-pagina.md", "Página siguiente con el cursor", "ventas.test",
@@ -154,6 +162,12 @@ EXERCISES = [
                   "La «Caja x 12» no tiene precio en la lista: `unit_price = null` con `resolution = NO_PRICE_IN_LIST`; "
                   "nunca se usa el precio de otra lista ni se inventa.",
                   "Es la última página: `has_next = false` y `next_cursor = null`."]),
+            step("03-todas-las-imagenes.md", "Todas las imágenes de cada presentación", "ventas.test",
+                 f"{BASE}/product-overviews?search=Colgate&has_image=true&page_size=2&include_images=true", 200,
+                 ["`include_images=true` agrega `presentations[].images` con todas las imágenes `ACTIVE` de la "
+                  "presentación, la principal primero; una presentación sin imágenes trae `images = []`.",
+                  "No forma parte de la huella del cursor: se puede activar o desactivar entre páginas sin reiniciar "
+                  "la paginación, y no agrega llamadas a Product Catalog."]),
         ],
     ),
     dict(

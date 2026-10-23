@@ -52,3 +52,11 @@ def test_different_fingerprints() -> None:
     assert fp(endpoint=Endpoint.PRODUCT_OVERVIEWS) != fp(endpoint=Endpoint.INVENTORY_OVERVIEWS)
     assert fp(("has_image", "true")) != fp(("has_image", "false"))
     assert fp(("status", "ACTIVE")) != fp(("status", "ALL"))
+
+
+def test_include_images_is_not_part_of_the_fingerprint() -> None:
+    """Spec 024 (FR-024-41): `include_images` no es un filtro; no cambia la huella del cursor."""
+    for endpoint in (Endpoint.PRODUCT_OVERVIEWS, Endpoint.INVENTORY_OVERVIEWS):
+        base = fp(("search", "crema"), ("has_image", "true"), endpoint=endpoint)
+        assert fp(("search", "crema"), ("has_image", "true"), ("include_images", "true"), endpoint=endpoint) == base
+        assert fp(("search", "crema"), ("has_image", "true"), ("include_images", "false"), endpoint=endpoint) == base

@@ -127,15 +127,19 @@ class ProductSummaryRepository:
                 identifiers[row.global_product_id].append(row)
 
             asset = ProductAssetModel
+            # Spec 024 (transición): con imágenes por presentación un producto puede tener varias principales;
+            # PC-1 conserva una sola, la más reciente, de forma determinista.
             for row in self.session.scalars(
-                select(asset).where(
+                select(asset)
+                .where(
                     asset.global_product_id.in_(found),
                     asset.asset_type == "IMAGE",
                     asset.status == ACTIVE,
                     asset.is_primary.is_(True),
                 )
+                .order_by(asset.global_product_id, asset.created_at.desc(), asset.id.desc())
             ):
-                images[row.global_product_id] = row
+                images.setdefault(row.global_product_id, row)
 
         return SummaryRows(products, brands, units, dict(categories), dict(identifiers), images)
 

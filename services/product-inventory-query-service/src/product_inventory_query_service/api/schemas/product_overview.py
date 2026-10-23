@@ -45,6 +45,16 @@ class PriceOut(Out):
                                         "`PRICE_LIST_NOT_APPLICABLE`, tal como los informa Commercial Relationship.")
 
 
+class PresentationImageOut(Out):
+    """Imagen `ACTIVE` de la presentación (spec 024)."""
+
+    asset_id: UUID = Field(description="Activo en Product Catalog "
+                                       "(`/products/{global_product_id}/presentations/{global_product_presentation_id}/assets/{asset_id}`).")
+    image_url: str | None = Field(description="URL pública firmada, lista para `<img src>`; `null` con la ruta "
+                                              "pública deshabilitada.")
+    is_primary: bool
+
+
 class PresentationOut(Out):
     company_product_presentation_id: UUID
     global_product_presentation_id: UUID
@@ -55,6 +65,16 @@ class PresentationOut(Out):
     status: str
     is_sellable: bool
     base_quantity_factor: str | None = Field(description="Unidades base por presentación, con 4 decimales.")
+    has_image: bool = Field(description="La presentación global tiene imagen principal `ACTIVE` (spec 024).")
+    asset_id: UUID | None = Field(description="Activo de la imagen principal de la presentación en Product Catalog, "
+                                              "o `null`.")
+    image_url: str | None = Field(description="URL pública firmada de la imagen principal de la presentación, lista "
+                                              "para `<img src>`; `null` sin imagen o con la ruta pública deshabilitada.")
+    images: list[PresentationImageOut] | None = Field(
+        default=None,
+        description="Solo con `include_images=true`: todas las imágenes `ACTIVE` de la presentación, la principal "
+                    "primero. Se omite en otro caso.",
+    )
 
 
 class ProductPresentationOut(PresentationOut):
@@ -99,13 +119,6 @@ class ProductIdentity(Out):
     categories: list[CategoryOut]
     identifiers: list[IdentifierOut]
     base_unit: ReferenceOut | None
-    has_image: bool
-    asset_id: UUID | None = Field(
-        description="Activo de la imagen principal en Product Catalog (`/products/{global_product_id}/assets/{asset_id}`), o `null`."
-    )
-    image_url: str | None = Field(
-        description="URL pública firmada de la imagen principal, lista para `<img src>`; `null` sin imagen o con la ruta pública deshabilitada."
-    )
 
 
 class ProductOverview(ProductIdentity):

@@ -7,12 +7,12 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 ## Resumen por usuario
 
 - **`admin.test`**: puede ejecutar **todo el ejercicio**.
-- **`supervisor.test`**: **no puede completar el ejercicio**. Se detiene en el paso 12 (*Inactivar*): sobre `product-catalog` solo tiene `create`, `read`, `update`; le falta `deactivate`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 11, 12, 13.
-- **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la marca `COLGATE`*): sobre `product-catalog` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 11, 12, 13.
-- **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la marca `COLGATE`*): sobre `product-catalog` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 11, 12, 13.
-- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 01 (*Buscar el fabricante Colgate-Palmolive en Party Identity Service*): no tiene ningún permiso sobre `party-identity`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 11, 12, 13.
-- **`reportes.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la marca `COLGATE`*): sobre `product-catalog` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 11, 12, 13.
-- **`consulta.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la marca `COLGATE`*): sobre `product-catalog` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 11, 12, 13.
+- **`supervisor.test`**: **no puede completar el ejercicio**. Se detiene en el paso 10 (*Eliminar la segunda imagen*): sobre `product-catalog` solo tiene `create`, `read`, `update`; le falta `deactivate`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 10, 11, 12, 13.
+- **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la marca `COLGATE`*): sobre `product-catalog` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 10, 11, 12, 13.
+- **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la marca `COLGATE`*): sobre `product-catalog` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 10, 11, 12, 13.
+- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 01 (*Buscar el fabricante Colgate-Palmolive en Party Identity Service*): no tiene ningún permiso sobre `party-identity`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 10, 11, 12, 13.
+- **`reportes.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la marca `COLGATE`*): sobre `product-catalog` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 10, 11, 12, 13.
+- **`consulta.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la marca `COLGATE`*): sobre `product-catalog` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 09, 10, 11, 12, 13.
 
 **Para hacer el ejercicio completo use `admin.test`.** `supervisor.test` también sirve para crear y modificar, pero no para inactivar.
 
@@ -48,7 +48,14 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 | [08](08-crear-presentacion.md) | 1. Presentación `PACK_X2` | `POST /api/v1/products/{id}/presentations` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [09](09-codigo-interno-no-es-codigo-de-barras.md) | 1. Error esperado: registrarlo como EAN | `POST /api/v1/products/{id}/identifiers` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [09](09-codigo-interno-no-es-codigo-de-barras.md) | 2. Confirmar que el producto no tiene identificadores | `GET /api/v1/products/{id}/identifiers` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [10](10-agregar-imagen.md) | 1. Registrar la imagen principal | `POST /api/v1/products/{id}/assets` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [10](10-agregar-imagen.md) | 1. Cargar la imagen de la presentación | `POST /api/v1/products/{id}/presentations/{id}/assets/upload` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [10](10-agregar-imagen.md) | 2. Error esperado: cargar otra vez el mismo archivo | `POST /api/v1/products/{id}/presentations/{id}/assets/upload` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [10](10-agregar-imagen.md) | 3. Cargar una segunda imagen (foto lateral) | `POST /api/v1/products/{id}/presentations/{id}/assets/upload` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [10](10-agregar-imagen.md) | 4. Listar las imágenes de la presentación | `GET /api/v1/products/{id}/presentations/{id}/assets` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [10](10-agregar-imagen.md) | 5. Eliminar la segunda imagen | `POST /api/v1/products/{id}/presentations/{id}/assets/{id}/deactivate` | `perm:product-catalog:products:deactivate` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [10](10-agregar-imagen.md) | 6. Reactivar la segunda imagen | `POST /api/v1/products/{id}/presentations/{id}/assets/{id}/reactivate` | `perm:product-catalog:products:deactivate` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [10](10-agregar-imagen.md) | 7. Marcar la segunda imagen como principal | `POST /api/v1/products/{id}/presentations/{id}/assets/{id}/set-primary` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [10](10-agregar-imagen.md) | 8. Error esperado: registrar la imagen en el producto | `POST /api/v1/products/{id}/assets` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [11](11-crear-y-asignar-grupos.md) | 1. Grupo 1 `0005` — consultar si ya existe | `GET /api/v1/group-types/{id}/groups` | `perm:product-catalog:group-types:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [11](11-crear-y-asignar-grupos.md) | 2. Grupo 1 `0005` — crearlo (solo si la consulta vino vacía) | `POST /api/v1/group-types/{id}/groups` | `perm:product-catalog:group-types:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | [11](11-crear-y-asignar-grupos.md) | 3. Grupo 1 `0005` — asignarlo al producto | `POST /api/v1/products/{id}/group-assignments` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -64,8 +71,9 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 | [13](13-verificar-producto-inactivo.md) | 2. Buscar productos inactivos | `GET /api/v1/products` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [13](13-verificar-producto-inactivo.md) | 3. Consultar el detalle | `GET /api/v1/products/{id}` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [14](14-consultas-por-lotes.md) | 1. Resumen del producto por lotes | `POST /api/v1/products/summaries/batch-lookup` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [14](14-consultas-por-lotes.md) | 2. Productos de la marca, incluidos los inactivos | `POST /api/v1/products/match` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [14](14-consultas-por-lotes.md) | 3. ¿El cepillo tiene una imagen apta? | `POST /api/v1/products/match` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [14](14-consultas-por-lotes.md) | 2. Imagen de la presentación por lotes | `POST /api/v1/presentations/batch-lookup` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [14](14-consultas-por-lotes.md) | 3. Productos de la marca, incluidos los inactivos | `POST /api/v1/products/match` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [14](14-consultas-por-lotes.md) | 4. ¿El cepillo tiene alguna presentación con imagen? | `POST /api/v1/products/match` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Ejemplos de uso con los usuarios
 
@@ -135,10 +143,10 @@ TOKEN_SUPERVISOR=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/ope
 ```
 
 ```bash
-curl -s -X POST "http://localhost:8003/api/v1/products/<PRODUCTO>/deactivate" \
+curl -s -X POST "http://localhost:8003/api/v1/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets/<ACTIVO_IMAGEN_2>/deactivate" \
   -H "Authorization: Bearer $TOKEN_SUPERVISOR" \
   -H "Content-Type: application/json" \
-  -d '{"version": 1}'
+  -d '{"version": "<VERSION_IMAGEN_2>"}'
 ```
 
 Respuesta `403 Forbidden`:
@@ -149,7 +157,7 @@ Respuesta `403 Forbidden`:
   "title": "Acceso denegado",
   "status": 403,
   "detail": "Su usuario no tiene permiso para realizar esta operación. Si necesita acceso, solicítelo al administrador del sistema indicando el trace_id de esta respuesta.",
-  "instance": "/api/v1/products/{id}/deactivate",
+  "instance": "/api/v1/products/{id}/presentations/{id}/assets/{id}/deactivate",
   "code": "PRODUCT_CATALOG.FORBIDDEN",
   "trace_id": "<trace_id>"
 }

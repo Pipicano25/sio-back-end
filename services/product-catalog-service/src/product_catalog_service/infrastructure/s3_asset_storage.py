@@ -19,6 +19,7 @@ from product_catalog_service.config import Settings
 
 CHUNK_SIZE = 64 * 1024
 _NOT_FOUND = {"404", "NoSuchKey", "NotFound"}
+_ALREADY_EXISTS = {"412", "PreconditionFailed", "409", "ConditionalRequestConflict"}
 
 
 class S3AssetStorage:
@@ -100,3 +101,27 @@ class S3AssetStorage:
         except (ClientError, BotoCoreError) as exc:
             raise AssetStorageUnavailableError("No fue posible guardar el objeto.") from exc
         return StoredObject(key=key, size=len(data), content_type=content_type, etag=None, metadata=metadata or {})
+
+    def put_if_absent(
+        self, key: str, data: bytes, *, content_type: str, metadata: dict[str, str] | None = None
+    ) -> bool:
+        """`PutObject` con `If-None-Match: *`: nunca reemplaza un objeto existente (spec 024, research R5)."""
+        try:
+            self._client.put_object(
+                Bucket=self.bucket, Key=key, Body=data, ContentType=content_type, Metadata=metadata or {}, IfNoneMatch="*"
+            )
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") in _ALREADY_EXISTS:
+                return False
+            raise AssetStorageUnavailableError("No fue posible guardar el objeto.") from exc
+        except BotoCoreError as exc:
+            raise AssetStorageUnavailableError("No fue posible guardar el objeto.") from exc
+        return True
+
+    def list_keys(self, prefix: str) -> Iterator[str]:
+        try:
+            for page in self._client.get_paginator("list_objects_v2").paginate(Bucket=self.bucket, Prefix=prefix):
+                for item in page.get("Contents", []) or []:
+                    yield item["Key"]
+        except (ClientError, BotoCoreError) as exc:
+            raise AssetStorageUnavailableError("No fue posible listar los objetos.") from exc

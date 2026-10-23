@@ -84,8 +84,6 @@ Estado `200`.
         "code": "TAB",
         "name": "Tableta"
       },
-      "has_image": false,
-      "image_url": null,
       "presentations": [
         {
           "company_product_presentation_id": "d2280000-0000-4000-8000-000000000061",
@@ -96,7 +94,10 @@ Estado `200`.
           "internal_code": null,
           "status": "ACTIVE",
           "is_sellable": true,
-          "base_quantity_factor": "1.0000"
+          "base_quantity_factor": "1.0000",
+          "has_image": false,
+          "asset_id": null,
+          "image_url": null
         },
         {
           "company_product_presentation_id": "d2280000-0000-4000-8000-000000000062",
@@ -107,7 +108,10 @@ Estado `200`.
           "internal_code": null,
           "status": "ACTIVE",
           "is_sellable": true,
-          "base_quantity_factor": "10.0000"
+          "base_quantity_factor": "10.0000",
+          "has_image": false,
+          "asset_id": null,
+          "image_url": null
         }
       ],
       "stock": {

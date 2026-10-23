@@ -67,3 +67,16 @@ class AssetStorage(Protocol):
     def put(self, key: str, data: bytes, *, content_type: str, metadata: dict[str, str] | None = None) -> StoredObject:
         """Guarda el objeto (idempotente por clave)."""
         ...
+
+    def put_if_absent(
+        self, key: str, data: bytes, *, content_type: str, metadata: dict[str, str] | None = None
+    ) -> bool:
+        """Guarda el objeto solo si la clave no existe (escritura condicional, spec 024 FR-024-16).
+
+        Devuelve `True` si lo escribió y `False` si ya existía; **nunca** reemplaza un objeto existente.
+        """
+        ...
+
+    def list_keys(self, prefix: str) -> Iterator[str]:
+        """Claves bajo un prefijo, en solo lectura (reconciliación de la spec 024, FR-024-30)."""
+        ...

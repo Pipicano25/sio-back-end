@@ -77,8 +77,9 @@ services:
       PARTY_IDENTITY_SERVICE_BASE_URL: ${PARTY_IDENTITY_SERVICE_BASE_URL:-http://party-identity-service:8000/api/v1}
       PARTY_IDENTITY_TIMEOUT_SECONDS: ${PARTY_IDENTITY_TIMEOUT_SECONDS:-3}
       # Almacenamiento de objetos de los activos (proyecto object-storage, MinIO): se accede por la
-      # red Docker con el puerto interno; cuenta de solo lectura (nunca root). Sin credenciales,
-      # GET .../assets/{id}/content responde 503.
+      # red Docker con el puerto interno; cuenta de lectura y escritura de assets/* sin borrado (nunca
+      # root; spec 024: la carga de imágenes escribe el objeto). Sin credenciales, el contenido y la
+      # carga responden 503.
       ASSET_STORAGE_ENDPOINT: http://object-storage:9000
       ASSET_STORAGE_BUCKET: ${OBJECT_STORAGE_BUCKET:-sio-product-assets}
       ASSET_STORAGE_ACCESS_KEY: ${PRODUCT_CATALOG_ASSET_STORAGE_ACCESS_KEY:-}
@@ -89,6 +90,12 @@ services:
       PRODUCT_CATALOG_PUBLIC_BASE_URL: ${PRODUCT_CATALOG_PUBLIC_BASE_URL:-}
       PRODUCT_IMAGE_REF_SECRET: ${PRODUCT_IMAGE_REF_SECRET:-}
       PRODUCT_IMAGE_REF_SECRET_PREVIOUS: ${PRODUCT_IMAGE_REF_SECRET_PREVIOUS:-}
+      # Spec 024: límites de la carga de imágenes (bytes y píxeles) y etapa de la migración de imágenes a
+      # presentaciones: transition (entrega 1, por defecto) o completed (entrega 2, tras verificar el relleno
+      # y aplicar la revisión 0006).
+      ASSET_UPLOAD_MAX_BYTES: ${ASSET_UPLOAD_MAX_BYTES:-5242880}
+      ASSET_UPLOAD_MAX_PIXELS: ${ASSET_UPLOAD_MAX_PIXELS:-40000000}
+      PRODUCT_IMAGE_MIGRATION_STAGE: ${PRODUCT_IMAGE_MIGRATION_STAGE:-transition}
 
     ports:
       - "127.0.0.1:${PRODUCT_CATALOG_SERVICE_PORT:-8103}:8000"

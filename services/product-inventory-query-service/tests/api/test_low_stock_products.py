@@ -18,7 +18,10 @@ def low_stock(world, client, query: str = "") -> dict:
 
 
 def test_only_strictly_below_minimum_with_active_policy(world, as_user) -> None:
-    """Escenarios 1 a 4: 3 < 5 aparece con `shortfall = 2`; 5 = 5, 0 con mínimo 0 y sin política no aparecen."""
+    """Escenarios 1 a 4: 3 < 5 aparece con `shortfall = 2`; 5 = 5, 0 con mínimo 0 y sin política no aparecen.
+
+    Spec 024 (FR-024-43): el par no trae imágenes aunque la presentación tenga una.
+    """
     below = world.product("Clarityne", unit=TABLET, has_image=True)
     world.stock(below, "3")
     world.minimum(below, "5")
@@ -32,12 +35,10 @@ def test_only_strictly_below_minimum_with_active_policy(world, as_user) -> None:
 
     body = low_stock(world, as_user("inventario.test"))
     (pair,) = body["items"]
-    image = world.fakes.pc.products[below.product.global_product_id].image_url
     assert pair == {
         "company_product_id": below.id, "display_name": "Clarityne", "internal_code": below.product.internal_code,
         "base_unit": {"id": str(TABLET.id), "code": "TAB", "name": "Tableta"}, "branch_id": str(world.branches[0]),
         "base_quantity": "3.0000", "minimum_stock": "5.0000", "shortfall": "2.0000", "policy_status": "ACTIVE",
-        "has_image": True, "image_url": image,
     }
     assert body["sort_applied"] == "shortfall:desc" and body["has_next"] is False
 
@@ -151,3 +152,10 @@ def test_no_cost_fields(world, as_user) -> None:
     world.minimum(item, "2")
     keys = keys_in(low_stock(world, as_user("inventario.test")))
     assert not {key for key in keys if any(word in key for word in COST_WORDS)} and "inventory_value" not in keys
+
+
+def test_include_images_is_not_a_low_stock_parameter(world, as_user) -> None:
+    """Spec 024 (FR-024-43): low-stock no trae imágenes; `include_images` responde `422`."""
+    response = as_user("inventario.test").get(f"{world.base}/low-stock-products?include_images=true")
+    assert response.status_code == 422
+    assert response.json()["errors"][0]["field"] == "include_images"

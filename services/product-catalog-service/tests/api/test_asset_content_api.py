@@ -1,5 +1,9 @@
 """GET /products/{id}/assets/{asset_id}/content: entrega del contenido por la API (streaming).
 
+Spec 024: las imágenes se gestionan por presentación; estas pruebas usan una ficha técnica almacenada en SIO
+(la ruta por producto la sigue sirviendo en todas las etapas). La transición de las imágenes por esta ruta está
+en `test_product_asset_routes_stages.py`.
+
 El frontend solo conoce SIO: Product Catalog lee el objeto del almacenamiento S3 (MinIO) y lo
 entrega con Content-Type, Content-Length, ETag y Cache-Control; nunca expone bucket, clave ni
 credenciales.
@@ -26,43 +30,7 @@ SHA = hashlib.sha256(PNG).hexdigest()
 KEY = f"assets/{SHA}.png"
 
 
-class FakeAssetStorage:
-    def __init__(self) -> None:
-        self.bucket = BUCKET
-        self.objects: dict[str, tuple[bytes, str, dict[str, str]]] = {}
-        self.unavailable = False
-        self.calls: list[str] = []
-
-    def _info(self, key: str) -> StoredObject:
-        data, content_type, metadata = self.objects[key]
-        return StoredObject(key=key, size=len(data), content_type=content_type, etag="s3-etag", metadata=metadata)
-
-    def head(self, key: str) -> StoredObject | None:
-        self.calls.append("head")
-        if self.unavailable:
-            raise AssetStorageUnavailableError("caído")
-        return self._info(key) if key in self.objects else None
-
-    def exists(self, key: str) -> bool:
-        return self.head(key) is not None
-
-    def get(self, key: str):
-        self.calls.append("get")
-        if self.unavailable:
-            raise AssetStorageUnavailableError("caído")
-        if key not in self.objects:
-            return None
-        data = self.objects[key][0]
-
-        def chunks() -> Iterator[bytes]:
-            for start in range(0, len(data), 65536):
-                yield data[start:start + 65536]
-
-        return self._info(key), chunks()
-
-    def put(self, key, data, *, content_type, metadata=None):
-        self.objects[key] = (data, content_type, metadata or {})
-        return self._info(key)
+from tests.storage_fakes import FakeAssetStorage  # noqa: E402  (reexportado para otras pruebas)
 
 
 @pytest.fixture
@@ -94,7 +62,8 @@ def _asset(client, make_token, session_factory, storage_uri=f"s3://{BUCKET}/{KEY
     product = factories.product(session_factory, unit.id)
     admin = _as(client, make_token, "perm:product-catalog:all:all")
     asset = admin.post(f"/api/v1/products/{product.id}/assets", json={
-        "asset_type": "IMAGE", "file_name": "BOX-20__frente.png", "storage_uri": storage_uri, "mime_type": mime, "is_primary": True}).json()
+        "asset_type": "TECHNICAL_SHEET", "file_name": "BOX-20__ficha.png", "storage_uri": storage_uri, "mime_type": mime,
+        "is_primary": True}).json()
     return product, asset, admin
 
 

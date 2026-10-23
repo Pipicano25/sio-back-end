@@ -30,6 +30,7 @@ ENDPOINT_ONLY = {
     "price_list_id": {Endpoint.PRODUCT_OVERVIEWS},
     "minimum_state": {Endpoint.INVENTORY_OVERVIEWS},
     "stock_state": {Endpoint.PRODUCT_OVERVIEWS, Endpoint.INVENTORY_OVERVIEWS},
+    "include_images": {Endpoint.PRODUCT_OVERVIEWS, Endpoint.INVENTORY_OVERVIEWS},
 }
 
 
@@ -62,6 +63,7 @@ class ListingParams(BaseModel):
     sort: str | None = None
     page_size: int = Field(default=20, ge=1, le=MAX_PAGE_SIZE)
     cursor: str | None = Field(default=None, max_length=MAX_CURSOR_LENGTH)
+    include_images: bool = False
 
     @field_validator("search", "internal_code", "sku", "barcode", "identifier", "product_type", "sort", "cursor",
                      mode="before")
@@ -165,6 +167,7 @@ def parse_query(endpoint: Endpoint, company_id: UUID, pairs: Iterable[tuple[str,
         sort=sort,
         page_size=params.page_size,
         cursor=params.cursor,
+        include_images=params.include_images,
     )
 
 
@@ -240,13 +243,18 @@ PARAMETER_DESCRIPTIONS = {
     "include_descendants": "Incluye las subcategorías de `category_id`.",
     "status": "Estado del producto empresarial; por defecto `ACTIVE`.",
     "product_type": "Tipo de producto de Product Catalog.",
-    "has_image": "Con o sin imagen principal apta.",
+    "has_image": "Condición de búsqueda: `true` = el producto tiene al menos una presentación con imagen principal "
+                 "`ACTIVE`; `false` = ninguna. No indica que el producto tenga imagen: la imagen es de cada "
+                 "presentación (`presentations[].has_image`).",
     "stock_state": "`IN_STOCK` u `OUT_OF_STOCK`; exige `perm:product-inventory-query:stock:read`.",
     "minimum_state": "Estado frente al mínimo en al menos una sucursal; exige `perm:inventory:product-policies:read`.",
     "price_list_id": "Lista de precios; sin ella, la predeterminada que aplique Commercial Relationship.",
     "sort": "`display_name`, `internal_code` o `created_at`, con `:asc` o `:desc`. Si es explícito, conduce CR.",
     "page_size": "De 1 a 20; por defecto 20.",
     "cursor": "Cursor opaco de la respuesta anterior (`next_cursor`).",
+    "include_images": "Con `true`, cada presentación trae además `images[]` (todas sus imágenes `ACTIVE`). Por "
+                      "defecto `false`: solo la imagen principal (`has_image`, `asset_id`, `image_url`). No cambia "
+                      "el orden ni la paginación y se puede cambiar entre páginas.",
 }
 
 

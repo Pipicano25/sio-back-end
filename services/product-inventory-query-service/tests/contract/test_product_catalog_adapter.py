@@ -31,12 +31,13 @@ def test_summaries_skip_not_found_and_parse_fields() -> None:
          "has_image": True, "image_url": "https://pc.test/api/v1/public/product-images?ref=abc"},
         {"id": str(missing), "found": False},
     ]}))
+    # Spec 024: los campos de imagen de PC-1 son transitorios y PIQ ya no los lee (ni los exige).
     summaries = asyncio.run(pc.summaries([found, missing]))
     assert set(summaries) == {found}
     summary = summaries[found]
     assert summary.brand.code == "COL" and summary.base_unit.code == "UND"
     assert summary.categories[0].is_primary and summary.identifiers[0].value == "7702"
-    assert summary.has_image and summary.image_url.endswith("ref=abc")
+    assert not hasattr(summary, "has_image") and not hasattr(summary, "image_url")
 
 
 def test_match_evaluator_and_conductor_bodies() -> None:
@@ -71,19 +72,53 @@ def test_units_and_errors() -> None:
 
 
 def test_presentations_lookup_parses_code_name_and_factor_and_skips_not_found() -> None:
-    """`presentations/batch-lookup` (existente, spec 021): código, nombre y factor de las presentaciones globales."""
-    found, missing, product = uuid4(), uuid4(), uuid4()
+    """`presentations/batch-lookup` (specs 021 y 024): código, nombre, factor e imagen principal de la presentación."""
+    found, missing, product, asset = uuid4(), uuid4(), uuid4(), uuid4()
     pc, recorder = _pc(lambda r: httpx.Response(200, json={"items": [
         {"id": str(found), "found": True, "global_product_id": str(product), "code": "CJ10", "name": "Caja x 10",
-         "status": "ACTIVE", "eligible_for_adoption": True, "base_quantity": "10.0000", "first_used_at": None},
+         "status": "ACTIVE", "eligible_for_adoption": True, "base_quantity": "10.0000", "first_used_at": None,
+         "has_image": True, "image_asset_id": str(asset), "image_url": "https://pc.test/img?ref=a"},
         {"id": str(missing), "found": False},
     ]}))
     result = asyncio.run(pc.presentations([found, missing, found]))
     assert set(result) == {found}
-    assert (result[found].code, result[found].name, str(result[found].base_quantity)) == ("CJ10", "Caja x 10", "10.0000")
+    info = result[found]
+    assert (info.code, info.name, str(info.base_quantity)) == ("CJ10", "Caja x 10", "10.0000")
+    assert (info.has_image, info.image_asset_id, info.image_url) == (True, asset, "https://pc.test/img?ref=a")
+    assert info.images is None  # sin include_images no se piden ni se leen
     assert recorder.requests[0].url.path == "/api/v1/presentations/batch-lookup"
+    assert "include_images" not in str(recorder.requests[0].url)
     assert recorder.bodies() == [{"ids": [str(found), str(missing)]}]
     assert asyncio.run(pc.presentations([])) == {}
+
+
+def test_presentations_lookup_with_images_uses_the_same_batch_call() -> None:
+    """Spec 024 (FR-024-42): `include_images=true` va en la misma llamada por lotes y agrega `images[]`."""
+    found, empty, product, primary, other = (uuid4() for _ in range(5))
+    pc, recorder = _pc(lambda r: httpx.Response(200, json={"items": [
+        {"id": str(found), "found": True, "global_product_id": str(product), "code": "UND", "name": "Unidad",
+         "status": "ACTIVE", "base_quantity": "1", "has_image": True, "image_asset_id": str(primary),
+         "image_url": "https://pc.test/p", "images": [
+             {"asset_id": str(primary), "image_url": "https://pc.test/p", "is_primary": True},
+             {"asset_id": str(other), "image_url": "https://pc.test/o", "is_primary": False}]},
+        {"id": str(empty), "found": True, "global_product_id": str(product), "code": "CJ", "name": "Caja",
+         "status": "ACTIVE", "base_quantity": "6", "has_image": False, "image_asset_id": None, "image_url": None,
+         "images": []},
+    ]}))
+    result = asyncio.run(pc.presentations([found, empty], include_images=True))
+    assert len(recorder.requests) == 1
+    assert recorder.requests[0].url.params["include_images"] == "true"
+    assert [(i.asset_id, i.is_primary) for i in result[found].images] == [(primary, True), (other, False)]
+    assert result[empty].images == () and result[empty].has_image is False
+
+
+def test_presentations_lookup_without_image_fields_is_503() -> None:
+    """PC anterior a la spec 024 (sin `has_image` en PC-3): respuesta inesperada, nunca "sin imagen" inventado."""
+    pc, _ = _pc(lambda r: httpx.Response(200, json={"items": [
+        {"id": str(uuid4()), "found": True, "global_product_id": str(uuid4()), "code": "UND", "name": "Unidad",
+         "status": "ACTIVE", "base_quantity": "1"}]}))
+    with pytest.raises(DependencyUnavailableError):
+        asyncio.run(pc.presentations([uuid4()]))
 
 
 def test_presentations_lookup_invalid_body_is_503() -> None:

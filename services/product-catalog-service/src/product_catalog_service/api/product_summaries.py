@@ -7,6 +7,7 @@ no escriben ni auditan. Exigen `perm:product-catalog:products:read`.
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from sio_auth import SIOAuth
 from sqlalchemy.orm import Session
 
@@ -40,13 +41,18 @@ def build_router(auth: SIOAuth) -> APIRouter:
         dependencies=[permission(auth, RESOURCE, "read")],
         summary="Resumen de hasta 100 productos globales (spec 022, PC-1)",
         description=(
-            "Nombre canónico, tipo, estado, marca, unidad base, categorías e identificadores `ACTIVE`, y la imagen "
-            "principal: `has_image` y `image_url` (URL absoluta y firmada de la ruta pública, o `null`). Un número "
-            "fijo de consultas por lote. El `batch-lookup` existente no cambia."
+            "Nombre canónico, tipo, estado, marca, unidad base, categorías e identificadores `ACTIVE`. Un número "
+            "fijo de consultas por lote. El `batch-lookup` existente no cambia. Spec 024: las imágenes pertenecen a "
+            "las presentaciones (PC-3); `has_image`, `image_asset_id` e `image_url` solo se entregan durante la "
+            "transición (`PRODUCT_IMAGE_MIGRATION_STAGE=transition`) y se omiten en la etapa `completed`."
         ),
     )
     def summaries(body: BatchLookupRequest, service: ProductSummaryService = Depends(get_service)):
-        return ProductSummaryResponse(items=service.summaries(body.ids))
+        response = ProductSummaryResponse(items=service.summaries(body.ids))
+        if service.settings.image_migration_completed:  # FR-024-38: los campos de imagen se omiten
+            hidden = {"items": {"__all__": {"has_image", "image_asset_id", "image_url"}}}
+            return JSONResponse(response.model_dump(mode="json", exclude=hidden))
+        return response
 
     @router.post(
         "/match",

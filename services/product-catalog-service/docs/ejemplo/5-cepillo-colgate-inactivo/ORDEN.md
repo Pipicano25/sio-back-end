@@ -26,11 +26,11 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | 07 | [07-clasificar-y-registrar-atributos.md](07-clasificar-y-registrar-atributos.md) | Asignar la categoría y dar valor a los atributos. | 3 | 03, 04, 06 |
 | 08 | [08-crear-presentacion.md](08-crear-presentacion.md) | Pack x 2 cepillos. | 1 | 01, 06 |
 | 09 | [09-codigo-interno-no-es-codigo-de-barras.md](09-codigo-interno-no-es-codigo-de-barras.md) | Entender por qué el "código de barras" del Excel no va al catálogo. | 2 | 06, 08 |
-| 10 | [10-agregar-imagen.md](10-agregar-imagen.md) | Registrar un activo digital (foto). | 1 | 06 |
+| 10 | [10-agregar-imagen.md](10-agregar-imagen.md) | Cargar la foto del pack x 2 y dejarla como imagen principal de esa presentación (spec 024). | 8 | 06, 08 |
 | 11 | [11-crear-y-asignar-grupos.md](11-crear-y-asignar-grupos.md) | Conservar la agrupación del sistema anterior. | 9 | 01, 06 |
 | 12 | [12-inactivar-producto.md](12-inactivar-producto.md) | Comprobar que quedó completo y luego inactivarlo. | 2 | 06 |
 | 13 | [13-verificar-producto-inactivo.md](13-verificar-producto-inactivo.md) | Ver qué se puede y qué no se puede hacer con un producto inactivo. | 3 | 06 |
-| 14 | [14-consultas-por-lotes.md](14-consultas-por-lotes.md) | Ver el resumen del catálogo de un lote de productos y buscar productos por marca, para consumidores como el servicio de consultas consolidadas. | 3 | 02, 06 |
+| 14 | [14-consultas-por-lotes.md](14-consultas-por-lotes.md) | Ver el resumen del catálogo de un lote de productos y buscar productos por marca, para consumidores como el servicio de consultas consolidadas. | 4 | 02, 06, 08 |
 
 ## Por qué este orden
 
@@ -67,8 +67,10 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | `<CA_RANGO_EDAD>` | 05 | — |
 | `<PRODUCTO>` | 06 | 07, 08, 09, 10, 11, 12, 13, 14 |
 | `<PC_CEPILLOS>` | 07 | — |
-| `<PRES_PACK_X2>` | 08 | 09 |
+| `<PRES_PACK_X2>` | 08 | 09, 10, 14 |
 | `<ACTIVO_IMAGEN>` | 10 | — |
+| `<ACTIVO_IMAGEN_2>` | 10 | — |
+| `<VERSION_IMAGEN_2>` | 10 | — |
 | `<GRUPO1_0005>` | 11 | — |
 | `<ASIG_GRUPO1>` | 11 | — |
 | `<GRUPO2_0016>` | 11 | — |

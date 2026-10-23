@@ -305,7 +305,7 @@ bases de datos adicionales. Sirve para cualquier empresa: todo lo que necesita s
 | `--entidades a,b` | Procesa solo esos CSV (p. ej. primero los catálogos). Las filas que dependan de otros CSV no cargados quedan en `DEPENDENCIA`. |
 | `--rol` | Rol de `services/get_token.py` (por defecto `consulta`, suficiente para simular), cliente técnico `cliente:<client_id>` o usuario nominal `usuario:<nombre>` (contraseña en `<NOMBRE>_PASSWORD`, nunca en el código). |
 | `--salida <dir>` | Carpeta de reportes y diario (por defecto `<EMPRESA>/reports/cargue/`). |
-| `--con-imagenes` | Registra `product_assets` (`POST …/assets`). Úsalo solo después de subir los archivos a MinIO (ver "Imágenes"); sin él, las imágenes salen `OMITIDO`. |
+| `--con-imagenes` | Registra `product_assets` en su presentación (`POST …/presentations/{presentation_id}/assets`, spec 024). Úsalo solo después de subir los archivos a MinIO (ver "Imágenes"); sin él, las imágenes salen `OMITIDO`. |
 | `--escribir` | Habilita POST y PUT. Exige además `--confirmar <nombre exacto de la carpeta de la empresa>`; sin ambos no se escribe. |
 
 **Código de salida:** 0 sin errores; 1 si hubo filas `ERROR` o `INVALIDA`; 2 si Gold no pasa la validación previa;
@@ -426,8 +426,12 @@ Commercial Relationship) y, dentro de un CSV que se referencia a sí mismo (cate
 
 ### Imágenes (`product_assets`)
 
-Product Catalog no recibe el archivo: guarda la referencia `storage_uri = s3://<bucket>/assets/<sha256>.<ext>` y
-sirve el contenido desde MinIO (`GET …/assets/{id}/content`, con su cuenta de solo lectura).
+Spec 024: toda imagen pertenece a una **presentación global** (`product_presentation_ref`, obligatoria). El cargue
+la registra **por referencia** en `POST /api/v1/products/{id}/presentations/{presentation_id}/assets`: Product
+Catalog no recibe el archivo, guarda la referencia `storage_uri = s3://<bucket>/assets/<sha256>.<ext>` (comprueba
+con `HEAD` que el objeto exista y que su metadato `sha256` coincida) y sirve el contenido desde MinIO
+(`GET …/presentations/{presentation_id}/assets/{id}/content`). La carga de archivos nuevos desde la aplicación usa
+`…/assets/upload` (multipart); el cargue masivo sigue usando la referencia.
 
 1. **Verificar en local:** `validate_csv.py --layer gold` comprueba que cada archivo de `<EMPRESA>/assets/`
    exista y que su SHA-256 coincida con su nombre.
@@ -439,9 +443,14 @@ sirve el contenido desde MinIO (`GET …/assets/{id}/content`, con su cuenta de 
      `sha256=<sha256>`. Con ese metadato, Product Catalog devuelve `ETag` = SHA-256 y caché inmutable.
    - **Sin duplicados:** la clave se deriva del contenido.
 3. **Registrar:** `cargar_gold.py <EMPRESA> --con-imagenes --rol cliente:sio-data-importer --escribir
-   --confirmar <EMPRESA>`. Busca por `storage_uri` antes de crear, así que no duplica.
-4. **Verificar:** `GET …/content` de cada activo debe dar 200, contenido con el SHA-256 esperado, `Content-Type`
-   correcto, `ETag` = SHA-256 y `Cache-Control: … immutable`.
+   --confirmar <EMPRESA>`. No duplica: lo cargado queda en el diario (`YA_CARGADO`) y, sin diario, Product Catalog
+   responde `409 DUPLICATE_ASSET_CONTENT` con `existing_asset_id`, que el cargue toma como `REUSADO`.
+4. **Verificar:** `GET …/presentations/{presentation_id}/assets/{id}/content` de cada imagen debe dar 200,
+   contenido con el SHA-256 esperado, `Content-Type` correcto, `ETag` = SHA-256 y `Cache-Control: … immutable`.
+
+Las imágenes que ya estaban registradas por producto antes de la spec 024 se asocian a su presentación con
+`product_catalog_service.tools.migrate_presentation_images` (simulación, aplicación con confirmación y
+verificación), no con este cargue.
 
 Un producto sin imagen es válido; no es un error.
 

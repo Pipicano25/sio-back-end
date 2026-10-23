@@ -1,7 +1,7 @@
 """`304` de la ruta pública de imágenes en ≤ 100 ms sin cargar el objeto (spec 022, T143; RNF-022-6).
 
 Solo en la pila aislada `sio-it-*`: `SIO_TEST_TARGET=isolated` y `validation/isolation_guard.py`. La URL se obtiene
-de PC-1 para un producto con imagen del manifiesto de `validation/isolated-stack/seed.py`. Para demostrar que el
+de PC-3 (spec 024) para la presentación con imagen del manifiesto de `validation/isolated-stack/seed.py`. Para demostrar que el
 `304` no lee el almacenamiento, se repite con el almacenamiento aislado **congelado** (`docker pause`; sus datos
 están en `tmpfs` y un `stop` los borraría): el `304` sigue respondiendo y un `200` ya no puede.
 """
@@ -47,10 +47,11 @@ def image_url() -> str:
     guard().check_targets({"product_catalog": PC, "keycloak": TOKEN_URL})
     state = Path(os.environ.get("SIO_IT_STATE_DIR", "/tmp/sio-it-state")) / "seed.json"
     seed = json.loads(state.read_text(encoding="utf-8"))
-    product = next(p["global_product_id"] for p in seed["products"].values() if p["image"])
+    presentation = next(p["image_presentation_id"] for p in seed["products"].values() if p["image"])
     token = httpx.post(TOKEN_URL, data={"grant_type": "password", "client_id": "sio-web", "scope": "openid",
                                         "username": "ventas.test", "password": isolated_password()}).raise_for_status()
-    response = httpx.post(f"{PC}/products/summaries/batch-lookup", json={"ids": [product]},
+    # Spec 024: la URL es de la imagen principal de la presentación (PC-3).
+    response = httpx.post(f"{PC}/presentations/batch-lookup", json={"ids": [presentation]},
                           headers={"Authorization": f"Bearer {token.json()['access_token']}"}).raise_for_status()
     url = response.json()["items"][0]["image_url"]
     assert url

@@ -3,8 +3,9 @@
 PC es un catálogo global: no tiene `company_id`. Sus datos solo se agregan a productos que CR ya devolvió para la
 empresa (FR-022-12); `image_url` se copia tal como la construye PC (research R-13).
 
-El código, el nombre y el factor de cada presentación vienen de `presentations/batch-lookup`, contrato existente
-de PC (spec 021) que la cuenta técnica ya lee con `products:read`: CR-2 solo trae los datos de la empresa.
+El código, el nombre, el factor y la imagen de cada presentación vienen de `presentations/batch-lookup` (PC-3,
+specs 021 y 024) que la cuenta técnica ya lee con `products:read`: CR-2 solo trae los datos de la empresa.
+Spec 024: la imagen es de la presentación; los campos de imagen de PC-1 (transitorios) ya no se leen.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from product_inventory_query_service.application.ports import (
     CatalogFilters,
     Category,
     Identifier,
+    PresentationImage,
     PresentationInfo,
     ProductSummary,
     Reference,
@@ -92,9 +94,6 @@ class HTTPProductCatalog:
                                            uuid_of(i, "global_product_presentation_id", optional=True))
                                 for i in items(item, "identifiers")
                             ),
-                            has_image=bool_of(item, "has_image"),
-                            image_url=text_of(item, "image_url", optional=True),
-                            image_asset_id=uuid_of(item, "image_asset_id", optional=True),
                         )
                     )
                 return found
@@ -152,13 +151,13 @@ class HTTPProductCatalog:
         results = await asyncio.gather(*(one(batch) for batch in chunks(unique)))
         return {unit.id: unit for batch in results for unit in batch}
 
-    async def presentations(self, ids: list[UUID]) -> dict[UUID, PresentationInfo]:
+    async def presentations(self, ids: list[UUID], *, include_images: bool = False) -> dict[UUID, PresentationInfo]:
         operation = "presentations_lookup"
+        params = {"include_images": "true"} if include_images else None
 
         async def one(batch: list[UUID]) -> list[PresentationInfo]:
-            payload = await self._caller.json(
-                operation, "POST", "/presentations/batch-lookup", json={"ids": [str(i) for i in batch]}
-            )
+            payload = await self._caller.json(operation, "POST", "/presentations/batch-lookup",
+                                              json={"ids": [str(i) for i in batch]}, params=params)
             try:
                 return [
                     PresentationInfo(
@@ -168,6 +167,14 @@ class HTTPProductCatalog:
                         name=text_of(item, "name"),
                         status=text_of(item, "status"),
                         base_quantity=None if item.get("base_quantity") is None else decimal_of(item, "base_quantity"),
+                        has_image=bool_of(item, "has_image"),
+                        image_asset_id=uuid_of(item, "image_asset_id", optional=True),
+                        image_url=text_of(item, "image_url", optional=True),
+                        images=tuple(
+                            PresentationImage(uuid_of(image, "asset_id"), text_of(image, "image_url", optional=True),
+                                              bool_of(image, "is_primary"))
+                            for image in items(item, "images")
+                        ) if include_images else None,
                     )
                     for item in items(payload)
                     if bool_of(item, "found")

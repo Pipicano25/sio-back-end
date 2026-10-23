@@ -33,7 +33,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     permission = auth.permission(SERVICE, "inventory_overviews", "read")
     description = (
         "Productos con control de inventario y sus existencias en la unidad base, por sucursal y consolidadas, "
-        "con equivalencias por presentación y, con el permiso de mínimos, el estado frente al mínimo. Cualquier "
+        "con equivalencias por presentación (cada una con su imagen principal; todas sus imágenes con "
+        "`include_images=true`) y, con el permiso de mínimos, el estado frente al mínimo. Cualquier "
         "sucursal de la empresa se puede leer con membresía `ACTIVE`. Permiso: "
         "`perm:product-inventory-query:inventory_overviews:read`. " + DEFAULT_SORTS + " " + PAGINATION_NOTE
     )
@@ -45,7 +46,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         require_filter_blocks(spec.used_filters, blocks)
         seen = visibility(blocks)
         result, views = await inventory_overviews(spec, seen, ports_of(request), runtime_of(request))
-        return cursor_page(result, [inventory_overview(view, with_minimums=seen.minimums) for view in views])
+        return cursor_page(result, [inventory_overview(view, with_minimums=seen.minimums,
+                                                       include_images=spec.include_images) for view in views])
 
     @router.get(
         "/companies/{company_id}/inventory-overviews",

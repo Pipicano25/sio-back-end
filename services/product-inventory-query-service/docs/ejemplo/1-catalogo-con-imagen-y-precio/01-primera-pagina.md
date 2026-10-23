@@ -12,7 +12,9 @@ Ejecuta: `ventas.test`.
 
 - `search` lo evalúa Commercial Relationship y `has_image` Product Catalog, antes de elegir la página.
 - De los 4 «Colgate», 3 tienen imagen: la primera página trae 2, en orden `display_name:asc`, y `has_next = true`.
+- La imagen es de cada presentación (spec 024): `presentations[].has_image`, `asset_id` e `image_url`. `has_image=true` como filtro significa «al menos una presentación con imagen principal»: una presentación sin imagen propia trae `has_image = false` aunque otra presentación del producto tenga imagen (la «Caja x 12» del paso 2).
 - `image_url` es la URL directa que construye Product Catalog: se usa sin token en `<img src>`.
+- Sin `include_images`, las presentaciones no traen `images`.
 - `ventas.test` ve precios y existencias, pero no los mínimos.
 
 ## Permiso
@@ -88,8 +90,6 @@ Estado `200`.
         "code": "UND",
         "name": "Unidad"
       },
-      "has_image": true,
-      "image_url": "https://catalogo.ejemplo.test/api/v1/public/product-images?ref=EJEMPLO-02",
       "presentations": [
         {
           "company_product_presentation_id": "d2280000-0000-4000-8000-000000000021",
@@ -101,6 +101,9 @@ Estado `200`.
           "status": "ACTIVE",
           "is_sellable": true,
           "base_quantity_factor": "1.0000",
+          "has_image": true,
+          "asset_id": "d2260000-0000-4000-8000-000000000021",
+          "image_url": "https://catalogo.ejemplo.test/api/v1/public/product-images?ref=EJEMPLO-02",
           "price": {
             "price_list_id": "d22c0000-0000-4000-8000-000000000003",
             "price_list_item_id": "d2290000-0000-4000-8000-000000000021",
@@ -179,8 +182,6 @@ Estado `200`.
         "code": "UND",
         "name": "Unidad"
       },
-      "has_image": true,
-      "image_url": "https://catalogo.ejemplo.test/api/v1/public/product-images?ref=EJEMPLO-03",
       "presentations": [
         {
           "company_product_presentation_id": "d2280000-0000-4000-8000-000000000031",
@@ -192,6 +193,9 @@ Estado `200`.
           "status": "ACTIVE",
           "is_sellable": true,
           "base_quantity_factor": "1.0000",
+          "has_image": true,
+          "asset_id": "d2260000-0000-4000-8000-000000000031",
+          "image_url": "https://catalogo.ejemplo.test/api/v1/public/product-images?ref=EJEMPLO-03",
           "price": {
             "price_list_id": "d22c0000-0000-4000-8000-000000000003",
             "price_list_item_id": "d2290000-0000-4000-8000-000000000031",

@@ -11,8 +11,8 @@ import pytest
 LISTING = {"branch_id", "scope", "search", "internal_code", "sku", "barcode", "identifier", "brand_id", "category_id",
            "include_descendants", "status", "product_type", "has_image", "sort", "page_size", "cursor"}
 PARAMETERS = {
-    "product-overviews": LISTING | {"stock_state", "price_list_id"},
-    "inventory-overviews": LISTING | {"stock_state", "minimum_state"},
+    "product-overviews": LISTING | {"stock_state", "price_list_id", "include_images"},
+    "inventory-overviews": LISTING | {"stock_state", "minimum_state", "include_images"},
     "low-stock-products": LISTING,
     "inventory-summary": {"branch_id", "scope"},
 }
@@ -26,20 +26,23 @@ PAGE_FIELDS = {"items", "page_size", "has_next", "next_cursor", "pagination_rese
                "partial", "partial_reason", "sort_applied", "resolved_at"}
 IDENTITY = {"company_product_id", "global_product_id", "display_name", "canonical_name", "internal_code",
             "reference_code", "status", "global_status", "product_type", "brand", "categories", "identifiers",
-            "base_unit", "has_image", "asset_id", "image_url", "presentations"}
+            "base_unit", "presentations"}  # spec 024: sin campos de imagen en el producto
+PRESENTATION_IMAGE = {"has_image", "asset_id", "image_url", "images"}
 SCHEMAS = {
     "ProductOverview": IDENTITY | {"stock"},
     "InventoryOverview": IDENTITY | {"stock"},
     "ProductPresentationOut": {"company_product_presentation_id", "global_product_presentation_id", "code", "name",
-                               "sku", "internal_code", "status", "is_sellable", "base_quantity_factor", "price"},
+                               "sku", "internal_code", "status", "is_sellable", "base_quantity_factor", "price"}
+                              | PRESENTATION_IMAGE,
     "PresentationOut": {"company_product_presentation_id", "global_product_presentation_id", "code", "name", "sku",
-                        "internal_code", "status", "is_sellable", "base_quantity_factor"},
+                        "internal_code", "status", "is_sellable", "base_quantity_factor"} | PRESENTATION_IMAGE,
+    "PresentationImageOut": {"asset_id", "image_url", "is_primary"},
     "PriceOut": {"price_list_id", "price_list_item_id", "unit_price", "currency_code", "resolution"},
     "StockOut": {"base_unit", "total_base_quantity", "branches", "equivalences"},
     "BranchStockOut": {"branch_id", "base_quantity", "balance_state", "minimum_stock", "minimum_state"},
     "EquivalenceOut": {"company_product_presentation_id", "whole_units", "remainder_base_quantity"},
     "LowStockPair": {"company_product_id", "display_name", "internal_code", "base_unit", "branch_id", "base_quantity",
-                     "minimum_stock", "shortfall", "policy_status", "has_image", "asset_id", "image_url"},
+                     "minimum_stock", "shortfall", "policy_status"},
     "InventorySummaryOut": {"company_id", "resolved_at", "adopted_products", "branches", "consolidated"},
     "SummaryCountsOut": {"products_with_positive_balance", "products_with_zero_balance", "products_with_policy",
                          "products_below_minimum"},

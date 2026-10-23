@@ -64,9 +64,7 @@ Estado `200`.
       "base_quantity": "3.0000",
       "minimum_stock": "5.0000",
       "shortfall": "2.0000",
-      "policy_status": "ACTIVE",
-      "has_image": false,
-      "image_url": null
+      "policy_status": "ACTIVE"
     }
   ],
   "page_size": 20,

@@ -251,10 +251,13 @@ def app(
         party_identity_service_base_url="http://party-identity.test",
         party_identity_timeout_seconds=1.0,
     )
+    from tests.storage_fakes import FakeAssetStorage
+
     return create_app(
         settings,
         auth=test_auth,
         manufacturer_directory_factory=lambda request: fake_manufacturer_directory,
+        asset_storage=FakeAssetStorage(),  # spec 024: la carga de imágenes de los ejemplos escribe aquí
     )
 
 

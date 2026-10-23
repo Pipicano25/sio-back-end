@@ -32,7 +32,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     router = APIRouter(tags=[TAG_QUERIES])
     permission = auth.permission(SERVICE, "product_overviews", "read")
     description = (
-        "Productos de la empresa con su catálogo, imagen, presentaciones y, según los permisos, el precio de cada "
+        "Productos de la empresa con su catálogo, presentaciones (cada una con su imagen principal; todas sus "
+        "imágenes con `include_images=true`) y, según los permisos, el precio de cada "
         "presentación en una sola lista y las existencias por sucursal. Permiso: "
         "`perm:product-inventory-query:product_overviews:read`. " + DEFAULT_SORTS + " " + PAGINATION_NOTE
     )
@@ -45,14 +46,15 @@ def build_router(auth: SIOAuth) -> APIRouter:
         seen = visibility(blocks)
         result, views = await product_overviews(spec, seen, ports_of(request), runtime_of(request))
         return cursor_page(result, [
-            product_overview(view, with_prices=seen.prices, with_minimums=seen.minimums) for view in views
+            product_overview(view, with_prices=seen.prices, with_minimums=seen.minimums,
+                             include_images=spec.include_images) for view in views
         ])
 
     @router.get(
         "/companies/{company_id}/product-overviews",
         response_model=CursorPage[ProductOverview],
         response_model_exclude_unset=True,
-        summary="Listar productos con presentaciones, precios, imagen y existencias",
+        summary="Listar productos con presentaciones, imágenes, precios y existencias",
         description=description,
         responses=LISTING_ERRORS,
         openapi_extra={"parameters": openapi_parameters(Endpoint.PRODUCT_OVERVIEWS)},

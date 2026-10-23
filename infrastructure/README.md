@@ -406,7 +406,7 @@ con S3, para el contenido de los activos de Product Catalog (imágenes de produc
 - Puertos solo locales: API `127.0.0.1:9002`, consola `127.0.0.1:9003`. Entre contenedores:
   `http://object-storage:9000` (red `sio-network`).
 - Credenciales solo en `infrastructure/.env` (ver `.env.example`): `MINIO_ROOT_*` (solo para el
-  bootstrap), `PRODUCT_CATALOG_ASSET_STORAGE_*` (solo lectura) y `MIGRATION_ASSET_STORAGE_*`
+  bootstrap), `PRODUCT_CATALOG_ASSET_STORAGE_*` (lectura y escritura condicional de `assets/*`, sin borrado; spec 024) y `MIGRATION_ASSET_STORAGE_*`
   (lectura y escritura, sin borrado). Sin ellas, `rebuild-all.sh` omite el proyecto con un aviso.
 - Bootstrap idempotente (`object-storage/bootstrap.sh`; `rebuild-all.sh` lo ejecuta tras levantar):
 

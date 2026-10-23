@@ -49,7 +49,8 @@ def test_r_b_search_with_image_walk_equals_the_owners(users, seed) -> None:
     items, pages = walk(ventas, f"/companies/{seed['company']}/product-overviews",
                         [("search", "Colgate"), ("has_image", "true"), ("page_size", "1")])
     assert [i["company_product_id"] for i in items] == direct_search(admin, seed, search="Colgate", has_image=True)
-    assert items and all(i["has_image"] and i["image_url"] for i in items)
+    # Spec 024: la imagen es de la presentación (la primera del producto sembrado).
+    assert items and all(any(p["has_image"] and p["image_url"] for p in i["presentations"]) for i in items)
     assert {p["sort_applied"] for p in pages} == {"display_name:asc"}
     text_has_no_costs(str(pages))
 
@@ -161,11 +162,12 @@ def test_cursor_reset_and_cursor_of_another_company(users, seed) -> None:
 def test_image_url_without_token_200_then_304(users, seed) -> None:
     (item,) = users("ventas.test").get(f"{PIQ}/companies/{seed['company']}/product-overviews",
                                        params={"internal_code": f"P-0001-{seed['run']}"}).raise_for_status().json()["items"]
+    url = next(p["image_url"] for p in item["presentations"] if p["has_image"])
     with anonymous_client() as browser:
-        first = browser.get(item["image_url"])
+        first = browser.get(url)
         assert first.status_code == 200 and first.headers["content-type"] == "image/png"
         assert first.content.startswith(b"\x89PNG") and first.headers["cache-control"] == "public, max-age=31536000, immutable"
-        again = browser.get(item["image_url"], headers={"If-None-Match": first.headers["etag"]})
+        again = browser.get(url, headers={"If-None-Match": first.headers["etag"]})
         assert again.status_code == 304 and again.content == b""
 
 

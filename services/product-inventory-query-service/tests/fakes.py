@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID, uuid4
@@ -28,6 +28,7 @@ from product_inventory_query_service.application.ports import (
     Identifier,
     InventorySummary,
     Policy,
+    PresentationImage,
     PresentationInfo,
     PriceLine,
     PriceResult,
@@ -248,6 +249,8 @@ class FakeProductCatalog(_Fake):
         self.identifiers_of: dict[UUID, set[str]] = {}
         self.units_by_id: dict[UUID, Reference] = {}
         self.presentation_rows: dict[UUID, PresentationInfo] = {}
+        self.has_image_of: dict[UUID, bool] = {}
+        self.images_of: dict[UUID, list[PresentationImage]] = {}
 
     def add_product(self, product_id: UUID, name: str, *, brand_id: UUID | None = None, has_image: bool = False,
                     categories: set[UUID] | None = None, identifiers: set[str] | None = None, status: str = "ACTIVE",
@@ -259,10 +262,9 @@ class FakeProductCatalog(_Fake):
                              for index, c in enumerate(sorted(categories or set(), key=str))),
             identifiers=tuple(Identifier("GTIN", value, index == 0, None)
                               for index, value in enumerate(sorted(identifiers or set()))),
-            has_image=has_image,
-            image_url=f"https://catalogo.sio.test/api/v1/public/product-images?ref=r{product_id.hex[:8]}" if has_image else None,
         )
         self.products[product_id] = summary
+        self.has_image_of[product_id] = has_image
         self.brand_of[product_id] = brand_id
         self.categories_of[product_id] = categories or set()
         self.identifiers_of[product_id] = identifiers or set()
@@ -282,7 +284,7 @@ class FakeProductCatalog(_Fake):
             return False
         if filters.product_type and summary.product_type != filters.product_type:
             return False
-        if filters.has_image is not None and summary.has_image != filters.has_image:
+        if filters.has_image is not None and self.has_image_of.get(product_id, False) != filters.has_image:
             return False
         return True
 
@@ -314,9 +316,27 @@ class FakeProductCatalog(_Fake):
         self.presentation_rows[info.id] = info
         return info
 
-    async def presentations(self, ids):
-        await self._enter("presentations", list(ids))
-        return {i: self.presentation_rows[i] for i in dict.fromkeys(ids) if i in self.presentation_rows}
+    def add_image(self, presentation_id: UUID, *, primary: bool = True, asset_id: UUID | None = None,
+                  image_url: str | None = None) -> PresentationImage:
+        """Imagen `ACTIVE` de una presentación (spec 024); la principal define `has_image` de la presentación."""
+        asset_id = asset_id or uuid4()
+        image = PresentationImage(
+            asset_id, image_url or f"https://catalogo.sio.test/api/v1/public/product-images?ref=r{asset_id.hex[:8]}", primary)
+        images = self.images_of.setdefault(presentation_id, [])
+        images.insert(0, image) if primary else images.append(image)
+        info = self.presentation_rows[presentation_id]
+        if primary:
+            self.presentation_rows[presentation_id] = replace(info, has_image=True, image_asset_id=asset_id,
+                                                              image_url=image.image_url)
+            self.has_image_of[info.global_product_id] = True
+        return image
+
+    async def presentations(self, ids, *, include_images=False):
+        await self._enter("presentations", (list(ids), include_images))
+        found = {i: self.presentation_rows[i] for i in dict.fromkeys(ids) if i in self.presentation_rows}
+        if include_images:
+            found = {i: replace(info, images=tuple(self.images_of.get(i, ()))) for i, info in found.items()}
+        return found
 
 
 # --------------------------------------------------------------------------- Inventory

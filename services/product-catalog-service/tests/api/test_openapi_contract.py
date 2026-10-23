@@ -22,6 +22,8 @@ def _catalog(prefix: str, extra: set[tuple[str, str]] = frozenset()) -> set[tupl
     }
 
 
+PI = "/api/v1/products/{product_id}/presentations/{presentation_id}/assets"
+
 EXPECTED = (
     _catalog(f"{P}/units-of-measure", {("POST", f"{P}/units-of-measure/batch-lookup")})
     | _catalog(f"{P}/packaging-types")
@@ -101,6 +103,15 @@ EXPECTED = (
         ("POST", f"{P}/products/{{product_id}}/assets/{{asset_id}}/deactivate"),
         ("POST", f"{P}/products/{{product_id}}/assets/{{asset_id}}/reactivate"),
         ("GET", f"{P}/products/{{product_id}}/assets/{{asset_id}}/content"),
+        # Imágenes por presentación (spec 024, contracts/product-catalog-presentation-images.md)
+        ("GET", f"{PI}"),
+        ("POST", f"{PI}"),
+        ("POST", f"{PI}/upload"),
+        ("GET", f"{PI}/{{asset_id}}/content"),
+        ("PUT", f"{PI}/{{asset_id}}"),
+        ("POST", f"{PI}/{{asset_id}}/set-primary"),
+        ("POST", f"{PI}/{{asset_id}}/deactivate"),
+        ("POST", f"{PI}/{{asset_id}}/reactivate"),
         # Primer uso §6.8
         ("POST", f"{P}/products/{{product_id}}/first-use"),
         ("POST", f"{P}/products/{{product_id}}/first-use/manual"),
@@ -139,3 +150,16 @@ def test_openapi_matches_contract() -> None:
 def test_only_delete_is_attribute_value_removal() -> None:
     deletes = {path for method, path in _implemented() if method == "DELETE"}
     assert deletes == {f"{P}/products/{{product_id}}/attribute-values/{{definition_id}}"}
+
+
+def test_upload_declares_multipart_file_for_swagger() -> None:
+    """FR-024-07: Swagger muestra un selector de archivo (campo `file`, binario)."""
+    operation = create_app().openapi()["paths"][f"{PI}/upload"]["post"]
+    schema = operation["requestBody"]["content"]["multipart/form-data"]["schema"]
+    assert schema["required"] == ["file"] and schema["properties"]["file"]["format"] == "binary"
+    assert {"201", "200", "409", "413", "415", "422"} <= set(operation["responses"])
+
+
+def test_presentation_lookup_declares_include_images() -> None:
+    operation = create_app().openapi()["paths"]["/api/v1/presentations/batch-lookup"]["post"]
+    assert any(parameter["name"] == "include_images" for parameter in operation["parameters"])

@@ -7,7 +7,7 @@ realm, se regenera con `PRODUCT_INVENTORY_QUERY_EXAMPLES_WRITE=1 pytest tests/ex
 
 | Ejercicio | Qué muestra |
 | --- | --- |
-| [1-catalogo-con-imagen-y-precio](1-catalogo-con-imagen-y-precio/ORDEN.md) | Búsqueda con imagen (ruta R-B), dos páginas con cursor y una presentación sin precio en la lista |
+| [1-catalogo-con-imagen-y-precio](1-catalogo-con-imagen-y-precio/ORDEN.md) | Búsqueda con imagen (ruta R-B), dos páginas con cursor, una presentación sin precio en la lista e `include_images=true` |
 | [2-cambio-de-filtros-y-cursor](2-cambio-de-filtros-y-cursor/ORDEN.md) | Reinicio automático por `FILTERS_CHANGED`, `PAGE_SIZE_CHANGED` y `SORT_CHANGED`, y cursor alterado (`422`) |
 | [3-inventario-multisucursal](3-inventario-multisucursal/ORDEN.md) | Consolidado de la empresa, sucursal sin asignación (A-08), equivalencias, `NOT_REGISTERED` y sucursal de otra empresa (`404`) |
 | [4-bajo-stock](4-bajo-stock/ORDEN.md) | Pares producto–sucursal bajo el mínimo en orden `shortfall:desc`; igual al mínimo y mínimo 0 no aparecen |
@@ -26,6 +26,9 @@ Permisos, usuarios y cómo obtener los tokens: [usuarios-y-permisos.md](usuarios
   ejercicios.
 - Token del usuario de prueba con la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD`. Nunca
   se escriben contraseñas ni tokens en estos documentos.
+- Las imágenes son de cada presentación (spec 024): `presentations[].has_image`, `asset_id` e
+  `image_url`, y `presentations[].images` solo con `include_images=true`. El producto y
+  `low-stock-products` no traen imágenes.
 - La URL de imagen (`image_url`) solo existe si Product Catalog tiene configurada la ruta pública
   de imágenes; sin ella, `image_url` es `null` aunque `has_image` sea `true`.
 

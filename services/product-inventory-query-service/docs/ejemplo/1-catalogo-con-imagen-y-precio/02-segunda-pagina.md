@@ -87,8 +87,6 @@ Estado `200`.
         "code": "UND",
         "name": "Unidad"
       },
-      "has_image": true,
-      "image_url": "https://catalogo.ejemplo.test/api/v1/public/product-images?ref=EJEMPLO-01",
       "presentations": [
         {
           "company_product_presentation_id": "d2280000-0000-4000-8000-000000000011",
@@ -100,6 +98,9 @@ Estado `200`.
           "status": "ACTIVE",
           "is_sellable": true,
           "base_quantity_factor": "1.0000",
+          "has_image": true,
+          "asset_id": "d2260000-0000-4000-8000-000000000011",
+          "image_url": "https://catalogo.ejemplo.test/api/v1/public/product-images?ref=EJEMPLO-01",
           "price": {
             "price_list_id": "d22c0000-0000-4000-8000-000000000003",
             "price_list_item_id": "d2290000-0000-4000-8000-000000000011",
@@ -118,6 +119,9 @@ Estado `200`.
           "status": "ACTIVE",
           "is_sellable": true,
           "base_quantity_factor": "12.0000",
+          "has_image": false,
+          "asset_id": null,
+          "image_url": null,
           "price": {
             "price_list_id": null,
             "price_list_item_id": null,

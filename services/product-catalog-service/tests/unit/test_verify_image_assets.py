@@ -16,9 +16,10 @@ from product_catalog_service.tools.verify_image_assets import (
     SHA_MISMATCH,
     STORAGE_UNAVAILABLE,
     main,
+    orphans,
     verify,
 )
-from tests.api.test_asset_content_api import FakeAssetStorage
+from tests.storage_fakes import FakeAssetStorage
 
 BUCKET = "sio-product-assets"
 PNG = b"\x89PNG\r\n\x1a\n" + b"x" * 40
@@ -91,3 +92,26 @@ def test_only_reads_the_storage() -> None:
 def test_cli_requires_explicit_confirmation(capsys) -> None:
     assert main([]) == 2
     assert "autorización" in capsys.readouterr().err
+
+
+def test_orphans_lists_unreferenced_objects_without_keys_and_without_deleting() -> None:
+    """Spec 024, FR-024-30 y caso 21: un objeto escrito sin registro en la base se detecta (solo lectura)."""
+    storage = FakeAssetStorage()
+    other = b"\x89PNG\r\n\x1a\n" + b"y" * 40
+    for data in (PNG, other):
+        storage.put(f"assets/{_sha(data)}.png", data, content_type="image/png", metadata={"sha256": _sha(data)})
+    storage.put("otros/no-cuenta.txt", b"x", content_type="text/plain")
+    before = dict(storage.objects)
+
+    report = orphans([_uri(PNG), "https://cdn.example.com/frente.png", None], storage, BUCKET)
+
+    assert report == {"result": OK, "objects": 2, "orphans": 1, "orphan_sha_prefixes": [_sha(other)[:12]]}
+    assert storage.objects == before and set(storage.calls) == {"list"}
+    text = json.dumps(report)
+    assert BUCKET not in text and "assets/" not in text and _sha(other) not in text
+
+
+def test_orphans_with_storage_down_is_reported() -> None:
+    storage = FakeAssetStorage()
+    storage.unavailable = True
+    assert orphans([], storage, BUCKET)["result"] == STORAGE_UNAVAILABLE

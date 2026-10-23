@@ -19,6 +19,7 @@ def include_domain_routers(app: FastAPI, auth: SIOAuth) -> None:
         group_types,
         identifiers,
         packaging_types,
+        presentation_images,
         presentations,
         product_attribute_values,
         product_categories,
@@ -43,6 +44,7 @@ def include_domain_routers(app: FastAPI, auth: SIOAuth) -> None:
         group_types.build_router,
         product_group_assignments.build_router,
         assets.build_router,
+        presentation_images.build_router,  # spec 024: imágenes por presentación
         first_use.build_router,
     ]
 

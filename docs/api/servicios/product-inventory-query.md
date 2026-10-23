@@ -4,7 +4,7 @@
 
 ## Introducción
 
-Product Inventory Query es el servicio de **consulta consolidada** para las pantallas de productos y existencias. En una sola llamada devuelve el producto empresarial con su catálogo, imagen, presentaciones, precio por presentación y existencias por sucursal, combinando Commercial Relationship, Product Catalog e Inventory. Es la forma recomendada de construir buscadores de productos, puntos de venta y tableros de inventario sin encadenar llamadas desde el navegador.
+Product Inventory Query es el servicio de **consulta consolidada** para las pantallas de productos y existencias. En una sola llamada devuelve el producto empresarial con su catálogo, presentaciones (con su imagen), precio por presentación y existencias por sucursal, combinando Commercial Relationship, Product Catalog e Inventory. Es la forma recomendada de construir buscadores de productos, puntos de venta y tableros de inventario sin encadenar llamadas desde el navegador.
 
 ## Responsabilidad
 
@@ -88,13 +88,62 @@ Orden predeterminado en productos y existencias: `display_name:asc` sin filtros 
 | `category_id` | UUID, repetible | máx. 100 | Categoría (varias con O); con `include_descendants=true` incluye subcategorías |
 | `status` | `ACTIVE` \| `INACTIVE` \| `ALL` | por defecto `ACTIVE` | Estado del producto empresarial |
 | `product_type` | string | máx. 20 | Tipo de producto de Product Catalog |
-| `has_image` | boolean | — | Con o sin imagen principal apta |
+| `has_image` | boolean | — | Con o sin imagen principal apta (spec 024: al menos una presentación con imagen principal; ver [Imágenes por presentación](#imágenes-por-presentación-spec-024-pendiente-de-despliegue)) |
 | `stock_state` | `IN_STOCK` \| `OUT_OF_STOCK` | exige bloque existencias | No disponible en bajo mínimo |
 | `minimum_state` | `NO_POLICY` \| `BELOW_MINIMUM` \| `AT_MINIMUM` \| `ABOVE_MINIMUM` | exige bloque mínimos | Solo en existencias |
 | `price_list_id` | UUID | — | Solo en productos: lista de precios; sin ella, la predeterminada que aplique Commercial Relationship |
 | `sort`, `page_size`, `cursor` | — | ver arriba | — |
 
 Un parámetro desconocido produce `422 VALIDATION_ERROR`.
+
+## Imágenes por presentación (spec 024; pendiente de despliegue)
+
+> **Estado:** implementado en el código y validado por las pruebas del servicio el 2026-10-23; **aún no desplegado en Render**. Las fichas de abajo describen el contrato desplegado. Al desplegar la spec 024 (después de Product Catalog), las respuestas cambian así:
+
+| Dónde | Antes (contrato desplegado) | Con la spec 024 |
+|---|---|---|
+| Producto (`ProductOverview`, `InventoryOverview`) | `has_image`, `asset_id`, `image_url` del producto | **Se retiran**: la imagen es de cada presentación |
+| `presentations[]` | Sin campos de imagen | `has_image` (la presentación tiene imagen principal `ACTIVE`), `asset_id` e `image_url` (URL pública firmada de la principal, o `null`) |
+| `presentations[].images` | — | Solo con `include_images=true`: todas las imágenes `ACTIVE` (`asset_id`, `image_url`, `is_primary`), la principal primero; `[]` si no tiene. Sin el parámetro, el campo se omite |
+| Bajo mínimo (`LowStockPair`) | `has_image`, `asset_id`, `image_url` | **Se retiran**: no trae imágenes. `include_images` en esta consulta → `422` |
+| Filtro `has_image` | Con o sin imagen principal del producto | Condición de búsqueda: `true` = al menos una presentación con imagen principal `ACTIVE`; `false` = ninguna. No significa que "el producto tenga imagen" |
+
+Parámetro nuevo en productos y existencias (empresa y sucursal):
+
+| Parámetro | Tipo | Por defecto | Significado |
+|---|---|---|---|
+| `include_images` | boolean | `false` | Agrega `presentations[].images`. No forma parte de la huella del cursor: se puede activar o desactivar entre páginas sin reiniciar la paginación. No agrega llamadas a Product Catalog (usa la misma consulta por lotes de presentaciones) |
+
+Ejemplo de solicitud:
+
+```bash
+curl -sS 'https://sio-product-inventory-query-dev.onrender.com/api/v1/companies/9b2f7c3e-1d4a-4e8b-9c6f-2a1b3c4d5e6f/product-overviews?search=Acetaminof%C3%A9n&include_images=true' \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+Fragmento de una presentación en la respuesta (valores ilustrativos):
+
+```json
+{
+  "company_product_presentation_id": "a5b6c7d8-e9f0-4a1b-8c2d-3e4f5a6b7c83",
+  "global_product_presentation_id": "c6c7d8e9-f0a1-4b2c-9d3e-4f5a6b7c8d94",
+  "code": "UN",
+  "name": "Unidad",
+  "sku": "7701234567890",
+  "internal_code": "PRD-0001-U",
+  "status": "ACTIVE",
+  "is_sellable": true,
+  "base_quantity_factor": "1.0000",
+  "has_image": true,
+  "asset_id": "4c8291aa-edb7-46e7-8e38-83d456610944",
+  "image_url": "https://sio-product-catalog-dev.onrender.com/api/v1/public/product-images?ref=<referencia firmada>",
+  "images": [
+    {"asset_id": "4c8291aa-edb7-46e7-8e38-83d456610944", "image_url": "https://sio-product-catalog-dev.onrender.com/api/v1/public/product-images?ref=<referencia firmada>", "is_primary": true}
+  ]
+}
+```
+
+Para cargar o cambiar imágenes, el frontend usa Product Catalog con `global_product_id` y `global_product_presentation_id` de esta respuesta ([imágenes por presentación](product-catalog.md#imágenes-por-presentación-spec-024-operaciones-i-1-a-i-8)). Ejemplos ejecutados: `services/product-inventory-query-service/docs/ejemplo/1-catalogo-con-imagen-y-precio/` (pasos 1 a 3).
 
 ## Tabla de endpoints
 
@@ -231,7 +280,7 @@ Campos destacados de `ProductOverview`:
 | `company_product_id`, `global_product_id` | Identificadores para [ventas y compras](../parametros/company-product-id.md) y para el catálogo global |
 | `status` / `global_status` | Estado del producto empresarial y del global |
 | `identifiers[]` | Códigos de barras u otros identificadores globales (`type`, `value`, `is_primary`, presentación asociada) |
-| `image_url` | URL de la imagen principal construida por Product Catalog (referencia firmada; se copia tal cual). `null` si `has_image` es `false`. El ejemplo es ilustrativo |
+| `image_url` | URL de la imagen principal construida por Product Catalog (referencia firmada; se copia tal cual). `null` si `has_image` es `false`. El ejemplo es ilustrativo. Spec 024: pasa a cada presentación ([ver](#imágenes-por-presentación-spec-024-pendiente-de-despliegue)) |
 | `presentations[].base_quantity_factor` | Unidades base por presentación, 4 decimales |
 | `presentations[].price.resolution` | `PRICE_LIST_ITEM` (precio encontrado), `NO_PRICE_IN_LIST`, `NO_APPLICABLE_PRICE_LIST` o `PRICE_LIST_NOT_APPLICABLE`, tal como los informa Commercial Relationship; `unit_price` es `null` salvo en el primero |
 | `stock.branches[].balance_state` | `REGISTERED` (hay saldo registrado, aunque sea cero) o `NOT_REGISTERED` |
@@ -685,4 +734,4 @@ Ejemplo de respuesta `200` (`InventorySummaryOut`; valores ilustrativos):
 | Operaciones documentadas | 10 |
 | Permisos contrastados con el código | Sí (`api/product_overviews.py`, `inventory_overviews.py`, `low_stock_products.py`, `inventory_summary.py`, `visibility.py`) |
 | Esquemas contrastados | Sí (OpenAPI desplegado, modelos `CursorPage`, `ProductOverview`, `InventoryOverview`, `LowStockPair`, `InventorySummaryOut`) |
-| Pendiente | Valores exactos de `product_type`, `identifiers[].type` y formato de `image_url` (los define Product Catalog; ver su ficha) |
+| Pendiente | Valores exactos de `product_type`, `identifiers[].type` y formato de `image_url` (los define Product Catalog; ver su ficha). Despliegue en Render de la spec 024 (imágenes por presentación e `include_images`) |

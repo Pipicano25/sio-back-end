@@ -22,6 +22,7 @@ def _lifecycle(path: str, item: str, suffix: str, entity: str) -> dict:
 
 
 P = f"{V}/products/{{product_id}}"
+PI = f"{P}/presentations/{{presentation_id}}/assets"
 CATALOG = {
     **_lifecycle("units-of-measure", "item_id", "UNIT_OF_MEASURE", "UnitOfMeasure"),
     **_lifecycle("packaging-types", "item_id", "PACKAGING_TYPE", "PackagingType"),
@@ -60,6 +61,13 @@ CATALOG = {
     ("POST", f"{P}/assets/{{asset_id}}/set-primary"): ("SET_PRIMARY_PRODUCT_ASSET", "ProductAsset"),
     ("POST", f"{P}/assets/{{asset_id}}/deactivate"): ("DEACTIVATE_PRODUCT_ASSET", "ProductAsset"),
     ("POST", f"{P}/assets/{{asset_id}}/reactivate"): ("REACTIVATE_PRODUCT_ASSET", "ProductAsset"),
+    # Spec 024: imágenes por presentación (mismas acciones de activo; la carga y el registro crean).
+    ("POST", f"{PI}"): ("CREATE_PRODUCT_ASSET", "ProductAsset"),
+    ("POST", f"{PI}/upload"): ("CREATE_PRODUCT_ASSET", "ProductAsset"),
+    ("PUT", f"{PI}/{{asset_id}}"): ("UPDATE_PRODUCT_ASSET", "ProductAsset"),
+    ("POST", f"{PI}/{{asset_id}}/set-primary"): ("SET_PRIMARY_PRODUCT_ASSET", "ProductAsset"),
+    ("POST", f"{PI}/{{asset_id}}/deactivate"): ("DEACTIVATE_PRODUCT_ASSET", "ProductAsset"),
+    ("POST", f"{PI}/{{asset_id}}/reactivate"): ("REACTIVATE_PRODUCT_ASSET", "ProductAsset"),
     ("POST", f"{P}/first-use"): ("REGISTER_PRODUCT_FIRST_USE", "Product"),
     ("POST", f"{P}/first-use/manual"): ("REGISTER_PRODUCT_FIRST_USE", "Product"),
 }
@@ -86,7 +94,7 @@ def test_every_write_has_exactly_one_action(app) -> None:
     writes = _writes(app)
     assert READS_BY_POST <= writes
     assert writes - READS_BY_POST == set(CATALOG)
-    assert len(CATALOG) == 63
+    assert len(CATALOG) == 69  # 63 de la feature 016 + 6 rutas de imágenes por presentación (spec 024)
 
 
 def test_catalog_matches_the_service_constants() -> None:

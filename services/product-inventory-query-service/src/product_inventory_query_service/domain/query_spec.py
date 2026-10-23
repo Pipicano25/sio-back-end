@@ -54,6 +54,8 @@ class QuerySpec:
     sort: Sort | None = None
     page_size: int = DEFAULT_PAGE_SIZE
     cursor: str | None = None
+    include_images: bool = False
+    """Spec 024: agrega `images[]` por presentación. No es un filtro: no entra en la huella del cursor."""
 
     @property
     def catalog_filters(self) -> bool:

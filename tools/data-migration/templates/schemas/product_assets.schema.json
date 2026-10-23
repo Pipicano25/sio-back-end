@@ -57,14 +57,10 @@
     {
       "name": "asset_type",
       "type": "string",
-      "description": "Tipo",
+      "description": "Tipo (spec 024: el cargue solo registra imágenes, siempre por presentación)",
       "constraints": {
         "enum": [
-          "IMAGE",
-          "TECHNICAL_SHEET",
-          "MANUAL",
-          "CERTIFICATE",
-          "OTHER"
+          "IMAGE"
         ],
         "required": true
       }
@@ -98,7 +94,7 @@
     {
       "name": "is_primary",
       "type": "boolean",
-      "description": "Principal (a lo sumo uno por producto y tipo)",
+      "description": "Principal (a lo sumo una por presentación; spec 024)",
       "trueValues": [
         "true"
       ],
@@ -109,9 +105,10 @@
     {
       "name": "product_presentation_ref",
       "type": "string",
-      "description": "Técnica: presentación que muestra la imagen (la API asocia el activo al producto)",
+      "description": "Presentación global de la imagen (spec 024: obligatoria; la imagen se registra en la presentación)",
       "constraints": {
-        "maxLength": 120
+        "maxLength": 120,
+        "required": true
       }
     },
     {
@@ -161,10 +158,10 @@
   ],
   "sio": {
     "service": "product-catalog",
-    "endpoint": "POST /api/v1/products/{product_id}/assets",
-    "contract": "AssetCreate",
+    "endpoint": "POST /api/v1/products/{product_id}/presentations/{presentation_id}/assets",
+    "contract": "PresentationImageReference",
     "identity": [
-      "product_ref",
+      "product_presentation_ref",
       "storage_uri"
     ],
     "rules": [
@@ -172,7 +169,7 @@
         "type": "one_true",
         "field": "is_primary",
         "per": [
-          "product_ref",
+          "product_presentation_ref",
           "asset_type"
         ],
         "max": 1
@@ -180,8 +177,14 @@
       {
         "type": "file_hash",
         "field": "local_file"
+      },
+      {
+        "type": "same_parent",
+        "field": "product_presentation_ref",
+        "parent": "product_ref",
+        "file": "product_presentations"
       }
     ],
-    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13"
+    "verified_at": "2026-10-12 (OpenAPI publicado por el servicio); IUM: spec 018, 2026-10-13; spec 024 (imágenes por presentación), 2026-10-23"
   }
 }

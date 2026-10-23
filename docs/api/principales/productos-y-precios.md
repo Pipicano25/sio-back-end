@@ -42,7 +42,7 @@ Ventas, Compras e Inventario trabajan **siempre** con la capa de empresa (`compa
 | 26 | Verificar la cobertura de políticas | `POST https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/{company_id}/pricing-policies/coverage` | `perm:commercial-relationship:pricing_policy_coverage:read` | [CR 60](../servicios/commercial-relationship.md#60-post-companiescompany_idpricing-policiescoverage) |
 | 27 | Consultar las actualizaciones automáticas de precio | `GET https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/{company_id}/automatic-price-applications` | `perm:commercial-relationship:automatic_price_applications:read` | [CR 72](../servicios/commercial-relationship.md#72-get-companiescompany_idautomatic-price-applications) |
 
-Operaciones relacionadas que no se consideran principales (ver las fichas): modificar, inactivar o reactivar productos, presentaciones e identificadores globales (PC 54, 57, 58, 70–72, 75–77); consultar marcas, categorías y tipos de empaque (PC 16, 30, 10, citados donde se usan); atributos, grupos y archivos del producto (PC 63–65, 78–102); la búsqueda progresiva y las consultas por lotes de productos y presentaciones de la empresa (CR 5, 6, 28, 29); modificar, inactivar o reactivar productos y presentaciones de la empresa (CR 8–10, 31–33); el impuesto de compra por lotes (CR 12); consultar, inactivar o reactivar una lista o un precio (CR 48, 50, 51, 54, 57, 58); la resolución del precio que usa Sales internamente (CR 59); consultar, renombrar e inactivar una política y su historial (CR 63–66, 70); el detalle y la resolución administrativa de una actualización automática (CR 73, 74). La solicitud de actualización automática (CR 71) es exclusiva de la cuenta técnica de Purchase.
+Operaciones relacionadas que no se consideran principales (ver las fichas): modificar, inactivar o reactivar productos, presentaciones e identificadores globales (PC 54, 57, 58, 70–72, 75–77); consultar marcas, categorías y tipos de empaque (PC 16, 30, 10, citados donde se usan); atributos, grupos y archivos del producto (PC 63–65, 78–102; spec 024: las imágenes pasan a las rutas por presentación); la búsqueda progresiva y las consultas por lotes de productos y presentaciones de la empresa (CR 5, 6, 28, 29); modificar, inactivar o reactivar productos y presentaciones de la empresa (CR 8–10, 31–33); el impuesto de compra por lotes (CR 12); consultar, inactivar o reactivar una lista o un precio (CR 48, 50, 51, 54, 57, 58); la resolución del precio que usa Sales internamente (CR 59); consultar, renombrar e inactivar una política y su historial (CR 63–66, 70); el detalle y la resolución administrativa de una actualización automática (CR 73, 74). La solicitud de actualización automática (CR 71) es exclusiva de la cuenta técnica de Purchase.
 
 Orden habitual para dejar un producto listo para vender: [API 1](#1-buscar-productos-globales) (¿ya existe en el catálogo?) → si no existe, [API 2](#2-consultar-las-unidades-de-medida), [API 3](#3-crear-un-producto-global), [API 4](#4-asignar-una-categoría-al-producto-global), [API 6](#6-crear-una-presentación-global) y [API 7](#7-registrar-un-código-de-barras-del-producto-global) → [API 8](#8-adoptar-un-producto-global-en-la-empresa) (adoptar el producto) → [API 5](#5-consultar-las-presentaciones-globales-de-un-producto) y [API 11](#11-adoptar-una-presentación-en-la-empresa) (adoptar sus presentaciones) → [API 13](#13-configurar-el-impuesto-de-compra-del-producto) (impuesto de compra) → [API 14](#14-crear-una-lista-de-precios) (lista) → [API 17](#17-registrar-un-precio-de-venta) (precio manual) y [API 21](#21-crear-una-política-de-ganancia) (política de ganancia, exigida por Compras).
 
@@ -703,6 +703,27 @@ Ejemplo de `409`:
   "trace_id": "9f8e7d6c5b4a39281716151413121110"
 }
 ```
+
+### Imagen de la presentación (spec 024; pendiente de despliegue)
+
+Desde la spec 024 la imagen es de **cada presentación global**, no del producto. Después de crear la presentación, el frontend carga su imagen con un archivo del equipo del usuario: Product Catalog valida el contenido (JPEG, PNG o WebP, hasta 5 MiB y 40 megapíxeles), lo guarda en el almacenamiento de SIO y lo deja como imagen principal de la presentación. Permiso `perm:product-catalog:products:update`. **Aún no está desplegado en Render**; la ficha completa (listar, cambiar el nombre, cambiar la principal, eliminar y reactivar) está en [Product Catalog, imágenes por presentación](../servicios/product-catalog.md#imágenes-por-presentación-spec-024-operaciones-i-1-a-i-8).
+
+```bash
+curl -sS -X POST 'https://sio-product-catalog-dev.onrender.com/api/v1/products/f4a5b6c7-d8e9-4f0a-9b1c-2d3e4f5a6b72/presentations/e6d7d0c7-a0be-4f4b-8bca-631867ff85c8/assets/upload' \
+  -H "Authorization: Bearer TU_ACCESS_TOKEN" \
+  -F 'file=@caja-x-100-frente.jpg'
+```
+
+| Respuesta | Qué significa | Qué hacer en la interfaz |
+|---|---|---|
+| `201` | Imagen nueva, ya principal; `image_url` sirve para `<img src>` sin token | Mostrar la imagen |
+| `200` | Era la misma imagen, que estaba eliminada: se reactivó con el mismo `id` | Mostrar la imagen |
+| `409 PRODUCT_CATALOG.DUPLICATE_ASSET_CONTENT` | La presentación ya tiene esa imagen (`existing_asset_id`) | Informar que ya está cargada |
+| `413 …FILE_TOO_LARGE` / `415 …UNSUPPORTED_MEDIA_TYPE` | Más de 5 MiB, o no es JPEG, PNG ni WebP | Pedir otra imagen |
+| `422 …INVALID_IMAGE` / `IMAGE_DIMENSIONS_EXCEEDED` | Archivo dañado o de más de 40 megapíxeles | Pedir otra imagen |
+| `422 …PRESENTATION_INACTIVE` / `PRODUCT_INACTIVE` | La presentación o el producto están inactivos | Reactivarlos primero |
+
+En las consultas de [Product Inventory Query](../servicios/product-inventory-query.md#imágenes-por-presentación-spec-024-pendiente-de-despliegue), cada presentación trae `has_image`, `asset_id` e `image_url`, y todas sus imágenes con `include_images=true`.
 
 ## 7. Registrar un código de barras del producto global
 

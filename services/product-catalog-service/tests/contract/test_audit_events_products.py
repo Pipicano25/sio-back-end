@@ -147,8 +147,9 @@ def test_groups_and_assignments(api, session_factory, outbox, clear_outbox) -> N
 
 def test_assets(api, session_factory, outbox, clear_outbox) -> None:
     product = _product(session_factory)
-    image = {"asset_type": "IMAGE", "file_name": "frente.png", "storage_uri": "s3://sio-assets/productos/frente.png",
-             "mime_type": "image/png"}
+    # Spec 024: las imágenes se auditan por presentación (`test_presentation_images_api.py`); aquí, una ficha técnica.
+    image = {"asset_type": "TECHNICAL_SHEET", "file_name": "frente.png",
+             "storage_uri": "s3://sio-assets/productos/frente.png", "mime_type": "image/png"}
     clear_outbox()
     base = f"{V}/products/{product.id}/assets"
     first = api.post(base, json={**image, "is_primary": True})

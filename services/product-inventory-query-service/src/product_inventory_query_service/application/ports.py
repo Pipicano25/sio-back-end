@@ -157,14 +157,24 @@ class ProductSummary:
     base_unit: Reference | None
     categories: tuple[Category, ...]
     identifiers: tuple[Identifier, ...]
-    has_image: bool
+
+
+@dataclass(frozen=True, slots=True)
+class PresentationImage:
+    """Imagen `ACTIVE` de una presentación (spec 024, `images[]` de PC-3 con `include_images=true`)."""
+
+    asset_id: UUID
     image_url: str | None
-    image_asset_id: UUID | None = None
+    is_primary: bool
 
 
 @dataclass(frozen=True, slots=True)
 class PresentationInfo:
-    """Presentación global (`presentations/batch-lookup` existente, spec 021): código, nombre y factor."""
+    """Presentación global (`presentations/batch-lookup`, specs 021 y 024): código, nombre, factor e imagen.
+
+    Spec 024: la imagen es de la presentación. `has_image`, `image_asset_id` e `image_url` describen su imagen
+    principal `ACTIVE`; `images` solo viene cuando se pidió `include_images=true` (si no, `None`).
+    """
 
     id: UUID
     global_product_id: UUID
@@ -172,6 +182,10 @@ class PresentationInfo:
     name: str
     status: str
     base_quantity: Decimal | None
+    has_image: bool = False
+    image_asset_id: UUID | None = None
+    image_url: str | None = None
+    images: tuple[PresentationImage, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,8 +216,8 @@ class ProductCatalogPort(Protocol):
     async def units(self, ids: list[UUID]) -> dict[UUID, Reference]:
         """PC-3: código y nombre de las unidades encontradas."""
 
-    async def presentations(self, ids: list[UUID]) -> dict[UUID, PresentationInfo]:
-        """`presentations/batch-lookup` (existente): solo las encontradas (hasta 100 por llamada)."""
+    async def presentations(self, ids: list[UUID], *, include_images: bool = False) -> dict[UUID, PresentationInfo]:
+        """`presentations/batch-lookup`: solo las encontradas (hasta 100 por llamada); con su imagen (spec 024)."""
 
 
 # --------------------------------------------------------------------------- Inventory
