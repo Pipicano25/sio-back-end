@@ -492,8 +492,12 @@ class PriceListItemRepository(SQLAlchemyRepositoryBase[PriceListItemModel]):
         presentation_ids: set[UUID],
         list_ids: set[UUID],
         at: datetime,
+        alternatives: bool = False,
     ) -> tuple[dict, dict, dict, dict]:
         """Datos de la resolución en a lo sumo 3 consultas (SC-007, R-10).
+
+        Con `alternatives`, también las demás listas `ACTIVE` de la empresa en esas
+        monedas (respaldo al precio más alto); la vigencia la evalúa el servicio.
 
         Returns:
             Productos y presentaciones de la empresa por UUID; listas implicadas
@@ -526,7 +530,7 @@ class PriceListItemRepository(SQLAlchemyRepositoryBase[PriceListItemModel]):
                     or_(
                         PriceListModel.id.in_(list_ids or [None]),
                         and_(
-                            PriceListModel.is_default.is_(True),
+                            *([] if alternatives else [PriceListModel.is_default.is_(True)]),
                             PriceListModel.status == "ACTIVE",
                             PriceListModel.currency_code.in_(currencies or [""]),
                         ),

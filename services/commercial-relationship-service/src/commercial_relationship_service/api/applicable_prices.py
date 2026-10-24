@@ -52,6 +52,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
                 for line in body.lines
             ],
             at=body.at,
+            fallback_to_highest_price=body.fallback_to_highest_price,
         )
         return ApplicablePriceResponse(
             at=at, items=[ApplicablePriceItem(**asdict(result)) for result in results]

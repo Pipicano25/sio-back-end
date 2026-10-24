@@ -8,6 +8,12 @@ Orden de resolución por línea (spec 019: el precio siempre es de una presentac
    (si no la hay, `NO_APPLICABLE_PRICE_LIST`).
 2. En la lista: **solo** el precio explícito de la presentación de la línea
    (`basis = PRESENTATION`). Sin él, `NO_PRICE_IN_LIST`.
+3. Solo con `fallback_to_highest_price` (lo pide Product Inventory Query; los
+   demás consumidores no lo envían) y sin lista indicada: si la predeterminada
+   no tiene el precio de la presentación, se toma el precio más alto entre las
+   demás listas `ACTIVE` y vigentes de la empresa en la moneda del producto
+   empresarial. Empate: código de la lista y luego su UUID. Sin ninguno,
+   `NO_PRICE_IN_LIST`.
 
 No hay precios generales por producto, ni respaldo en el producto empresarial,
 ni conversiones entre presentaciones. Los precios anteriores sin presentación
@@ -68,7 +74,9 @@ class ApplicablePriceService:
     def __init__(self, repository) -> None:
         self._repository = repository
 
-    def resolve(self, company_id: UUID, lines: list[PriceLine], *, at: datetime | None) -> tuple[datetime, list[ResolvedPrice]]:
+    def resolve(
+        self, company_id: UUID, lines: list[PriceLine], *, at: datetime | None, fallback_to_highest_price: bool = False
+    ) -> tuple[datetime, list[ResolvedPrice]]:
         if len(lines) > BATCH_LIMIT:
             raise BatchLimitExceededError(field="lines")
 
@@ -86,6 +94,8 @@ class ApplicablePriceService:
             },
             list_ids={line.price_list_id for line in lines if line.price_list_id is not None},
             at=at,
+            # Las listas no predeterminadas solo se cargan si se pide el respaldo.
+            **({"alternatives": True} if fallback_to_highest_price else {}),
         )
         defaults = {
             price_list.currency_code: price_list
@@ -94,7 +104,8 @@ class ApplicablePriceService:
         }
 
         return at, [
-            _resolve_line(line, at, products, presentations, lists, defaults, items) for line in lines
+            _resolve_line(line, at, products, presentations, lists, defaults, items, fallback=fallback_to_highest_price)
+            for line in lines
         ]
 
 
@@ -102,7 +113,24 @@ def _applicable(price_list: Any, at: datetime) -> bool:
     return price_list.status == ACTIVE and contains(price_list.valid_from, price_list.valid_to, at)
 
 
-def _resolve_line(line: PriceLine, at: datetime, products, presentations, lists, defaults, items) -> ResolvedPrice:
+def _highest_alternative(product: Any, presentation: Any, default: Any, at: datetime, lists, items):
+    """Precio más alto de las demás listas aplicables en la moneda del producto; empate por código y UUID."""
+    candidates = [
+        (price_list, item)
+        for price_list in lists.values()
+        if price_list.id != default.id
+        and price_list.currency_code == product.currency_code
+        and _applicable(price_list, at)
+        and (item := items.get((price_list.id, product.id, presentation.id))) is not None
+    ]
+    if not candidates:
+        return None, None
+    return min(candidates, key=lambda pair: (-pair[1].unit_price, pair[0].code, str(pair[0].id)))
+
+
+def _resolve_line(
+    line: PriceLine, at: datetime, products, presentations, lists, defaults, items, *, fallback: bool = False
+) -> ResolvedPrice:
     product = products.get(line.company_product_id)
     presentation = None
 
@@ -138,6 +166,9 @@ def _resolve_line(line: PriceLine, at: datetime, products, presentations, lists,
         return ResolvedPrice(line_id=line.line_id, found=True, resolution=NO_APPLICABLE_PRICE_LIST, **states)
 
     item = items.get((price_list.id, product.id, presentation.id)) if presentation is not None else None
+
+    if item is None and fallback and not explicit and presentation is not None:
+        price_list, item = _highest_alternative(product, presentation, price_list, at, lists, items)
 
     if item is None:
         # Spec 019: sin el precio explícito de la presentación no hay precio (ni general ni de respaldo).

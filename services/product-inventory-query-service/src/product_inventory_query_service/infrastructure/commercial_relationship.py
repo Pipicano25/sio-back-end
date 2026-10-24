@@ -2,6 +2,9 @@
 
 Toda fila con un `company_id` distinto de la empresa de la ruta se descarta y se registra como incidente de
 integridad (FR-022-12). La `position` de CR-1 se conserva sin modificarla (research R-06).
+
+Los precios se piden con `fallback_to_highest_price`: sin lista indicada y sin precio en la predeterminada, CR
+devuelve el más alto de las demás listas activas y vigentes de la empresa (la lista indicada siempre prevalece).
 """
 
 from __future__ import annotations
@@ -149,7 +152,7 @@ class HTTPCommercialRelationship:
                         **({"price_list_id": str(line.price_list_id)} if line.price_list_id else {}),
                     }
                     for line in batch
-                ]},
+                ], "fallback_to_highest_price": True},
             )
             try:
                 return [

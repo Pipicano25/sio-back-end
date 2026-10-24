@@ -96,6 +96,11 @@ class ApplicablePriceRequest(StrictModel):
 
     at: AwareDatetime | None = None
     lines: list[ApplicablePriceLine] = Field(min_length=1)
+    fallback_to_highest_price: bool = Field(
+        default=False,
+        description="Sin lista indicada y sin precio en la predeterminada: el precio más alto de las demás listas "
+        "activas y vigentes en la moneda del producto. Lo usa Product Inventory Query.",
+    )
 
 
 class ApplicablePriceItem(BaseModel):
