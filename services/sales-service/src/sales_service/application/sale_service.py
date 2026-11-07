@@ -7,6 +7,9 @@ revalidación de estado, versión y operación en curso, cambio, totales, audito
 
 El vendedor nunca envía precio (DS-11), fecha ni condición de pago (DP-01): el precio lo
 resuelve Commercial Relationship; la fecha es la del día en la zona de la sucursal (R-12).
+
+Al crear, el cliente puede indicarse con la identidad global (persona u organización): si aún no es cliente de la
+empresa se registra automáticamente (`application/sale_customers.py`).
 """
 
 from __future__ import annotations
@@ -27,7 +30,7 @@ from sales_service.application.exceptions import (
     VersionConflictError,
     field_error,
 )
-from sales_service.application.ports import AccessDirectory, CompanyInfo
+from sales_service.application.ports import AccessDirectory, CompanyInfo, CustomerRegistry
 from sales_service.application.reference_validation import (
     HeaderInput,
     LineInput,
@@ -36,6 +39,7 @@ from sales_service.application.reference_validation import (
     resolve_together,
     today_in,
 )
+from sales_service.application.sale_customers import CustomerEnrollment, customer_reference
 from sales_service.application.snapshots import (
     apply_amounts,
     apply_business_date,
@@ -52,18 +56,21 @@ from sales_service.infrastructure.repository import SaleRepository
 
 @dataclass(frozen=True, slots=True)
 class Actor:
-    """Usuario humano que actúa: su `sub` (D1) y su acceso operativo (token propio)."""
+    """Usuario humano que actúa: su `sub` (D1), su acceso operativo y sus clientes (token propio)."""
 
     subject: str
     access: AccessDirectory
+    customers: CustomerRegistry | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class HeaderData:
     branch_id: UUID
-    company_customer_id: UUID
+    company_customer_id: UUID | None  # al crear puede venir en su lugar la identidad global
     observations: str | None
     payment_method_id: UUID | None = None
+    person_identity_id: UUID | None = None
+    organization_identity_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -206,7 +213,7 @@ class SaleService:
         company = self._resolver.company(sale.company_id)
         if company.default_currency != sale.currency_code:
             # La moneda de la venta quedó fijada al crearla (FR-010).
-            return CompanyInfo(company.id, company.status, sale.currency_code)
+            return CompanyInfo(company.id, company.status, sale.currency_code, company.organization_identity_id)
         return company
 
     def view(self, sale: Sale) -> SaleView:
@@ -217,11 +224,19 @@ class SaleService:
 
     def create(self, company_id: UUID, header: HeaderData, lines: Sequence[LineData], actor: Actor) -> SaleView:
         operator = require_branch_access(actor.access, company_id, header.branch_id)
+        customer_kind, reference = customer_reference(
+            header.company_customer_id, header.person_identity_id, header.organization_identity_id
+        )
         inputs = check_inputs(lines, prefix=lambda index: f"lines[{index}].")
         company = self._resolver.company(company_id)
+        customer_id = (
+            reference
+            if customer_kind is None
+            else CustomerEnrollment(self._resolver.directories, actor.customers).ensure(company, customer_kind, reference)
+        )
         header_snapshot, line_snapshots = resolve_together(
             lambda: self._resolver.resolve_header(
-                company, HeaderInput(header.branch_id, header.company_customer_id, header.payment_method_id)
+                company, HeaderInput(header.branch_id, customer_id, header.payment_method_id)
             ),
             lambda: self._resolver.resolve_lines(company_id, company.default_currency, line_inputs(lines, inputs)),
         )
@@ -232,7 +247,7 @@ class SaleService:
             id=uuid4(),
             company_id=company_id,
             branch_id=header.branch_id,
-            company_customer_id=header.company_customer_id,
+            company_customer_id=customer_id,
             status=DRAFT,
             payment_condition_code_snapshot=CASH,
             payment_terms_days_snapshot=0,

@@ -83,3 +83,39 @@ def test_network_error_and_timeout_are_dependency_unavailable():
 def test_unexpected_body_is_dependency_unavailable():
     with pytest.raises(DependencyUnavailableError):
         _adapter(lambda request: httpx.Response(200, json={"id": "x"})).get_person(uuid4())
+
+
+def test_profile_returns_names_and_identification():
+    person_id = uuid4()
+
+    def handler(request):
+        assert str(request.url) == f"http://party-identity.test/api/v1/person-identities/{person_id}"
+        assert request.headers["authorization"] == TOKEN
+        return httpx.Response(
+            200,
+            json={
+                "id": str(person_id),
+                "status": "ACTIVE",
+                "identification_type": "CC",
+                "identification_number": "1099000060",
+                "first_name": "Mariana",
+                "middle_name": "",
+                "last_name": "Ortiz",
+                "second_last_name": None,
+            },
+        )
+
+    profile = _adapter(handler).get_person_profile(person_id)
+
+    assert profile.id == person_id and profile.status == "ACTIVE"
+    assert (profile.identification_type, profile.identification_number) == ("CC", "1099000060")
+    assert (profile.first_name, profile.last_name) == ("Mariana", "Ortiz")
+    # Vacíos o nulos se devuelven como `None`.
+    assert profile.middle_name is None and profile.second_last_name is None
+
+
+def test_profile_404_is_none_and_errors_are_dependency_unavailable():
+    assert _adapter(lambda request: httpx.Response(404)).get_person_profile(uuid4()) is None
+
+    with pytest.raises(DependencyUnavailableError):
+        _adapter(lambda request: httpx.Response(403)).get_person_profile(uuid4())

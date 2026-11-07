@@ -85,6 +85,7 @@ El alcance se calcula en **cada solicitud** a partir de las membresías `ACTIVE`
 | 31 | `POST` | `/companies/{company_id}/advisor-assignments/change-primary` | Cambiar asesor principal | `company_advisor_assignments:create` + `delete` | `WRITE` | [Ver](#31-post-companiescompany_idadvisor-assignmentschange-primary) |
 | 32 | `GET` | `/me/operational-context` | Contexto operativo propio | `application_users:read` | `READ` | [Ver](#32-get-meoperational-context) |
 | 33 | `GET` | `/operational-access` | Comprobar acceso operativo | `application_users:read` | `READ` | [Ver](#33-get-operational-access) |
+| 34 | `GET` | `/companies/{company_id}/branch-employees` | Empleados separados por sucursal | `user_branches:read` + `branches:read` + `application_users:read` | `READ` | [Ver](#34-get-companiescompany_idbranch-employees) |
 
 Todos los permisos de la tabla empiezan por `perm:operational-context:`.
 
@@ -1495,6 +1496,84 @@ Ejemplo de respuesta `200` (`OperationalAccessResponse`; valores ilustrativos):
 
 Reglas: una denegación funcional responde `200` con `allowed: false`, nunca `403`. Por la vía propia (token del usuario), una empresa o sucursal ajena **o inexistente** responde `USER_NOT_MEMBER` sin revelar más. Por la vía técnica (`platform:lookup` + `keycloak_user_id`), un objetivo inexistente responde `404` y el permiso se evalúa con los roles efectivos del usuario objetivo leídos de Keycloak. Es la operación que invocan Sales, Purchase, Inventory, Commercial Relationship, Audit, Business Reporting y Product Inventory Query para decidir el alcance.
 
+### 34. `GET /companies/{company_id}/branch-employees`
+
+| | |
+|---|---|
+| Clasificación | `READ` · empleados de la empresa separados por sucursal |
+| URL | `https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}/branch-employees` |
+| Permisos | `user_branches:read` **y** `branches:read` **y** `application_users:read` |
+| Alcance | Membresía en la empresa (o `platform:administer`); fuera del alcance → `404` como un UUID inexistente |
+| Disponibilidad | Nueva (FR-025a); disponible tras el próximo despliegue de Operational Context |
+
+Devuelve una página de **sucursales** (código y nombre) y, dentro de cada una, sus empleados asignados con el nombre y la identificación de la persona. El nombre y la identificación se consultan a Party Identity en el momento con el token del usuario (una vez por persona) y no se guardan; si Party Identity no responde o el token no puede leer personas, esos campos vienen en `null` y la respuesta sigue siendo `200`.
+
+| Parámetro | Dónde | Tipo | Obligatorio | Validación / por defecto | Cómo obtenerlo |
+|---|---|---|---|---|---|
+| `company_id` | ruta | UUID | Sí | Empresa visible | [company_id](../parametros/company-id.md) |
+| `branch_id` | query | UUID | No | Solo esa sucursal, en cualquier estado; de otra empresa → `404` | [branch_id](../parametros/branch-id.md) |
+| `status` | query | `ACTIVE` \| `INACTIVE` | No | Estado de las sucursales; `ACTIVE` por defecto | — |
+| `assignment_status` | query | `ACTIVE` \| `INACTIVE` | No | Estado de las asignaciones; `ACTIVE` por defecto (`INACTIVE` = empleados retirados de la sucursal) | — |
+| `search` | query | string | No | ≤ 160; parcial en código y nombre de la sucursal | — |
+| `page`, `page_size` | query | integer | No | 1–100; la paginación es de sucursales | — |
+
+Ejemplo de solicitud (sin cuerpo):
+
+```bash
+curl -sS 'https://sio-operational-context-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/branch-employees' \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+Ejemplo de respuesta `200` (`PaginatedResponse_BranchEmployeesResponse_`; valores ilustrativos):
+
+```json
+{
+  "items": [
+    {
+      "branch_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "code": "PRINCIPAL",
+      "name": "Sede Principal",
+      "status": "ACTIVE",
+      "employees": [
+        {
+          "application_user_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          "display_name": "Ana Pérez",
+          "reference_email": "ana.perez@ejemplo.com",
+          "keycloak_user_id": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
+          "person_identity_id": "a0e1d2c3-b4a5-4968-8776-655443322110",
+          "identification_type": "CC",
+          "identification_number": "1012345678",
+          "first_name": "Ana",
+          "middle_name": null,
+          "last_name": "Pérez",
+          "second_last_name": null,
+          "membership_status": "ACTIVE",
+          "user_branch_id": "e8c5f9de-8af8-4aa7-8f96-536c03dc33ac",
+          "user_branch_status": "ACTIVE",
+          "assigned_at": "2026-10-19T15:04:05Z",
+          "allowed": true,
+          "reason": null
+        }
+      ]
+    }
+  ],
+  "page": 1,
+  "page_size": 20,
+  "total_records": 1,
+  "total_pages": 1
+}
+```
+
+| Campo de `employees[]` | Significado |
+|---|---|
+| `application_user_id`, `display_name`, `reference_email`, `keycloak_user_id`, `person_identity_id` | Usuario operativo (operación 15) |
+| `identification_type`, `identification_number`, `first_name`, `middle_name`, `last_name`, `second_last_name` | Persona en Party Identity; `null` si no se pudo consultar |
+| `membership_status` | Estado del empleado en la empresa |
+| `user_branch_id`, `user_branch_status`, `assigned_at` | Asignación a la sucursal (operación 24) |
+| `allowed`, `reason` | Acceso operativo efectivo, como `operational_access` de la operación 23 |
+
+Un empleado asignado a varias sucursales aparece en cada una; una sucursal sin empleados trae `employees: []`. Errores: `404 NOT_FOUND` (empresa o sucursal), `403` si falta alguno de los tres permisos. Dependencias: Party Identity (opcional para la respuesta).
+
 ## Errores frecuentes
 
 | Respuesta | Causa | Qué hacer |
@@ -1513,7 +1592,7 @@ Reglas: una denegación funcional responde `200` con `allowed: false`, nunca `40
 
 | Servicio | Uso |
 |---|---|
-| Party Identity | Validar identidades de organización (empresas) y de persona (usuarios, asesores), con el token del usuario |
+| Party Identity | Validar identidades de organización (empresas) y de persona (usuarios, asesores), y leer nombre e identificación para `/me/operational-context` y el listado de empleados por sucursal (sin guardarlos), con el token del usuario |
 | Geography | Validar país, división y ciudad activos y coherentes, con el token del usuario |
 | Keycloak (Admin API) | Verificar la cuenta al crear o reactivar usuarios operativos y leer roles efectivos en la vía técnica, con la cuenta de servicio del propio Operational Context |
 | Audit | Eventos de auditoría |
@@ -1522,8 +1601,8 @@ Reglas: una denegación funcional responde `200` con `allowed: false`, nunca `40
 
 | Verificación | Resultado |
 |---|---|
-| Operaciones en el OpenAPI desplegado | 33 |
-| Operaciones documentadas | 33 |
-| Permisos contrastados con el código | Sí (`api/companies.py`, `branches.py`, `application_users.py`, `user_branches.py`, `advisor_assignments.py`, `operational_access.py`) |
+| Operaciones en el OpenAPI desplegado | 33 (la 34 se agrega en el próximo despliegue) |
+| Operaciones documentadas | 34 |
+| Permisos contrastados con el código | Sí (`api/companies.py`, `branches.py`, `application_users.py`, `user_branches.py`, `branch_employees.py`, `advisor_assignments.py`, `operational_access.py`) |
 | Esquemas contrastados | Sí (`api/schemas/*.py`, `application/access_scope.py`, `domain/access.py`, `api/errors.py`) |
 | Verificado | En asesores, el inicio de vigencia es el valor enviado o el instante actual; nunca puede ser futuro y debe llevar zona horaria |

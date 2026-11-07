@@ -18,13 +18,15 @@ class CompanyCustomerFilters:
         search: str | None = Query(default=None, max_length=100),
         status: Literal["ACTIVE", "INACTIVE", "ALL"] | None = Query(default=None),
         customer_kind: Literal["PERSON", "ORGANIZATION"] | None = Query(default=None),
-        person_identity_id: UUID | None = Query(default=None),
-        organization_identity_id: UUID | None = Query(default=None),
+        # Repetibles (`?person_identity_id=a&person_identity_id=b`): Sales busca una página de identidades en una
+        # sola llamada. Con un solo valor se comporta como antes.
+        person_identity_id: list[UUID] | None = Query(default=None),
+        organization_identity_id: list[UUID] | None = Query(default=None),
     ) -> None:
         self.search = normalize_search(search)
         self.status = status
         self.columns: dict[str, Any] = {
             "customer_kind": customer_kind,
-            "person_identity_id": person_identity_id,
-            "organization_identity_id": organization_identity_id,
+            "person_identity_id": person_identity_id or None,
+            "organization_identity_id": organization_identity_id or None,
         }

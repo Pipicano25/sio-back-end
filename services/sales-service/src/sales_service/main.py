@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from fastapi import FastAPI, Request
 from sio_auth import SIOAuth, install_cors
 
-from sales_service.api.dependencies import AccessFactory, DirectoriesFactory, InventoryFactory
+from sales_service.api.dependencies import AccessFactory, CustomersFactory, DirectoriesFactory, InventoryFactory
 from sales_service.api.errors import register_error_handlers
 from sales_service.api.health import build_router as build_health_router
 from sales_service.api.openapi import OPENAPI_TAGS, configure_bearer_openapi
@@ -19,6 +19,7 @@ from sales_service.api.tracing import TracingMiddleware
 from sales_service.application.ports import Directories, TokenProvider
 from sales_service.config import Settings, load_settings
 from sales_service.infrastructure.commercial_relationship_directory import HTTPCommercialDirectory
+from sales_service.infrastructure.customer_registry import HTTPCustomerRegistry
 from sales_service.infrastructure.database import Database
 from sales_service.infrastructure.inventory_gateway import HTTPInventoryGateway
 from sales_service.infrastructure.keycloak_token_client import KeycloakTokenClient
@@ -99,6 +100,7 @@ def create_app(
     directories_factory: DirectoriesFactory | None = None,
     inventory_factory: InventoryFactory | None = None,
     access_factory: AccessFactory | None = None,
+    customers_factory: CustomersFactory | None = None,
     clock: Callable[[], datetime] | None = None,
 ) -> FastAPI:
     """Construye la aplicación FastAPI.
@@ -138,12 +140,20 @@ def create_app(
             timeout_seconds=current_settings.operational_context_timeout_seconds,
         )
 
+    def default_customers(request: Request) -> HTTPCustomerRegistry:
+        return HTTPCustomerRegistry(
+            base_url=current_settings.commercial_relationship_base_url,
+            authorization=request.headers.get("authorization"),
+            timeout_seconds=current_settings.commercial_relationship_timeout_seconds,
+        )
+
     app.state.settings = current_settings
     app.state.database = database
     app.state.clock = clock or utc_now
     app.state.directories_factory = directories_factory or build_directories(current_settings, tokens)
     app.state.inventory_factory = inventory_factory or build_inventory(current_settings, tokens)
     app.state.access_factory = access_factory or default_access
+    app.state.customers_factory = customers_factory or default_customers
 
     public_paths = set(HEALTH_PUBLIC_PATHS)
 

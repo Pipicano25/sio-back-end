@@ -29,6 +29,7 @@ class CompanyInfo:
     id: UUID
     status: str
     default_currency: str
+    organization_identity_id: UUID | None = None  # su nombre se lee en Party Identity (mensajes al vendedor)
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,6 +161,30 @@ class CommercialDirectory(Protocol):
         ...
 
 
+class CustomerRejection(Exception):
+    """Rechazo de Commercial Relationship al registrar un cliente (`403`, `404`, `409` o `422`)."""
+
+    def __init__(self, status: int, code: str | None, message: str | None) -> None:
+        super().__init__(code or str(status))
+        self.status = status
+        self.code = code
+        self.message = message
+
+
+class CustomerRegistry(Protocol):
+    """Clientes de la empresa con **el token del usuario**: membresía y auditoría a su nombre."""
+
+    def find(self, company_id: UUID, customer_kind: str, identity_ids: Sequence[UUID]) -> dict[UUID, CustomerInfo]:
+        """Clientes en cualquier estado por identidad (≤ 100 identidades), indexados por la identidad."""
+        ...
+
+    def create(
+        self, company_id: UUID, customer_kind: str, identity_id: UUID, internal_code: str, display_name: str
+    ) -> CustomerInfo:
+        """`POST /companies/{c}/company-customers`; rechazo → `CustomerRejection`."""
+        ...
+
+
 # Product Catalog -----------------------------------------------------------
 
 
@@ -201,12 +226,24 @@ class IdentityInfo:
     id: UUID
     identification_type: str | None
     identification_number: str | None
+    name: str | None = None
+    status: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class IdentityPage:
+    items: list[IdentityInfo]
+    total_records: int
 
 
 class PartyDirectory(Protocol):
     def get_person(self, person_id: UUID) -> IdentityInfo | None: ...
 
     def get_organization(self, organization_id: UUID) -> IdentityInfo | None: ...
+
+    def search(self, customer_kind: str, search: str | None, page: int, page_size: int) -> IdentityPage:
+        """Página de identidades `ACTIVE` de la plataforma (personas u organizaciones)."""
+        ...
 
 
 # Inventory -----------------------------------------------------------------

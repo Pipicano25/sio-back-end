@@ -17,7 +17,13 @@ from operational_context_service.application.exceptions import (
     PARTY_IDENTITY_UNAVAILABLE,
     DependencyUnavailableError,
 )
-from operational_context_service.application.ports import CityRef, DivisionRef, ExternalRef
+from operational_context_service.application.ports import (
+    CityRef,
+    DivisionRef,
+    ExternalRef,
+    OrganizationProfile,
+    PersonProfile,
+)
 
 
 class _Recorder:
@@ -72,6 +78,30 @@ class FakeOrganizationDirectory(_Recorder):
         status = self.organizations.get(organization_identity_id)
 
         return None if status is None else ExternalRef(id=organization_identity_id, status=status)
+
+    def get_organization_profile(self, organization_identity_id: UUID) -> OrganizationProfile | None:
+        self._record("get_organization_profile", organization_identity_id)
+
+        if self.mode == "unavailable":
+            raise DependencyUnavailableError(
+                provider="party-identity",
+                cause=PARTY_IDENTITY_UNAVAILABLE,
+                operation="get_organization_profile",
+            )
+
+        status = self.organizations.get(organization_identity_id)
+
+        if status is None:
+            return None
+
+        return OrganizationProfile(
+            id=organization_identity_id,
+            status=status,
+            legal_name=f"EMPRESA {str(organization_identity_id)[:8].upper()} S.A.S.",
+            trade_name=f"EMPRESA {str(organization_identity_id)[:8].upper()}",
+            identification_type="NIT",
+            identification_number="900123456",
+        )
 
 
 class FakeGeographyDirectory(_Recorder):
@@ -270,3 +300,31 @@ class FakePersonDirectory(_Recorder):
         status = self.persons.get(person_identity_id)
 
         return None if status is None else ExternalRef(id=person_identity_id, status=status)
+
+    def get_person_profile(self, person_identity_id: UUID) -> PersonProfile | None:
+        self._record("get_person_profile", person_identity_id)
+
+        if self.mode == "unavailable":
+            raise DependencyUnavailableError(
+                provider="party-identity",
+                cause=PARTY_IDENTITY_UNAVAILABLE,
+                operation="get_person_profile",
+            )
+
+        status = self.persons.get(person_identity_id)
+
+        if status is None:
+            return None
+
+        tag = str(person_identity_id)[:8].upper()
+
+        return PersonProfile(
+            id=person_identity_id,
+            status=status,
+            identification_type="CC",
+            identification_number=f"10{int(tag, 16) % 10**8:08d}",
+            first_name=f"Nombre {tag}",
+            middle_name=None,
+            last_name=f"Apellido {tag}",
+            second_last_name=None,
+        )

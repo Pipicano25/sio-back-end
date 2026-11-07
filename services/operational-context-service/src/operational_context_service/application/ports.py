@@ -8,6 +8,7 @@ persisten (FR-044).
 
 from dataclasses import dataclass
 from datetime import datetime
+from collections.abc import Collection
 from typing import Any, Protocol
 from uuid import UUID
 
@@ -28,6 +29,39 @@ class ExternalRef:
 
     id: UUID
     status: str
+
+
+@dataclass(frozen=True, slots=True)
+class OrganizationProfile:
+    """Nombre e identificación de una organización de Party Identity.
+
+    Solo para mostrarlos en el contexto operativo; nunca se persisten (RC-13).
+    """
+
+    id: UUID
+    status: str
+    legal_name: str | None
+    trade_name: str | None
+    identification_type: str | None
+    identification_number: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class PersonProfile:
+    """Nombre e identificación de una persona de Party Identity.
+
+    Solo para mostrarlos en el listado de empleados por sucursal; nunca se
+    persisten (RC-13, FR-065).
+    """
+
+    id: UUID
+    status: str
+    identification_type: str | None
+    identification_number: str | None
+    first_name: str | None
+    middle_name: str | None
+    last_name: str | None
+    second_last_name: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +91,13 @@ class OrganizationDirectory(Protocol):
 
         Raises:
             DependencyUnavailableError: Si no fue posible consultar.
+        """
+
+    def get_organization_profile(self, organization_identity_id: UUID) -> OrganizationProfile | None:
+        """Nombre e identificación de la organización, o `None` si no existe.
+
+        Raises:
+            DependencyUnavailableError: Si no fue posible consultar o el token no tiene permiso.
         """
 
 
@@ -224,6 +265,13 @@ class PersonDirectory(Protocol):
             DependencyUnavailableError: Si no fue posible consultar.
         """
 
+    def get_person_profile(self, person_identity_id: UUID) -> PersonProfile | None:
+        """Nombre e identificación de la persona, o `None` si no existe.
+
+        Raises:
+            DependencyUnavailableError: Si no fue posible consultar o el token no tiene permiso.
+        """
+
 
 @dataclass(frozen=True, slots=True)
 class MembershipRef:
@@ -278,6 +326,9 @@ class ApplicationUserRepository(Protocol):
     def get_by_id(self, application_user_id: UUID) -> ApplicationUser | None: ...
 
     def list_by_subject(self, keycloak_user_id: str) -> list[ApplicationUser]: ...
+
+    def list_by_ids(self, application_user_ids: Collection[UUID]) -> list[ApplicationUser]:
+        """Membresías con esos ids, en cualquier estado."""
 
     def exists_active(
         self,
@@ -334,6 +385,9 @@ class UserBranchRepository(Protocol):
     def find_pair(self, application_user_id: UUID, branch_id: UUID) -> UserBranch | None: ...
 
     def list_all_for_user(self, application_user_id: UUID) -> list[UserBranch]: ...
+
+    def list_for_branches(self, branch_ids: Collection[UUID], *, status: EntityStatus) -> list[UserBranch]:
+        """Asignaciones con ese estado de esas sucursales, más antiguas primero."""
 
     def list_by(
         self,

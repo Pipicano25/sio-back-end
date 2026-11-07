@@ -14,6 +14,7 @@ from operational_context_service.api.access_scope import get_access_scope
 from operational_context_service.api.dependencies import get_operational_access_service
 from operational_context_service.api.schemas.access import (
     MeOperationalContextResponse,
+    MembershipContextResponse,
     OperationalAccessResponse,
 )
 from operational_context_service.application.access_scope import AccessScope
@@ -38,10 +39,10 @@ def build_router(auth: SIOAuth) -> APIRouter:
         scope: AccessScope = Depends(get_access_scope),
         service: OperationalAccessService = Depends(get_operational_access_service),
     ):
-        """Membresías del usuario autenticado y sus sucursales con acceso efectivo (FR-070)."""
+        """Membresías del usuario autenticado con los datos de la empresa y de sus sucursales (FR-070, FR-070a)."""
         return MeOperationalContextResponse(
             keycloak_user_id=scope.subject,
-            memberships=service.me(scope),
+            memberships=[MembershipContextResponse.of(membership) for membership in service.me(scope)],
         )
 
     @router.get(

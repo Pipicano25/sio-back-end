@@ -109,7 +109,9 @@ class SQLAlchemyRepositoryBase(Generic[ModelT]):
             )
 
         for column, value in filters.items():
-            if value is not None:
+            if isinstance(value, list | tuple):
+                statement = statement.where(getattr(self.model, column).in_(value))
+            elif value is not None:
                 statement = statement.where(getattr(self.model, column) == value)
 
         total = self.session.scalar(select(func.count()).select_from(statement.subquery())) or 0

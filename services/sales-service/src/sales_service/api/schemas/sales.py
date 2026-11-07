@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -23,6 +23,7 @@ from pydantic.json_schema import SkipJsonSchema
 from pydantic_core import PydanticCustomError
 
 from sales_service.application.availability import ProductAvailability
+from sales_service.application.sale_customers import SaleCustomer
 from sales_service.application.sale_service import HeaderData, LineData, SaleView
 from sales_service.application.snapshots import line_base_quantity
 from sales_service.domain.status import MAX_LINES
@@ -113,7 +114,22 @@ class HeaderIn(StrictModel):
 
 
 class SaleCreateIn(HeaderIn):
+    # Uno solo de los tres: el cliente de la empresa o la identidad global. Con la identidad, si aún no es
+    # cliente de la empresa se registra automáticamente.
+    company_customer_id: UUID | None = None
+    person_identity_id: UUID | None = None
+    organization_identity_id: UUID | None = None
     lines: list[LineIn] = Field(default_factory=list)
+
+    def to_header(self) -> HeaderData:
+        return HeaderData(
+            branch_id=self.branch_id,
+            company_customer_id=self.company_customer_id,
+            observations=self.observations,
+            payment_method_id=self.payment_method_id,
+            person_identity_id=self.person_identity_id,
+            organization_identity_id=self.organization_identity_id,
+        )
 
     @field_validator("lines", mode="before")
     @classmethod
@@ -400,3 +416,34 @@ class OperationResponse(BaseModel):
             completed_at=operation.completed_at,
         )
 
+
+
+class SaleCustomerQuery(StrictModel):
+    customer_kind: Literal["PERSON", "ORGANIZATION"] = "PERSON"
+    search: Annotated[str, Field(min_length=1, max_length=120)] | None = None
+    page: Annotated[int, Field(ge=1)] = 1
+    page_size: Annotated[int, Field(ge=1, le=100)] = 20
+
+
+class SaleCustomerResponse(BaseModel):
+    customer_kind: str
+    identity_id: UUID = Field(description="`person_identity_id` u `organization_identity_id` según el tipo.")
+    name: str | None
+    identification_type: str | None
+    identification_number: str | None
+    company_customer_id: UUID | None = Field(description="`null` si aún no es cliente de la empresa.")
+    customer_status: str = Field(description="`ACTIVE`, `INACTIVE` o `NOT_CUSTOMER`.")
+    can_buy: bool
+    message: str | None
+
+    @classmethod
+    def of(cls, item: SaleCustomer) -> SaleCustomerResponse:
+        return cls(**{name: getattr(item, name) for name in cls.model_fields})
+
+
+class SaleCustomerPage(BaseModel):
+    items: list[SaleCustomerResponse]
+    page: int
+    page_size: int
+    total_records: int
+    total_pages: int

@@ -13,6 +13,7 @@ from operational_context_service.api.advisor_assignments import build_router as 
 from operational_context_service.api.application_users import (
     build_router as build_application_users_router,
 )
+from operational_context_service.api.branch_employees import build_router as build_branch_employees_router
 from operational_context_service.api.branches import build_router as build_branches_router
 from operational_context_service.api.companies import build_router as build_companies_router
 from operational_context_service.api.dependencies import (
@@ -193,6 +194,7 @@ def create_app(
     app.include_router(build_branches_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_application_users_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_user_branches_router(current_auth), prefix=API_PREFIX)
+    app.include_router(build_branch_employees_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_advisors_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_operational_access_router(current_auth), prefix=API_PREFIX)
 

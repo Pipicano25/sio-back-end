@@ -117,6 +117,19 @@ class BranchAccessDeniedError(SalesError):
         )
 
 
+class CustomerEnrollmentDeniedError(SalesError):
+    """El vendedor no puede registrar al cliente en Commercial Relationship (`403`)."""
+
+    code = "CUSTOMER_ENROLLMENT_DENIED"
+    title = "Registro del cliente denegado"
+
+    def __init__(self) -> None:
+        super().__init__(
+            "La persona u organización aún no es cliente de la empresa y su usuario no tiene permiso para "
+            "registrar clientes. Solicite el permiso al administrador del sistema indicando el trace_id."
+        )
+
+
 class VersionConflictError(SalesError):
     code = "VERSION_CONFLICT"
     title = "Conflicto de versión"

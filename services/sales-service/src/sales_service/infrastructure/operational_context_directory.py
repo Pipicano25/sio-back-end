@@ -58,7 +58,12 @@ class HTTPOperationalContextDirectory:
             currency = text_field(body, "default_currency")
             if not _CURRENCY.match(currency or ""):
                 raise UnexpectedBody("default_currency")
-            return CompanyInfo(id=company_id, status=text_field(body, "status"), default_currency=currency)
+            return CompanyInfo(
+                id=company_id,
+                status=text_field(body, "status"),
+                default_currency=currency,
+                organization_identity_id=uuid_field(body, "organization_identity_id", optional=True),
+            )
         except UnexpectedBody as exc:
             raise self._caller.client.unavailable("company", outcome=f"cuerpo_inesperado:{exc}") from None
 

@@ -27,6 +27,7 @@ EXPECTED_OPERATIONS = {
     ("get", "/api/v1/application-users/{application_user_id}/user-branches"),
     ("post", "/api/v1/application-users/{application_user_id}/user-branches"),
     ("get", "/api/v1/branches/{branch_id}/user-branches"),
+    ("get", "/api/v1/companies/{company_id}/branch-employees"),
     ("get", "/api/v1/user-branches/{user_branch_id}"),
     ("post", "/api/v1/user-branches/{user_branch_id}/deactivate"),
     ("post", "/api/v1/user-branches/{user_branch_id}/reactivate"),

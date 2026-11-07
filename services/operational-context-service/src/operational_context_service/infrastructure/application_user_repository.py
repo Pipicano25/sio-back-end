@@ -7,6 +7,7 @@ membresía creada o reactivada bajo una empresa inactiva (RN-10). La unicidad de
 membresía `ACTIVE` la garantizan índices únicos parciales (R-04).
 """
 
+from collections.abc import Collection
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -68,6 +69,17 @@ class SQLAlchemyApplicationUserRepository:
             _user_query()
             .where(ApplicationUserModel.keycloak_user_id == keycloak_user_id)
             .order_by(ApplicationUserModel.created_at, ApplicationUserModel.id)
+        ).all()
+
+        return [to_application_user(*row) for row in rows]
+
+    def list_by_ids(self, application_user_ids: Collection[UUID]) -> list[ApplicationUser]:
+        """Membresías con esos ids, en cualquier estado, en una sola consulta."""
+        if not application_user_ids:
+            return []
+
+        rows = self.session.execute(
+            _user_query().where(ApplicationUserModel.id.in_(list(application_user_ids)))
         ).all()
 
         return [to_application_user(*row) for row in rows]

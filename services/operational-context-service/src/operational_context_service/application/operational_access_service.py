@@ -1,6 +1,8 @@
 """Contratos Provider de acceso operativo (US4; FR-070, FR-071, FR-075; DS-07, DS-08, C-14).
 
-- `me`: membresías del `sub` del token y sus sucursales con acceso efectivo.
+- `me`: membresías del `sub` del token y sus sucursales con acceso efectivo, con los
+  datos de la empresa (nombre e identificación leídos de Party Identity, sin
+  persistirlos) y de cada sucursal.
 - `check`: acceso de un usuario a una empresa o sucursal, con causa estable.
 
 Vía propia (token del usuario): una empresa o sucursal ajena **o inexistente**
@@ -12,21 +14,25 @@ nunca con los permisos del token técnico (R-11).
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from uuid import UUID
 
 from sio_auth import SioPermission, evaluate_permission
 
 from operational_context_service.application.access_scope import AccessScope
-from operational_context_service.application.exceptions import NotFoundError
+from operational_context_service.application.exceptions import DependencyUnavailableError, NotFoundError
 from operational_context_service.application.ports import (
     ApplicationUserRepository,
     BranchRepository,
     CompanyRepository,
     IdentityAccountDirectory,
     MembershipLookup,
+    OrganizationDirectory,
+    OrganizationProfile,
     UserBranchRepository,
 )
+from operational_context_service.domain.entities import Branch, Company
 from operational_context_service.domain.access import (
     AccessDenialReason,
     AccessFacts,
@@ -34,6 +40,21 @@ from operational_context_service.domain.access import (
     evaluate_technical_access,
 )
 from operational_context_service.domain.errors import DomainValidationError, OperationalContextError
+
+logger = logging.getLogger(__name__)
+
+
+def _with_organization(context: MembershipContext, profile: OrganizationProfile | None) -> MembershipContext:
+    company = CompanyContext(context.company.company, profile)
+    return MembershipContext(
+        application_user_id=context.application_user_id,
+        company_id=context.company_id,
+        company_status=context.company_status,
+        status=context.status,
+        branches=context.branches,
+        company=company,
+    )
+
 
 class LookupCapabilityRequiredError(OperationalContextError):
     """Consultar el acceso de otro `sub` exige `platform:lookup` (FR-045)."""
@@ -66,6 +87,15 @@ class BranchAccess:
     branch_status: str
     allowed: bool
     reason: str | None
+    branch: Branch | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CompanyContext:
+    """Empresa de una membresía: datos propios y, si Party Identity respondió, su nombre."""
+
+    company: Company
+    organization: OrganizationProfile | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +105,7 @@ class MembershipContext:
     company_status: str
     status: str
     branches: list[BranchAccess]
+    company: CompanyContext | None = None
 
 
 def parse_permission(value: str | None) -> SioPermission | None:
@@ -114,7 +145,9 @@ class OperationalAccessService:
         memberships: MembershipLookup,
         accounts: IdentityAccountDirectory,
         users: ApplicationUserRepository,
+        organizations: OrganizationDirectory | None = None,
     ) -> None:
+        self.organizations = organizations
         self.users = users
         self.companies = companies
         self.branches = branches
@@ -215,15 +248,22 @@ class OperationalAccessService:
     def me(self, scope: AccessScope) -> list[MembershipContext]:
         """Membresías (activas e inactivas) del `sub` del token y sus sucursales (FR-070).
 
-        No evalúa permisos concretos ni llama a proveedores externos.
+        No evalúa permisos concretos. Lee la base y la cierra antes de consultar el
+        nombre de cada empresa en Party Identity con el token del usuario (R-09); si
+        Party Identity no responde o lo deniega, esos campos quedan en `null` y el
+        contexto se devuelve igual (FR-070a).
         """
         users = self.users.list_by_subject(scope.subject)
         self.users.end_read()
         contexts: list[MembershipContext] = []
+        companies: dict[UUID, Company] = {}
 
         for user in users:
             assignments = self.user_branches.list_all_for_user(user.id)
             self.user_branches.end_read()
+            company = companies.get(user.company_id) or self.companies.get_by_id(user.company_id)
+            if company is not None:
+                companies[company.id] = company
             branches = []
             for assignment in assignments:
                 reason = evaluate_own_access(
@@ -242,6 +282,7 @@ class OperationalAccessService:
                         branch_status=assignment.branch_status,
                         allowed=reason is None,
                         reason=None if reason is None else reason.value,
+                        branch=self.branches.get_by_id(assignment.branch_id),
                     )
                 )
             contexts.append(
@@ -251,7 +292,32 @@ class OperationalAccessService:
                     company_status=user.company_status,
                     status=user.status,
                     branches=branches,
+                    company=None if company is None else CompanyContext(company, None),
                 )
             )
 
-        return contexts
+        self.companies.end_read()
+        self.branches.end_read()
+        profiles = self._organization_profiles(companies.values())
+
+        return [
+            context
+            if context.company is None
+            else _with_organization(context, profiles.get(context.company.company.organization_identity_id))
+            for context in contexts
+        ]
+
+    def _organization_profiles(self, companies) -> dict[UUID, OrganizationProfile]:
+        """Nombre e identificación de cada empresa; lo que no se pueda leer se omite."""
+        profiles: dict[UUID, OrganizationProfile] = {}
+        if self.organizations is None:
+            return profiles
+        for organization_id in {company.organization_identity_id for company in companies}:
+            try:
+                profile = self.organizations.get_organization_profile(organization_id)
+            except DependencyUnavailableError:
+                logger.warning("contexto_operativo_sin_nombre_empresa organization_identity_id=%s", organization_id)
+                continue
+            if profile is not None:
+                profiles[organization_id] = profile
+        return profiles

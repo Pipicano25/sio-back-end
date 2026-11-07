@@ -15,6 +15,7 @@ from operational_context_service.application.advisor_assignment_service import (
 from operational_context_service.application.application_user_service import (
     ApplicationUserService,
 )
+from operational_context_service.application.branch_employees_service import BranchEmployeesService
 from operational_context_service.application.branch_service import BranchService
 from operational_context_service.application.company_service import CompanyService
 from operational_context_service.application.operational_access_service import (
@@ -115,11 +116,27 @@ def get_user_branch_service(session: Session = Depends(get_db_session)) -> UserB
     )
 
 
+def get_branch_employees_service(
+    session: Session = Depends(get_db_session),
+    persons: PersonDirectory = Depends(get_person_directory),
+) -> BranchEmployeesService:
+    """Empleados por sucursal (FR-025a). Party Identity solo para nombre e identificación."""
+    return BranchEmployeesService(
+        SQLAlchemyCompanyRepository(session),
+        SQLAlchemyBranchRepository(session),
+        SQLAlchemyUserBranchRepository(session),
+        SQLAlchemyApplicationUserRepository(session),
+        persons,
+    )
+
+
 def get_operational_access_service(
     session: Session = Depends(get_db_session),
     accounts: IdentityAccountDirectory = Depends(get_account_directory),
+    organizations: OrganizationDirectory = Depends(get_organization_directory),
 ) -> OperationalAccessService:
-    """Servicio de acceso operativo (Fase B). Keycloak solo para la vía técnica con permiso."""
+    """Servicio de acceso operativo (Fase B). Keycloak solo para la vía técnica con permiso;
+    Party Identity solo para el nombre de la empresa en el contexto propio (FR-070a)."""
     return OperationalAccessService(
         SQLAlchemyCompanyRepository(session),
         SQLAlchemyBranchRepository(session),
@@ -127,6 +144,7 @@ def get_operational_access_service(
         SQLAlchemyMembershipLookup(session),
         accounts,
         SQLAlchemyApplicationUserRepository(session),
+        organizations,
     )
 
 

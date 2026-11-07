@@ -21,7 +21,8 @@ from sales_service.application.confirmation_service import ConfirmationService
 from sales_service.application.exceptions import ValidationFailedError, field_error
 from sales_service.application.availability import AvailabilityService
 from sales_service.application.operation_engine import OperationEngine
-from sales_service.application.ports import AccessDirectory, Directories, InventoryGateway
+from sales_service.application.ports import AccessDirectory, CustomerRegistry, Directories, InventoryGateway
+from sales_service.application.sale_customers import SaleCustomerService
 from sales_service.application.sale_service import Actor, SaleService
 from sales_service.application.query_service import QueryService
 from sales_service.application.reference_validation import ReferenceResolver
@@ -34,6 +35,7 @@ from sales_service.infrastructure.sequence_repository import SequenceRepository
 DirectoriesFactory = Callable[[], Directories]
 InventoryFactory = Callable[[], InventoryGateway]
 AccessFactory = Callable[[Request], AccessDirectory]
+CustomersFactory = Callable[[Request], CustomerRegistry]
 
 _PRINTABLE = re.compile(r"^[\x21-\x7e]{1,150}$")
 IDEMPOTENCY_HEADER = "Idempotency-Key"
@@ -95,6 +97,9 @@ class Services:
             self.repository, self.sequences, self.directories.operational_context, clock=self._clock
         )
 
+    def sale_customers(self, actor: Actor) -> SaleCustomerService:
+        return SaleCustomerService(self.directories, actor.customers)
+
     def queries(self) -> QueryService:
         return QueryService(self.repository)
 
@@ -114,9 +119,14 @@ def access_directory(request: Request) -> AccessDirectory:
     return factory(request)
 
 
+def customer_registry(request: Request) -> CustomerRegistry | None:
+    factory: CustomersFactory | None = getattr(request.app.state, "customers_factory", None)
+    return factory(request) if factory is not None else None
+
+
 def get_actor(request: Request, identity: Annotated[HumanIdentity, Depends(require_human_user)]) -> Actor:
-    """Usuario humano (RC-05) con su acceso operativo propio."""
-    return Actor(subject=identity.subject, access=access_directory(request))
+    """Usuario humano (RC-05) con su acceso operativo y sus clientes (token propio)."""
+    return Actor(subject=identity.subject, access=access_directory(request), customers=customer_registry(request))
 
 
 def company_reader(company_id: UUID, actor: Annotated[Actor, Depends(get_actor)]) -> UUID:

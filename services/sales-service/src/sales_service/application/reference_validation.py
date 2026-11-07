@@ -60,6 +60,7 @@ from sales_service.application.ports import (
     PriceRequestLine,
     ResolvedPrice,
 )
+from sales_service.application.sale_customers import company_name, inactive_message
 from sales_service.domain.conversion import DEFAULT_FACTOR, PRICE_BASES, base_quantity, sale_unit_price
 from sales_service.domain.money import DomainRuleError
 
@@ -154,6 +155,10 @@ class ReferenceResolver:
         self._concurrency = max(1, concurrency)
         self._clock = clock
 
+    @property
+    def directories(self) -> Directories:
+        return self._dirs
+
     # ------------------------------------------------------------------ util
 
     def _parallel(self, function: Callable[[Any], T], values: Iterable[Any]) -> dict[Any, T]:
@@ -214,7 +219,7 @@ class ReferenceResolver:
             findings.bad(field_name, "CUSTOMER_NOT_FOUND", "El cliente no existe en la empresa.")
             customer = None
         elif customer.status != ACTIVE:
-            findings.unfit(field_name, "CUSTOMER_NOT_ELIGIBLE", f"El cliente no está activo ({customer.status}).")
+            findings.unfit(field_name, "CUSTOMER_NOT_ELIGIBLE", inactive_message(company_name(self._dirs, company)))
 
         if customer is not None:
             customer_name = customer.display_name[:200]

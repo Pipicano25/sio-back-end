@@ -35,6 +35,7 @@ OPERATIONS = [
     ("POST", f"/api/v1/application-users/{ANY}/reactivate", "application_users", "update"),
     ("GET", f"/api/v1/application-users/{ANY}/user-branches", "user_branches", "read"),
     ("GET", f"/api/v1/branches/{ANY}/user-branches", "user_branches", "read"),
+    ("GET", f"/api/v1/companies/{ANY}/branch-employees", "user_branches", "read"),
     ("POST", f"/api/v1/application-users/{ANY}/user-branches", "user_branches", "create"),
     ("GET", f"/api/v1/user-branches/{ANY}", "user_branches", "read"),
     ("POST", f"/api/v1/user-branches/{ANY}/deactivate", "user_branches", "delete"),

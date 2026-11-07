@@ -7,6 +7,7 @@ sigan `ACTIVE` dentro de la transacción de escritura (RN-10). La misma empresa
 la garantizan además las FK compuestas (R-05, RC-06).
 """
 
+from collections.abc import Collection
 from uuid import UUID, uuid4
 
 from sqlalchemy import Select, func, select
@@ -91,6 +92,19 @@ class SQLAlchemyUserBranchRepository:
             _query()
             .where(UserBranchModel.application_user_id == application_user_id)
             .order_by(UserBranchModel.created_at, UserBranchModel.id)
+        ).all()
+
+        return [to_user_branch(*row) for row in rows]
+
+    def list_for_branches(self, branch_ids: Collection[UUID], *, status: EntityStatus) -> list[UserBranch]:
+        """Asignaciones con ese estado de varias sucursales en una sola consulta."""
+        if not branch_ids:
+            return []
+
+        rows = self.session.execute(
+            _query()
+            .where(UserBranchModel.branch_id.in_(list(branch_ids)), UserBranchModel.status == status)
+            .order_by(UserBranchModel.assigned_at, UserBranchModel.id)
         ).all()
 
         return [to_user_branch(*row) for row in rows]

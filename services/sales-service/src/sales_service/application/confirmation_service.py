@@ -225,7 +225,7 @@ class ConfirmationService:
             raise ValidationFailedError(discounted)
 
         company = self._resolver.company(company_id)
-        company = CompanyInfo(company.id, company.status, sale.currency_code)
+        company = CompanyInfo(company.id, company.status, sale.currency_code, company.organization_identity_id)
         # Consultas independientes en paralelo (sin sesión de base): referencias y precio, usuario
         # operativo y saldos. El orden de los rechazos no cambia: referencias (422/409), precio
         # cambiado, usuario operativo, existencias.

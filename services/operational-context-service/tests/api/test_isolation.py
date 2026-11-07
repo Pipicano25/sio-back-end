@@ -35,6 +35,7 @@ ROUTES = [
     ("GET", "/api/v1/application-users/{application_user_id}/user-branches", None, 404, ""),
     ("POST", "/api/v1/application-users/{application_user_id}/user-branches", "assign", 404, ""),
     ("GET", "/api/v1/branches/{branch_id}/user-branches", None, 404, ""),
+    ("GET", "/api/v1/companies/{company_id}/branch-employees", None, 404, ""),
     ("GET", "/api/v1/user-branches/{user_branch_id}", None, 404, ""),
     ("POST", "/api/v1/user-branches/{user_branch_id}/deactivate", "version", 404, ""),
     ("POST", "/api/v1/user-branches/{user_branch_id}/reactivate", "version", 404, ""),
