@@ -142,13 +142,15 @@ se edita: las correcciones van en una migración nueva. La `0005` (spec 021) cre
 con exclusiones GiST y triggers de inmutabilidad, y agrega `purchase_tax_percentage` a `company_products` y `origin`,
 `closure_reason` y `automatic_application_id` a `price_list_items` (anulables: las filas existentes no cambian). Su
 `downgrade` se detiene si ya hay datos de la spec 021. La `0006` (spec 025) publica las vistas de contrato
-(sección siguiente); su `downgrade` solo elimina las vistas y el esquema `contract` si queda vacío.
+(sección siguiente); su `downgrade` solo elimina las vistas y el esquema `contract` si queda vacío. La `0007`
+agrega las vistas de compras; su `downgrade` solo elimina esas cuatro vistas.
 
 ## Vistas de contrato (spec 025, D27)
 
-La migración `0006` publica el esquema `contract` con vistas de solo lectura para que otros servicios lean sin
-llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué vista está en
-[`contract/grants.yaml`](contract/grants.yaml); los roles los crea `infrastructure/scripts/contract-readers/provision.py`.
+Las migraciones `0006` (Sales y productos) y `0007` (compras) publican el esquema `contract` con vistas de solo
+lectura para que otros servicios lean sin llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee
+qué vista está en [`contract/grants.yaml`](contract/grants.yaml); los roles los crea
+`infrastructure/scripts/contract-readers/provision.py`.
 
 | Vista | Columnas | Reemplaza | Consumidores |
 |---|---|---|---|
@@ -156,17 +158,49 @@ llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué
 | `v1_company_product_presentations` | `id`, `company_id`, `company_product_id`, `global_product_presentation_id`, `internal_code`, `sku`, `reference_code`, `is_sellable`, `is_purchasable`, `status` | `company-product-presentations/batch-lookup` y `by-products` (orden `company_product_id, id`) | Sales, Purchase, PIQ |
 | `v1_company_customers` | `id`, `company_id`, `customer_kind`, `person_identity_id`, `organization_identity_id`, `display_name`, `status` | `GET /company-customers/{id}` y la búsqueda por identidad | Sales |
 | `v1_price_lists` | `id`, `company_id`, `status` | `GET /price-lists/{id}` | Sales |
+| `v1_company_suppliers` | `id`, `company_id`, `organization_identity_id`, `display_name`, `status` | `GET /company-suppliers/{id}` | Purchase |
+| `v1_supplier_payment_conditions` | `id`, `company_id`, `company_supplier_id`, `payment_condition_type_id`, `currency_code`, `payment_terms_days`, `valid_from`, `valid_to`, `status` | `GET /supplier-payment-conditions/{id}` | Purchase |
+| `v1_supplier_products` | `id`, `company_id`, `company_supplier_id`, `company_product_id`, `company_product_presentation_id`, `expected_supplier_lead_time_hours`, `status` | `GET /supplier-products/{id}` | Purchase |
+| `v1_pricing_coverage` | `company_id`, `company_product_presentation_id`, `price_list_id`, `currency_code` (una fila por presentación y lista que la cubre ahora) | `POST /companies/{c}/pricing-policies/coverage` | Purchase |
 
 Reglas:
 
-- Todas las columnas salen tal cual de su tabla; ninguna se calcula.
+- Todas las columnas salen tal cual de su tabla; ninguna se calcula. La excepción es `v1_pricing_coverage`, que
+  filtra (no calcula columnas): ver abajo.
 - Las vistas tienen todas las empresas y todos los estados. El consumidor filtra por `company_id` (lo que hoy hace
   el aislamiento de la API) y decide qué hacer con un estado distinto de `ACTIVE`, como hoy con la respuesta.
 - La búsqueda de clientes por identidad exige hoy la membresía del usuario en la empresa: el consumidor la comprueba
   con `v1_operational_access` de Operational Context y el permiso de su token antes de leer.
 - `purchase_tax_percentage` es `NUMERIC(7,4)`; la API la devuelve como texto con 4 decimales.
-- Las vistas de compras (proveedores, condiciones de pago, productos de proveedor y cobertura de precios) llegan en
-  una migración posterior.
+- Los proveedores incluyen `BLOCKED` e `INACTIVE` tal cual los devuelve el API. `valid_from` y `valid_to` de las
+  condiciones de pago son `timestamptz` (el API los devuelve en ISO 8601); `expected_supplier_lead_time_hours` es
+  `NUMERIC(12,2)` (el API lo devuelve como texto).
+- `v1_pricing_coverage` replica `PricingPolicyRepository.coverage`: política `ACTIVE`; asignación de la presentación y
+  término de porcentaje vigentes en `now()` (`[valid_from, valid_to)`); lista `ACTIVE`, vigente en `now()` (vigencias
+  nulas = abiertas); política, asignación y lista de la misma empresa. `now()` es el inicio de la transacción del
+  consumidor, como hoy en el servicio. No expone `markup_percentage` ni la política.
+
+Cobertura de precios, consulta de referencia del consumidor (la misma que valida
+`tests/contract_views/test_purchase_views_parity.py`). Devuelve una fila por presentación pedida, en el orden
+pedido; `found` = la presentación existe en la empresa (cualquier estado) y `covered` = además hay al menos una lista
+de la empresa en esa moneda que la cubre ahora. El consumidor valida antes la moneda y el máximo de 100 ids, y quita
+los repetidos, como hoy el endpoint:
+
+```sql
+SELECT r.id AS company_product_presentation_id,
+       (p.id IS NOT NULL) AS found,
+       (p.id IS NOT NULL AND EXISTS (
+            SELECT 1
+              FROM contract.v1_pricing_coverage c
+             WHERE c.company_id = CAST(:company_id AS uuid)
+               AND c.company_product_presentation_id = r.id
+               AND c.currency_code = :currency_code
+       )) AS covered
+  FROM unnest(CAST(:ids AS uuid[])) WITH ORDINALITY AS r(id, position)
+  LEFT JOIN contract.v1_company_product_presentations p
+         ON p.id = r.id AND p.company_id = CAST(:company_id AS uuid)
+ ORDER BY r.position
+```
 
 Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); incompatibles, con una vista `v2_`.
 La paridad con la API y los permisos de los roles de lectura los prueban `tests/contract_views/`.

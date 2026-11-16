@@ -1,7 +1,7 @@
 # Consumidores de las vistas de contrato de Commercial Relationship (constitución 3.0.0, D27; spec 025).
 # Lo aplica infrastructure/scripts/contract-readers/provision.py después de `alembic upgrade head`.
 # Agregar o quitar un consumidor o una vista solo cambia este archivo (y la migración si la vista es nueva).
-# Las vistas de compras (proveedores, condiciones de pago, productos de proveedor y cobertura) llegan después.
+# Migraciones: 0006 (vistas de Sales y productos) y 0007 (vistas de compras: proveedores, condiciones, cobertura).
 owner: commercial-relationship
 abbreviation: cr
 database_env: DATABASE_URL
@@ -11,7 +11,13 @@ consumers:
     views: [v1_company_products, v1_company_product_presentations, v1_company_customers, v1_price_lists]
   purchase:
     abbreviation: pur
-    views: [v1_company_products, v1_company_product_presentations]
+    views:
+      - v1_company_products
+      - v1_company_product_presentations
+      - v1_company_suppliers
+      - v1_supplier_payment_conditions
+      - v1_supplier_products
+      - v1_pricing_coverage
   inventory:
     abbreviation: inv
     views: [v1_company_products]

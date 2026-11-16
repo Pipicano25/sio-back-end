@@ -60,9 +60,10 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         return 0
 
-    from purchase_service.main import build_inventory, build_token_provider
+    from purchase_service.main import build_contract_engines, build_inventory, build_token_provider
 
-    inventory = build_inventory(settings, build_token_provider(settings))()
+    engines = build_contract_engines(settings)
+    inventory = build_inventory(settings, build_token_provider(settings), engines)()
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())
@@ -84,6 +85,7 @@ def main(argv: list[str] | None = None) -> int:
             break
 
     database.dispose()
+    engines.dispose()
     return 0
 
 
