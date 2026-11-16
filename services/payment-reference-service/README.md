@@ -74,7 +74,8 @@ misma base del proyecto (`DATABASE_URL` del `.env`).
 
 Alembic en `alembic/versions/`: `c935f548c708` (tipos de condición), `1e2923297584` (métodos) y
 `4a30e958088d` (columna `version` de `global_payment_condition_types`, feature 008). Una migración ya
-aplicada no se edita: las correcciones van en una migración nueva.
+aplicada no se edita: las correcciones van en una migración nueva. `7c1d9e20a020` quita el borrado físico de
+métodos (spec 020) y `0005` publica las vistas de contrato (spec 025, ver abajo).
 
 ## Datos iniciales
 
@@ -95,6 +96,24 @@ Las pruebas no necesitan Keycloak: firman tokens con una clave RSA temporal e in
 concurrencia optimista, cuerpos estrictos, contrato Provider, base caída (`503`), migraciones y `seed`.
 `pytest -m integration -o addopts=""` valida contra el entorno integrado la caída y recuperación de la base
 (usa Docker y `KEYCLOAK_TEST_USER_PASSWORD`).
+
+## Vistas de contrato (spec 025, D27)
+
+La migración `0005` publica el esquema `contract` con vistas de solo lectura para que otros servicios lean sin
+llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué vista está en
+[`contract/grants.yaml`](contract/grants.yaml); los roles los crea `infrastructure/scripts/contract-readers/provision.py`.
+
+| Vista | Columnas | Reemplaza | Consumidores |
+|---|---|---|---|
+| `v1_payment_methods` | `id`, `code`, `name`, `status` | `GET /global-payment-methods/{id}` | Sales, Purchase |
+| `v1_payment_condition_types` | `id`, `code`, `status` | `GET /global-payment-condition-types/{id}` | Purchase, Commercial Relationship |
+
+- Las vistas incluyen filas `ACTIVE` e `INACTIVE`, como el GET por id; un id inexistente no tiene fila (el `404`
+  de hoy).
+- Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); incompatibles, con una vista `v2_`.
+- `tests/contract_views/` prueba la paridad con la API, que el rol lector de Sales solo lee sus vistas (no las
+  tablas de `public` ni la vista no declarada) y el `downgrade`/`upgrade` de `0005`. Usan `sio-contract-read`,
+  que está en el grupo `test` del `pyproject.toml` (el servicio no lee vistas de otros en ejecución).
 
 ## Consumo de la API
 

@@ -239,6 +239,7 @@ pytest -m integration                    # opcionales contra servicios reales (v
   `PARTY_IDENTITY_SEED_COUNTRY_ID` = el país ficticio del doble de Geography (`tests/conftest.py`).
 - `tests/api`: rutas, errores RFC 9457, `401`/`403` por operación, contratos Provider, no recursión
   con Operational Context, OpenAPI.
+- `tests/contract_views`: paridad de las vistas de contrato con la API y roles lectores (spec 025).
 - `tests/health`, `tests/examples`.
 
 Geography y Operational Context se sustituyen por dobles inyectados (solo en `tests/`) y `sio-auth`
@@ -305,6 +306,58 @@ pytest -m integration -o addopts="" tests/integration/test_database_outage_recov
 Cubre una caída prolongada (`docker stop`) y una caída inesperada de PostgreSQL (reinicio por Docker),
 contra `http://localhost:8101` (`PARTY_IDENTITY_INTEGRATION_BASE_URL`). Si se interrumpe con la
 base detenida: `docker start sio-party-identity-db`.
+
+## Vistas de contrato (spec 025, D27)
+
+La migración `0021_contract_views_v1` publica el esquema `contract` con vistas de solo lectura para que otros
+servicios lean sin llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué vista está en
+[`contract/grants.yaml`](contract/grants.yaml); los roles los crea `infrastructure/scripts/contract-readers/provision.py`
+(hay que volver a aplicarlo si se hace `downgrade` y `upgrade` de la `0021`).
+
+| Vista | Columnas | Reemplaza | Consumidores |
+|---|---|---|---|
+| `v1_person_identities` | `id`, `identification_type`, `identification_number`, `first_name`, `middle_name`, `last_name`, `second_last_name`, `status` | `GET /person-identities/{id}` y la búsqueda de identidades activas de Sales | Sales, Commercial Relationship, Operational Context |
+| `v1_organization_identities` | `id`, `identification_type`, `identification_number`, `legal_name`, `trade_name`, `status` | `GET /organization-identities/{id}` y su búsqueda | Sales, Purchase, Commercial Relationship, Operational Context, Product Catalog |
+
+- Cada columna es el mismo valor del GET: `identification_type` es el código guardado (`CC`, `NIT`, ...), sin
+  derivar de otra tabla. Las vistas incluyen identidades `ACTIVE` e `INACTIVE`; una inexistente no tiene fila (`404`).
+- No se publican correo, teléfono, fecha de nacimiento, sitio web, estado de verificación ni estado de registro.
+
+**Búsqueda de identidades activas** (la de `GET /person-identities` y `/organization-identities` con
+`status=ACTIVE`, `search`, `page` y `page_size`). `:search` es el texto recortado (`strip`), o `NULL` si viene vacío;
+el patrón es `'%' || :search || '%'` sin escapar `%` ni `_`, igual que el repositorio. `total_records` es el
+`count(*)` con el mismo `WHERE`, y `:offset` es `(page - 1) * page_size`.
+
+```sql
+-- personas
+SELECT id, identification_type, identification_number, first_name, middle_name, last_name, second_last_name, status
+  FROM contract.v1_person_identities
+ WHERE status = 'ACTIVE'
+   AND (CAST(:search AS text) IS NULL
+        OR identification_number ILIKE '%' || CAST(:search AS text) || '%'
+        OR first_name            ILIKE '%' || CAST(:search AS text) || '%'
+        OR middle_name           ILIKE '%' || CAST(:search AS text) || '%'
+        OR last_name             ILIKE '%' || CAST(:search AS text) || '%'
+        OR second_last_name      ILIKE '%' || CAST(:search AS text) || '%')
+ ORDER BY last_name, first_name, id
+ LIMIT :page_size OFFSET :offset;
+
+-- organizaciones
+SELECT id, identification_type, identification_number, legal_name, trade_name, status
+  FROM contract.v1_organization_identities
+ WHERE status = 'ACTIVE'
+   AND (CAST(:search AS text) IS NULL
+        OR identification_number ILIKE '%' || CAST(:search AS text) || '%'
+        OR legal_name            ILIKE '%' || CAST(:search AS text) || '%'
+        OR trade_name            ILIKE '%' || CAST(:search AS text) || '%')
+ ORDER BY legal_name, id
+ LIMIT :page_size OFFSET :offset;
+```
+
+Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); incompatibles, con una vista `v2_`.
+La paridad con la API (GET por id, búsqueda, orden, páginas y `total_records`) y los permisos de cada rol lector la
+prueban `tests/contract_views/test_identity_views_parity.py`, cuyas constantes `PERSON_SEARCH_SQL`,
+`PERSON_COUNT_SQL`, `ORGANIZATION_SEARCH_SQL` y `ORGANIZATION_COUNT_SQL` son la referencia de los consumidores.
 
 ## Consumo de la API
 

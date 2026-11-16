@@ -25,6 +25,9 @@ dependencies = [
 test = [
     "pytest>=8.3,<9.0",
     "httpx>=0.27,<1.0",
+    # sio-contract-read >= 0.1.0 (spec 025, D27): solo para probar que los roles lectores leen las vistas de
+    # contrato. El servicio no lee vistas de otros, así que no es dependencia de ejecución ni va en el Dockerfile.
+    "sio-contract-read @ file:../../libs/sio-contract-read",
 ]
 
 [tool.pytest.ini_options]

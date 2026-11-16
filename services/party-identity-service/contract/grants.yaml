@@ -1,0 +1,22 @@
+# Consumidores de las vistas de contrato de Party Identity (constitución 3.0.0, D27; spec 025).
+# Lo aplica infrastructure/scripts/contract-readers/provision.py después de `alembic upgrade head`.
+# Agregar o quitar un consumidor o una vista solo cambia este archivo (y la migración si la vista es nueva).
+owner: party-identity
+abbreviation: pi
+database_env: DATABASE_URL
+consumers:
+  sales:
+    abbreviation: sal
+    views: [v1_person_identities, v1_organization_identities]
+  purchase:
+    abbreviation: pur
+    views: [v1_organization_identities]
+  commercial-relationship:
+    abbreviation: cr
+    views: [v1_person_identities, v1_organization_identities]
+  operational-context:
+    abbreviation: oc
+    views: [v1_person_identities, v1_organization_identities]
+  product-catalog:
+    abbreviation: pc
+    views: [v1_organization_identities]

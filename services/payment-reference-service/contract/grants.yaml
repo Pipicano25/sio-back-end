@@ -1,0 +1,16 @@
+# Consumidores de las vistas de contrato de Payment Reference (constitución 3.0.0, D27; spec 025).
+# Lo aplica infrastructure/scripts/contract-readers/provision.py después de `alembic upgrade head`.
+# Agregar o quitar un consumidor o una vista solo cambia este archivo (y la migración si la vista es nueva).
+owner: payment-reference
+abbreviation: pr
+database_env: DATABASE_URL
+consumers:
+  sales:
+    abbreviation: sal
+    views: [v1_payment_methods]
+  purchase:
+    abbreviation: pur
+    views: [v1_payment_methods, v1_payment_condition_types]
+  commercial-relationship:
+    abbreviation: cr
+    views: [v1_payment_condition_types]

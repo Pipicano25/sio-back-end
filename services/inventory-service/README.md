@@ -91,6 +91,42 @@ escrituras; se filtran por la empresa de la ruta y nunca devuelven costos unitar
   productos. No filtra por estado comercial. `inventory_value` solo con `include_valuation` y
   `perm:inventory:valuation:read`.
 
+## Vistas de contrato (spec 025, D27)
+
+La migración `0003` publica el esquema `contract` con vistas de solo lectura para que otros servicios lean sin
+llamar por HTTP. Las escrituras (entradas, salidas, ajustes, reversiones) siguen siendo solo por esta API. Quién lee
+qué vista está en [`contract/grants.yaml`](contract/grants.yaml); los roles los crea
+`infrastructure/scripts/contract-readers/provision.py`.
+
+| Vista | Columnas | Reemplaza | Consumidores |
+|---|---|---|---|
+| `v1_balances` | `company_id`, `branch_id`, `company_product_id`, `quantity`, `balance_sequence` | `POST /companies/{c}/branches/{b}/balances/lookup` | Sales, PIQ |
+| `v1_operations_by_key` | `company_id`, `operation_key`, `operation_id`, `operation_type`, `status`, `branch_id`, `reverses_operation_id`, `reversed_by_operation_id`, `created_at` | cabecera de `GET /companies/{c}/inventory-operations/by-key/{key}` | Sales, Purchase |
+| `v1_operation_movements` | `operation_id`, `company_id`, `line_index`, `movement_id`, `origin_detail_id`, `company_product_id`, `movement_type`, `quantity`, `unit_cost`, `movement_value`, `cost_known`, `reversed_movement_id` | `movements` de la misma respuesta `by-key` | Sales, Purchase |
+
+Reglas:
+
+- **Saldos**: una fila por saldo registrado; `balance_sequence` es la `version` del saldo, como en el API. Un
+  producto sin saldo **no tiene fila**: el API responde `quantity = "0.0000"` y `balance_sequence = 0`, y el
+  consumidor debe hacer lo mismo. Un saldo que volvió a cero sí tiene fila.
+- **Operación por clave**: se filtra siempre por `company_id` y `operation_key` (sin fila → el `404` de hoy, también
+  para la clave de otra empresa). Todas las operaciones están confirmadas (tabla de solo inserción).
+  `reversed_by_operation_id` es la operación que la revierte; `status` se deriva de ella (`REVERSED` o `APPLIED`) y
+  no existe en el API.
+- **Movimientos**: se leen con `WHERE operation_id = :id AND company_id = :c ORDER BY line_index`, el mismo orden en
+  que el API los lista. `quantity` y `unit_cost` son `NUMERIC(18,4)` y `movement_value` `NUMERIC(18,2)`: su texto es
+  el mismo que el del API (`"5.0000"`, `"15.00"`); `unit_cost`, `movement_value` y `cost_known` son nulos en
+  movimientos anteriores a la valoración. Sales solo los lee en operaciones `OUTPUT`; Purchase solo usa la cabecera
+  (`operation_id`, `operation_type`, `reverses_operation_id`).
+- Se publican dos vistas (cabecera y movimientos) en vez de una fila por movimiento para que una operación sea
+  exactamente una fila y la cabecera no cambie si se agregan columnas de movimiento.
+- `v1_inventory_policies` (PIQ) llega en una fase posterior.
+
+Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); incompatibles, con una vista `v2_`.
+`tests/contract_views/` prueba la paridad con `by-key` (entrada, salida, ajuste y reversiones de entrada y de salida)
+y con `balances/lookup`, que los roles lectores de Sales y Purchase solo leen sus vistas, y el `downgrade`/`upgrade`
+de `0003`.
+
 ## Permisos
 
 | Permiso | Uso | Quién |

@@ -92,6 +92,9 @@ Alembic en `alembic/versions/`. La migración `0001` crea la extensión `pg_trgm
 restricciones nombradas (`uq_`, `ck_`, `ix_`, `fk_`). Una migración ya aplicada en un entorno
 compartido no se edita: las correcciones van en una migración nueva.
 
+La migración `0007` (spec 025) crea el esquema `contract` con las vistas de lectura para otros servicios
+(ver [Vistas de contrato](#vistas-de-contrato-spec-025-d27)).
+
 La migración `0004` (spec 018) agrega el tipo de identificador `IUM` (Identificador Único de
 Medicamento del INVIMA):
 - siempre ligado a una presentación;
@@ -195,6 +198,39 @@ pytest -m integration -o addopts="" tests/integration/test_database_outage_recov
 Cubre una caída prolongada (`docker stop`) y una caída inesperada de PostgreSQL (reinicio por Docker),
 contra `http://localhost:8103` (`PRODUCT_CATALOG_INTEGRATION_BASE_URL`). Si se interrumpe con la
 base detenida: `docker start sio-product-catalog-db`.
+
+## Vistas de contrato (spec 025, D27)
+
+La migración `0007` publica el esquema `contract` con vistas de solo lectura para que otros servicios lean sin
+llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué vista está en
+[`contract/grants.yaml`](contract/grants.yaml).
+
+| Vista | Columnas | Reemplaza | Consumidores |
+|---|---|---|---|
+| `v1_products` | `id`, `status`, `base_unit_id` | `GET /products/{id}` | Sales, Purchase, Commercial Relationship (unidad base) |
+| `v1_presentations` | `id`, `global_product_id`, `code`, `name`, `status`, `base_quantity` | `GET /presentations/{id}` y `presentations/batch-lookup`, sin imágenes | Sales, Purchase |
+| `v1_units_of_measure` | `id`, `code`, `name`, `status`, `measurement_type`, `allows_decimals` | `GET /units-of-measure/{id}` y `units-of-measure/batch-lookup` | Sales, Purchase, PIQ |
+
+- Las vistas incluyen filas activas e inactivas; un id inexistente no tiene fila (la API responde `404` o
+  `found: false`).
+- `v1_presentations` no expone imágenes: quien las necesite sigue usando la API.
+- Las vistas de resumen (`v1_product_summaries` y sus categorías e identificadores) llegan en otra migración.
+
+Aplicación, siempre después de las migraciones:
+
+```bash
+alembic upgrade head
+python infrastructure/scripts/contract-readers/provision.py aplicar   --entorno local   # desde la raíz del repositorio
+python infrastructure/scripts/contract-readers/provision.py verificar --entorno local
+```
+
+El script crea los roles `<cons>_contract_reader` y `contract_pc__<cons>` y da `SELECT` solo en las vistas
+declaradas. Las contraseñas y la URL de administrador se le pasan por variables de entorno (ver
+`specs/025-direct-contract-reads/contracts/reader-roles.md`).
+
+Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); incompatibles, con una vista `v2_`.
+La paridad con la API y los permisos del rol lector los prueba `tests/contract_views/` (necesita `sio-contract-read`,
+incluida en el extra `test`).
 
 ## Consumo de la API
 

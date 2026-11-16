@@ -6,7 +6,7 @@ from sqlalchemy.engine import Engine
 
 from tests.conftest import FUNCTIONAL_TABLES, build_alembic_config
 
-HEAD = "0006"
+HEAD = "0007"
 
 EXPECTED_CONSTRAINTS = {
     "uq_global_units_of_measure_code",
@@ -283,6 +283,33 @@ def test_restriction_migration_refuses_images_without_presentation(test_database
             )
         command.upgrade(config, "head")
         assert "ck_product_assets_image_requires_presentation" in _objects(engine)
+    finally:
+        command.upgrade(config, "head")
+        engine.dispose()
+
+
+def test_contract_views_migration_downgrades_and_upgrades(test_database_url: str) -> None:
+    """0007 crea el esquema `contract` con sus tres vistas y su `downgrade` los retira (spec 025, T038)."""
+    config = build_alembic_config()
+    engine = create_engine(test_database_url)
+
+    def contract_views() -> set[str]:
+        with engine.connect() as connection:
+            return set(
+                connection.execute(
+                    text("SELECT table_name FROM information_schema.views WHERE table_schema = 'contract'")
+                ).scalars()
+            )
+
+    def has_schema() -> bool:
+        with engine.connect() as connection:
+            return connection.execute(text("SELECT 1 FROM pg_namespace WHERE nspname = 'contract'")).first() is not None
+
+    try:
+        command.downgrade(config, "0006")
+        assert not has_schema()
+        command.upgrade(config, "head")
+        assert contract_views() == {"v1_products", "v1_presentations", "v1_units_of_measure"}
     finally:
         command.upgrade(config, "head")
         engine.dispose()

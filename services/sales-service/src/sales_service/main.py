@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import asynccontextmanager
+from dataclasses import dataclass, fields
 from datetime import UTC, datetime
 
 from fastapi import FastAPI, Request
 from sio_auth import SIOAuth, install_cors
-from sio_contract_read import create_contract_engine
+from sio_contract_read import ContractReadSettings, create_contract_engine
+from sqlalchemy import Engine
 
 from sales_service.api.dependencies import AccessFactory, CustomersFactory, DirectoriesFactory, InventoryFactory
 from sales_service.api.errors import register_error_handlers
@@ -20,7 +22,18 @@ from sales_service.api.tracing import TracingMiddleware
 from sales_service.application.ports import Directories, TokenProvider
 from sales_service.config import Settings, load_settings
 from sales_service.infrastructure.commercial_relationship_directory import HTTPCommercialDirectory
-from sales_service.infrastructure.contract_operational_context import ContractAccessDirectory
+from sales_service.infrastructure.contract_commercial_relationship import (
+    ContractCommercialDirectory,
+    ContractCustomerRegistry,
+)
+from sales_service.infrastructure.contract_inventory import ContractInventoryGateway
+from sales_service.infrastructure.contract_operational_context import (
+    ContractAccessDirectory,
+    ContractOperationalContextDirectory,
+)
+from sales_service.infrastructure.contract_party_identity import ContractPartyDirectory
+from sales_service.infrastructure.contract_payment_reference import ContractPaymentReferenceDirectory
+from sales_service.infrastructure.contract_product_catalog import ContractCatalogDirectory
 from sales_service.infrastructure.customer_registry import HTTPCustomerRegistry
 from sales_service.infrastructure.database import Database
 from sales_service.infrastructure.inventory_gateway import HTTPInventoryGateway
@@ -55,43 +68,114 @@ def build_token_provider(settings: Settings) -> TokenProvider:
     )
 
 
-def build_directories(settings: Settings, tokens: TokenProvider) -> DirectoriesFactory:
+@dataclass(frozen=True, slots=True)
+class ContractEngines:
+    """Motores de lectura por vistas de contrato (spec 025, D27); `None` = ese propietario se lee por HTTP."""
+
+    operational_context: Engine | None = None
+    product_catalog: Engine | None = None
+    commercial_relationship: Engine | None = None
+    party_identity: Engine | None = None
+    payment_reference: Engine | None = None
+    inventory: Engine | None = None
+
+    def dispose(self) -> None:
+        for item in fields(self):
+            engine = getattr(self, item.name)
+            if engine is not None:
+                engine.dispose()
+
+
+def _engine(reads: ContractReadSettings | None) -> Engine | None:
+    if reads is None or not reads.uses_contract:
+        return None
+    return create_contract_engine(reads, application_name="sales-service")
+
+
+def build_contract_engines(settings: Settings) -> ContractEngines:
+    """Un motor por propietario con `<PROPIETARIO>_READ_SOURCE=contract`."""
+    return ContractEngines(
+        operational_context=_engine(settings.operational_context_reads),
+        product_catalog=_engine(settings.product_catalog_reads),
+        commercial_relationship=_engine(settings.commercial_relationship_reads),
+        party_identity=_engine(settings.party_identity_reads),
+        payment_reference=_engine(settings.payment_reference_reads),
+        inventory=_engine(settings.inventory_reads),
+    )
+
+
+def build_directories(
+    settings: Settings, tokens: TokenProvider, engines: ContractEngines | None = None
+) -> DirectoriesFactory:
+    current = engines or ContractEngines()
+
     def factory() -> Directories:
+        commercial = HTTPCommercialDirectory(
+            base_url=settings.commercial_relationship_base_url,
+            timeout_seconds=settings.commercial_relationship_timeout_seconds,
+            tokens=tokens,
+        )
         return Directories(
-            operational_context=HTTPOperationalContextDirectory(
-                base_url=settings.operational_context_base_url,
-                timeout_seconds=settings.operational_context_timeout_seconds,
-                tokens=tokens,
+            operational_context=(
+                ContractOperationalContextDirectory(engine=current.operational_context)
+                if current.operational_context is not None
+                else HTTPOperationalContextDirectory(
+                    base_url=settings.operational_context_base_url,
+                    timeout_seconds=settings.operational_context_timeout_seconds,
+                    tokens=tokens,
+                )
             ),
-            commercial=HTTPCommercialDirectory(
-                base_url=settings.commercial_relationship_base_url,
-                timeout_seconds=settings.commercial_relationship_timeout_seconds,
-                tokens=tokens,
+            commercial=(
+                ContractCommercialDirectory(engine=current.commercial_relationship, http=commercial)
+                if current.commercial_relationship is not None
+                else commercial
             ),
-            catalog=HTTPCatalogDirectory(
-                base_url=settings.product_catalog_base_url,
-                timeout_seconds=settings.product_catalog_timeout_seconds,
-                tokens=tokens,
+            catalog=(
+                ContractCatalogDirectory(engine=current.product_catalog)
+                if current.product_catalog is not None
+                else HTTPCatalogDirectory(
+                    base_url=settings.product_catalog_base_url,
+                    timeout_seconds=settings.product_catalog_timeout_seconds,
+                    tokens=tokens,
+                )
             ),
-            party=HTTPPartyDirectory(
-                base_url=settings.party_identity_base_url,
-                timeout_seconds=settings.party_identity_timeout_seconds,
-                tokens=tokens,
+            party=(
+                ContractPartyDirectory(engine=current.party_identity)
+                if current.party_identity is not None
+                else HTTPPartyDirectory(
+                    base_url=settings.party_identity_base_url,
+                    timeout_seconds=settings.party_identity_timeout_seconds,
+                    tokens=tokens,
+                )
             ),
-            payment_reference=HTTPPaymentReferenceDirectory(
-                base_url=settings.payment_reference_base_url,
-                timeout_seconds=settings.payment_reference_timeout_seconds,
-                tokens=tokens,
+            payment_reference=(
+                ContractPaymentReferenceDirectory(engine=current.payment_reference)
+                if current.payment_reference is not None
+                else HTTPPaymentReferenceDirectory(
+                    base_url=settings.payment_reference_base_url,
+                    timeout_seconds=settings.payment_reference_timeout_seconds,
+                    tokens=tokens,
+                )
             ),
         )
 
     return factory
 
 
-def build_inventory(settings: Settings, tokens: TokenProvider) -> InventoryFactory:
-    return lambda: HTTPInventoryGateway(
-        base_url=settings.inventory_base_url, timeout_seconds=settings.inventory_timeout_seconds, tokens=tokens
-    )
+def build_inventory(
+    settings: Settings, tokens: TokenProvider, engines: ContractEngines | None = None
+) -> InventoryFactory:
+    current = engines or ContractEngines()
+
+    def factory() -> HTTPInventoryGateway | ContractInventoryGateway:
+        http = HTTPInventoryGateway(
+            base_url=settings.inventory_base_url, timeout_seconds=settings.inventory_timeout_seconds, tokens=tokens
+        )
+        if current.inventory is None:
+            return http
+        return ContractInventoryGateway(engine=current.inventory, http=http)
+
+    return factory
 
 
 def create_app(
@@ -115,20 +199,15 @@ def create_app(
     database = Database(current_settings.database_url, lock_timeout_seconds=current_settings.lock_timeout_seconds)
     tokens = token_provider or build_token_provider(current_settings)
 
-    oc_reads = current_settings.operational_context_reads
-    # Spec 025 (D27): con OPERATIONAL_CONTEXT_READ_SOURCE=contract el acceso se lee de la vista de contrato.
-    oc_contract = (
-        create_contract_engine(oc_reads, application_name="sales-service")
-        if oc_reads is not None and oc_reads.uses_contract
-        else None
-    )
+    # Spec 025 (D27): con <PROPIETARIO>_READ_SOURCE=contract las lecturas de ese propietario usan sus vistas.
+    engines = build_contract_engines(current_settings)
+    oc_contract = engines.operational_context
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         database.dispose()
-        if oc_contract is not None:
-            oc_contract.dispose()
+        engines.dispose()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -154,18 +233,26 @@ def create_app(
             timeout_seconds=current_settings.operational_context_timeout_seconds,
         )
 
-    def default_customers(request: Request) -> HTTPCustomerRegistry:
-        return HTTPCustomerRegistry(
+    def default_customers(request: Request) -> HTTPCustomerRegistry | ContractCustomerRegistry:
+        http = HTTPCustomerRegistry(
             base_url=current_settings.commercial_relationship_base_url,
             authorization=request.headers.get("authorization"),
             timeout_seconds=current_settings.commercial_relationship_timeout_seconds,
+        )
+        if engines.commercial_relationship is None or oc_contract is None:
+            return http
+        return ContractCustomerRegistry(
+            engine=engines.commercial_relationship,
+            access_engine=oc_contract,
+            claims=getattr(request.state, "sio_claims", None),
+            http=http,
         )
 
     app.state.settings = current_settings
     app.state.database = database
     app.state.clock = clock or utc_now
-    app.state.directories_factory = directories_factory or build_directories(current_settings, tokens)
-    app.state.inventory_factory = inventory_factory or build_inventory(current_settings, tokens)
+    app.state.directories_factory = directories_factory or build_directories(current_settings, tokens, engines)
+    app.state.inventory_factory = inventory_factory or build_inventory(current_settings, tokens, engines)
     app.state.access_factory = access_factory or default_access
     app.state.customers_factory = customers_factory or default_customers
 

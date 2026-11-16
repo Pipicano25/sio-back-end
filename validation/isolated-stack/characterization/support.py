@@ -34,7 +34,7 @@ UUID_RE = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 TS_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?\b")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 VOLATILE_KEYS = frozenset({"trace_id", "request_id", "correlation_id", "traceparent"})
-ACCESS_LINE = re.compile(r'"(?P<method>GET|POST|PUT|PATCH|DELETE) (?P<path>[^ ?"]+)(?:\?[^ "]*)? HTTP/[\d.]+" (?P<status>\d{3})')
+ACCESS_LINE = re.compile(r'(?:(?P<client>\d+\.\d+\.\d+\.\d+):\d+ - )?"(?P<method>GET|POST|PUT|PATCH|DELETE) (?P<path>[^ ?"]+)(?:\?[^ "]*)? HTTP/[\d.]+" (?P<status>\d{3})')
 
 
 # --------------------------------------------------------------------------- normalización
@@ -108,6 +108,8 @@ class RequestWindow:
     """Ventana de tiempo para contar las solicitudes que recibieron ciertos contenedores."""
 
     containers: tuple[str, ...]
+    # Si se indica, solo cuenta las solicitudes que llegan desde esos contenedores (por su IP en la red de la pila).
+    sources: tuple[str, ...] = ()
     started: float = field(default_factory=time.time)
     ended: float | None = None
 
@@ -128,6 +130,7 @@ class RequestWindow:
         if self.ended is None:
             self.close()
         total: Counter[str] = Counter()
+        allowed = {container_ip(name) for name in self.sources}
         for container in self.containers:
             # `docker logs --since/--until` redondea al segundo: se piden unos segundos de margen y se filtra
             # cada línea por su marca de tiempo (`-t`, RFC 3339 con nanosegundos, UTC).
@@ -137,11 +140,18 @@ class RequestWindow:
             short = container.removeprefix("sio-it-").removesuffix("-service")
             inside = "\n".join(line for line in output.splitlines() if self._inside(line))
             for match in ACCESS_LINE.finditer(inside):
+                if allowed and match.group("client") not in allowed:
+                    continue
                 path = normalize_path(match.group("path"))
                 if path.startswith("/health"):
                     continue
                 total[f"{short} {match.group('method')} {path}"] += 1
         return dict(sorted(total.items()))
+
+
+def container_ip(container: str) -> str:
+    """IP del contenedor en la red de la pila (para atribuir cada solicitud a quien la hizo)."""
+    return _docker(["inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", container]).strip()
 
 
 def read_source(container: str, variable: str) -> str:

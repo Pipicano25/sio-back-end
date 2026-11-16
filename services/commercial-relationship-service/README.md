@@ -141,7 +141,35 @@ y agrega `UNIQUE (id, company_id)` a `company_products` y `company_suppliers` si
 se edita: las correcciones van en una migración nueva. La `0005` (spec 021) crea las 5 tablas de precios automáticos
 con exclusiones GiST y triggers de inmutabilidad, y agrega `purchase_tax_percentage` a `company_products` y `origin`,
 `closure_reason` y `automatic_application_id` a `price_list_items` (anulables: las filas existentes no cambian). Su
-`downgrade` se detiene si ya hay datos de la spec 021.
+`downgrade` se detiene si ya hay datos de la spec 021. La `0006` (spec 025) publica las vistas de contrato
+(sección siguiente); su `downgrade` solo elimina las vistas y el esquema `contract` si queda vacío.
+
+## Vistas de contrato (spec 025, D27)
+
+La migración `0006` publica el esquema `contract` con vistas de solo lectura para que otros servicios lean sin
+llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué vista está en
+[`contract/grants.yaml`](contract/grants.yaml); los roles los crea `infrastructure/scripts/contract-readers/provision.py`.
+
+| Vista | Columnas | Reemplaza | Consumidores |
+|---|---|---|---|
+| `v1_company_products` | `id`, `company_id`, `global_product_id`, `internal_code`, `reference_code`, `display_name`, `status`, `is_sellable`, `is_purchasable`, `inventory_control_enabled`, `purchase_tax_percentage`, `created_at` | `company-products/batch-lookup` y el conteo de `GET /companies/{c}/company-products` | Sales, Purchase, Inventory, PIQ |
+| `v1_company_product_presentations` | `id`, `company_id`, `company_product_id`, `global_product_presentation_id`, `internal_code`, `sku`, `reference_code`, `is_sellable`, `is_purchasable`, `status` | `company-product-presentations/batch-lookup` y `by-products` (orden `company_product_id, id`) | Sales, Purchase, PIQ |
+| `v1_company_customers` | `id`, `company_id`, `customer_kind`, `person_identity_id`, `organization_identity_id`, `display_name`, `status` | `GET /company-customers/{id}` y la búsqueda por identidad | Sales |
+| `v1_price_lists` | `id`, `company_id`, `status` | `GET /price-lists/{id}` | Sales |
+
+Reglas:
+
+- Todas las columnas salen tal cual de su tabla; ninguna se calcula.
+- Las vistas tienen todas las empresas y todos los estados. El consumidor filtra por `company_id` (lo que hoy hace
+  el aislamiento de la API) y decide qué hacer con un estado distinto de `ACTIVE`, como hoy con la respuesta.
+- La búsqueda de clientes por identidad exige hoy la membresía del usuario en la empresa: el consumidor la comprueba
+  con `v1_operational_access` de Operational Context y el permiso de su token antes de leer.
+- `purchase_tax_percentage` es `NUMERIC(7,4)`; la API la devuelve como texto con 4 decimales.
+- Las vistas de compras (proveedores, condiciones de pago, productos de proveedor y cobertura de precios) llegan en
+  una migración posterior.
+
+Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); incompatibles, con una vista `v2_`.
+La paridad con la API y los permisos de los roles de lectura los prueban `tests/contract_views/`.
 
 ## Datos iniciales
 
