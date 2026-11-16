@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from sio_auth import SIOAuth, install_cors
+from sio_contract_read import create_contract_engine
+from sqlalchemy import Engine
 
 from audit_service.api.audit_events import build_router as build_registration_router
 from audit_service.api.company_audit_events import build_company_router
@@ -17,6 +19,7 @@ from audit_service.api.platform_audit_events import build_platform_router
 from audit_service.api.security import build_auth
 from audit_service.api.tracing import TracingMiddleware
 from audit_service.config import Settings, load_settings
+from audit_service.infrastructure.contract_operational_context import ContractCompanyAccessDirectory
 from audit_service.infrastructure.database import Database
 from audit_service.infrastructure.operational_context_directory import HTTPCompanyAccessDirectory
 from audit_service.observability import configure_logging
@@ -29,10 +32,17 @@ HEALTH_PUBLIC_PATHS = {"/health/live", "/health/ready"}
 DOCS_PUBLIC_PATHS = {"/docs", "/openapi.json"}
 
 
-def build_access_directory_factory(settings: Settings) -> AccessDirectoryFactory:
-    """Operational Context `operational-access` con el token del usuario (FR-050)."""
+def build_access_directory_factory(settings: Settings, contract_engine: Engine | None = None) -> AccessDirectoryFactory:
+    """Operational Context `operational-access` con el token del usuario (FR-050).
 
-    def factory(request: Request) -> HTTPCompanyAccessDirectory:
+    Con `contract_engine` (spec 025, `OPERATIONAL_CONTEXT_READ_SOURCE=contract`) se lee la vista de contrato.
+    """
+
+    def factory(request: Request) -> HTTPCompanyAccessDirectory | ContractCompanyAccessDirectory:
+        if contract_engine is not None:
+            return ContractCompanyAccessDirectory(
+                engine=contract_engine, claims=getattr(request.state, "sio_claims", None)
+            )
         return HTTPCompanyAccessDirectory(
             base_url=settings.operational_context_base_url,
             authorization=request.headers.get("authorization"),
@@ -56,11 +66,19 @@ def create_app(
     current_settings = settings or load_settings()
     configure_logging()
     database = Database(current_settings.database_url)
+    oc_reads = current_settings.operational_context_reads
+    oc_contract = (
+        create_contract_engine(oc_reads, application_name="audit-service")
+        if oc_reads is not None and oc_reads.uses_contract
+        else None
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         database.dispose()
+        if oc_contract is not None:
+            oc_contract.dispose()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -80,7 +98,7 @@ def create_app(
     app.state.settings = current_settings
     app.state.database = database
     app.state.access_directory_factory = access_directory_factory or build_access_directory_factory(
-        current_settings
+        current_settings, oc_contract
     )
 
     public_paths = set(HEALTH_PUBLIC_PATHS)

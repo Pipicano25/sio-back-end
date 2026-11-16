@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 
 from fastapi import FastAPI, Request
 from sio_auth import SIOAuth, install_cors
+from sio_contract_read import create_contract_engine
 
 from sales_service.api.dependencies import AccessFactory, CustomersFactory, DirectoriesFactory, InventoryFactory
 from sales_service.api.errors import register_error_handlers
@@ -19,6 +20,7 @@ from sales_service.api.tracing import TracingMiddleware
 from sales_service.application.ports import Directories, TokenProvider
 from sales_service.config import Settings, load_settings
 from sales_service.infrastructure.commercial_relationship_directory import HTTPCommercialDirectory
+from sales_service.infrastructure.contract_operational_context import ContractAccessDirectory
 from sales_service.infrastructure.customer_registry import HTTPCustomerRegistry
 from sales_service.infrastructure.database import Database
 from sales_service.infrastructure.inventory_gateway import HTTPInventoryGateway
@@ -113,10 +115,20 @@ def create_app(
     database = Database(current_settings.database_url, lock_timeout_seconds=current_settings.lock_timeout_seconds)
     tokens = token_provider or build_token_provider(current_settings)
 
+    oc_reads = current_settings.operational_context_reads
+    # Spec 025 (D27): con OPERATIONAL_CONTEXT_READ_SOURCE=contract el acceso se lee de la vista de contrato.
+    oc_contract = (
+        create_contract_engine(oc_reads, application_name="sales-service")
+        if oc_reads is not None and oc_reads.uses_contract
+        else None
+    )
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         database.dispose()
+        if oc_contract is not None:
+            oc_contract.dispose()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -133,7 +145,9 @@ def create_app(
         lifespan=lifespan,
     )
 
-    def default_access(request: Request) -> HTTPAccessDirectory:
+    def default_access(request: Request) -> HTTPAccessDirectory | ContractAccessDirectory:
+        if oc_contract is not None:
+            return ContractAccessDirectory(engine=oc_contract, claims=getattr(request.state, "sio_claims", None))
         return HTTPAccessDirectory(
             base_url=current_settings.operational_context_base_url,
             authorization=request.headers.get("authorization"),

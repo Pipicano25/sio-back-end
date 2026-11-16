@@ -1,0 +1,592 @@
+{
+  "cases": {
+    "inventory:asignacion_inactiva": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.BRANCH_ACCESS_DENIED",
+          "detail": "No tiene una asignación activa a la sucursal, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+          "instance": "/api/v1/companies/<empresa_C>/inventory-adjustments",
+          "status": 403,
+          "title": "Acceso a la sucursal denegado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/branch-access-denied"
+        },
+        "causa_oc": "USER_BRANCH_INACTIVE",
+        "status": 403
+      },
+      "requests": {
+        "inventory POST /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:bloqueo_inmediato": {
+      "case": {
+        "antes": {
+          "body": {
+            "code": "INVENTORY.VALIDATION_ERROR",
+            "detail": "La solicitud contiene datos inválidos.",
+            "errors": [
+              {
+                "code": "COMPANY_PRODUCT_NOT_FOUND",
+                "field": "company_product_id",
+                "message": "El producto empresarial no existe en la empresa."
+              }
+            ],
+            "instance": "/api/v1/companies/<empresa_C>/inventory-adjustments",
+            "status": 422,
+            "title": "Solicitud inválida",
+            "trace_id": "<volátil>",
+            "type": "https://sio/errors/inventory/validation-error"
+          },
+          "status": 422
+        },
+        "despues": {
+          "body": {
+            "code": "INVENTORY.BRANCH_ACCESS_DENIED",
+            "detail": "No tiene una asignación activa a la sucursal, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+            "instance": "/api/v1/companies/<empresa_C>/inventory-adjustments",
+            "status": 403,
+            "title": "Acceso a la sucursal denegado",
+            "trace_id": "<volátil>",
+            "type": "https://sio/errors/inventory/branch-access-denied"
+          },
+          "status": 403
+        }
+      },
+      "requests": {}
+    },
+    "inventory:empresa_inactiva_lectura": {
+      "case": {
+        "body": {
+          "items": [],
+          "page": 1,
+          "page_size": 20,
+          "total_pages": 0,
+          "total_records": 0
+        },
+        "causa_oc": "COMPANY_INACTIVE",
+        "status": 200
+      },
+      "requests": {
+        "inventory GET /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:empresa_inactiva_sucursal": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.BRANCH_ACCESS_DENIED",
+          "detail": "No tiene una asignación activa a la sucursal, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+          "instance": "/api/v1/companies/<empresa_D>/inventory-adjustments",
+          "status": 403,
+          "title": "Acceso a la sucursal denegado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/branch-access-denied"
+        },
+        "causa_oc": "COMPANY_INACTIVE",
+        "status": 403
+      },
+      "requests": {
+        "inventory POST /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:membresia_inactiva_empresa": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<empresa_E>/inventory-adjustments",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/not-found"
+        },
+        "causa_oc": "USER_MEMBERSHIP_INACTIVE",
+        "status": 404
+      },
+      "requests": {
+        "inventory GET /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:membresia_inactiva_sucursal": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<empresa_E>/inventory-adjustments",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/not-found"
+        },
+        "causa_oc": "USER_MEMBERSHIP_INACTIVE",
+        "status": 404
+      },
+      "requests": {
+        "inventory POST /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:no_miembro_empresa_ajena": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<empresa_D>/inventory-adjustments",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/not-found"
+        },
+        "causa_oc": "USER_NOT_MEMBER",
+        "status": 404
+      },
+      "requests": {
+        "inventory GET /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:no_miembro_empresa_inexistente": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<id:1>/inventory-adjustments",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/not-found"
+        },
+        "causa_oc": "USER_NOT_MEMBER",
+        "status": 404
+      },
+      "requests": {
+        "inventory GET /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:no_miembro_sucursal_ajena": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<empresa_D>/inventory-adjustments",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/not-found"
+        },
+        "causa_oc": "USER_NOT_MEMBER",
+        "status": 404
+      },
+      "requests": {
+        "inventory POST /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:no_miembro_sucursal_inexistente": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<empresa_C>/inventory-adjustments",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/not-found"
+        },
+        "causa_oc": "USER_NOT_MEMBER",
+        "status": 404
+      },
+      "requests": {
+        "inventory POST /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:permitido_empresa": {
+      "case": {
+        "body": {
+          "items": [],
+          "page": 1,
+          "page_size": 20,
+          "total_pages": 0,
+          "total_records": 0
+        },
+        "causa_oc": "allowed",
+        "status": 200
+      },
+      "requests": {
+        "inventory GET /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/application-users/{id}": 1,
+        "operational-context GET /api/v1/operational-access": 1,
+        "operational-context POST /api/v1/application-users/{id}/deactivate": 1
+      }
+    },
+    "inventory:permitido_sucursal": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.VALIDATION_ERROR",
+          "detail": "La solicitud contiene datos inválidos.",
+          "errors": [
+            {
+              "code": "COMPANY_PRODUCT_NOT_FOUND",
+              "field": "company_product_id",
+              "message": "El producto empresarial no existe en la empresa."
+            }
+          ],
+          "instance": "/api/v1/companies/<empresa_C>/inventory-adjustments",
+          "status": 422,
+          "title": "Solicitud inválida",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/validation-error"
+        },
+        "causa_oc": "allowed",
+        "status": 422
+      },
+      "requests": {
+        "inventory POST /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:sucursal_inactiva": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.BRANCH_ACCESS_DENIED",
+          "detail": "No tiene una asignación activa a la sucursal, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+          "instance": "/api/v1/companies/<empresa_C>/inventory-adjustments",
+          "status": 403,
+          "title": "Acceso a la sucursal denegado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/branch-access-denied"
+        },
+        "causa_oc": "BRANCH_INACTIVE",
+        "status": 403
+      },
+      "requests": {
+        "inventory POST /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "inventory:sucursal_no_asignada": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.BRANCH_ACCESS_DENIED",
+          "detail": "No tiene una asignación activa a la sucursal, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+          "instance": "/api/v1/companies/<empresa_C>/inventory-adjustments",
+          "status": 403,
+          "title": "Acceso a la sucursal denegado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/branch-access-denied"
+        },
+        "causa_oc": "BRANCH_NOT_ASSIGNED",
+        "status": 403
+      },
+      "requests": {
+        "inventory POST /api/v1/companies/{id}/inventory-adjustments": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "sales:asignacion_inactiva": {
+      "case": {
+        "body": {
+          "code": "SALES.BRANCH_ACCESS_DENIED",
+          "detail": "No tiene una asignación activa a la sucursal de la venta, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+          "instance": "/api/v1/companies/<empresa_C>/sales",
+          "status": 403,
+          "title": "Acceso a la sucursal denegado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/branch-access-denied"
+        },
+        "causa_oc": "USER_BRANCH_INACTIVE",
+        "status": 403
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales POST /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:bloqueo_inmediato": {
+      "case": {
+        "antes": {
+          "body": {
+            "code": "SALES.VALIDATION_ERROR",
+            "detail": "La solicitud contiene datos inválidos.",
+            "errors": [
+              {
+                "code": "CUSTOMER_NOT_FOUND",
+                "field": "company_customer_id",
+                "message": "El cliente no existe en la empresa."
+              },
+              {
+                "code": "PAYMENT_METHOD_NOT_FOUND",
+                "field": "payment_method_id",
+                "message": "El medio de pago no existe en Payment Reference."
+              }
+            ],
+            "instance": "/api/v1/companies/<empresa_C>/sales",
+            "status": 422,
+            "title": "Solicitud inválida",
+            "trace_id": "<volátil>",
+            "type": "https://sio/errors/sales/validation-error"
+          },
+          "status": 422
+        },
+        "despues": {
+          "body": {
+            "code": "SALES.BRANCH_ACCESS_DENIED",
+            "detail": "No tiene una asignación activa a la sucursal de la venta, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+            "instance": "/api/v1/companies/<empresa_C>/sales",
+            "status": 403,
+            "title": "Acceso a la sucursal denegado",
+            "trace_id": "<volátil>",
+            "type": "https://sio/errors/sales/branch-access-denied"
+          },
+          "status": 403
+        }
+      },
+      "requests": {}
+    },
+    "sales:empresa_inactiva_lectura": {
+      "case": {
+        "body": {
+          "items": [],
+          "page": 1,
+          "page_size": 1,
+          "total_pages": 0,
+          "total_records": 0
+        },
+        "causa_oc": "COMPANY_INACTIVE",
+        "status": 200
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales GET /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:empresa_inactiva_sucursal": {
+      "case": {
+        "body": {
+          "code": "SALES.BRANCH_ACCESS_DENIED",
+          "detail": "No tiene una asignación activa a la sucursal de la venta, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+          "instance": "/api/v1/companies/<empresa_D>/sales",
+          "status": 403,
+          "title": "Acceso a la sucursal denegado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/branch-access-denied"
+        },
+        "causa_oc": "COMPANY_INACTIVE",
+        "status": 403
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales POST /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:membresia_inactiva_empresa": {
+      "case": {
+        "body": {
+          "code": "SALES.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<empresa_E>/sales",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/not-found"
+        },
+        "causa_oc": "USER_MEMBERSHIP_INACTIVE",
+        "status": 404
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales GET /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:membresia_inactiva_sucursal": {
+      "case": {
+        "body": {
+          "code": "SALES.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<empresa_E>/sales",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/not-found"
+        },
+        "causa_oc": "USER_MEMBERSHIP_INACTIVE",
+        "status": 404
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales POST /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:no_miembro_empresa_ajena": {
+      "case": {
+        "body": {
+          "code": "SALES.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<empresa_D>/sales",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/not-found"
+        },
+        "causa_oc": "USER_NOT_MEMBER",
+        "status": 404
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales GET /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:no_miembro_empresa_inexistente": {
+      "case": {
+        "body": {
+          "code": "SALES.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<id:1>/sales",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/not-found"
+        },
+        "causa_oc": "USER_NOT_MEMBER",
+        "status": 404
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales GET /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:no_miembro_sucursal_ajena": {
+      "case": {
+        "body": {
+          "code": "SALES.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<empresa_D>/sales",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/not-found"
+        },
+        "causa_oc": "USER_NOT_MEMBER",
+        "status": 404
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales POST /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:no_miembro_sucursal_inexistente": {
+      "case": {
+        "body": {
+          "code": "SALES.NOT_FOUND",
+          "detail": "El recurso solicitado no existe o no está disponible para su usuario.",
+          "instance": "/api/v1/companies/<empresa_C>/sales",
+          "status": 404,
+          "title": "Recurso no encontrado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/not-found"
+        },
+        "causa_oc": "USER_NOT_MEMBER",
+        "status": 404
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales POST /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:permitido_empresa": {
+      "case": {
+        "body": {
+          "items": [],
+          "page": 1,
+          "page_size": 1,
+          "total_pages": 0,
+          "total_records": 0
+        },
+        "causa_oc": "allowed",
+        "status": 200
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales GET /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:permitido_sucursal": {
+      "case": {
+        "body": {
+          "code": "SALES.VALIDATION_ERROR",
+          "detail": "La solicitud contiene datos inválidos.",
+          "errors": [
+            {
+              "code": "CUSTOMER_NOT_FOUND",
+              "field": "company_customer_id",
+              "message": "El cliente no existe en la empresa."
+            },
+            {
+              "code": "PAYMENT_METHOD_NOT_FOUND",
+              "field": "payment_method_id",
+              "message": "El medio de pago no existe en Payment Reference."
+            }
+          ],
+          "instance": "/api/v1/companies/<empresa_C>/sales",
+          "status": 422,
+          "title": "Solicitud inválida",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/validation-error"
+        },
+        "causa_oc": "allowed",
+        "status": 422
+      },
+      "requests": {
+        "operational-context GET /api/v1/branches/{id}": 1,
+        "operational-context GET /api/v1/companies/{id}": 1,
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales POST /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:sucursal_inactiva": {
+      "case": {
+        "body": {
+          "code": "SALES.BRANCH_ACCESS_DENIED",
+          "detail": "No tiene una asignación activa a la sucursal de la venta, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+          "instance": "/api/v1/companies/<empresa_C>/sales",
+          "status": 403,
+          "title": "Acceso a la sucursal denegado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/branch-access-denied"
+        },
+        "causa_oc": "BRANCH_INACTIVE",
+        "status": 403
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales POST /api/v1/companies/{id}/sales": 1
+      }
+    },
+    "sales:sucursal_no_asignada": {
+      "case": {
+        "body": {
+          "code": "SALES.BRANCH_ACCESS_DENIED",
+          "detail": "No tiene una asignación activa a la sucursal de la venta, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+          "instance": "/api/v1/companies/<empresa_C>/sales",
+          "status": 403,
+          "title": "Acceso a la sucursal denegado",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/branch-access-denied"
+        },
+        "causa_oc": "BRANCH_NOT_ASSIGNED",
+        "status": 403
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "sales POST /api/v1/companies/{id}/sales": 1
+      }
+    }
+  },
+  "module": "test_us3_access",
+  "recorded_with": "http"
+}

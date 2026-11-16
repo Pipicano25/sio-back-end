@@ -4,6 +4,7 @@
 # Las dependencias externas son las que declara cada pyproject.toml, sin fijar otras.
 libs/sio-auth
 libs/sio-audit
+libs/sio-contract-read
 services/geography-service
 services/party-identity-service
 services/product-catalog-service

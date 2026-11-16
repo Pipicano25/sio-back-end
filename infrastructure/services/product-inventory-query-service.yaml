@@ -23,6 +23,9 @@ services:
       SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
       # Dependencias (specs/022-product-inventory-query-service/contracts/dependencies.md).
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+      # Spec 025 (D27): `contract` lee la vista de Operational Context con el rol de solo lectura; `http` por omisión.
+      OPERATIONAL_CONTEXT_READ_SOURCE: ${OPERATIONAL_CONTEXT_READ_SOURCE:-http}
+      OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://piq_contract_reader:${CONTRACT_READER_PASSWORD_PRODUCT_INVENTORY_QUERY:-}@operational-context-db:5432/${OPERATIONAL_CONTEXT_DB_NAME}
       COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
       PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
       INVENTORY_SERVICE_BASE_URL: http://inventory-service:8000/api/v1

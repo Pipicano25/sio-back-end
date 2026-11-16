@@ -9,7 +9,8 @@ version = "0.1.0"
 description = "Microservicio de solo lectura de SIO: reportes empresariales y operativos bajo demanda en JSON y CSV, compuestos por HTTP desde las agregaciones de Sales, Purchase e Inventory (spec 023)."
 requires-python = ">=3.12"
 
-# Sin base de datos, colas ni tareas programadas (spec 023, FR-023-01): no usa SQLAlchemy, Alembic ni sio-audit.
+# Sin base propia, colas ni tareas programadas (spec 023, FR-023-01): no usa Alembic ni sio-audit. Desde la spec 025
+# (D27) puede leer la vista de contrato de Operational Context con sio-contract-read (SQLAlchemy de solo lectura).
 dependencies = [
     "fastapi>=0.115,<1.0",
     "uvicorn[standard]>=0.30,<1.0",
@@ -20,6 +21,8 @@ dependencies = [
     # sio-auth >= 0.4.0 (403 sin revelar el permiso). Con referencias locales file: la versión
     # mínima no se expresa en la cadena PEP 508; verificarla contra libs/sio-auth/pyproject.toml.
     "sio-auth @ file:../../libs/sio-auth",
+    # sio-contract-read >= 0.1.0 (spec 025, D27): lecturas por vistas de contrato.
+    "sio-contract-read @ file:../../libs/sio-contract-read",
 ]
 
 [project.optional-dependencies]

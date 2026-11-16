@@ -22,6 +22,9 @@ x-purchase-environment: &purchase-environment
   # no están disponibles, las operaciones responden 503 con la dependencia.
   OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
   OPERATIONAL_CONTEXT_TIMEOUT_SECONDS: ${OPERATIONAL_CONTEXT_TIMEOUT_SECONDS:-5}
+  # Spec 025 (D27): `contract` lee la vista de Operational Context con el rol de solo lectura; `http` por omisión.
+  OPERATIONAL_CONTEXT_READ_SOURCE: ${OPERATIONAL_CONTEXT_READ_SOURCE:-http}
+  OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://pur_contract_reader:${CONTRACT_READER_PASSWORD_PURCHASE:-}@operational-context-db:5432/${OPERATIONAL_CONTEXT_DB_NAME}
   COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
   COMMERCIAL_RELATIONSHIP_TIMEOUT_SECONDS: ${COMMERCIAL_RELATIONSHIP_TIMEOUT_SECONDS:-5}
   PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1

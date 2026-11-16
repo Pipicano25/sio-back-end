@@ -25,6 +25,8 @@ dependencies = [
     # que debe verificarse contra libs/sio-auth/pyproject.toml (hoy 0.4.0).
     "sio-auth @ file:../../libs/sio-auth",
     "sio-audit @ file:../../libs/sio-audit",
+    # sio-contract-read >= 0.1.0 (spec 025, D27): lecturas por vistas de contrato.
+    "sio-contract-read @ file:../../libs/sio-contract-read",
 ]
 
 [project.optional-dependencies]

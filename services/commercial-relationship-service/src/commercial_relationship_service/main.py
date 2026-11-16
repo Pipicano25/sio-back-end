@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from sio_auth import SIOAuth, install_cors
+from sio_contract_read import create_contract_engine
+from sqlalchemy import Engine
 
 import commercial_relationship_service.application.audit_events  # noqa: F401  (registra la outbox de auditoría, feature 016)
 from commercial_relationship_service.audit_context import bind_audit_actor
@@ -61,6 +63,7 @@ from commercial_relationship_service.api.supplier_products import (
 )
 from commercial_relationship_service.api.tracing import TracingMiddleware
 from commercial_relationship_service.config import Settings, load_settings
+from commercial_relationship_service.infrastructure.contract_operational_context import ContractCompanyAccessDirectory
 from commercial_relationship_service.infrastructure.database import Database
 from commercial_relationship_service.infrastructure.keycloak_token_client import (
     KeycloakTokenClient,
@@ -88,14 +91,23 @@ HEALTH_PUBLIC_PATHS = {"/health/live", "/health/ready"}
 DOCS_PUBLIC_PATHS = {"/docs", "/openapi.json"}
 
 
-def build_access_directory_factory(settings: Settings) -> AccessDirectoryFactory:
-    """Operational Context `operational-access` (vía propia, token del usuario, R-02)."""
+def build_access_directory_factory(settings: Settings, contract_engine: Engine | None = None) -> AccessDirectoryFactory:
+    """Operational Context `operational-access` (vía propia, token del usuario, R-02).
 
-    def factory(request: Request) -> HTTPCompanyAccessDirectory:
-        return HTTPCompanyAccessDirectory(
+    Con `contract_engine` (spec 025, `OPERATIONAL_CONTEXT_READ_SOURCE=contract`) el acceso se lee de la vista de
+    contrato; el resumen de empresas sigue por HTTP.
+    """
+
+    def factory(request: Request) -> HTTPCompanyAccessDirectory | ContractCompanyAccessDirectory:
+        http = HTTPCompanyAccessDirectory(
             base_url=settings.operational_context_base_url,
             authorization=request.headers.get("authorization"),
             timeout_seconds=settings.operational_context_timeout_seconds,
+        )
+        if contract_engine is None:
+            return http
+        return ContractCompanyAccessDirectory(
+            engine=contract_engine, claims=getattr(request.state, "sio_claims", None), http=http
         )
 
     return factory
@@ -192,11 +204,19 @@ def create_app(
     current_settings = settings or load_settings()
     configure_logging()
     database = Database(current_settings.database_url)
+    oc_reads = current_settings.operational_context_reads
+    oc_contract = (
+        create_contract_engine(oc_reads, application_name="commercial-relationship-service")
+        if oc_reads is not None and oc_reads.uses_contract
+        else None
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         database.dispose()
+        if oc_contract is not None:
+            oc_contract.dispose()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -218,7 +238,7 @@ def create_app(
     app.state.settings = current_settings
     app.state.database = database
     app.state.access_directory_factory = access_directory_factory or build_access_directory_factory(
-        current_settings
+        current_settings, oc_contract
     )
     app.state.company_directory_factory = (
         company_directory_factory or build_company_directory_factory(current_settings)

@@ -77,6 +77,9 @@ services:
       # responde 503 con dependency=operational-context; el registro no la usa.
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
       OPERATIONAL_CONTEXT_TIMEOUT_SECONDS: ${OPERATIONAL_CONTEXT_TIMEOUT_SECONDS:-5}
+      # Spec 025 (D27): `contract` lee la vista de Operational Context con el rol de solo lectura; `http` por omisión.
+      OPERATIONAL_CONTEXT_READ_SOURCE: ${OPERATIONAL_CONTEXT_READ_SOURCE:-http}
+      OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://aud_contract_reader:${CONTRACT_READER_PASSWORD_AUDIT:-}@operational-context-db:5432/${OPERATIONAL_CONTEXT_DB_NAME}
       AUDIT_MAX_CLOCK_SKEW_SECONDS: ${AUDIT_MAX_CLOCK_SKEW_SECONDS:-300}
 
     ports:

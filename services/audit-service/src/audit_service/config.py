@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from sio_contract_read import ContractReadConfigError, ContractReadSettings
+
 
 @dataclass(frozen=True, slots=True)
 class Settings:
@@ -26,6 +28,8 @@ class Settings:
     operational_context_base_url: str
     operational_context_timeout_seconds: float = 5.0
     max_clock_skew_seconds: int = 300
+    # Spec 025 (D27): lectura del acceso operativo por HTTP (por defecto) o por la vista de contrato.
+    operational_context_reads: ContractReadSettings | None = None
 
 
 def load_database_url() -> str:
@@ -39,6 +43,11 @@ def load_settings() -> Settings:
     Raises:
         RuntimeError: Si falta una variable obligatoria o tiene un valor inválido.
     """
+    oc_timeout = _read_positive_float("OPERATIONAL_CONTEXT_TIMEOUT_SECONDS", default=5.0)
+    try:
+        oc_reads = ContractReadSettings.from_env("OPERATIONAL_CONTEXT", timeout_seconds=oc_timeout)
+    except ContractReadConfigError as error:
+        raise RuntimeError(str(error)) from None
     return Settings(
         docs_enabled=_read_bool("SIO_DOCS_ENABLED", default=False),
         database_url=load_database_url(),
@@ -46,11 +55,9 @@ def load_settings() -> Settings:
             "OPERATIONAL_CONTEXT_SERVICE_BASE_URL",
             default="http://localhost:8104/api/v1",
         ),
-        operational_context_timeout_seconds=_read_positive_float(
-            "OPERATIONAL_CONTEXT_TIMEOUT_SECONDS",
-            default=5.0,
-        ),
+        operational_context_timeout_seconds=oc_timeout,
         max_clock_skew_seconds=_read_positive_int("AUDIT_MAX_CLOCK_SKEW_SECONDS", default=300),
+        operational_context_reads=oc_reads,
     )
 
 

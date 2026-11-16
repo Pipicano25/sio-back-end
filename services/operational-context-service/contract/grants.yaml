@@ -1,0 +1,28 @@
+# Consumidores de las vistas de contrato de Operational Context (constitución 3.0.0, D27; spec 025).
+# Lo aplica infrastructure/scripts/contract-readers/provision.py después de `alembic upgrade head`.
+# Agregar o quitar un consumidor o una vista solo cambia este archivo (y la migración si la vista es nueva).
+owner: operational-context
+abbreviation: oc
+database_env: DATABASE_URL
+consumers:
+  sales:
+    abbreviation: sal
+    views: [v1_operational_access, v1_companies, v1_branches, v1_application_users]
+  purchase:
+    abbreviation: pur
+    views: [v1_operational_access, v1_companies, v1_branches, v1_application_users]
+  inventory:
+    abbreviation: inv
+    views: [v1_operational_access, v1_companies, v1_branches, v1_application_users]
+  commercial-relationship:
+    abbreviation: cr
+    views: [v1_operational_access, v1_companies, v1_user_memberships]
+  audit:
+    abbreviation: aud
+    views: [v1_operational_access]
+  product-inventory-query:
+    abbreviation: piq
+    views: [v1_operational_access, v1_branches]
+  business-reporting:
+    abbreviation: brs
+    views: [v1_operational_access, v1_companies, v1_branches]

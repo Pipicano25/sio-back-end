@@ -10,6 +10,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from sio_contract_read import ContractReadConfigError, ContractReadSettings
+
 RECONCILER_THRESHOLD_FACTOR = 10
 """El umbral del conciliador debe ser al menos 10 veces el tiempo de espera de Inventory (R-08)."""
 
@@ -44,6 +46,8 @@ class Settings:
     reconciler_threshold_seconds: float = 300.0
     price_worker_interval_seconds: float = 5.0
     price_worker_max_backoff_seconds: float = 300.0
+    # Spec 025 (D27): lectura del acceso operativo por HTTP (por defecto) o por la vista de contrato.
+    operational_context_reads: ContractReadSettings | None = None
 
     def __post_init__(self) -> None:
         if self.reconciler_threshold_seconds < RECONCILER_THRESHOLD_FACTOR * self.inventory_timeout_seconds:
@@ -73,6 +77,11 @@ def load_settings() -> Settings:
     Raises:
         RuntimeError: Si falta una variable obligatoria o tiene un valor inválido.
     """
+    oc_timeout = _read_positive_float("OPERATIONAL_CONTEXT_TIMEOUT_SECONDS", 5.0)
+    try:
+        oc_reads = ContractReadSettings.from_env("OPERATIONAL_CONTEXT", timeout_seconds=oc_timeout)
+    except ContractReadConfigError as error:
+        raise RuntimeError(str(error)) from None
     return Settings(
         docs_enabled=_read_bool("SIO_DOCS_ENABLED", default=False),
         database_url=load_database_url(),
@@ -85,7 +94,7 @@ def load_settings() -> Settings:
         keycloak_token_url=_required_text("KEYCLOAK_TOKEN_URL"),
         client_id=_read_text("PURCHASE_CLIENT_ID", default="purchase-service"),
         client_secret=_required_text("PURCHASE_CLIENT_SECRET"),
-        operational_context_timeout_seconds=_read_positive_float("OPERATIONAL_CONTEXT_TIMEOUT_SECONDS", 5.0),
+        operational_context_timeout_seconds=oc_timeout,
         commercial_relationship_timeout_seconds=_read_positive_float("COMMERCIAL_RELATIONSHIP_TIMEOUT_SECONDS", 5.0),
         product_catalog_timeout_seconds=_read_positive_float("PRODUCT_CATALOG_TIMEOUT_SECONDS", 5.0),
         party_identity_timeout_seconds=_read_positive_float("PARTY_IDENTITY_TIMEOUT_SECONDS", 5.0),
@@ -98,6 +107,7 @@ def load_settings() -> Settings:
         # Spec 021: entrega de solicitudes de precio a Commercial Relationship (EXC-001).
         price_worker_interval_seconds=_read_positive_float("PURCHASE_PRICE_WORKER_INTERVAL_SECONDS", 5.0),
         price_worker_max_backoff_seconds=_read_positive_float("PURCHASE_PRICE_WORKER_MAX_BACKOFF_SECONDS", 300.0),
+        operational_context_reads=oc_reads,
     )
 
 

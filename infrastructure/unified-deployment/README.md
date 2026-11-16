@@ -176,6 +176,9 @@ Ver `.env.example` (solo marcadores). En resumen:
   worker de auditoría, `AUDIT_CLIENT_ID`/`AUDIT_CLIENT_SECRET`, que en Compose son la cuenta del
   propio servicio), secretos de firma y los ajustes de intervalos, lotes y reintentos
   (`AUDIT_OUTBOX_*`, `*_RECONCILER_*`, `PURCHASE_PRICE_WORKER_*`, `CR_PRICE_WORKER_*`).
+- **Lecturas de contrato (spec 025, D27)**: `<SERVICIO>__OPERATIONAL_CONTEXT_READ_SOURCE` (`http` por omisión o
+  `contract`) y `<SERVICIO>__OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL` (rol `<cons>_contract_reader`, creado con
+  `infrastructure/scripts/contract-readers/provision.py`) en los 7 consumidores de Operational Context.
 - Las `*_SERVICE_BASE_URL` no se definen: apuntan solas a este contenedor (`AUDIT_SERVICE_BASE_URL`
   de los workers de auditoría incluida).
 - Cada worker de auditoría escribe su latido en un archivo propio

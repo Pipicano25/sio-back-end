@@ -8,6 +8,7 @@ WORKDIR /app
 
 # El contexto de construcción es la raíz del monorepo (depende de libs/sio-auth).
 COPY libs/sio-auth /app/libs/sio-auth
+COPY libs/sio-contract-read /app/libs/sio-contract-read
 COPY services/business-reporting-service /app/services/business-reporting-service
 
 WORKDIR /app/services/business-reporting-service

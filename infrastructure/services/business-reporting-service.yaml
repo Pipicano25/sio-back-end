@@ -21,6 +21,9 @@ services:
       SIO_AUTH_AUDIENCE: sio-api
       SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
+      # Spec 025 (D27): `contract` lee la vista de Operational Context con el rol de solo lectura; `http` por omisión.
+      OPERATIONAL_CONTEXT_READ_SOURCE: ${OPERATIONAL_CONTEXT_READ_SOURCE:-http}
+      OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://brs_contract_reader:${CONTRACT_READER_PASSWORD_BUSINESS_REPORTING:-}@operational-context-db:5432/${OPERATIONAL_CONTEXT_DB_NAME}
       SALES_SERVICE_BASE_URL: http://sales-service:8000/api/v1
       PURCHASE_SERVICE_BASE_URL: http://purchase-service:8000/api/v1
       INVENTORY_SERVICE_BASE_URL: http://inventory-service:8000/api/v1

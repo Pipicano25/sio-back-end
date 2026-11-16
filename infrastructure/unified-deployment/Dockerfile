@@ -14,6 +14,7 @@ WORKDIR /app
 
 COPY libs/sio-auth /app/libs/sio-auth
 COPY libs/sio-audit /app/libs/sio-audit
+COPY libs/sio-contract-read /app/libs/sio-contract-read
 COPY services/geography-service /app/services/geography-service
 COPY services/party-identity-service /app/services/party-identity-service
 COPY services/product-catalog-service /app/services/product-catalog-service

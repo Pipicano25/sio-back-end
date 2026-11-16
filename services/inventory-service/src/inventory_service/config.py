@@ -10,6 +10,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from sio_contract_read import ContractReadConfigError, ContractReadSettings
+
 
 @dataclass(frozen=True, slots=True)
 class Settings:
@@ -38,6 +40,8 @@ class Settings:
     operational_context_timeout_seconds: float = 5.0
     commercial_relationship_timeout_seconds: float = 5.0
     lock_timeout_seconds: float = 5.0
+    # Spec 025 (D27): lectura del acceso operativo por HTTP (por defecto) o por la vista de contrato.
+    operational_context_reads: ContractReadSettings | None = None
 
     def __repr__(self) -> str:  # nunca muestra el secreto ni la URL de la base
         return f"Settings(client_id={self.client_id!r}, docs_enabled={self.docs_enabled!r})"
@@ -54,6 +58,11 @@ def load_settings() -> Settings:
     Raises:
         RuntimeError: Si falta una variable obligatoria o tiene un valor inválido.
     """
+    oc_timeout = _read_positive_float("OPERATIONAL_CONTEXT_TIMEOUT_SECONDS", default=5.0)
+    try:
+        oc_reads = ContractReadSettings.from_env("OPERATIONAL_CONTEXT", timeout_seconds=oc_timeout)
+    except ContractReadConfigError as error:
+        raise RuntimeError(str(error)) from None
     return Settings(
         docs_enabled=_read_bool("SIO_DOCS_ENABLED", default=False),
         database_url=load_database_url(),
@@ -62,13 +71,12 @@ def load_settings() -> Settings:
         keycloak_token_url=_required_text("KEYCLOAK_TOKEN_URL"),
         client_id=_read_text("INVENTORY_CLIENT_ID", default="inventory-service"),
         client_secret=_required_text("INVENTORY_CLIENT_SECRET"),
-        operational_context_timeout_seconds=_read_positive_float(
-            "OPERATIONAL_CONTEXT_TIMEOUT_SECONDS", default=5.0
-        ),
+        operational_context_timeout_seconds=oc_timeout,
         commercial_relationship_timeout_seconds=_read_positive_float(
             "COMMERCIAL_RELATIONSHIP_TIMEOUT_SECONDS", default=5.0
         ),
         lock_timeout_seconds=_read_positive_float("INVENTORY_LOCK_TIMEOUT_SECONDS", default=5.0),
+        operational_context_reads=oc_reads,
     )
 
 

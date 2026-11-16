@@ -54,6 +54,86 @@ x-auth: &auth
   SIO_AUTH_AUDIENCE: sio-api
   SIO_DOCS_ENABLED: "true"
 
+# Lecturas directas por vistas de contrato (spec 025, D27; data-model.md §3). SIO_IT_READ_SOURCE la fija
+# `stack.sh levantar --lecturas http|contract` (por defecto http). Cada consumidor se conecta con su propio rol
+# <cons>_contract_reader, creado por infrastructure/scripts/contract-readers/provision.py tras las migraciones.
+x-contract-sales: &contract-sales
+  OPERATIONAL_CONTEXT_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://sal_contract_reader:${CONTRACT_READER_PASSWORD_SALES}@operational-context-db:5432/operational_context
+  PRODUCT_CATALOG_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PRODUCT_CATALOG_CONTRACT_DATABASE_URL: postgresql+psycopg://sal_contract_reader:${CONTRACT_READER_PASSWORD_SALES}@product-catalog-db:5432/product_catalog
+  COMMERCIAL_RELATIONSHIP_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  COMMERCIAL_RELATIONSHIP_CONTRACT_DATABASE_URL: postgresql+psycopg://sal_contract_reader:${CONTRACT_READER_PASSWORD_SALES}@commercial-relationship-db:5432/commercial_relationship
+  PARTY_IDENTITY_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PARTY_IDENTITY_CONTRACT_DATABASE_URL: postgresql+psycopg://sal_contract_reader:${CONTRACT_READER_PASSWORD_SALES}@party-identity-db:5432/party_identity
+  PAYMENT_REFERENCE_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PAYMENT_REFERENCE_CONTRACT_DATABASE_URL: postgresql+psycopg://sal_contract_reader:${CONTRACT_READER_PASSWORD_SALES}@payment-reference-db:5432/payment_reference
+  INVENTORY_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  INVENTORY_CONTRACT_DATABASE_URL: postgresql+psycopg://sal_contract_reader:${CONTRACT_READER_PASSWORD_SALES}@inventory-db:5432/inventory
+
+x-contract-purchase: &contract-purchase
+  OPERATIONAL_CONTEXT_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://pur_contract_reader:${CONTRACT_READER_PASSWORD_PURCHASE}@operational-context-db:5432/operational_context
+  PRODUCT_CATALOG_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PRODUCT_CATALOG_CONTRACT_DATABASE_URL: postgresql+psycopg://pur_contract_reader:${CONTRACT_READER_PASSWORD_PURCHASE}@product-catalog-db:5432/product_catalog
+  COMMERCIAL_RELATIONSHIP_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  COMMERCIAL_RELATIONSHIP_CONTRACT_DATABASE_URL: postgresql+psycopg://pur_contract_reader:${CONTRACT_READER_PASSWORD_PURCHASE}@commercial-relationship-db:5432/commercial_relationship
+  PARTY_IDENTITY_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PARTY_IDENTITY_CONTRACT_DATABASE_URL: postgresql+psycopg://pur_contract_reader:${CONTRACT_READER_PASSWORD_PURCHASE}@party-identity-db:5432/party_identity
+  PAYMENT_REFERENCE_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PAYMENT_REFERENCE_CONTRACT_DATABASE_URL: postgresql+psycopg://pur_contract_reader:${CONTRACT_READER_PASSWORD_PURCHASE}@payment-reference-db:5432/payment_reference
+  INVENTORY_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  INVENTORY_CONTRACT_DATABASE_URL: postgresql+psycopg://pur_contract_reader:${CONTRACT_READER_PASSWORD_PURCHASE}@inventory-db:5432/inventory
+
+x-contract-inventory: &contract-inventory
+  OPERATIONAL_CONTEXT_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://inv_contract_reader:${CONTRACT_READER_PASSWORD_INVENTORY}@operational-context-db:5432/operational_context
+  COMMERCIAL_RELATIONSHIP_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  COMMERCIAL_RELATIONSHIP_CONTRACT_DATABASE_URL: postgresql+psycopg://inv_contract_reader:${CONTRACT_READER_PASSWORD_INVENTORY}@commercial-relationship-db:5432/commercial_relationship
+
+x-contract-commercial-relationship: &contract-commercial-relationship
+  OPERATIONAL_CONTEXT_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://cr_contract_reader:${CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP}@operational-context-db:5432/operational_context
+  PRODUCT_CATALOG_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PRODUCT_CATALOG_CONTRACT_DATABASE_URL: postgresql+psycopg://cr_contract_reader:${CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP}@product-catalog-db:5432/product_catalog
+  PARTY_IDENTITY_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PARTY_IDENTITY_CONTRACT_DATABASE_URL: postgresql+psycopg://cr_contract_reader:${CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP}@party-identity-db:5432/party_identity
+  PAYMENT_REFERENCE_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PAYMENT_REFERENCE_CONTRACT_DATABASE_URL: postgresql+psycopg://cr_contract_reader:${CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP}@payment-reference-db:5432/payment_reference
+
+x-contract-audit: &contract-audit
+  OPERATIONAL_CONTEXT_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://aud_contract_reader:${CONTRACT_READER_PASSWORD_AUDIT}@operational-context-db:5432/operational_context
+
+x-contract-party-identity: &contract-party-identity
+  GEOGRAPHY_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  GEOGRAPHY_CONTRACT_DATABASE_URL: postgresql+psycopg://pi_contract_reader:${CONTRACT_READER_PASSWORD_PARTY_IDENTITY}@geography-db:5432/geography
+
+x-contract-operational-context: &contract-operational-context
+  PARTY_IDENTITY_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PARTY_IDENTITY_CONTRACT_DATABASE_URL: postgresql+psycopg://oc_contract_reader:${CONTRACT_READER_PASSWORD_OPERATIONAL_CONTEXT}@party-identity-db:5432/party_identity
+  GEOGRAPHY_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  GEOGRAPHY_CONTRACT_DATABASE_URL: postgresql+psycopg://oc_contract_reader:${CONTRACT_READER_PASSWORD_OPERATIONAL_CONTEXT}@geography-db:5432/geography
+
+x-contract-product-inventory-query: &contract-product-inventory-query
+  OPERATIONAL_CONTEXT_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://piq_contract_reader:${CONTRACT_READER_PASSWORD_PRODUCT_INVENTORY_QUERY}@operational-context-db:5432/operational_context
+  PRODUCT_CATALOG_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PRODUCT_CATALOG_CONTRACT_DATABASE_URL: postgresql+psycopg://piq_contract_reader:${CONTRACT_READER_PASSWORD_PRODUCT_INVENTORY_QUERY}@product-catalog-db:5432/product_catalog
+  COMMERCIAL_RELATIONSHIP_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  COMMERCIAL_RELATIONSHIP_CONTRACT_DATABASE_URL: postgresql+psycopg://piq_contract_reader:${CONTRACT_READER_PASSWORD_PRODUCT_INVENTORY_QUERY}@commercial-relationship-db:5432/commercial_relationship
+  INVENTORY_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  INVENTORY_CONTRACT_DATABASE_URL: postgresql+psycopg://piq_contract_reader:${CONTRACT_READER_PASSWORD_PRODUCT_INVENTORY_QUERY}@inventory-db:5432/inventory
+
+x-contract-business-reporting: &contract-business-reporting
+  OPERATIONAL_CONTEXT_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://brs_contract_reader:${CONTRACT_READER_PASSWORD_BUSINESS_REPORTING}@operational-context-db:5432/operational_context
+  PRODUCT_CATALOG_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PRODUCT_CATALOG_CONTRACT_DATABASE_URL: postgresql+psycopg://brs_contract_reader:${CONTRACT_READER_PASSWORD_BUSINESS_REPORTING}@product-catalog-db:5432/product_catalog
+
+x-contract-product-catalog: &contract-product-catalog
+  PARTY_IDENTITY_READ_SOURCE: ${SIO_IT_READ_SOURCE:-http}
+  PARTY_IDENTITY_CONTRACT_DATABASE_URL: postgresql+psycopg://pc_contract_reader:${CONTRACT_READER_PASSWORD_PRODUCT_CATALOG}@party-identity-db:5432/party_identity
 x-worker-health: &worker-health
   healthcheck:
     test: ["CMD", "python", "-m", "sio_audit.worker", "--check"]
@@ -71,7 +151,7 @@ x-outbox: &outbox
   AUDIT_OUTBOX_POLL_INTERVAL_SECONDS: "2"
 
 x-purchase-env: &purchase-env
-  <<: *auth
+  <<: [*auth, *contract-purchase]
   DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@purchase-db:5432/purchase
   OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
   COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
@@ -88,7 +168,7 @@ x-purchase-env: &purchase-env
   PURCHASE_CLIENT_SECRET: ${PURCHASE_SERVICE_CLIENT_SECRET}
 
 x-sales-env: &sales-env
-  <<: *auth
+  <<: [*auth, *contract-sales]
   DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@sales-db:5432/sales
   OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
   COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
@@ -222,7 +302,7 @@ services:
     image: sio-it/party-identity-service:${SIO_IT_TAG}
     container_name: sio-it-party-identity-service
     environment:
-      <<: *auth
+      <<: [*auth, *contract-party-identity]
       DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@party-identity-db:5432/party_identity
       GEOGRAPHY_SERVICE_BASE_URL: http://geography-service:8000
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
@@ -238,7 +318,7 @@ services:
     image: sio-it/operational-context-service:${SIO_IT_TAG}
     container_name: sio-it-operational-context-service
     environment:
-      <<: *auth
+      <<: [*auth, *contract-operational-context]
       DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@operational-context-db:5432/operational_context
       PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
       GEOGRAPHY_SERVICE_BASE_URL: http://geography-service:8000
@@ -267,7 +347,7 @@ services:
     image: sio-it/product-catalog-service:${SIO_IT_TAG}
     container_name: sio-it-product-catalog-service
     environment:
-      <<: *auth
+      <<: [*auth, *contract-product-catalog]
       DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@product-catalog-db:5432/product_catalog
       PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
       ASSET_STORAGE_ENDPOINT: http://object-storage:9000
@@ -286,7 +366,7 @@ services:
     image: sio-it/commercial-relationship-service:${SIO_IT_TAG}
     container_name: sio-it-commercial-relationship-service
     environment: &cr-env
-      <<: *auth
+      <<: [*auth, *contract-commercial-relationship]
       DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@commercial-relationship-db:5432/commercial_relationship
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
       PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
@@ -305,7 +385,7 @@ services:
     image: sio-it/inventory-service:${SIO_IT_TAG}
     container_name: sio-it-inventory-service
     environment:
-      <<: *auth
+      <<: [*auth, *contract-inventory]
       DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@inventory-db:5432/inventory
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
       COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
@@ -339,7 +419,7 @@ services:
     image: sio-it/audit-service:${SIO_IT_TAG}
     container_name: sio-it-audit-service
     environment:
-      <<: *auth
+      <<: [*auth, *contract-audit]
       DATABASE_URL: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@audit-db:5432/audit
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
     ports: ["127.0.0.1:18110:8000"]
@@ -351,7 +431,7 @@ services:
     image: sio-it/product-inventory-query-service:${SIO_IT_TAG}
     container_name: sio-it-product-inventory-query-service
     environment:
-      <<: *auth
+      <<: [*auth, *contract-product-inventory-query]
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
       COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
       PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
@@ -377,7 +457,7 @@ services:
       start_period: 30s
       start_interval: 2s
     environment:
-      <<: *auth
+      <<: [*auth, *contract-business-reporting]
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
       SALES_SERVICE_BASE_URL: http://sales-service:8000/api/v1
       PURCHASE_SERVICE_BASE_URL: http://purchase-service:8000/api/v1
@@ -385,6 +465,38 @@ services:
       COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
       PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
     ports: ["127.0.0.1:18113:8000"]
+
+  # ------------------------------------------------------------------ roles de lectura de contrato (spec 025)
+  contract-readers:
+    # provision.py aplicar|verificar --entorno aislada. Solo ve el script, la librería y una copia temporal de los
+    # services/*/contract/grants.yaml que prepara stack.sh (SIO_IT_CONTRACT_GRANTS_DIR); nunca los .env del repositorio.
+    <<: *isolated
+    image: sio-it/sales-service:${SIO_IT_TAG}
+    container_name: sio-it-contract-readers
+    profiles: ["bootstrap"]
+    entrypoint: ["python", "/repo/infrastructure/scripts/contract-readers/provision.py"]
+    environment:
+      CONTRACT_ADMIN_URL_OPERATIONAL_CONTEXT: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@operational-context-db:5432/operational_context
+      CONTRACT_ADMIN_URL_PRODUCT_CATALOG: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@product-catalog-db:5432/product_catalog
+      CONTRACT_ADMIN_URL_COMMERCIAL_RELATIONSHIP: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@commercial-relationship-db:5432/commercial_relationship
+      CONTRACT_ADMIN_URL_PARTY_IDENTITY: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@party-identity-db:5432/party_identity
+      CONTRACT_ADMIN_URL_PAYMENT_REFERENCE: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@payment-reference-db:5432/payment_reference
+      CONTRACT_ADMIN_URL_GEOGRAPHY: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@geography-db:5432/geography
+      CONTRACT_ADMIN_URL_INVENTORY: postgresql+psycopg://${SIO_IT_DB_USER}:${SIO_IT_DB_PASSWORD}@inventory-db:5432/inventory
+      CONTRACT_READER_PASSWORD_SALES: ${CONTRACT_READER_PASSWORD_SALES}
+      CONTRACT_READER_PASSWORD_PURCHASE: ${CONTRACT_READER_PASSWORD_PURCHASE}
+      CONTRACT_READER_PASSWORD_INVENTORY: ${CONTRACT_READER_PASSWORD_INVENTORY}
+      CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP: ${CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP}
+      CONTRACT_READER_PASSWORD_AUDIT: ${CONTRACT_READER_PASSWORD_AUDIT}
+      CONTRACT_READER_PASSWORD_PARTY_IDENTITY: ${CONTRACT_READER_PASSWORD_PARTY_IDENTITY}
+      CONTRACT_READER_PASSWORD_OPERATIONAL_CONTEXT: ${CONTRACT_READER_PASSWORD_OPERATIONAL_CONTEXT}
+      CONTRACT_READER_PASSWORD_PRODUCT_INVENTORY_QUERY: ${CONTRACT_READER_PASSWORD_PRODUCT_INVENTORY_QUERY}
+      CONTRACT_READER_PASSWORD_BUSINESS_REPORTING: ${CONTRACT_READER_PASSWORD_BUSINESS_REPORTING}
+      CONTRACT_READER_PASSWORD_PRODUCT_CATALOG: ${CONTRACT_READER_PASSWORD_PRODUCT_CATALOG}
+    volumes:
+      - ../../infrastructure/scripts/contract-readers:/repo/infrastructure/scripts/contract-readers:ro
+      - ../../libs/sio-contract-read/src:/repo/libs/sio-contract-read/src:ro
+      - ${SIO_IT_CONTRACT_GRANTS_DIR:-./.contract-grants}:/repo/services:ro
 
   # ------------------------------------------------------------------ trabajadores
   commercial-relationship-price-worker:

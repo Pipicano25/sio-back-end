@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sio-contract-read"
+version = "0.1.0"
+description = "Lectura de solo lectura de las vistas de contrato de otro microservicio de SIO (constitución 3.0.0, D27)."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "SIO" }]
+dependencies = [
+  "SQLAlchemy>=2.0,<3",
+  "psycopg[binary]>=3.1,<4",
+  "PyYAML>=6,<7",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+sio_contract_read = ["py.typed"]

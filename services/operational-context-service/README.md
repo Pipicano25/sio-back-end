@@ -270,6 +270,33 @@ Cubre una caída prolongada (`docker stop`) y una caída inesperada de PostgreSQ
 contra `http://localhost:8104` (`OPERATIONAL_CONTEXT_INTEGRATION_BASE_URL`). Si se interrumpe con la
 base detenida: `docker start sio-operational-context-db`.
 
+## Vistas de contrato (spec 025, D27)
+
+La migración `0004` publica el esquema `contract` con vistas de solo lectura para que otros servicios lean sin
+llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué vista está en
+[`contract/grants.yaml`](contract/grants.yaml); los roles los crea `infrastructure/scripts/contract-readers/provision.py`.
+
+| Vista | Columnas | Reemplaza | Consumidores |
+|---|---|---|---|
+| `v1_operational_access` | `keycloak_user_id`, `company_id`, `branch_id` (nulo en la fila de empresa), `application_user_id`, `denial_reason` | `GET /operational-access`, vía propia | Sales, Purchase, Inventory, Commercial Relationship, Audit, PIQ, Business Reporting |
+| `v1_companies` | `id`, `status`, `organization_identity_id`, `default_currency`, `timezone` | `GET /companies/{id}` | Sales, Purchase, Inventory, Commercial Relationship, Business Reporting |
+| `v1_branches` | `id`, `company_id`, `code`, `name`, `status`, `company_status`, `effective_timezone`, `created_at` | `GET /branches/{id}` y `GET /companies/{id}/branches` (orden `created_at, id`) | Sales, Purchase, Inventory, PIQ, Business Reporting |
+| `v1_application_users` | `id`, `company_id`, `keycloak_user_id`, `status`, `company_status` | `GET /application-users/{id}` | Sales, Purchase, Inventory |
+| `v1_user_memberships` | `keycloak_user_id`, `application_user_id`, `company_id`, `status`, `company_status`, `created_at` | membresías de `GET /me/operational-context` | Commercial Relationship |
+
+Reglas de `v1_operational_access`:
+
+- La membresía se elige como en `find_membership`: la `ACTIVE` primero y, si no hay, la más reciente (`updated_at`,
+  luego `id`).
+- `denial_reason` es la primera causa que falla, en el orden de `domain/access.py`: `USER_MEMBERSHIP_INACTIVE`,
+  `COMPANY_INACTIVE`, `BRANCH_INACTIVE`, `BRANCH_NOT_ASSIGNED`, `USER_BRANCH_INACTIVE`. Nulo si se permite.
+- Sin fila para el usuario y el destino, el consumidor responde `USER_NOT_MEMBER`, igual que hoy con una empresa o
+  sucursal inexistente o ajena.
+- El permiso no está en la vista: el consumidor lo evalúa con su token, como hace hoy esta API.
+
+Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); incompatibles, con una vista `v2_`.
+La paridad con la API la prueban `tests/contract_views/`.
+
 ## Consumo de la API
 
 - Prefijo `/api/v1`; errores `application/problem+json` con `code` (`OPERATIONAL_CONTEXT.<CAUSA>`) y

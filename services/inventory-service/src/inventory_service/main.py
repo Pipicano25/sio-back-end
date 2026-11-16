@@ -7,6 +7,7 @@ from uuid import UUID
 
 from fastapi import FastAPI, Request
 from sio_auth import SIOAuth, install_cors
+from sio_contract_read import create_contract_engine
 
 from inventory_service.api.dependencies import (
     AccessDirectoryFactory,
@@ -23,6 +24,7 @@ from inventory_service.application.audit_events import make_audit_hook
 from inventory_service.application.ports import TokenProvider
 from inventory_service.config import Settings, load_settings
 from inventory_service.infrastructure.commercial_relationship_directory import HTTPCompanyProductDirectory
+from inventory_service.infrastructure.contract_operational_context import ContractCompanyAccessDirectory
 from inventory_service.infrastructure.database import Database
 from inventory_service.infrastructure.keycloak_token_client import KeycloakTokenClient
 from inventory_service.infrastructure.operational_context_directory import (
@@ -73,10 +75,20 @@ def create_app(
     database = Database(current_settings.database_url, lock_timeout_seconds=current_settings.lock_timeout_seconds)
     tokens = token_provider or build_token_provider(current_settings)
 
+    oc_reads = current_settings.operational_context_reads
+    # Spec 025 (D27): con OPERATIONAL_CONTEXT_READ_SOURCE=contract el acceso se lee de la vista de contrato.
+    oc_contract = (
+        create_contract_engine(oc_reads, application_name="inventory-service")
+        if oc_reads is not None and oc_reads.uses_contract
+        else None
+    )
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         database.dispose()
+        if oc_contract is not None:
+            oc_contract.dispose()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -110,7 +122,11 @@ def create_app(
         )
     )
 
-    def default_access(request: Request) -> HTTPCompanyAccessDirectory:
+    def default_access(request: Request) -> HTTPCompanyAccessDirectory | ContractCompanyAccessDirectory:
+        if oc_contract is not None:
+            return ContractCompanyAccessDirectory(
+                engine=oc_contract, claims=getattr(request.state, "sio_claims", None)
+            )
         return HTTPCompanyAccessDirectory(
             base_url=current_settings.operational_context_base_url,
             authorization=request.headers.get("authorization"),

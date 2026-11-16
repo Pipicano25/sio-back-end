@@ -14,6 +14,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from sio_contract_read import ContractReadConfigError, ContractReadSettings
+
 MIN_SECRET_BYTES = 32
 """Longitud mínima del secreto del cursor (HMAC-SHA256, research.md R-08)."""
 
@@ -46,6 +48,8 @@ class Settings:
     max_parallel_calls: int = 8
     cursor_ttl_seconds: int = 900
     reference_cache_seconds: float = 300.0
+    # Spec 025 (D27): lectura del acceso operativo por HTTP (por defecto) o por la vista de contrato.
+    operational_context_reads: ContractReadSettings | None = None
 
     def __post_init__(self) -> None:
         if len(self.cursor_secret.encode("utf-8")) < MIN_SECRET_BYTES:
@@ -89,6 +93,11 @@ def load_settings() -> Settings:
     Raises:
         RuntimeError: Si falta una variable obligatoria o tiene un valor inválido.
     """
+    dependency_timeout = _read_positive_float("PIQS_DEPENDENCY_TIMEOUT_SECONDS", 3.0)
+    try:
+        oc_reads = ContractReadSettings.from_env("OPERATIONAL_CONTEXT", timeout_seconds=dependency_timeout)
+    except ContractReadConfigError as error:
+        raise RuntimeError(str(error)) from None
     return Settings(
         docs_enabled=_read_bool("SIO_DOCS_ENABLED", default=False),
         operational_context_base_url=_required_text("OPERATIONAL_CONTEXT_SERVICE_BASE_URL"),
@@ -101,7 +110,7 @@ def load_settings() -> Settings:
         cursor_secret=_required_text("PIQS_CURSOR_SECRET"),
         cursor_secret_previous=_optional_text("PIQS_CURSOR_SECRET_PREVIOUS"),
         jwks_url=_optional_text("SIO_AUTH_JWKS_URL"),
-        dependency_timeout_seconds=_read_positive_float("PIQS_DEPENDENCY_TIMEOUT_SECONDS", 3.0),
+        dependency_timeout_seconds=dependency_timeout,
         request_budget_seconds=_read_positive_float("PIQS_REQUEST_BUDGET_SECONDS", 8.0),
         work_time_seconds=_read_positive_float("PIQS_WORK_TIME_SECONDS", 5.0),
         max_batches_per_request=_read_positive_int("PIQS_MAX_BATCHES_PER_REQUEST", 5),
@@ -111,6 +120,7 @@ def load_settings() -> Settings:
         max_parallel_calls=_read_positive_int("PIQS_MAX_PARALLEL_CALLS", 8),
         cursor_ttl_seconds=_read_positive_int("PIQS_CURSOR_TTL_SECONDS", 900),
         reference_cache_seconds=_read_positive_float("PIQS_REFERENCE_CACHE_SECONDS", 300.0),
+        operational_context_reads=oc_reads,
     )
 
 

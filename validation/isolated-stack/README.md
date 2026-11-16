@@ -67,6 +67,27 @@ bash validation/isolated-stack/stack.sh retirar       # elimina SOLO los contene
 `levantar` aplica las migraciones de cada servicio y sus seeds (Geography, Product Catalog, Payment Reference y
 Party Identity), en el mismo orden que `infrastructure/scripts/rebuild-all.sh`, pero solo dentro de la pila.
 
+## Lecturas directas por vistas de contrato (spec 025)
+
+Los consumidores pueden leer los datos de otro servicio por HTTP (como hasta ahora) o directamente de sus vistas de
+contrato (constitución 3.0.0, D27). La pila elige la fuente para todos los consumidores a la vez:
+
+```bash
+bash validation/isolated-stack/stack.sh levantar --lecturas contract   # por defecto: http
+bash validation/isolated-stack/stack.sh lecturas http                  # recrea solo los consumidores; los datos quedan
+bash validation/isolated-stack/stack.sh lecturas contract
+```
+
+- `levantar` agrega al `.env` de la pila las contraseñas `CONTRACT_READER_PASSWORD_*` que falten (aleatorias).
+- Después de las migraciones ejecuta `infrastructure/scripts/contract-readers/provision.py aplicar` y `verificar`
+  en el contenedor efímero `sio-it-contract-readers`. Ese contenedor solo recibe el script, la librería
+  `sio-contract-read` y una copia temporal de los `services/*/contract/grants.yaml`, nunca los `.env` del repositorio.
+- Cada consumidor recibe `<PROPIETARIO>_READ_SOURCE` (`SIO_IT_READ_SOURCE`) y `<PROPIETARIO>_CONTRACT_DATABASE_URL`
+  con su rol `<cons>_contract_reader` para las 29 parejas de `specs/025-direct-contract-reads/data-model.md` §3.
+  Un consumidor que aún no tiene adaptador de contrato ignora esas variables.
+- La caracterización extremo a extremo se graba con `http` y se reproduce con `contract`
+  (`specs/025-direct-contract-reads/quickstart.md` §4).
+
 ## Prohibiciones
 
 - No levantar la pila con `docker compose` sin `--project-name sio-it` y `--env-file validation/isolated-stack/.env`.

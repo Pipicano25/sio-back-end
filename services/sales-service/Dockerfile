@@ -6,9 +6,10 @@ ENV PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# El contexto de construcción es la raíz del monorepo (depende de libs/sio-auth y libs/sio-audit).
+# El contexto de construcción es la raíz del monorepo (depende de libs/sio-auth, libs/sio-audit y libs/sio-contract-read).
 COPY libs/sio-auth /app/libs/sio-auth
 COPY libs/sio-audit /app/libs/sio-audit
+COPY libs/sio-contract-read /app/libs/sio-contract-read
 COPY services/sales-service /app/services/sales-service
 
 WORKDIR /app/services/sales-service

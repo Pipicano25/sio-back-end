@@ -2,7 +2,10 @@
 # Pila de integración aislada de SIO (spec 022, T129 y T130). Uso, desde la raíz del repositorio:
 #
 #   bash validation/isolated-stack/stack.sh verificar   # solo valida la configuración (no crea nada)
-#   bash validation/isolated-stack/stack.sh levantar    # construye, levanta, migra y carga los datos de referencia
+#   bash validation/isolated-stack/stack.sh levantar [--lecturas http|contract]
+#                                                       # construye, levanta, migra, crea los roles de lectura de
+#                                                       # contrato (spec 025) y carga los datos de referencia
+#   bash validation/isolated-stack/stack.sh lecturas http|contract  # recrea los consumidores con esa fuente de lectura
 #   bash validation/isolated-stack/stack.sh estado      # contenedores de la pila
 #   bash validation/isolated-stack/stack.sh retirar     # elimina SOLO los contenedores y la red del proyecto sio-it
 #   bash validation/isolated-stack/stack.sh entorno     # imprime los export de URL (sin secretos) para las pruebas
@@ -31,8 +34,32 @@ fail() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 
 random() { python3 -c "import secrets; print(secrets.token_urlsafe($1))"; }
 
+# Consumidores con rol de lectura de contrato (spec 025, data-model.md §3).
+CONTRACT_CONSUMERS=(SALES PURCHASE INVENTORY COMMERCIAL_RELATIONSHIP AUDIT PARTY_IDENTITY OPERATIONAL_CONTEXT
+    PRODUCT_INVENTORY_QUERY BUSINESS_REPORTING PRODUCT_CATALOG)
+# Servicios cuyo entorno lleva *_READ_SOURCE (se recrean con "lecturas").
+CONTRACT_CONSUMER_SERVICES=(sales-service purchase-service inventory-service commercial-relationship-service audit-service
+    party-identity-service operational-context-service product-inventory-query-service business-reporting-service
+    product-catalog-service sales-reconciler purchase-reconciler purchase-price-update-worker)
+
+# Agrega al .env de la pila las contraseñas de los roles de lectura que falten (también en un .env ya existente).
+ensure_contract_passwords() {
+    local name
+    for name in "${CONTRACT_CONSUMERS[@]}"; do
+        grep -q "^CONTRACT_READER_PASSWORD_${name}=" "$ENV_FILE" \
+            || echo "CONTRACT_READER_PASSWORD_${name}=$(random 24)" >> "$ENV_FILE"
+    done
+}
+
+read_source() {
+    case "${1:-}" in
+        http|contract) export SIO_IT_READ_SOURCE="$1" ;;
+        *) fail "--lecturas debe ser http o contract" ;;
+    esac
+}
+
 ensure_env() {
-    [ -f "$ENV_FILE" ] && return
+    if [ -f "$ENV_FILE" ]; then ensure_contract_passwords; return; fi
     say "Generando $ENV_FILE con secretos propios de la pila (no se versiona)"
     umask 077
     {
@@ -61,6 +88,7 @@ ensure_env() {
             echo "${name}_CLIENT_SECRET=$(random 32)"
         done
     } > "$ENV_FILE"
+    ensure_contract_passwords
 }
 
 # Verifica la configuración renderizada antes de tocar Docker (no imprime secretos).
@@ -119,7 +147,46 @@ exec_in() {
     "${COMPOSE[@]}" exec -T "$service" "$@"
 }
 
+# Roles de lectura de contrato: aplica y verifica con provision.py dentro de la red de la pila. El contenedor solo
+# recibe una copia temporal de los services/*/contract/grants.yaml (nunca los .env del repositorio).
+contract_readers() {
+    local grants file service count=0
+    grants="$(mktemp -d)"
+    chmod 755 "$grants"
+    for file in "$REPO"/services/*/contract/grants.yaml; do
+        [ -f "$file" ] || continue
+        service="$(basename "$(dirname "$(dirname "$file")")")"
+        mkdir -p "$grants/$service/contract"
+        chmod 755 "$grants/$service" "$grants/$service/contract"
+        install -m 644 "$file" "$grants/$service/contract/grants.yaml"
+        count=$((count + 1))
+    done
+    if [ "$count" -eq 0 ]; then
+        echo "Sin services/*/contract/grants.yaml: no hay roles de lectura que crear"
+    else
+        echo "--- $count propietarios con vistas de contrato"
+        SIO_IT_CONTRACT_GRANTS_DIR="$grants" "${COMPOSE[@]}" --profile bootstrap run --rm -T contract-readers \
+            aplicar --entorno aislada
+        SIO_IT_CONTRACT_GRANTS_DIR="$grants" "${COMPOSE[@]}" --profile bootstrap run --rm -T contract-readers \
+            verificar --entorno aislada
+    fi
+    rm -rf "$grants"
+}
+
+# Recrea los consumidores para que tomen SIO_IT_READ_SOURCE (las bases y los datos no cambian).
+switch_reads() {
+    read_source "${1:-}"
+    verify
+    # Reconstruye primero: sin esto, una imagen anterior al cambio de código seguiría leyendo por HTTP.
+    say "Construyendo imágenes sio-it/*:spec022 (capas en caché si el código no cambió)"
+    "${COMPOSE[@]}" build "${APP_SERVICES[@]}" product-inventory-query-service business-reporting-service
+    say "Recreando los consumidores con lecturas=$SIO_IT_READ_SOURCE"
+    "${COMPOSE[@]}" up -d --wait --no-deps --force-recreate "${CONTRACT_CONSUMER_SERVICES[@]}"
+}
+
 up() {
+    if [ "${1:-}" = --lecturas ]; then read_source "${2:-}"; fi
+    export SIO_IT_READ_SOURCE="${SIO_IT_READ_SOURCE:-http}"
     verify
     say "Construyendo imágenes sio-it/*:spec022 (no reemplaza las imágenes del entorno persistente)"
     "${COMPOSE[@]}" build "${APP_SERVICES[@]}" product-inventory-query-service business-reporting-service
@@ -147,6 +214,9 @@ up() {
     echo "--- party-identity-service"
     isolated_container sio-it-party-identity-service
     "${COMPOSE[@]}" exec -T -e PARTY_IDENTITY_SEED_COUNTRY_ID="$colombia" party-identity-service alembic upgrade head >/dev/null
+
+    say "Roles de lectura de contrato (lecturas=$SIO_IT_READ_SOURCE)"
+    contract_readers
 
     say "Datos de referencia (seeds de cada servicio)"
     exec_in product-catalog-service python -m product_catalog_service.seed load | tail -1
@@ -188,9 +258,10 @@ EOF
 
 case "${1:-}" in
     verificar) verify ;;
-    levantar) up ;;
+    levantar) shift; up "$@" ;;
+    lecturas) shift; switch_reads "$@" ;;
     estado) docker ps -a --filter label=com.docker.compose.project=$PROJECT --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' ;;
     retirar) down ;;
     entorno) environment ;;
-    *) sed -n '2,8p' "$0"; exit 2 ;;
+    *) sed -n '2,11p' "$0"; exit 2 ;;
 esac

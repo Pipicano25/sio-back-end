@@ -9,6 +9,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from sio_contract_read import ContractReadConfigError, ContractReadSettings
+
 
 @dataclass(frozen=True, slots=True)
 class Settings:
@@ -29,6 +31,8 @@ class Settings:
     max_period_days: int = 366
     csv_max_rows: int = 50_000
     default_timezone: str = "America/Bogota"
+    # Spec 025 (D27): origen de las lecturas de Operational Context (`http` por omisión o `contract`).
+    operational_context_reads: ContractReadSettings | None = None
 
     def __post_init__(self) -> None:
         if self.dependency_timeout_seconds > self.json_budget_seconds:
@@ -50,6 +54,11 @@ def load_settings() -> Settings:
     Raises:
         RuntimeError: Si falta una variable obligatoria o tiene un valor inválido.
     """
+    dependency_timeout = _read_positive_float("BRS_DEPENDENCY_TIMEOUT_SECONDS", 5.0)
+    try:
+        oc_reads = ContractReadSettings.from_env("OPERATIONAL_CONTEXT", timeout_seconds=dependency_timeout)
+    except ContractReadConfigError as error:
+        raise RuntimeError(str(error)) from None
     return Settings(
         docs_enabled=_read_bool("SIO_DOCS_ENABLED", default=False),
         operational_context_base_url=_required_text("OPERATIONAL_CONTEXT_SERVICE_BASE_URL"),
@@ -59,13 +68,14 @@ def load_settings() -> Settings:
         commercial_relationship_base_url=_required_text("COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL"),
         product_catalog_base_url=_required_text("PRODUCT_CATALOG_SERVICE_BASE_URL"),
         jwks_url=_optional_text("SIO_AUTH_JWKS_URL"),
-        dependency_timeout_seconds=_read_positive_float("BRS_DEPENDENCY_TIMEOUT_SECONDS", 5.0),
+        dependency_timeout_seconds=dependency_timeout,
         json_budget_seconds=_read_positive_float("BRS_JSON_BUDGET_SECONDS", 10.0),
         csv_budget_seconds=_read_positive_float("BRS_CSV_BUDGET_SECONDS", 120.0),
         max_parallel_calls=_read_positive_int("BRS_MAX_PARALLEL_CALLS", 4),
         max_period_days=_read_positive_int("BRS_MAX_PERIOD_DAYS", 366),
         csv_max_rows=_read_positive_int("BRS_CSV_MAX_ROWS", 50_000),
         default_timezone=_optional_text("BRS_DEFAULT_TIMEZONE") or "America/Bogota",
+        operational_context_reads=oc_reads,
     )
 
 
