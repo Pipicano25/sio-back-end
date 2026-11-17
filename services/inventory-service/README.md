@@ -127,6 +127,22 @@ Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); in
 y con `balances/lookup`, que los roles lectores de Sales y Purchase solo leen sus vistas, y el `downgrade`/`upgrade`
 de `0003`.
 
+## Lecturas por contrato de otros servicios (spec 025, D27)
+
+Con `<PROPIETARIO>_READ_SOURCE=contract` y `<PROPIETARIO>_CONTRACT_DATABASE_URL` (rol `inv_contract_reader`),
+Inventory valida sus referencias leyendo las vistas del propietario en lugar de llamarlo por HTTP. Las respuestas,
+los errores y su orden no cambian; con `http` (por omisión) todo sigue como antes.
+
+| Propietario | Vistas | Reemplaza |
+|---|---|---|
+| Operational Context | `v1_operational_access` | `GET /operational-access` (token del usuario; exige su permiso de la ruta) |
+| Operational Context | `v1_branches`, `v1_application_users`, `v1_companies` | `GET /branches/{id}`, `/application-users/{id}` y `/companies/{id}` (`default_currency`) con la identidad técnica |
+| Commercial Relationship | `v1_company_products` | `POST /company-products/batch-lookup` (lotes de 100) |
+
+Un error de base (conexión, `statement_timeout`, pool agotado) o un dato fuera de contrato es el mismo `503`
+`DEPENDENCY_UNAVAILABLE` del proveedor que hoy. Una salida, entrada o ajuste pasa de 3–4 solicitudes a 0.
+`tests/contract_reads/` compara cada adaptador con su adaptador HTTP.
+
 ## Permisos
 
 | Permiso | Uso | Quién |

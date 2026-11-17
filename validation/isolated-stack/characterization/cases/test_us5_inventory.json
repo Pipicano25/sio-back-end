@@ -1,0 +1,217 @@
+{
+  "cases": {
+    "ajuste": {
+      "case": {
+        "body": {
+          "adjustment_type": "POSITIVE",
+          "adjustment_value": "1500.00",
+          "application_user_id": "<admin>",
+          "branch_id": "<B1>",
+          "company_id": "<empresa>",
+          "company_product_id": "<P1>",
+          "created_at": "<fecha>",
+          "created_by": "<id:1>",
+          "id": "<id:2>",
+          "inventory_count_id": null,
+          "movement": {
+            "balance_sequence": 4,
+            "company_product_id": "<P1>",
+            "cost_known": true,
+            "id": "<id:3>",
+            "line_index": 0,
+            "movement_type": "POSITIVE_ADJUSTMENT",
+            "movement_value": "1500.00",
+            "new_balance": "54.0000",
+            "origin_detail_id": "<id:2>",
+            "previous_balance": "52.0000",
+            "quantity": "2.0000",
+            "reversed_movement_id": null,
+            "unit_cost": "750.0000"
+          },
+          "movement_id": "<id:3>",
+          "new_balance": "54.0000",
+          "operation_id": "<id:4>",
+          "previous_balance": "52.0000",
+          "quantity": "2.0000",
+          "reason": "Ajuste ficticio de validación <run>",
+          "unit_cost": "750.0000"
+        },
+        "status": 201
+      },
+      "requests": {
+        "commercial-relationship POST /api/v1/company-products/batch-lookup": 1,
+        "operational-context GET /api/v1/companies/{id}": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "entrada": {
+      "case": {
+        "body": {
+          "application_user_id": "<admin>",
+          "balances": [
+            {
+              "average_unit_cost": "709.6154",
+              "company_product_id": "<P1>",
+              "has_unknown_cost": false,
+              "inventory_value": "36900.00",
+              "quantity": "52.0000"
+            }
+          ],
+          "branch_id": "<B1>",
+          "company_id": "<empresa>",
+          "correlation_id": "<volátil>",
+          "created_at": "<fecha>",
+          "created_by": "<id:1>",
+          "id": "<id:2>",
+          "movements": [
+            {
+              "balance_sequence": 3,
+              "company_product_id": "<P1>",
+              "cost_known": true,
+              "id": "<id:3>",
+              "line_index": 0,
+              "movement_type": "PURCHASE_ENTRY",
+              "movement_value": "4000.00",
+              "new_balance": "52.0000",
+              "origin_detail_id": "<id:4>",
+              "previous_balance": "47.0000",
+              "quantity": "5.0000",
+              "reversed_movement_id": null,
+              "unit_cost": "800.0000"
+            }
+          ],
+          "operation_key": "<id:5>",
+          "operation_type": "ENTRY",
+          "origin_id": "<id:6>",
+          "origin_type": "PURCHASE",
+          "reason": null,
+          "reversed_by_operation_id": null,
+          "reverses_operation_id": null
+        },
+        "status": 201
+      },
+      "requests": {
+        "commercial-relationship POST /api/v1/company-products/batch-lookup": 1,
+        "operational-context GET /api/v1/application-users/{id}": 1,
+        "operational-context GET /api/v1/branches/{id}": 1,
+        "operational-context GET /api/v1/companies/{id}": 1
+      }
+    },
+    "salida_errores_en_orden": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.VALIDATION_ERROR",
+          "detail": "La solicitud contiene datos inválidos.",
+          "errors": [
+            {
+              "code": "BRANCH_INACTIVE",
+              "field": "branch_id",
+              "message": "La sucursal no está activa."
+            },
+            {
+              "code": "APPLICATION_USER_NOT_FOUND",
+              "field": "application_user_id",
+              "message": "El usuario operativo no existe en la empresa."
+            },
+            {
+              "code": "COMPANY_PRODUCT_NOT_FOUND",
+              "field": "lines[1].company_product_id",
+              "message": "El producto empresarial no existe en la empresa."
+            }
+          ],
+          "instance": "/api/v1/inventory-outputs",
+          "status": 422,
+          "title": "Solicitud inválida",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/validation-error"
+        },
+        "status": 422
+      },
+      "requests": {
+        "commercial-relationship POST /api/v1/company-products/batch-lookup": 1,
+        "operational-context GET /api/v1/application-users/{id}": 1,
+        "operational-context GET /api/v1/branches/{id}": 1
+      }
+    },
+    "salida_producto_sin_control": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.VALIDATION_ERROR",
+          "detail": "La solicitud contiene datos inválidos.",
+          "errors": [
+            {
+              "code": "INVENTORY_CONTROL_DISABLED",
+              "field": "lines[0].company_product_id",
+              "message": "El producto no tiene control de inventario."
+            }
+          ],
+          "instance": "/api/v1/inventory-outputs",
+          "status": 422,
+          "title": "Solicitud inválida",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/validation-error"
+        },
+        "status": 422
+      },
+      "requests": {
+        "commercial-relationship POST /api/v1/company-products/batch-lookup": 1,
+        "operational-context GET /api/v1/application-users/{id}": 1,
+        "operational-context GET /api/v1/branches/{id}": 1
+      }
+    },
+    "salida_valida": {
+      "case": {
+        "body": {
+          "application_user_id": "<admin>",
+          "balances": [
+            {
+              "average_unit_cost": "700.0000",
+              "company_product_id": "<P1>",
+              "has_unknown_cost": false,
+              "inventory_value": "32900.00",
+              "quantity": "47.0000"
+            }
+          ],
+          "branch_id": "<B1>",
+          "company_id": "<empresa>",
+          "correlation_id": "<volátil>",
+          "created_at": "<fecha>",
+          "created_by": "<id:1>",
+          "id": "<id:2>",
+          "movements": [
+            {
+              "balance_sequence": 2,
+              "company_product_id": "<P1>",
+              "cost_known": true,
+              "id": "<id:3>",
+              "line_index": 0,
+              "movement_type": "SALE_OUTPUT",
+              "movement_value": "2100.00",
+              "new_balance": "47.0000",
+              "origin_detail_id": "<id:4>",
+              "previous_balance": "50.0000",
+              "quantity": "3.0000",
+              "reversed_movement_id": null,
+              "unit_cost": "700.0000"
+            }
+          ],
+          "operation_key": "<id:5>",
+          "operation_type": "OUTPUT",
+          "origin_id": "<id:6>",
+          "origin_type": "SALE",
+          "reason": null,
+          "reversed_by_operation_id": null,
+          "reverses_operation_id": null
+        },
+        "status": 201
+      },
+      "requests": {
+        "commercial-relationship POST /api/v1/company-products/batch-lookup": 1,
+        "operational-context GET /api/v1/application-users/{id}": 1,
+        "operational-context GET /api/v1/branches/{id}": 1
+      }
+    }
+  },
+  "module": "test_us5_inventory",
+  "recorded_with": "http"
+}

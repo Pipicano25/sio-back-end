@@ -7,7 +7,8 @@ from uuid import UUID
 
 from fastapi import FastAPI, Request
 from sio_auth import SIOAuth, install_cors
-from sio_contract_read import create_contract_engine
+from sio_contract_read import ContractReadSettings, create_contract_engine
+from sqlalchemy import Engine
 
 from inventory_service.api.dependencies import (
     AccessDirectoryFactory,
@@ -24,7 +25,11 @@ from inventory_service.application.audit_events import make_audit_hook
 from inventory_service.application.ports import TokenProvider
 from inventory_service.config import Settings, load_settings
 from inventory_service.infrastructure.commercial_relationship_directory import HTTPCompanyProductDirectory
-from inventory_service.infrastructure.contract_operational_context import ContractCompanyAccessDirectory
+from inventory_service.infrastructure.contract_commercial_relationship import ContractCompanyProductDirectory
+from inventory_service.infrastructure.contract_operational_context import (
+    ContractCompanyAccessDirectory,
+    ContractOperationalContextDirectory,
+)
 from inventory_service.infrastructure.database import Database
 from inventory_service.infrastructure.keycloak_token_client import KeycloakTokenClient
 from inventory_service.infrastructure.operational_context_directory import (
@@ -56,6 +61,12 @@ def _request_id() -> UUID | None:
     return UUID(hex=trace_id) if trace_id else None
 
 
+def _contract_engine(reads: ContractReadSettings | None) -> Engine | None:
+    if reads is None or not reads.uses_contract:
+        return None
+    return create_contract_engine(reads, application_name="inventory-service")
+
+
 def create_app(
     settings: Settings | None = None,
     *,
@@ -75,20 +86,17 @@ def create_app(
     database = Database(current_settings.database_url, lock_timeout_seconds=current_settings.lock_timeout_seconds)
     tokens = token_provider or build_token_provider(current_settings)
 
-    oc_reads = current_settings.operational_context_reads
-    # Spec 025 (D27): con OPERATIONAL_CONTEXT_READ_SOURCE=contract el acceso se lee de la vista de contrato.
-    oc_contract = (
-        create_contract_engine(oc_reads, application_name="inventory-service")
-        if oc_reads is not None and oc_reads.uses_contract
-        else None
-    )
+    # Spec 025 (D27): con <PROPIETARIO>_READ_SOURCE=contract las lecturas de ese propietario salen de sus vistas.
+    oc_contract = _contract_engine(current_settings.operational_context_reads)
+    cr_contract = _contract_engine(current_settings.commercial_relationship_reads)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         database.dispose()
-        if oc_contract is not None:
-            oc_contract.dispose()
+        for engine in (oc_contract, cr_contract):
+            if engine is not None:
+                engine.dispose()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -108,14 +116,18 @@ def create_app(
     app.state.settings = current_settings
     app.state.database = database
     app.state.operational_context_factory = operational_context_factory or (
-        lambda: HTTPOperationalContextDirectory(
+        (lambda: ContractOperationalContextDirectory(engine=oc_contract))
+        if oc_contract is not None
+        else lambda: HTTPOperationalContextDirectory(
             base_url=current_settings.operational_context_base_url,
             timeout_seconds=current_settings.operational_context_timeout_seconds,
             tokens=tokens,
         )
     )
     app.state.commercial_relationship_factory = commercial_relationship_factory or (
-        lambda: HTTPCompanyProductDirectory(
+        (lambda: ContractCompanyProductDirectory(engine=cr_contract))
+        if cr_contract is not None
+        else lambda: HTTPCompanyProductDirectory(
             base_url=current_settings.commercial_relationship_base_url,
             timeout_seconds=current_settings.commercial_relationship_timeout_seconds,
             tokens=tokens,
