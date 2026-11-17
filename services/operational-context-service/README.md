@@ -319,3 +319,19 @@ La paridad con la API la prueban `tests/contract_views/`.
 - Permisos: `perm:operational-context:{companies|branches|application_users|user_branches|company_advisor_assignments}:{read|create|update|delete}`
   y las capacidades `perm:operational-context:platform:{administer|lookup}`. Detalle por usuario en
   [`docs/ejemplo/usuarios-y-permisos.md`](docs/ejemplo/usuarios-y-permisos.md).
+
+## Lecturas directas (spec 025, D27)
+
+Con `<PROPIETARIO>_READ_SOURCE=contract`, Operational Context lee estas vistas del esquema `contract` de la base de
+cada propietario con su rol de solo lectura `oc_contract_reader`, en lugar de llamarlo por HTTP. Las
+escrituras siguen por API. Con `http` (por omisión) todo sigue como antes, y es la vuelta atrás inmediata.
+
+| Propietario | Vistas | Variables |
+|---|---|---|
+| Geography | `v1_countries`, `v1_administrative_divisions`, `v1_cities` | `GEOGRAPHY_READ_SOURCE`, `GEOGRAPHY_CONTRACT_DATABASE_URL` |
+| Party Identity | `v1_person_identities`, `v1_organization_identities` | `PARTY_IDENTITY_READ_SOURCE`, `PARTY_IDENTITY_CONTRACT_DATABASE_URL` |
+
+Comunes a todos los propietarios: `CONTRACT_READ_POOL_SIZE` (1; 1–10), `CONTRACT_READ_MAX_OVERFLOW` (2; 0–10) y
+`CONTRACT_READ_CONNECT_TIMEOUT_SECONDS` (2; 1–10). El tiempo máximo de cada consulta es el tiempo de espera HTTP
+que ya existe para esa integración. Un error de la base (conexión, `statement_timeout`, pool agotado) es el mismo
+`503` de hoy. `tests/contract_reads/` compara cada adaptador con su adaptador HTTP.

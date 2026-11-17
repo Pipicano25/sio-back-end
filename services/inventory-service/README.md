@@ -130,7 +130,23 @@ Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); in
 y con `balances/lookup` e `inventory-policies/lookup`, que los roles lectores de Sales y Purchase solo leen sus vistas, y el `downgrade`/`upgrade`
 de `0003`.
 
-## Lecturas por contrato de otros servicios (spec 025, D27)
+## Lecturas directas (spec 025, D27)
+
+Con `<PROPIETARIO>_READ_SOURCE=contract`, Inventory lee estas vistas del esquema `contract` de la base de
+cada propietario con su rol de solo lectura `inv_contract_reader`, en lugar de llamarlo por HTTP. Las
+escrituras siguen por API. Con `http` (por omisión) todo sigue como antes, y es la vuelta atrás inmediata.
+
+| Propietario | Vistas | Variables |
+|---|---|---|
+| Commercial Relationship | `v1_company_products` | `COMMERCIAL_RELATIONSHIP_READ_SOURCE`, `COMMERCIAL_RELATIONSHIP_CONTRACT_DATABASE_URL` |
+| Operational Context | `v1_operational_access`, `v1_companies`, `v1_branches`, `v1_application_users` | `OPERATIONAL_CONTEXT_READ_SOURCE`, `OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL` |
+
+Comunes a todos los propietarios: `CONTRACT_READ_POOL_SIZE` (1; 1–10), `CONTRACT_READ_MAX_OVERFLOW` (2; 0–10) y
+`CONTRACT_READ_CONNECT_TIMEOUT_SECONDS` (2; 1–10). El tiempo máximo de cada consulta es el tiempo de espera HTTP
+que ya existe para esa integración. Un error de la base (conexión, `statement_timeout`, pool agotado) es el mismo
+`503` de hoy. `tests/contract_reads/` compara cada adaptador con su adaptador HTTP.
+
+### Detalle
 
 Con `<PROPIETARIO>_READ_SOURCE=contract` y `<PROPIETARIO>_CONTRACT_DATABASE_URL` (rol `inv_contract_reader`),
 Inventory valida sus referencias leyendo las vistas del propietario en lugar de llamarlo por HTTP. Las respuestas,

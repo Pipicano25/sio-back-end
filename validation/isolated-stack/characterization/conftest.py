@@ -31,7 +31,7 @@ STACK = HERE.parent
 REPO = STACK.parents[1]
 sys.path.insert(0, str(HERE))
 
-from support import CaseBook, read_source  # noqa: E402
+from support import OUTAGES, CaseBook, read_source  # noqa: E402
 
 URLS = {
     "keycloak": "http://127.0.0.1:18081/realms/sio/protocol/openid-connect/token",
@@ -135,6 +135,20 @@ def reads():
 def book(request, reads):
     module = Path(request.module.__file__).stem
     case_book = CaseBook(module)
+    if case_book.record and reads != "http":
+        pytest.fail("La caracterización se graba con las lecturas de hoy: stack.sh lecturas http")
+    yield case_book
+    case_book.save(source=reads)
+
+
+outages_only = pytest.mark.skipif(
+    not OUTAGES, reason="Caídas opcionales (T079): definir SIO_CHARACTERIZATION_OUTAGES=1; cortan las bases de la pila.")
+
+
+@pytest.fixture(scope="module")
+def outage_book(request, reads):
+    """Casos de caída del módulo, en ``cases/<módulo>_caidas.json`` (se graban con http y se comparan con contract)."""
+    case_book = CaseBook(Path(request.module.__file__).stem + "_caidas")
     if case_book.record and reads != "http":
         pytest.fail("La caracterización se graba con las lecturas de hoy: stack.sh lecturas http")
     yield case_book

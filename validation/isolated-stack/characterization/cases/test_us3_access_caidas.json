@@ -1,0 +1,74 @@
+{
+  "cases": {
+    "operational-context:audit": {
+      "case": {
+        "body": {
+          "code": "AUDIT.DEPENDENCY_UNAVAILABLE",
+          "dependency": "operational-context",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/audit-events",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/audit/dependency-unavailable"
+        },
+        "effects": {},
+        "status": 503
+      },
+      "requests": {}
+    },
+    "operational-context:commercial-relationship": {
+      "case": {
+        "body": {
+          "code": "COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE",
+          "dependency": "operational-context",
+          "detail": "No fue posible validar una referencia externa en este momento. Intente de nuevo más tarde; no se guardó ningún cambio.",
+          "instance": "/api/v1/companies/<empresa_C>/company-products",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/commercial-relationship/dependency-unavailable"
+        },
+        "effects": {},
+        "status": 503
+      },
+      "requests": {}
+    },
+    "operational-context:inventory": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.DEPENDENCY_UNAVAILABLE",
+          "dependency": "operational-context",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/inventory-adjustments",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/dependency-unavailable"
+        },
+        "effects": {},
+        "status": 503
+      },
+      "requests": {}
+    },
+    "operational-context:sales": {
+      "case": {
+        "body": {
+          "code": "SALES.DEPENDENCY_UNAVAILABLE",
+          "dependency": "operational-context",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/sales",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/dependency-unavailable"
+        },
+        "effects": {},
+        "status": 503
+      },
+      "requests": {}
+    }
+  },
+  "module": "test_us3_access_caidas",
+  "recorded_with": "http"
+}

@@ -195,3 +195,46 @@ ya no reciben `tax_amount`: el impuesto se calcula con la tasa de compra del pro
 | Eventos | Ninguno: no escribe ni audita |
 | Autenticación | Usuarios: `perm:business-reporting:{top_selling_products,sales_by_branch,purchases,stock_evolution}:read` **y** el permiso de lectura del propietario (`perm:sales:sales:read`, `perm:purchase:purchases:read`, `perm:inventory:stock_evolution:read`), con membresía `ACTIVE`; cualquier sucursal de la empresa |
 | Spec | `specs/023-business-reporting-service/` |
+
+## Lecturas directas por vistas de contrato (spec 025, D27)
+
+Además de las dependencias HTTP de cada servicio, 10 consumidores pueden **leer** de la base del propietario las vistas
+`contract.v1_*` que este publica, con un rol de solo lectura por consumidor (`<abbr>_contract_reader`). Cada propietario
+declara sus consumidores en `services/<propietario>/contract/grants.yaml`, y `infrastructure/scripts/contract-readers/provision.py`
+crea los roles y los permisos. Las escrituras siguen por API. Las dependencias HTTP de lectura de los registros de arriba
+siguen existiendo como respaldo: el consumidor elige con `<PROPIETARIO>_READ_SOURCE=http|contract` (por omisión
+`http`). El detalle de cada consumidor está en la sección "Lecturas directas" de su `README.md`.
+
+Las 29 parejas consumidor–propietario:
+
+| Consumidor | Propietario | Vistas (`contract.`) | Rol |
+|---|---|---|---|
+| Audit | Operational Context | `v1_operational_access` | `aud_contract_reader` |
+| Business Reporting | Operational Context | `v1_operational_access`, `v1_companies`, `v1_branches` | `brs_contract_reader` |
+| Business Reporting | Product Catalog | `v1_products`, `v1_units_of_measure` | `brs_contract_reader` |
+| Commercial Relationship | Operational Context | `v1_operational_access`, `v1_companies`, `v1_user_memberships` | `cr_contract_reader` |
+| Commercial Relationship | Party Identity | `v1_person_identities`, `v1_organization_identities`, `v1_organization_contact_persons` | `cr_contract_reader` |
+| Commercial Relationship | Payment Reference | `v1_payment_condition_types` | `cr_contract_reader` |
+| Commercial Relationship | Product Catalog | `v1_products` | `cr_contract_reader` |
+| Inventory | Commercial Relationship | `v1_company_products` | `inv_contract_reader` |
+| Inventory | Operational Context | `v1_operational_access`, `v1_companies`, `v1_branches`, `v1_application_users` | `inv_contract_reader` |
+| Operational Context | Geography | `v1_countries`, `v1_administrative_divisions`, `v1_cities` | `oc_contract_reader` |
+| Operational Context | Party Identity | `v1_person_identities`, `v1_organization_identities` | `oc_contract_reader` |
+| Party Identity | Geography | `v1_countries`, `v1_administrative_divisions`, `v1_cities` | `pi_contract_reader` |
+| Product Catalog | Party Identity | `v1_organization_identities` | `pc_contract_reader` |
+| Product Inventory Query | Commercial Relationship | `v1_company_products`, `v1_company_product_presentations` | `piq_contract_reader` |
+| Product Inventory Query | Inventory | `v1_balances`, `v1_inventory_policies` | `piq_contract_reader` |
+| Product Inventory Query | Operational Context | `v1_operational_access`, `v1_branches` | `piq_contract_reader` |
+| Product Inventory Query | Product Catalog | `v1_units_of_measure`, `v1_product_summaries`, `v1_product_summary_categories`, `v1_product_summary_identifiers` | `piq_contract_reader` |
+| Purchase | Commercial Relationship | `v1_company_products`, `v1_company_product_presentations`, `v1_company_suppliers`, `v1_supplier_payment_conditions`, `v1_supplier_products`, `v1_pricing_coverage` | `pur_contract_reader` |
+| Purchase | Inventory | `v1_operations_by_key`, `v1_operation_movements` | `pur_contract_reader` |
+| Purchase | Operational Context | `v1_operational_access`, `v1_companies`, `v1_branches`, `v1_application_users` | `pur_contract_reader` |
+| Purchase | Party Identity | `v1_organization_identities` | `pur_contract_reader` |
+| Purchase | Payment Reference | `v1_payment_methods`, `v1_payment_condition_types` | `pur_contract_reader` |
+| Purchase | Product Catalog | `v1_products`, `v1_presentations`, `v1_units_of_measure` | `pur_contract_reader` |
+| Sales | Commercial Relationship | `v1_company_products`, `v1_company_product_presentations`, `v1_company_customers`, `v1_price_lists` | `sal_contract_reader` |
+| Sales | Inventory | `v1_balances`, `v1_operations_by_key`, `v1_operation_movements` | `sal_contract_reader` |
+| Sales | Operational Context | `v1_operational_access`, `v1_companies`, `v1_branches`, `v1_application_users` | `sal_contract_reader` |
+| Sales | Party Identity | `v1_person_identities`, `v1_organization_identities` | `sal_contract_reader` |
+| Sales | Payment Reference | `v1_payment_methods` | `sal_contract_reader` |
+| Sales | Product Catalog | `v1_products`, `v1_presentations`, `v1_units_of_measure` | `sal_contract_reader` |

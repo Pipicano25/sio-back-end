@@ -134,3 +134,21 @@ Integración, seguridad y rendimiento con servicios reales **solo** en la pila a
 - Datos que cambian entre páginas (nombre, estado o saldo) pueden mover un producto de posición; se acepta y
   `resolved_at` lo documenta (FR-022-67).
 - Sin limitación de tasa en la ruta pública de imágenes de Product Catalog.
+
+## Lecturas directas (spec 025, D27)
+
+Con `<PROPIETARIO>_READ_SOURCE=contract`, Product Inventory Query lee estas vistas del esquema `contract` de la base de
+cada propietario con su rol de solo lectura `piq_contract_reader`, en lugar de llamarlo por HTTP. Las
+escrituras siguen por API. Con `http` (por omisión) todo sigue como antes, y es la vuelta atrás inmediata.
+
+| Propietario | Vistas | Variables |
+|---|---|---|
+| Commercial Relationship | `v1_company_products`, `v1_company_product_presentations` | `COMMERCIAL_RELATIONSHIP_READ_SOURCE`, `COMMERCIAL_RELATIONSHIP_CONTRACT_DATABASE_URL` |
+| Inventory | `v1_balances`, `v1_inventory_policies` | `INVENTORY_READ_SOURCE`, `INVENTORY_CONTRACT_DATABASE_URL` |
+| Operational Context | `v1_operational_access`, `v1_branches` | `OPERATIONAL_CONTEXT_READ_SOURCE`, `OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL` |
+| Product Catalog | `v1_units_of_measure`, `v1_product_summaries`, `v1_product_summary_categories`, `v1_product_summary_identifiers` | `PRODUCT_CATALOG_READ_SOURCE`, `PRODUCT_CATALOG_CONTRACT_DATABASE_URL` |
+
+Comunes a todos los propietarios: `CONTRACT_READ_POOL_SIZE` (1; 1–10), `CONTRACT_READ_MAX_OVERFLOW` (2; 0–10) y
+`CONTRACT_READ_CONNECT_TIMEOUT_SECONDS` (2; 1–10). El tiempo máximo de cada consulta es el tiempo de espera HTTP
+que ya existe para esa integración. Un error de la base (conexión, `statement_timeout`, pool agotado) es el mismo
+`503` de hoy. `tests/contract_reads/` compara cada adaptador con su adaptador HTTP.

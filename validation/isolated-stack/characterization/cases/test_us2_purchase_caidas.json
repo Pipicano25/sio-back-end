@@ -1,0 +1,133 @@
+{
+  "cases": {
+    "commercial-relationship": {
+      "case": {
+        "body": {
+          "code": "PURCHASE.DEPENDENCY_UNAVAILABLE",
+          "dependency": "commercial-relationship",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/purchases/<id:1>/confirmation",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/purchase/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "recepcion": null,
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "inventory": {
+      "case": {
+        "body": {
+          "code": "PURCHASE.DEPENDENCY_UNAVAILABLE",
+          "dependency": "inventory",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/purchases/<id:1>/receipt",
+          "operation_id": "<id:2>",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/purchase/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "CONFIRMED",
+          "recepcion": "PENDING",
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "operational-context": {
+      "case": {
+        "body": {
+          "code": "PURCHASE.DEPENDENCY_UNAVAILABLE",
+          "dependency": "operational-context",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/purchases/<id:1>/confirmation",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/purchase/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "recepcion": null,
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "party-identity": {
+      "case": {
+        "body": {
+          "code": "PURCHASE.DEPENDENCY_UNAVAILABLE",
+          "dependency": "party-identity",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/purchases/<id:1>/confirmation",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/purchase/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "recepcion": null,
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "payment-reference": {
+      "case": {
+        "body": {
+          "code": "PURCHASE.DEPENDENCY_UNAVAILABLE",
+          "dependency": "payment-reference",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/purchases/<id:1>/confirmation",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/purchase/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "recepcion": null,
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "product-catalog": {
+      "case": {
+        "body": {
+          "code": "PURCHASE.DEPENDENCY_UNAVAILABLE",
+          "dependency": "product-catalog",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/purchases/<id:1>/confirmation",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/purchase/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "recepcion": null,
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    }
+  },
+  "module": "test_us2_purchase_caidas",
+  "recorded_with": "http"
+}

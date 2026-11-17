@@ -318,3 +318,18 @@ Roles de cliente `sio-api` (plantilla `infrastructure/keycloak/realm-template/si
 | `ASSET_STORAGE_BUCKET` | `sio-product-assets` |
 | `ASSET_STORAGE_ACCESS_KEY` / `ASSET_STORAGE_SECRET_KEY` | Cuenta de lectura y escritura condicional en `assets/`, sin borrado (política `sio-assets-write`; desde `PRODUCT_CATALOG_ASSET_STORAGE_*` de `infrastructure/.env`) |
 | `ASSET_STORAGE_REGION`, `ASSET_STORAGE_TIMEOUT_SECONDS` | Opcionales (`us-east-1`, `5`) |
+
+## Lecturas directas (spec 025, D27)
+
+Con `<PROPIETARIO>_READ_SOURCE=contract`, Product Catalog lee estas vistas del esquema `contract` de la base de
+cada propietario con su rol de solo lectura `pc_contract_reader`, en lugar de llamarlo por HTTP. Las
+escrituras siguen por API. Con `http` (por omisión) todo sigue como antes, y es la vuelta atrás inmediata.
+
+| Propietario | Vistas | Variables |
+|---|---|---|
+| Party Identity | `v1_organization_identities` | `PARTY_IDENTITY_READ_SOURCE`, `PARTY_IDENTITY_CONTRACT_DATABASE_URL` |
+
+Comunes a todos los propietarios: `CONTRACT_READ_POOL_SIZE` (1; 1–10), `CONTRACT_READ_MAX_OVERFLOW` (2; 0–10) y
+`CONTRACT_READ_CONNECT_TIMEOUT_SECONDS` (2; 1–10). El tiempo máximo de cada consulta es el tiempo de espera HTTP
+que ya existe para esa integración. Un error de la base (conexión, `statement_timeout`, pool agotado) es el mismo
+`503` de hoy. `tests/contract_reads/` compara cada adaptador con su adaptador HTTP.

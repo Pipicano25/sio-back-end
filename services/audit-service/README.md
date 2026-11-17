@@ -144,3 +144,18 @@ Conexión con tiempo de espera de 5 s y `pool_pre_ping`. Con la base caída: `/h
 | `GET /platform-audit-events`, `/platform-audit-events/{id}`, `/platform-entity-history/{entity_type}/{entity_id}` | Lo mismo para eventos de plataforma |
 
 Ejercicios validados: [`docs/ejemplo/`](docs/ejemplo/README.md).
+
+## Lecturas directas (spec 025, D27)
+
+Con `<PROPIETARIO>_READ_SOURCE=contract`, Audit lee estas vistas del esquema `contract` de la base de
+cada propietario con su rol de solo lectura `aud_contract_reader`, en lugar de llamarlo por HTTP. Las
+escrituras siguen por API. Con `http` (por omisión) todo sigue como antes, y es la vuelta atrás inmediata.
+
+| Propietario | Vistas | Variables |
+|---|---|---|
+| Operational Context | `v1_operational_access` | `OPERATIONAL_CONTEXT_READ_SOURCE`, `OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL` |
+
+Comunes a todos los propietarios: `CONTRACT_READ_POOL_SIZE` (1; 1–10), `CONTRACT_READ_MAX_OVERFLOW` (2; 0–10) y
+`CONTRACT_READ_CONNECT_TIMEOUT_SECONDS` (2; 1–10). El tiempo máximo de cada consulta es el tiempo de espera HTTP
+que ya existe para esa integración. Un error de la base (conexión, `statement_timeout`, pool agotado) es el mismo
+`503` de hoy. `tests/contract_reads/` compara cada adaptador con su adaptador HTTP.

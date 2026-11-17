@@ -1,0 +1,40 @@
+{
+  "cases": {
+    "operational-context": {
+      "case": {
+        "body": {
+          "code": "COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE",
+          "dependency": "operational-context",
+          "detail": "No fue posible validar una referencia externa en este momento. Intente de nuevo más tarde; no se guardó ningún cambio.",
+          "instance": "/api/v1/company-summaries",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/commercial-relationship/dependency-unavailable"
+        },
+        "effects": {},
+        "status": 503
+      },
+      "requests": {}
+    },
+    "party-identity": {
+      "case": {
+        "body": {
+          "code": "COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE",
+          "dependency": "party-identity",
+          "detail": "No fue posible validar una referencia externa en este momento. Intente de nuevo más tarde; no se guardó ningún cambio.",
+          "instance": "/api/v1/company-summaries",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/commercial-relationship/dependency-unavailable"
+        },
+        "effects": {},
+        "status": 503
+      },
+      "requests": {}
+    }
+  },
+  "module": "test_us4_company_summaries_caidas",
+  "recorded_with": "http"
+}

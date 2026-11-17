@@ -17,11 +17,12 @@ PERMISSION_DENIED no se puede provocar aquí: todos los grupos de prueba tienen
 
 from __future__ import annotations
 
+import time
 from uuid import uuid4
 
 import pytest
-from conftest import URLS, expect
-from support import Normalizer, RequestWindow, matching, response_case
+from conftest import URLS, expect, outages_only
+from support import Normalizer, RequestWindow, matching, outage_case, owner_database_down, response_case
 
 OC, SALES, INV = URLS["operational_context"], URLS["sales"], URLS["inventory"]
 CONTAINERS = ("sio-it-operational-context-service", "sio-it-sales-service", "sio-it-inventory-service")
@@ -171,3 +172,27 @@ def test_branch_deactivation_blocks_immediately(world, users, book, consumer, ru
     book.check(f"{consumer}:bloqueo_inmediato", {"antes": before, "despues": after})
     assert before["status"] not in (403, 404)
     assert after["status"] == 403
+
+
+@outages_only
+def test_caida_de_operational_context(world, users, outage_book):
+    """T079: con la base de Operational Context caída, cada consumidor que verifica el acceso del usuario responde el
+    503 de hoy, a tiempo: Sales, Inventory, Commercial Relationship y Audit (los demás, en sus historias)."""
+    admin = users("admin.test")
+    company = world["C"]
+    checks = {
+        "sales": lambda: sales_company(admin, company),
+        "inventory": lambda: inventory_company(admin, company),
+        "commercial-relationship": lambda: admin.get(f"{URLS['commercial_relationship']}/companies/{company}/company-products",
+                                                     params={"page_size": 1}),
+        "audit": lambda: admin.get(f"{URLS['audit']}/companies/{company}/audit-events", params={"page_size": 1}),
+    }
+    observed = {}
+    with owner_database_down("operational-context"):
+        for consumer, action in checks.items():
+            start = time.monotonic()
+            response = action()
+            observed[consumer] = (response, time.monotonic() - start)
+    normalizer = Normalizer(world["aliases"], run=world["run"])
+    for consumer, (response, elapsed) in observed.items():
+        outage_book.check(f"operational-context:{consumer}", outage_case(response, normalizer, elapsed, 5.5, {}))

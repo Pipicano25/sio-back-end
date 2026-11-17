@@ -227,3 +227,49 @@ def matching(counts: Mapping[str, int], fragments: Iterable[str]) -> int:
     """Suma de solicitudes cuyo destino contiene alguno de los fragmentos."""
     fragments = tuple(fragments)
     return sum(value for key, value in counts.items() if any(fragment in key for fragment in fragments))
+
+
+# --------------------------------------------------------------------------- caídas (T079)
+OUTAGES = os.environ.get("SIO_CHARACTERIZATION_OUTAGES", "").strip() == "1"
+
+_CUT = (
+    'psql -v ON_ERROR_STOP=1 -qAt -U "$POSTGRES_USER" -d postgres '
+    '-c "ALTER DATABASE \\"$POSTGRES_DB\\" WITH ALLOW_CONNECTIONS {allow}" '
+    "-c \"SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity WHERE datname = '$POSTGRES_DB' "
+    'AND pid <> pg_backend_pid()"'
+)
+
+
+class owner_database_down:  # noqa: N801 - se usa como ``with owner_database_down("inventory"):``
+    """Deja la base de un propietario sin servicio y la restaura al salir.
+
+    Las bases de la pila viven en tmpfs: ``docker stop`` borraría sus datos. Por eso se cortan las conexiones: la
+    base rechaza las nuevas (``ALLOW_CONNECTIONS false``) y se cierran las abiertas, también las del propio
+    propietario. Para el consumidor es lo mismo que una base caída: un error de conexión de PostgreSQL. Con ``http``
+    lo ve el propietario (que responde su 503); con ``contract``, el propio consumidor.
+    """
+
+    def __init__(self, owner: str) -> None:
+        self.container = f"sio-it-{owner}-db"
+
+    def _set(self, allow: bool) -> None:
+        command = ["docker", "exec", self.container, "sh", "-c", _CUT.format(allow="true" if allow else "false")]
+        completed = subprocess.run(command, capture_output=True, text=True, timeout=60, check=False)
+        if completed.returncode != 0:  # psql no recibe contraseñas: su error no contiene secretos
+            raise RuntimeError(f"No se pudo cambiar {self.container}: {completed.stderr.strip()[-300:]}")
+
+    def __enter__(self) -> owner_database_down:
+        self._set(False)
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self._set(True)
+        time.sleep(0.5)  # los pools descartan las conexiones cerradas con pool_pre_ping en la siguiente solicitud
+
+
+def outage_case(response, normalizer: Normalizer, elapsed: float, limit: float, effects: Mapping[str, Any]) -> dict[str, Any]:
+    """Caso de una caída: respuesta normalizada y efectos; el tiempo solo se comprueba (no se graba)."""
+    assert elapsed < limit, f"respondió en {elapsed:.2f} s; el máximo es {limit} s"
+    case = response_case(response, normalizer)
+    case["effects"] = dict(effects)
+    return case

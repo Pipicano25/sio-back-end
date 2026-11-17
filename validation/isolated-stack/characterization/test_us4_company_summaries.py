@@ -19,8 +19,8 @@ import json
 import time
 
 import pytest
-from conftest import URLS, expect
-from support import Normalizer, RequestWindow, response_case
+from conftest import URLS, expect, outages_only
+from support import Normalizer, RequestWindow, outage_case, owner_database_down, response_case
 
 OC, CR, PI = (URLS[k] for k in ("operational_context", "commercial_relationship", "party_identity"))
 CONTAINERS = tuple(f"sio-it-{name}-service" for name in ("commercial-relationship", "operational-context", "party-identity"))
@@ -124,3 +124,22 @@ def test_company_summaries(world, users, book, reads, name, params):
             assert again.status_code == 200
             assert warm < LIMIT_MS, f"company-summaries tardó {warm:.0f} ms (> {LIMIT_MS} ms)"
             print(f"\ncompany-summaries 100 empresas: {elapsed:.0f} ms (frío), {warm:.0f} ms (caliente)")
+
+
+@outages_only
+@pytest.mark.parametrize("owner", ("operational-context", "party-identity"))
+def test_caida_del_propietario(world, users, outage_book, owner):
+    """T079: Commercial Relationship → Operational Context y → Party Identity con la base del propietario caída."""
+    # Con http, Operational Context consulta Party Identity por cada empresa del usuario (`/me/operational-context`):
+    # para `consulta.test`, con cientos de membresías acumuladas, eso ya agota los 5 s sin ninguna caída y el 503
+    # grabado sería ese. Se usa `reportes.test` (pocas empresas) y una página de 5.
+    client = users("reportes.test")
+    with owner_database_down(owner):
+        start = time.monotonic()
+        response = _summaries(client, page=1, page_size=5)
+        elapsed = time.monotonic() - start
+    case = outage_case(response, Normalizer(run=world["run"]), elapsed, 5.5, {})
+    if response.status_code == 200:  # si el propietario no es obligatorio, la forma es la del caso normal
+        case = {**_case(world, response), "effects": {}}
+    outage_book.check(owner, json.loads(json.dumps(case, ensure_ascii=False)))
+    assert _summaries(client, page=1, page_size=5).status_code == 200  # al volver la base, responde

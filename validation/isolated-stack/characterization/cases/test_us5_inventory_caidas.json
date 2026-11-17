@@ -1,0 +1,44 @@
+{
+  "cases": {
+    "commercial-relationship": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.DEPENDENCY_UNAVAILABLE",
+          "dependency": "commercial-relationship",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/inventory-outputs",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/dependency-unavailable"
+        },
+        "effects": {
+          "repeticion": 201
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "operational-context": {
+      "case": {
+        "body": {
+          "code": "INVENTORY.DEPENDENCY_UNAVAILABLE",
+          "dependency": "operational-context",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/inventory-outputs",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/inventory/dependency-unavailable"
+        },
+        "effects": {
+          "repeticion": 201
+        },
+        "status": 503
+      },
+      "requests": {}
+    }
+  },
+  "module": "test_us5_inventory_caidas",
+  "recorded_with": "http"
+}

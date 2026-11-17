@@ -26,8 +26,8 @@ import time
 from uuid import uuid4
 
 import pytest
-from conftest import URLS, expect
-from support import Normalizer, RequestWindow, response_case
+from conftest import URLS, expect, outages_only
+from support import Normalizer, RequestWindow, outage_case, owner_database_down, response_case
 
 OC, PC, CR, INV = (URLS[k] for k in ("operational_context", "product_catalog", "commercial_relationship", "inventory"))
 CONTAINERS = tuple(f"sio-it-{name}-service" for name in ("inventory", "operational-context", "commercial-relationship"))
@@ -134,3 +134,20 @@ def test_ajuste(world, users, book, reads):
         "adjustment_type": "POSITIVE", "quantity": "2", "unit_cost": "750",
         "reason": f"Ajuste ficticio de validación {world['run']}"}))
     _check(world, book, reads, "ajuste", response, requests, 201)
+
+
+@outages_only
+@pytest.mark.parametrize("owner", ("operational-context", "commercial-relationship"))
+def test_caida_del_propietario(world, outage_book, owner):
+    """T079: una salida con la base del propietario caída responde el 503 de hoy (Inventory: 10 s) y no deja
+    efectos: al volver la base, la misma operación (misma clave) se registra como nueva."""
+    body = {"operation_key": str(uuid4()), "company_id": world["company"], "branch_id": world["B1"], "origin_type": "SALE",
+            "origin_id": str(uuid4()), "application_user_id": world["member"], "correlation_id": str(uuid4()),
+            "lines": [{"origin_detail_id": str(uuid4()), "company_product_id": world["P1"], "quantity": "1"}]}
+    with owner_database_down(owner):
+        start = time.monotonic()
+        response = world["operator"].post(f"{INV}/inventory-outputs", json=body)
+        elapsed = time.monotonic() - start
+    replay = world["operator"].post(f"{INV}/inventory-outputs", json=body)
+    effects = {"repeticion": replay.status_code}
+    outage_book.check(owner, outage_case(response, Normalizer(world["aliases"], run=world["run"]), elapsed, 10.5, effects))

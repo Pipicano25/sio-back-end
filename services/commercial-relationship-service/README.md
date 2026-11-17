@@ -421,3 +421,20 @@ Payment Reference para registrar condiciones de pago.
   (provisional, **no es una solución fiscal**). El porcentaje de la política es un recargo comercial sobre el costo
   real de compra: no es el costo contable FIFO de Inventory ni el margen que calcula Sales.
 
+## Lecturas directas (spec 025, D27)
+
+Con `<PROPIETARIO>_READ_SOURCE=contract`, Commercial Relationship lee estas vistas del esquema `contract` de la base de
+cada propietario con su rol de solo lectura `cr_contract_reader`, en lugar de llamarlo por HTTP. Las
+escrituras siguen por API. Con `http` (por omisión) todo sigue como antes, y es la vuelta atrás inmediata.
+
+| Propietario | Vistas | Variables |
+|---|---|---|
+| Operational Context | `v1_operational_access`, `v1_companies`, `v1_user_memberships` | `OPERATIONAL_CONTEXT_READ_SOURCE`, `OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL` |
+| Party Identity | `v1_person_identities`, `v1_organization_identities`, `v1_organization_contact_persons` | `PARTY_IDENTITY_READ_SOURCE`, `PARTY_IDENTITY_CONTRACT_DATABASE_URL` |
+| Payment Reference | `v1_payment_condition_types` | `PAYMENT_REFERENCE_READ_SOURCE`, `PAYMENT_REFERENCE_CONTRACT_DATABASE_URL` |
+| Product Catalog | `v1_products` | `PRODUCT_CATALOG_READ_SOURCE`, `PRODUCT_CATALOG_CONTRACT_DATABASE_URL` |
+
+Comunes a todos los propietarios: `CONTRACT_READ_POOL_SIZE` (1; 1–10), `CONTRACT_READ_MAX_OVERFLOW` (2; 0–10) y
+`CONTRACT_READ_CONNECT_TIMEOUT_SECONDS` (2; 1–10). El tiempo máximo de cada consulta es el tiempo de espera HTTP
+que ya existe para esa integración. Un error de la base (conexión, `statement_timeout`, pool agotado) es el mismo
+`503` de hoy. `tests/contract_reads/` compara cada adaptador con su adaptador HTTP.

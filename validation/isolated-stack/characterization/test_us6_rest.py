@@ -19,8 +19,8 @@ import time
 from uuid import uuid4
 
 import pytest
-from conftest import URLS, expect
-from support import Normalizer, RequestWindow, response_case
+from conftest import URLS, expect, outages_only
+from support import Normalizer, RequestWindow, outage_case, owner_database_down, response_case
 
 GEO, OC, PI = (URLS[k] for k in ("geography", "operational_context", "party_identity"))
 PC, CR, PR = (URLS[k] for k in ("product_catalog", "commercial_relationship", "payment_reference"))
@@ -197,7 +197,7 @@ def catalog(world, users):
                              adopted: "producto", loose: "producto_fabricante", row: "presentacion", supplier: "proveedor", cash_type: "contado",
                              branch: "Q1"})
     return {"unit": unit, "product": product, "adopted": adopted, "supplier": supplier, "cash_type": cash_type, "loose": loose,
-            "branch": branch}
+            "branch": branch, "category": category}
 
 
 def test_condicion_de_pago_de_proveedor(world, catalog, users, book, reads):
@@ -263,3 +263,94 @@ def test_resumen_de_inventario(world, catalog, users, book, reads):
     response, requests = _observe("product-inventory-query", lambda: admin.get(
         f"{PIQ}/companies/{world['company']}/inventory-summary"))
     _check(world, book, reads, "resumen_inventario", response, requests, 200, allowed=PIQ_API)
+
+
+# --------------------------------------------------------------------------- caídas (T079)
+
+PIQ_LIMIT, LIMIT = 3.5, 5.5  # tiempo de espera de la integración de hoy (PIQ: 3 s; los demás: 5 s), con margen
+
+
+def _outage_actions(owner, world, catalog, admin, seed):
+    """(nombre, límite, solicitud, repetir al volver o función de efectos) de cada pareja consumidor → ``owner``. Lo que necesita al
+    propietario se prepara aquí, antes del corte. Repetir la misma solicitud al volver la base muestra que la caída
+    no dejó efectos (si se hubiera aplicado, la repetición sería un 409 o un 422)."""
+    run, company = world["run"], world["company"]
+    piq = ("product-inventory-query", PIQ_LIMIT, lambda: admin.get(
+        f"{PIQ}/companies/{company}/branches/{catalog['branch']}/product-overviews", params={"page_size": 20}), False)
+    if owner == "geography":
+        organization = _organization(admin, seed, run, "CAIDA GEO")
+        world["aliases"][organization] = "organizacion_caida"
+        return [
+            ("operational-context", LIMIT, lambda: admin.post(f"{OC}/companies/{company}/branches", json={
+                "code": f"GX{run}", "name": f"Sucursal ficticia GX {run}", **world["location"]}), True),
+            ("party-identity", LIMIT, lambda: admin.post(f"{PI}/organization-identities/{organization}/contact-profile", json={
+                "email": "caida.us6@example.com", "address_line": "Calle ficticia 2", **world["location"],
+                "confirmed_by_company_id": company}), True),
+        ]
+    if owner == "party-identity":
+        organization = _organization(admin, seed, run, "CAIDA PI")
+        world["aliases"][organization] = "organizacion_caida_pi"
+        current = expect(admin.get(f"{PC}/products/{catalog['loose']}"))
+        body = {key: current[key] for key in ("canonical_name", "base_unit_id")}
+        return [
+            ("operational-context", LIMIT, lambda: admin.post(f"{OC}/companies", json={
+                "organization_identity_id": organization}), True),
+            ("product-catalog", LIMIT, lambda: admin.put(f"{PC}/products/{catalog['loose']}", json={
+                # Un fabricante nuevo: Product Catalog solo consulta Party Identity si el fabricante cambia.
+                **body, "manufacturer_organization_id": organization, "version": current["version"]}), True),
+        ]
+    if owner == "payment-reference":
+        def count():
+            return expect(admin.get(f"{CR}/companies/{company}/supplier-payment-conditions",
+                                    params={"page_size": 1}))["total_records"]
+        before = count()
+        # Repetir daría 422 (ya hay una condición de contado vigente): se cuentan las condiciones antes y después.
+        return [("commercial-relationship", LIMIT, lambda: admin.post(
+            f"{CR}/companies/{company}/supplier-payment-conditions",
+            json={"company_supplier_id": catalog["supplier"], "payment_condition_type_id": catalog["cash_type"],
+                  "currency_code": "COP", "payment_terms_days": 30, "valid_from": "2026-02-01T00:00:00Z"}),
+                 lambda: {"condiciones_nuevas": count() - before})]
+    if owner == "product-catalog":
+        product = expect(admin.post(f"{PC}/products", json={
+            "product_type": "GOOD", "canonical_name": f"PRODUCTO CAIDA US6 {run}", "base_unit_id": catalog["unit"]}))["id"]
+        # Completo para poder adoptarlo: categoría y presentación base, como en ``catalog``.
+        expect(admin.post(f"{PC}/products/{product}/categories", json={"global_category_id": catalog["category"]}))
+        expect(admin.post(f"{PC}/products/{product}/presentations", json={
+            "code": f"UNDX-{run}", "name": "Unidad", "is_base": True}))
+        adopted = expect(admin.post(f"{CR}/companies/{company}/company-products", json={
+            "global_product_id": product, "internal_code": f"PX-{run}", "display_name": f"Producto caída US6 {run}",
+            "currency_code": "COP", "inventory_control_enabled": False}))["id"]
+        world["aliases"].update({product: "producto_global_caida", adopted: "producto_caida"})
+        return [
+            ("commercial-relationship", LIMIT, lambda: admin.post(f"{CR}/companies/{company}/supplier-products", json={
+                "company_supplier_id": catalog["supplier"], "company_product_id": adopted,
+                "purchase_unit_id": catalog["unit"], "currency_code": "COP", "minimum_order_quantity": "1",
+                "pack_quantity": "1", "is_preferred": False}), True),
+            piq,
+        ]
+    if owner in ("commercial-relationship", "inventory"):
+        return [piq]
+    if owner == "operational-context":
+        return [piq, ("business-reporting", LIMIT, lambda: admin.get(
+            f"{BRS}/companies/{company}/reports/purchases", params={"date_from": "2026-10-01", "date_to": "2026-10-31"}),
+            False)]
+    raise AssertionError(owner)
+
+
+@outages_only
+@pytest.mark.parametrize("owner", ("geography", "party-identity", "payment-reference", "product-catalog",
+                                   "commercial-relationship", "inventory", "operational-context"))
+def test_caida_del_propietario(world, catalog, users, seed, outage_book, owner):
+    """T079: con la base del propietario caída, cada consumidor responde el 503 de hoy, a tiempo y sin efectos."""
+    admin = users("admin.test")
+    actions = _outage_actions(owner, world, catalog, admin, seed)
+    observed = []
+    with owner_database_down(owner):
+        for _, _, action, _ in actions:
+            start = time.monotonic()
+            response = action()
+            observed.append((response, time.monotonic() - start))
+    normalizer = Normalizer(world["aliases"], run=world["run"])
+    for (consumer, limit, action, replay), (response, elapsed) in zip(actions, observed, strict=True):
+        effects = replay() if callable(replay) else {"repeticion": action().status_code} if replay else {}
+        outage_book.check(f"{owner}:{consumer}", outage_case(response, normalizer, elapsed, limit, effects))

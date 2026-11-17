@@ -176,14 +176,32 @@ Ver `.env.example` (solo marcadores). En resumen:
   worker de auditoría, `AUDIT_CLIENT_ID`/`AUDIT_CLIENT_SECRET`, que en Compose son la cuenta del
   propio servicio), secretos de firma y los ajustes de intervalos, lotes y reintentos
   (`AUDIT_OUTBOX_*`, `*_RECONCILER_*`, `PURCHASE_PRICE_WORKER_*`, `CR_PRICE_WORKER_*`).
-- **Lecturas de contrato (spec 025, D27)**: `<SERVICIO>__OPERATIONAL_CONTEXT_READ_SOURCE` (`http` por omisión o
-  `contract`) y `<SERVICIO>__OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL` (rol `<cons>_contract_reader`, creado con
-  `infrastructure/scripts/contract-readers/provision.py`) en los 7 consumidores de Operational Context.
+- **Lecturas de contrato (spec 025, D27)**: `<SERVICIO>__<PROPIETARIO>_READ_SOURCE` (`http` por omisión o
+  `contract`) y `<SERVICIO>__<PROPIETARIO>_CONTRACT_DATABASE_URL` (rol `<cons>_contract_reader`, creado con
+  `infrastructure/scripts/contract-readers/provision.py`) en las 29 parejas consumidor–propietario (lista en
+  `docs/service-map.md`). Ver "Lecturas directas" más abajo.
+- **Pools (spec 025, R6)**: `DB_POOL_SIZE` (3; 1–20) y `DB_MAX_OVERFLOW` (2; 0–20) del motor propio, y
+  `CONTRACT_READ_POOL_SIZE` (1; 1–10) y `CONTRACT_READ_MAX_OVERFLOW` (2; 0–10) de cada pareja. Sin prefijo valen
+  para todos los servicios; con prefijo (`SALES__DB_POOL_SIZE`), solo para ese.
 - Las `*_SERVICE_BASE_URL` no se definen: apuntan solas a este contenedor (`AUDIT_SERVICE_BASE_URL`
   de los workers de auditoría incluida).
 - Cada worker de auditoría escribe su latido en un archivo propio
   (`$SIO_UNIFIED_STATE_DIR/heartbeat/<worker>`): el valor por defecto de `sio-audit` lo compartirían
   los siete.
+
+## Lecturas directas (spec 025, D27)
+
+En este contenedor los 12 servicios comparten un proceso, pero cada uno conserva su motor propio y sus motores de
+lectura de contrato: en el peor caso, 10 × 5 conexiones propias más 29 × 3 de lectura, repartidas entre las bases de
+Neon. El orden de despliegue, la vuelta atrás y las notas de Neon y AWS están en
+`infrastructure/scripts/contract-readers/README.md`. En resumen:
+
+1. Migrar los propietarios (`alembic upgrade head`), que crean las vistas `contract.v1_*`.
+2. `provision.py aplicar --entorno servidor` y `verificar`, con un administrador de cada base.
+3. Definir `<SERVICIO>__<PROPIETARIO>_CONTRACT_DATABASE_URL` con el host directo de Neon (sin `-pooler`) y
+   `<SERVICIO>__<PROPIETARIO>_READ_SOURCE=contract`, y reiniciar el contenedor.
+4. Vuelta atrás: `<SERVICIO>__<PROPIETARIO>_READ_SOURCE=http` y reiniciar.
+5. Medir con `pg_stat_activity` agrupando por `usename` y `application_name`.
 
 ## Health checks
 

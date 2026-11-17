@@ -20,11 +20,12 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import date
 from uuid import uuid4
 
 import pytest
-from conftest import URLS, expect
-from support import Normalizer, RequestWindow, response_case
+from conftest import URLS, expect, outages_only
+from support import Normalizer, RequestWindow, outage_case, owner_database_down, response_case
 
 OC, PC, CR, PI = (URLS[k] for k in ("operational_context", "product_catalog", "commercial_relationship", "party_identity"))
 SALES, INV, PR = URLS["sales"], URLS["inventory"], URLS["payment_reference"]
@@ -231,3 +232,36 @@ def test_confirmation_latency(world, users, reads):
     path = Path(LATENCY)
     existing = json.loads(path.read_text()) if path.exists() else []
     path.write_text(json.dumps([*existing, result], indent=2))
+
+
+SALE_OWNERS = ("operational-context", "product-catalog", "commercial-relationship", "party-identity", "payment-reference",
+               "inventory")
+
+
+@outages_only
+@pytest.mark.parametrize("owner", SALE_OWNERS)
+def test_caida_del_propietario(world, users, outage_book, owner):
+    """T079: con la base del propietario caída, la confirmación responde el 503 de hoy, a tiempo y sin efectos."""
+    admin = users("admin.test")
+    draft = expect(_draft(admin, world), 201)
+    with owner_database_down(owner):
+        start = time.monotonic()
+        response = _confirm(admin, world, draft)
+        elapsed = time.monotonic() - start
+    sale = expect(admin.get(f"{SALES}/companies/{world['company']}/sales/{draft['id']}"))
+    effects = {"estado": sale["status"], "version_cambio": sale["version"] != draft["version"]}
+    outage_book.check(owner, outage_case(response, Normalizer(world["aliases"], run=world["run"]), elapsed, 5.5, effects))
+    if owner != "inventory":
+        expect(_confirm(admin, world, sale), 200)  # al volver la base, la misma venta se confirma
+    # Con Inventory caído, hoy la consulta previa de existencias se omite y la salida falla: la operación queda
+    # pendiente y la resuelve el conciliador (R-08). Un reintento inmediato responde 409; no se repite.
+    if owner == "product-catalog":
+        # Business Reporting → Product Catalog (unidad base): el reporte de los más vendidos de la empresa C.
+        today = date.today().isoformat()
+        with owner_database_down(owner):
+            start = time.monotonic()
+            report = admin.get(f"{URLS['business_reporting']}/companies/{world['company']}/reports/top-selling-products",
+                               params={"date_from": today, "date_to": today})
+            elapsed = time.monotonic() - start
+        outage_book.check("product-catalog:business-reporting",
+                          outage_case(report, Normalizer(world["aliases"], run=world["run"]), elapsed, 5.5, {}))

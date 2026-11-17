@@ -26,8 +26,8 @@ from datetime import date
 from uuid import uuid4
 
 import pytest
-from conftest import URLS, expect
-from support import Normalizer, RequestWindow, response_case
+from conftest import URLS, expect, outages_only
+from support import Normalizer, RequestWindow, outage_case, owner_database_down, response_case
 
 OC, PC, CR, PI = (URLS[k] for k in ("operational_context", "product_catalog", "commercial_relationship", "party_identity"))
 PURCHASE, PR = URLS["purchase"], URLS["payment_reference"]
@@ -236,3 +236,29 @@ def test_confirmation_latency(world, users, reads):
     path = Path(LATENCY)
     existing = json.loads(path.read_text()) if path.exists() else []
     path.write_text(json.dumps([*existing, result], indent=2))
+
+
+PURCHASE_OWNERS = ("operational-context", "product-catalog", "commercial-relationship", "party-identity",
+                   "payment-reference", "inventory")
+
+
+@outages_only
+@pytest.mark.parametrize("owner", PURCHASE_OWNERS)
+def test_caida_del_propietario(world, users, outage_book, owner):
+    """T079: con la base del propietario caída, la confirmación (o la recepción, si es Inventory) responde el 503 de
+    hoy, a tiempo y sin efectos; al volver la base, la misma compra avanza."""
+    admin = users("admin.test")
+    purchase = expect(_draft(admin, world), 201)
+    step = _confirm
+    if owner == "inventory":
+        purchase, step = expect(_confirm(admin, world, purchase)), _receive
+    with owner_database_down(owner):
+        start = time.monotonic()
+        response = step(admin, world, purchase)
+        elapsed = time.monotonic() - start
+    current = expect(admin.get(f"{PURCHASE}/companies/{world['company']}/purchases/{purchase['id']}"))
+    effects = {"estado": current["status"], "recepcion": current.get("receipt_status"),
+               "version_cambio": current["version"] != purchase["version"]}
+    outage_book.check(owner, outage_case(response, Normalizer(world["aliases"], run=world["run"]), elapsed, 5.5, effects))
+    if owner != "inventory":  # la recepción con Inventory caído queda pendiente para el conciliador, como la venta
+        expect(step(admin, world, current), 200)

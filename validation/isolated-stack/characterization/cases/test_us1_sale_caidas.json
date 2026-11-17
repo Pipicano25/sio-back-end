@@ -1,0 +1,143 @@
+{
+  "cases": {
+    "commercial-relationship": {
+      "case": {
+        "body": {
+          "code": "SALES.DEPENDENCY_UNAVAILABLE",
+          "dependency": "commercial-relationship",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/sales/<id:1>/confirmation",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "inventory": {
+      "case": {
+        "body": {
+          "code": "SALES.DEPENDENCY_UNAVAILABLE",
+          "dependency": "inventory",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/sales/<id:1>/confirmation",
+          "operation_id": "<id:2>",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "version_cambio": true
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "operational-context": {
+      "case": {
+        "body": {
+          "code": "SALES.DEPENDENCY_UNAVAILABLE",
+          "dependency": "operational-context",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/sales/<id:1>/confirmation",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "party-identity": {
+      "case": {
+        "body": {
+          "code": "SALES.DEPENDENCY_UNAVAILABLE",
+          "dependency": "party-identity",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/sales/<id:1>/confirmation",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "payment-reference": {
+      "case": {
+        "body": {
+          "code": "SALES.DEPENDENCY_UNAVAILABLE",
+          "dependency": "payment-reference",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/sales/<id:1>/confirmation",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "product-catalog": {
+      "case": {
+        "body": {
+          "code": "SALES.DEPENDENCY_UNAVAILABLE",
+          "dependency": "product-catalog",
+          "detail": "Un servicio requerido no está disponible temporalmente. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/sales/<id:1>/confirmation",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/sales/dependency-unavailable"
+        },
+        "effects": {
+          "estado": "DRAFT",
+          "version_cambio": false
+        },
+        "status": 503
+      },
+      "requests": {}
+    },
+    "product-catalog:business-reporting": {
+      "case": {
+        "body": {
+          "code": "BUSINESS_REPORTING.DEPENDENCY_UNAVAILABLE",
+          "detail": "Una dependencia del servicio no está disponible. Intente de nuevo más tarde.",
+          "instance": "/api/v1/companies/<empresa_C>/reports/top-selling-products",
+          "status": 503,
+          "title": "Dependencia no disponible",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/business-reporting/dependency-unavailable"
+        },
+        "effects": {},
+        "status": 503
+      },
+      "requests": {}
+    }
+  },
+  "module": "test_us1_sale_caidas",
+  "recorded_with": "http"
+}
