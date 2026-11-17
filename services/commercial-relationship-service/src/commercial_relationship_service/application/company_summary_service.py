@@ -76,11 +76,13 @@ class CompanySummaryService:
         customers = None if self._customers is None else self._customers.count_by_company_status(ids)
         suppliers = None if self._suppliers is None else self._suppliers.count_by_company_status(ids)
 
+        names = self._batch_legal_names(ids)
+
         items = [
             CompanySummary(
                 company_id=company.company_id,
                 company_status=company.company_status,
-                legal_name=self._legal_name(company.company_id),
+                legal_name=self._legal_name(company.company_id) if names is None else names[company.company_id],
                 company_products=_counts(products.get(company.company_id, {}), PRODUCT_STATUSES),
                 company_customers=None
                 if customers is None
@@ -92,6 +94,33 @@ class CompanySummaryService:
             for company in selected
         ]
         return PageResult(items=items, page=page, page_size=page_size, total_records=len(companies))
+
+    def _batch_legal_names(self, company_ids: list[UUID]) -> dict[UUID, str | None] | None:
+        """Razones sociales de la página con los métodos por lote opcionales de los puertos (spec 025, T060).
+
+        `None` si el directorio de empresas no tiene `find_company_organizations` (adaptador HTTP): entonces se
+        consulta empresa por empresa, como siempre. El resultado por empresa es el mismo que `_legal_name`.
+        """
+        if not company_ids:
+            return None
+        companies = self._company_directory()
+        find_organizations = getattr(companies, "find_company_organizations", None)
+        if find_organizations is None:
+            return None
+        organizations = find_organizations(company_ids)
+        parties = self._party_directory()
+        find_names = getattr(parties, "find_organization_names", None)
+        if find_names is None:
+            return {
+                company_id: None if organization_id is None else parties.find_organization_name(organization_id)
+                for company_id, organization_id in organizations.items()
+            }
+        wanted = [organization_id for organization_id in organizations.values() if organization_id is not None]
+        names = find_names(wanted) if wanted else {}
+        return {
+            company_id: None if organization_id is None else names.get(organization_id)
+            for company_id, organization_id in organizations.items()
+        }
 
     def _legal_name(self, company_id: UUID) -> str | None:
         organization_id = self._company_directory().find_company_organization(company_id)

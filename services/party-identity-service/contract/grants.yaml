@@ -13,7 +13,7 @@ consumers:
     views: [v1_organization_identities]
   commercial-relationship:
     abbreviation: cr
-    views: [v1_person_identities, v1_organization_identities]
+    views: [v1_person_identities, v1_organization_identities, v1_organization_contact_persons]
   operational-context:
     abbreviation: oc
     views: [v1_person_identities, v1_organization_identities]

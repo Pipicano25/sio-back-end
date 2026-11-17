@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from dataclasses import dataclass, fields
 
 from fastapi import Depends, FastAPI, Request
 from sio_auth import SIOAuth, install_cors
-from sio_contract_read import create_contract_engine
+from sio_contract_read import ContractReadSettings, create_contract_engine
 from sqlalchemy import Engine
 
 import commercial_relationship_service.application.audit_events  # noqa: F401  (registra la outbox de auditoría, feature 016)
@@ -63,7 +64,11 @@ from commercial_relationship_service.api.supplier_products import (
 )
 from commercial_relationship_service.api.tracing import TracingMiddleware
 from commercial_relationship_service.config import Settings, load_settings
-from commercial_relationship_service.infrastructure.contract_operational_context import ContractCompanyAccessDirectory
+from commercial_relationship_service.infrastructure.contract_operational_context import (
+    ContractCompanyAccessDirectory,
+    ContractCompanyDirectory,
+)
+from commercial_relationship_service.infrastructure.contract_party_identity import ContractPartyDirectory
 from commercial_relationship_service.infrastructure.database import Database
 from commercial_relationship_service.infrastructure.keycloak_token_client import (
     KeycloakTokenClient,
@@ -91,32 +96,66 @@ HEALTH_PUBLIC_PATHS = {"/health/live", "/health/ready"}
 DOCS_PUBLIC_PATHS = {"/docs", "/openapi.json"}
 
 
-def build_access_directory_factory(settings: Settings, contract_engine: Engine | None = None) -> AccessDirectoryFactory:
-    """Operational Context `operational-access` (vía propia, token del usuario, R-02).
+@dataclass(frozen=True, slots=True)
+class ContractEngines:
+    """Motores de lectura por vistas de contrato (spec 025, D27); `None` = ese propietario se lee por HTTP."""
 
-    Con `contract_engine` (spec 025, `OPERATIONAL_CONTEXT_READ_SOURCE=contract`) el acceso se lee de la vista de
-    contrato; el resumen de empresas sigue por HTTP.
+    operational_context: Engine | None = None
+    party_identity: Engine | None = None
+
+    def dispose(self) -> None:
+        for item in fields(self):
+            engine = getattr(self, item.name)
+            if engine is not None:
+                engine.dispose()
+
+
+def _engine(reads: ContractReadSettings | None) -> Engine | None:
+    if reads is None or not reads.uses_contract:
+        return None
+    return create_contract_engine(reads, application_name="commercial-relationship-service")
+
+
+def build_contract_engines(settings: Settings) -> ContractEngines:
+    """Un motor por propietario con `<PROPIETARIO>_READ_SOURCE=contract`."""
+    return ContractEngines(
+        operational_context=_engine(settings.operational_context_reads),
+        party_identity=_engine(settings.party_identity_reads),
+    )
+
+
+def _claims(request: Request):
+    """`TokenClaims` que `sio-auth` dejó en la solicitud (token del usuario, FR-037)."""
+    return getattr(request.state, "sio_claims", None)
+
+
+def build_access_directory_factory(settings: Settings, contract_engine: Engine | None = None) -> AccessDirectoryFactory:
+    """Operational Context `operational-access` y `me/operational-context` (vía propia, token del usuario, R-02).
+
+    Con `contract_engine` (spec 025, `OPERATIONAL_CONTEXT_READ_SOURCE=contract`) el acceso y las membresías del
+    resumen se leen de las vistas de contrato.
     """
 
     def factory(request: Request) -> HTTPCompanyAccessDirectory | ContractCompanyAccessDirectory:
-        http = HTTPCompanyAccessDirectory(
+        if contract_engine is not None:
+            return ContractCompanyAccessDirectory(engine=contract_engine, claims=_claims(request))
+        return HTTPCompanyAccessDirectory(
             base_url=settings.operational_context_base_url,
             authorization=request.headers.get("authorization"),
             timeout_seconds=settings.operational_context_timeout_seconds,
-        )
-        if contract_engine is None:
-            return http
-        return ContractCompanyAccessDirectory(
-            engine=contract_engine, claims=getattr(request.state, "sio_claims", None), http=http
         )
 
     return factory
 
 
-def build_company_directory_factory(settings: Settings) -> CompanyDirectoryFactory:
-    """Operational Context `companies/{id}` (token del usuario, R-07)."""
+def build_company_directory_factory(
+    settings: Settings, contract_engine: Engine | None = None
+) -> CompanyDirectoryFactory:
+    """Operational Context `companies/{id}` (token del usuario, R-07); con `contract_engine`, `v1_companies`."""
 
-    def factory(request: Request) -> HTTPCompanyDirectory:
+    def factory(request: Request) -> HTTPCompanyDirectory | ContractCompanyDirectory:
+        if contract_engine is not None:
+            return ContractCompanyDirectory(engine=contract_engine, claims=_claims(request))
         return HTTPCompanyDirectory(
             base_url=settings.operational_context_base_url,
             authorization=request.headers.get("authorization"),
@@ -173,10 +212,16 @@ def build_payment_directory_factory(
     return factory
 
 
-def build_party_directory_factory(settings: Settings) -> PartyDirectoryFactory:
-    """Party Identity con el token del usuario (DS-04)."""
+def build_party_directory_factory(settings: Settings, contract_engine: Engine | None = None) -> PartyDirectoryFactory:
+    """Party Identity con el token del usuario (DS-04).
 
-    def factory(request: Request) -> HTTPPartyDirectory:
+    Con `contract_engine` (spec 025, `PARTY_IDENTITY_READ_SOURCE=contract`) se leen sus vistas de contrato con el
+    permiso del token.
+    """
+
+    def factory(request: Request) -> HTTPPartyDirectory | ContractPartyDirectory:
+        if contract_engine is not None:
+            return ContractPartyDirectory(engine=contract_engine, claims=_claims(request))
         return HTTPPartyDirectory(
             base_url=settings.party_identity_base_url,
             authorization=request.headers.get("authorization"),
@@ -204,19 +249,14 @@ def create_app(
     current_settings = settings or load_settings()
     configure_logging()
     database = Database(current_settings.database_url)
-    oc_reads = current_settings.operational_context_reads
-    oc_contract = (
-        create_contract_engine(oc_reads, application_name="commercial-relationship-service")
-        if oc_reads is not None and oc_reads.uses_contract
-        else None
-    )
+    # Spec 025 (D27): cada propietario con `<PROPIETARIO>_READ_SOURCE=contract` se lee de sus vistas de contrato.
+    engines = build_contract_engines(current_settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         database.dispose()
-        if oc_contract is not None:
-            oc_contract.dispose()
+        engines.dispose()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -238,10 +278,10 @@ def create_app(
     app.state.settings = current_settings
     app.state.database = database
     app.state.access_directory_factory = access_directory_factory or build_access_directory_factory(
-        current_settings, oc_contract
+        current_settings, engines.operational_context
     )
-    app.state.company_directory_factory = (
-        company_directory_factory or build_company_directory_factory(current_settings)
+    app.state.company_directory_factory = company_directory_factory or build_company_directory_factory(
+        current_settings, engines.operational_context
     )
     token_client = build_token_client(current_settings)
     app.state.product_directory_factory = (
@@ -251,7 +291,7 @@ def create_app(
         payment_directory_factory or build_payment_directory_factory(current_settings, token_client)
     )
     app.state.party_directory_factory = party_directory_factory or build_party_directory_factory(
-        current_settings
+        current_settings, engines.party_identity
     )
 
     public_paths = set(HEALTH_PUBLIC_PATHS)

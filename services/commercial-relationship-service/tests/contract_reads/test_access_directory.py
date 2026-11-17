@@ -6,7 +6,7 @@ migraciones reales de Operational Context y el rol `cr_contract_reader`, y compr
 - para las causas por empresa, `check_company_access` devuelve lo mismo que el adaptador HTTP con esos datos;
 - sin el permiso de la ruta en el token → `OperationalAccessDeniedError`, como el `403` de hoy (FR-037);
 - base caída o consulta lenta → `DependencyUnavailableError("operational-context")`;
-- `list_member_companies` sigue por HTTP.
+- `list_member_companies` (desde la fase 6) la prueba `test_summary_reads.py`.
 """
 
 from __future__ import annotations
@@ -49,11 +49,8 @@ def http(handler) -> HTTPCompanyAccessDirectory:
                                       transport=httpx.MockTransport(handler))
 
 
-def contract(engine, subject, *roles, handler=None):
-    return ContractCompanyAccessDirectory(
-        engine=engine, claims=claims(subject, *roles),
-        http=http(handler or (lambda request: httpx.Response(500))),
-    )
+def contract(engine, subject, *roles):
+    return ContractCompanyAccessDirectory(engine=engine, claims=claims(subject, *roles))
 
 
 @pytest.fixture(scope="module")
@@ -96,17 +93,6 @@ def test_missing_route_permission_is_denied_like_403(reader, cases):
         )
     with pytest.raises(OperationalAccessDeniedError):
         http(lambda request: httpx.Response(403, json={})).check_company_access(cases[0].company_id)
-
-
-def test_member_companies_still_use_http(reader, cases):
-    calls = []
-
-    def handler(request):
-        calls.append(request.url.path)
-        return httpx.Response(200, json={"memberships": []})
-
-    assert contract(reader, cases[0].subject, READ, handler=handler).list_member_companies() == []
-    assert calls == ["/api/v1/me/operational-context"]
 
 
 def test_database_down_is_unavailable(cases):

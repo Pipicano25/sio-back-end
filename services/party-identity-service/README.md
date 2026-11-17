@@ -310,18 +310,22 @@ base detenida: `docker start sio-party-identity-db`.
 ## Vistas de contrato (spec 025, D27)
 
 La migración `0021_contract_views_v1` publica el esquema `contract` con vistas de solo lectura para que otros
-servicios lean sin llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué vista está en
+servicios lean sin llamar por HTTP; `0022_contract_contact_persons_v1` agrega `v1_organization_contact_persons`. Las escrituras siguen siendo solo por esta API. Quién lee qué vista está en
 [`contract/grants.yaml`](contract/grants.yaml); los roles los crea `infrastructure/scripts/contract-readers/provision.py`
-(hay que volver a aplicarlo si se hace `downgrade` y `upgrade` de la `0021`).
+(hay que volver a aplicarlo si se hace `downgrade` y `upgrade` de la `0021` o la `0022`).
 
 | Vista | Columnas | Reemplaza | Consumidores |
 |---|---|---|---|
 | `v1_person_identities` | `id`, `identification_type`, `identification_number`, `first_name`, `middle_name`, `last_name`, `second_last_name`, `status` | `GET /person-identities/{id}` y la búsqueda de identidades activas de Sales | Sales, Commercial Relationship, Operational Context |
 | `v1_organization_identities` | `id`, `identification_type`, `identification_number`, `legal_name`, `trade_name`, `status` | `GET /organization-identities/{id}` y su búsqueda | Sales, Purchase, Commercial Relationship, Operational Context, Product Catalog |
+| `v1_organization_contact_persons` | `id`, `organization_identity_id`, `person_identity_id`, `is_active` | `GET /organization-contact-persons/{id}` | Commercial Relationship |
 
 - Cada columna es el mismo valor del GET: `identification_type` es el código guardado (`CC`, `NIT`, ...), sin
   derivar de otra tabla. Las vistas incluyen identidades `ACTIVE` e `INACTIVE`; una inexistente no tiene fila (`404`).
 - No se publican correo, teléfono, fecha de nacimiento, sitio web, estado de verificación ni estado de registro.
+- `v1_organization_contact_persons` incluye contactos activos e inactivos (`is_active`), igual que el GET por id; no
+  publica cargo, correo, teléfono ni `is_primary`. Su paridad la prueba
+  `tests/contract_views/test_contact_persons_parity.py`.
 
 **Búsqueda de identidades activas** (la de `GET /person-identities` y `/organization-identities` con
 `status=ACTIVE`, `search`, `page` y `page_size`). `:search` es el texto recortado (`strip`), o `NULL` si viene vacío;

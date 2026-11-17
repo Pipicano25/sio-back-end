@@ -44,8 +44,11 @@ class Settings:
     payment_reference_timeout_seconds: float = 5.0
     keycloak_realm: str = "sio"
     keycloak_timeout_seconds: float = 5.0
-    # Spec 025 (D27): lectura del acceso operativo por HTTP (por defecto) o por la vista de contrato.
+    # Spec 025 (D27): `<PROPIETARIO>_READ_SOURCE=http|contract` (por defecto `http`) por cada propietario leído
+    # con vistas de contrato: Operational Context (acceso, empresas y membresías) y Party Identity (identidades,
+    # personas de contacto y razón social).
     operational_context_reads: ContractReadSettings | None = None
+    party_identity_reads: ContractReadSettings | None = None
 
 
 def load_settings() -> Settings:
@@ -55,8 +58,10 @@ def load_settings() -> Settings:
         RuntimeError: Si una variable contiene un valor inválido.
     """
     oc_timeout = _read_positive_float("OPERATIONAL_CONTEXT_TIMEOUT_SECONDS", default=5.0)
+    pi_timeout = _read_positive_float("PARTY_IDENTITY_TIMEOUT_SECONDS", default=5.0)
     try:
         oc_reads = ContractReadSettings.from_env("OPERATIONAL_CONTEXT", timeout_seconds=oc_timeout)
+        pi_reads = ContractReadSettings.from_env("PARTY_IDENTITY", timeout_seconds=pi_timeout)
     except ContractReadConfigError as error:
         raise RuntimeError(str(error)) from None
     return Settings(
@@ -79,10 +84,7 @@ def load_settings() -> Settings:
             "PARTY_IDENTITY_SERVICE_BASE_URL",
             default="http://localhost:8002/api/v1",
         ),
-        party_identity_timeout_seconds=_read_positive_float(
-            "PARTY_IDENTITY_TIMEOUT_SECONDS",
-            default=5.0,
-        ),
+        party_identity_timeout_seconds=pi_timeout,
         payment_reference_base_url=_read_text(
             "PAYMENT_REFERENCE_SERVICE_BASE_URL",
             default="http://localhost:8105",
@@ -100,6 +102,7 @@ def load_settings() -> Settings:
             default=5.0,
         ),
         operational_context_reads=oc_reads,
+        party_identity_reads=pi_reads,
     )
 
 

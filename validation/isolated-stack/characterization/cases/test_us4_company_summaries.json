@@ -1,0 +1,2982 @@
+{
+  "cases": {
+    "cien_empresas": {
+      "case": {
+        "body": {
+          "items": [
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_000>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "INACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 000 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_001>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 001 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_002>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 002 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_003>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 003 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_004>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 004 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_005>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 005 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_006>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 006 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_007>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 007 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_008>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 008 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_009>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 009 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_010>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 010 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_011>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 011 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_012>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 012 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_013>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 013 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_014>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 014 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_015>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 015 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_016>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 016 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_017>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 017 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_018>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 018 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_019>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 019 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_020>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 020 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_021>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 021 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_022>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 022 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_023>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 023 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_024>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 024 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_025>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 025 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_026>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 026 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_027>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 027 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_028>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 028 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_029>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 029 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_030>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 030 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_031>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 031 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_032>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 032 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_033>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 033 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_034>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 034 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_035>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 035 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_036>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 036 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_037>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 037 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_038>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 038 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_039>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 039 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_040>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 040 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_041>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 041 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_042>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 042 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_043>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 043 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_044>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 044 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_045>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 045 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_046>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 046 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_047>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 047 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_048>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 048 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_049>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 049 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_050>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 050 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_051>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 051 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_052>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 052 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_053>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 053 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_054>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 054 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_055>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 055 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_056>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 056 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_057>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 057 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_058>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 058 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_059>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 059 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_060>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 060 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_061>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 061 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_062>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 062 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_063>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 063 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_064>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 064 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_065>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 065 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_066>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 066 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_067>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 067 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_068>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 068 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_069>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 069 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_070>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 070 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_071>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 071 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_072>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 072 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_073>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 073 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_074>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 074 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_075>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 075 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_076>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 076 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_077>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 077 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_078>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 078 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_079>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 079 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_080>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 080 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_081>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 081 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_082>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 082 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_083>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 083 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_084>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 084 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_085>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 085 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_086>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 086 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_087>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 087 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_088>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 088 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_089>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 089 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_090>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 090 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_091>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 091 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_092>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 092 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_093>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 093 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_094>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 094 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_095>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 095 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_096>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 096 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_097>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 097 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_098>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 098 <run> (DATO FICTICIO DE VALIDACION)"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa_099>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "ACTIVE",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "EMPRESA FICTICIA US4 099 <run> (DATO FICTICIO DE VALIDACION)"
+            }
+          ],
+          "page": 1,
+          "page_size": 100,
+          "total_pages": 1,
+          "total_records": 100
+        },
+        "status": 200
+      },
+      "requests": {
+        "operational-context GET /api/v1/companies/{id}": 100,
+        "operational-context GET /api/v1/me/operational-context": 1,
+        "party-identity GET /api/v1/organization-identities/{id}": 100
+      }
+    },
+    "segunda_pagina": {
+      "case": {
+        "body": {
+          "items": [
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            },
+            {
+              "company_customers": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_id": "<empresa>",
+              "company_products": {
+                "ACTIVE": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "company_status": "<estado>",
+              "company_suppliers": {
+                "ACTIVE": 0,
+                "BLOCKED": 0,
+                "INACTIVE": 0,
+                "total": 0
+              },
+              "legal_name": "<razon_social>"
+            }
+          ],
+          "page": 2,
+          "page_size": 60,
+          "total_pages": 2,
+          "total_records": 100
+        },
+        "status": 200
+      },
+      "requests": {
+        "operational-context GET /api/v1/companies/{id}": 40,
+        "operational-context GET /api/v1/me/operational-context": 1,
+        "party-identity GET /api/v1/organization-identities/{id}": 40
+      }
+    }
+  },
+  "module": "test_us4_company_summaries",
+  "recorded_with": "http"
+}

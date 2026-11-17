@@ -74,13 +74,16 @@ services:
       # (specs/007-commercial-relationship-core/contracts/*-dependency.md).
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
       OPERATIONAL_CONTEXT_TIMEOUT_SECONDS: ${OPERATIONAL_CONTEXT_TIMEOUT_SECONDS:-5}
-      # Spec 025 (D27): `contract` lee la vista de Operational Context con el rol de solo lectura; `http` por omisión.
+      # Spec 025 (D27): `contract` lee las vistas de Operational Context con el rol de solo lectura; `http` por omisión.
       OPERATIONAL_CONTEXT_READ_SOURCE: ${OPERATIONAL_CONTEXT_READ_SOURCE:-http}
       OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://cr_contract_reader:${CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP:-}@operational-context-db:5432/${OPERATIONAL_CONTEXT_DB_NAME}
       PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
       PRODUCT_CATALOG_TIMEOUT_SECONDS: ${PRODUCT_CATALOG_TIMEOUT_SECONDS:-5}
       PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
       PARTY_IDENTITY_TIMEOUT_SECONDS: ${PARTY_IDENTITY_TIMEOUT_SECONDS:-5}
+      # Spec 025 (D27): `contract` lee las vistas de Party Identity con el rol de solo lectura; `http` por omisión.
+      PARTY_IDENTITY_READ_SOURCE: ${PARTY_IDENTITY_READ_SOURCE:-http}
+      PARTY_IDENTITY_CONTRACT_DATABASE_URL: postgresql+psycopg://cr_contract_reader:${CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP:-}@party-identity-db:5432/${PARTY_IDENTITY_DB_NAME}
       # Payment Reference sin /api/v1 (GAP-PR-14 diferido; C-06 de la feature 010).
       # Sin dependencia de arranque: si no está disponible, las rutas que lo usan
       # responden 503 con dependency=payment-reference.

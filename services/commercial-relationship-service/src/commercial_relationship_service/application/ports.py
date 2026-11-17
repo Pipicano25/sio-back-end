@@ -98,7 +98,11 @@ class CompanyAccessDirectory(Protocol):
 
 
 class CompanyDirectory(Protocol):
-    """Empresa por UUID en Operational Context (autorreferencia, FR-028)."""
+    """Empresa por UUID en Operational Context (autorreferencia, FR-028).
+
+    Opcional (spec 025, T060): `find_company_organizations(company_ids) -> dict[UUID, UUID | None]`, el mismo
+    resultado que `find_company_organization` por empresa; el resumen lo usa si el adaptador lo tiene.
+    """
 
     def get_company_organization(self, company_id: UUID) -> UUID:
         """Raises `NotFoundError`, `OperationalAccessDeniedError` o `DependencyUnavailableError`."""
@@ -154,7 +158,11 @@ class PaymentReferenceDirectory(Protocol):
 
 
 class PartyDirectory(Protocol):
-    """Party Identity con el token del usuario (R-06)."""
+    """Party Identity con el token del usuario (R-06).
+
+    Opcional (spec 025, T060): `find_organization_names(ids) -> dict[UUID, str | None]`, el mismo resultado que
+    `find_organization_name` por organización; el resumen lo usa si el adaptador lo tiene.
+    """
 
     def get_person(self, person_identity_id: UUID) -> IdentityRef | None:
         """`None` si no existe. Raises `PartyIdentityAccessDeniedError` o

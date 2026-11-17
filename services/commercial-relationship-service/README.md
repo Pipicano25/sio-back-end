@@ -205,6 +205,23 @@ SELECT r.id AS company_product_presentation_id,
 Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); incompatibles, con una vista `v2_`.
 La paridad con la API y los permisos de los roles de lectura los prueban `tests/contract_views/`.
 
+### Lecturas de otros servicios por vistas de contrato (consumidor)
+
+Con `<PROPIETARIO>_READ_SOURCE=contract` y `<PROPIETARIO>_CONTRACT_DATABASE_URL` (rol `cr_contract_reader`) este
+servicio lee, sin solicitudes HTTP, las vistas que declara para `commercial-relationship` el `contract/grants.yaml`
+de cada propietario; con `http` (por omisión) usa la API como siempre:
+
+- `OPERATIONAL_CONTEXT`: `v1_operational_access` (acceso a la empresa), `v1_user_memberships` (empresas del resumen,
+  en lugar de `GET /me/operational-context`) y `v1_companies` (organización de la empresa, en lugar de
+  `GET /companies/{id}`).
+- `PARTY_IDENTITY`: `v1_person_identities`, `v1_organization_identities` (estado y razón social) y
+  `v1_organization_contact_persons`.
+
+Antes de leer se exige con el token del usuario el mismo permiso que la ruta del propietario, y para la empresa la
+misma visibilidad (`platform:administer`, `platform:lookup` o membresía `ACTIVE`); sin él la respuesta es la de hoy
+(`403` o `null` en el resumen). Una base caída o lenta da el mismo `503` de hoy. Lo prueban
+`tests/contract_reads/test_access_directory.py` y `tests/contract_reads/test_summary_reads.py`.
+
 ## Datos iniciales
 
 No hay `seed`: productos, clientes, proveedores, presentaciones, condiciones y precios los registra cada
