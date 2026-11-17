@@ -49,7 +49,7 @@ Todos aceptan `date_from` y `date_to` (fechas de negocio, incluidas, hasta 366 d
 3. Sales, Purchase, Inventory, Commercial Relationship y Product Catalog se consultan **también con el token del
    usuario** (D5, DR-07): cada propietario aplica su membresía y su permiso de lectura. Si responde `403`, el
    reporte responde el mismo `403` genérico. El servicio **no tiene cliente técnico** ni secretos propios.
-4. `reportes` lee la evolución de existencias con `perm:inventory:stock_evolution:read`, que **no** abre el kardex,
+4. El reporte lee la evolución de existencias con `perm:inventory:stock_evolution:read`, que **no** abre el kardex,
    los costos ni las capas (DR-11).
 5. Toda fila de otra empresa o sucursal fuera del alcance es un incidente de integridad (`503`, sin datos). Los
    logs no contienen tokens.

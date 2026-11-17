@@ -8,6 +8,8 @@ from sio_auth import FORBIDDEN_DETAIL
 
 from tests.examples.users import USERS, matching_grant
 
+EMPLEADO = next(u for u in USERS if u["username"] == "ventas.test")
+
 SHORT = {u["username"]: u["username"].replace(".test", "") for u in USERS}
 KEYCLOAK = "http://localhost:8081/realms/sio/protocol/openid-connect/token"
 UUID_IN_TEXT = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
@@ -168,8 +170,8 @@ def render_users(ex, records):
 
     out += ["## Resumen por usuario", ""]
     out += user_summary(ex, rows)
-    out += ["", "**Para hacer el ejercicio completo use `admin.test`.** `supervisor.test` también sirve para crear y "
-            "modificar, pero no para inactivar.", ""]
+    out += ["", "**Para hacer el ejercicio completo use `admin.test`** (grupo `superadmin`). `supervisor.test` (grupo "
+            "`admin`) también sirve para crear y modificar, pero no para inactivar ni eliminar.", ""]
 
     out += ["## Permiso por URL", "",
             "✅ = el usuario puede ejecutar la llamada · ❌ = recibe `403 Forbidden`.", ""]
@@ -196,31 +198,29 @@ def render_users(ex, records):
 
     n += 1
     denied = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] != "GET"
-                          and not matching_grant(USERS[-1], p))
+                          and not matching_grant(EMPLEADO, p))
     if denied:
         s_i, c_i, s, c, p, r = denied
-        out += [f"### {n}. `consulta.test` intenta crear (rechazado)", ""]
-        out += token_command("consulta.test", "TOKEN_CONSULTA")
+        out += [f"### {n}. `ventas.test` (Empleado) intenta crear (rechazado)", ""]
+        out += token_command("ventas.test", "TOKEN_EMPLEADO")
         out += ["", f"Intenta el paso {s_i + 1:02d} (*{s['title']}*), llamada {c_i + 1}:", ""]
-        out += curl_for(c, "TOKEN_CONSULTA")
+        out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        consulta = next(u for u in USERS if u["username"] == "consulta.test")
-        grants = ", ".join(f"`{g}`" for g in consulta["perms"] if g.startswith("perm:product-catalog:")) or "ninguno"
-        out += [f"`consulta.test` solo tiene lecturas explícitas (en el catálogo: {grants}): puede **leer**, pero la "
+        grants = ", ".join(f"`{g}`" for g in EMPLEADO["perms"] if g.startswith("perm:product-catalog:")) or "ninguno"
+        out += [f"El grupo `empleado` solo lee el catálogo ({grants}): puede **leer**, pero la "
                 f"URL exige `{p}`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
 
     n += 1
     read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET" and s_i == len(ex["steps"]) - 1)
     if read:
         s_i, c_i, s, c, p, r = read
-        out += [f"### {n}. `consulta.test` consulta el resultado (permitido)", ""]
-        out += curl_for(c, "TOKEN_CONSULTA")
-        consulta = next(u for u in USERS if u["username"] == "consulta.test")
+        out += [f"### {n}. `ventas.test` (Empleado) consulta el resultado (permitido)", ""]
+        out += curl_for(c, "TOKEN_EMPLEADO")
         readers = [f"`{u['username']}`" for u in USERS
-                   if u["username"] not in ("admin.test", "consulta.test") and matching_grant(u, p)]
+                   if u["username"] not in ("admin.test", "ventas.test") and matching_grant(u, p)]
         out += ["", f"Responde `200 OK` con la misma información que ve `admin.test` en el paso {s_i + 1:02d}: "
-                f"`{matching_grant(consulta, p)}` cubre `{p}`. Lo mismo pasa con {', '.join(readers)}, que tienen "
+                f"`{matching_grant(EMPLEADO, p)}` cubre `{p}`. Lo mismo pasa con {', '.join(readers)}, que tienen "
                 "lectura sobre `product-catalog`.", ""]
 
     deactivate = pick_example(rows, lambda s_i, c, p, r: p.endswith(":deactivate"))
@@ -233,11 +233,13 @@ def render_users(ex, records):
         out += curl_for(c, "TOKEN_SUPERVISOR")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += ["`supervisor.test` tiene `perm:all:all:read`, `perm:all:all:create` y `perm:all:all:update`, pero **no** "
-                "`deactivate`. Por eso pudo cargar todo el producto y no puede inactivarlo: esa acción queda para `admin.test`.", ""]
+        out += ["`supervisor.test` (grupo `admin`) tiene `perm:product-catalog:all:create`, `:all:read` y `:all:update`, "
+                "pero **no** `deactivate` ni `delete`: el catálogo es global y el Admin no lo inactiva. Por eso pudo cargar "
+                "todo el producto y no puede inactivarlo: esa acción queda para `admin.test` (grupo `superadmin`).", ""]
 
     party = pick_example(rows, lambda s_i, c, p, r: p == "perm:party-identity:organization_identities:read")
-    if party:
+    inventario = next(u for u in USERS if u["username"] == "inventario.test")
+    if party and not matching_grant(inventario, party[4]):
         n += 1
         s_i, c_i, s, c, p, r = party
         out += [f"### {n}. `inventario.test` busca el fabricante (rechazado)", ""]
@@ -283,10 +285,8 @@ def render_general(exercises, all_records):
             "3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, "
             "`all` vale como comodín en cualquier parte:",
             "   - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.",
-            "   - `perm:all:all:read` → solo `read`, pero en todos los servicios (en el realm vigente solo lo tiene "
-            "`supervisores`; `reportes` y `consulta` tienen lecturas **explícitas** de todos los servicios, salvo los "
-            "datos de contacto y representantes legales de Party Identity).",
-            "   - `perm:product-catalog:all:read` → solo `read`, solo en el catálogo.",
+            "   - `perm:product-catalog:all:read` → solo `read`, solo en el catálogo (lo tienen los grupos `admin` y "
+            "`empleado`; `admin` tiene además `:all:create` y `:all:update`, pero no `deactivate` ni `delete`).",
             "4. Cada URL exige **un** permiso concreto (por ejemplo `perm:product-catalog:brands:create`). "
             "Si ninguno de los permisos del usuario lo cubre, el servicio responde `403 Forbidden` e indica cuál falta. "
             "Sin token, o con un token vencido, responde `401 Unauthorized`.",
@@ -297,12 +297,10 @@ def render_general(exercises, all_records):
             "| Usuario | Grupo | Permisos del grupo | En el catálogo puede |", "| --- | --- | --- | --- |"]
     summary = {
         "admin.test": "Todo, incluido inactivar",
-        "supervisor.test": "Consultar, crear y modificar. **No** inactivar",
+        "supervisor.test": "Consultar, crear y modificar. **No** inactivar ni eliminar",
         "compras.test": "Solo consultar",
         "ventas.test": "Solo consultar",
-        "inventario.test": "Solo consultar (y no puede consultar fabricantes en Party Identity)",
-        "reportes.test": "Solo consultar",
-        "consulta.test": "Solo consultar",
+        "inventario.test": "Solo consultar",
     }
     for u in USERS:
         if len(u["perms"]) <= 10:
@@ -316,11 +314,11 @@ def render_general(exercises, all_records):
 
     out += ["## Cómo obtener el token de cada usuario", "",
             "Cambie `username` por el usuario que quiera probar:", ""]
-    out += token_command("consulta.test", "TOKEN")
+    out += token_command("ventas.test", "TOKEN")
     out += ["", "En **PowerShell** (Windows), donde `curl` no es el curl real:", "",
             "```powershell",
             "$body = @{ grant_type = 'password'; client_id = 'sio-web'; scope = 'openid'",
-            "           username = 'consulta.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
+            "           username = 'ventas.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
             f"$TOKEN = (Invoke-RestMethod -Method Post -Uri '{KEYCLOAK}' -Body $body).access_token",
             "Invoke-RestMethod -Uri 'http://localhost:8003/api/v1/units-of-measure?code=UND' `",
             "  -Headers @{ Authorization = \"Bearer $TOKEN\" }",
@@ -328,7 +326,7 @@ def render_general(exercises, all_records):
             "En Postman: pestaña *Authorization* → tipo *OAuth 2.0* → *Password Credentials*, con la URL del token de arriba, "
             "cliente `sio-web` y el usuario y contraseña.", "",
             "Luego envíe el token en cada llamada:", "", "```http", "Authorization: Bearer <TOKEN>", "```", "",
-            "Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python services/get_token.py consulta)`) "
+            "Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python services/get_token.py ventas)`) "
             "obtiene el token de `<rol>.test`; sin argumento muestra un menú. Lee la contraseña de "
             "`KEYCLOAK_TEST_USER_PASSWORD` o de `infrastructure/.env`.", ""]
 
@@ -349,7 +347,10 @@ def render_general(exercises, all_records):
     out += ["## Qué usuario usar", "",
             "| Para… | Usuario |", "| --- | --- |",
             "| Hacer los ejercicios completos | `admin.test` |",
-            "| Cargar productos sin poder inactivarlos | `supervisor.test` (falla en el paso de inactivar del ejercicio 5) |",
-            "| Verificar lo cargado (pasos de consulta y verificación) | `consulta.test` o `reportes.test` |",
-            "| Probar rechazos por falta de permiso | `consulta.test` en cualquier `POST` o `PUT`; `inventario.test` al buscar fabricantes |", ""]
+            "| Cargar productos sin poder inactivarlos | `supervisor.test` (Admin; falla en el paso de inactivar del "
+            "ejercicio 5) |",
+            "| Verificar lo cargado (pasos de consulta y verificación) | `ventas.test`, `compras.test` o "
+            "`inventario.test` (Empleado) |",
+            "| Probar rechazos por falta de permiso | `ventas.test` en cualquier `POST` o `PUT`; `supervisor.test` al "
+            "inactivar |", ""]
     return "\n".join(out)

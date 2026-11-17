@@ -25,15 +25,17 @@ NEW_ROLES = {
     f"{PIQ}:stock:read",
     f"{PIQ}:inventory_valuation:read",
 }
+# Spec 026: `empleado` reúne lo que tenían `ventas` e `inventario` (sin valoración); `admin` lee todo el servicio con
+# permisos explícitos; `superadmin` lo cubre con `perm:all:all:all`.
 GROUP_ROLES = {
-    "ventas": {f"{PIQ}:product_overviews:read", f"{PIQ}:inventory_overviews:read", f"{PIQ}:stock:read"},
-    "inventario": {
+    "empleado": {
         f"{PIQ}:product_overviews:read",
         f"{PIQ}:inventory_overviews:read",
         f"{PIQ}:inventory_summary:read",
         f"{PIQ}:low_stock_products:read",
         f"{PIQ}:stock:read",
     },
+    "admin": NEW_ROLES,
 }
 TECHNICAL_ROLES = {
     "perm:commercial-relationship:platform:lookup",
@@ -72,22 +74,15 @@ def test_group_assignments_are_exact(realm) -> None:
         assert groups[group] & NEW_ROLES == expected, group
 
 
-def test_inventario_has_no_valuation_or_new_price_permission(realm) -> None:
-    inventario = _groups(realm)["inventario"]
-    assert f"{PIQ}:inventory_valuation:read" not in inventario
-    assert not any(role.startswith("perm:commercial-relationship:price") for role in inventario)
+def test_empleado_has_no_valuation_permission(realm) -> None:
+    empleado = _groups(realm)["empleado"]
+    assert f"{PIQ}:inventory_valuation:read" not in empleado
 
 
-@pytest.mark.parametrize("group", ["compras", "reportes", "consulta"])
-def test_groups_without_access(realm, group) -> None:
-    assert not (_groups(realm)[group] & NEW_ROLES)
-
-
-def test_wildcard_groups_cover_everything_without_explicit_roles(realm) -> None:
+def test_superadmin_covers_everything_without_explicit_roles(realm) -> None:
     groups = _groups(realm)
-    assert "perm:all:all:all" in groups["administradores"]
-    assert "perm:all:all:read" in groups["supervisores"]
-    assert not (groups["administradores"] & NEW_ROLES) and not (groups["supervisores"] & NEW_ROLES)
+    assert "perm:all:all:all" in groups["superadmin"]
+    assert not (groups["superadmin"] & NEW_ROLES)
 
 
 def test_no_other_client_or_user_received_the_new_roles(realm) -> None:
@@ -124,16 +119,17 @@ def test_technical_client_has_no_valuation_permission(realm) -> None:
 
 
 def test_reserved_valuation_role_is_not_assigned(realm) -> None:
-    """`inventory_valuation:read` queda definido para una spec futura, sin grupo, usuario ni cuenta que lo tenga."""
+    """`inventory_valuation:read` queda definido para una spec futura: ningún usuario ni cuenta lo tiene, y entre los
+    grupos solo `admin` (spec 026: lectura de todo Product Inventory Query); el servicio no expone esa ruta."""
     role = f"{PIQ}:inventory_valuation:read"
-    assert all(role not in roles for roles in _groups(realm).values())
+    assert [name for name, roles in _groups(realm).items() if role in roles] == ["admin"]
     assert all(role not in user.get("clientRoles", {}).get("sio-api", []) for user in realm["users"])
 
 
 def test_inventory_valuation_assignments_are_unchanged(realm) -> None:
-    """Retirar el permiso del cliente técnico no altera los roles de Inventory: el grupo `inventario` y la cuenta de
-    prueba de Inventory lo conservan."""
-    assert "perm:inventory:valuation:read" in _groups(realm)["inventario"]
+    """Retirar el permiso del cliente técnico no altera los roles de Inventory: el grupo `empleado` (antes
+    `inventario`, spec 026) y la cuenta de prueba de Inventory lo conservan."""
+    assert "perm:inventory:valuation:read" in _groups(realm)["empleado"]
     [operator] = [u for u in realm["users"] if u["username"] == "service-account-inventory-test-operator"]
     assert "perm:inventory:valuation:read" in operator["clientRoles"]["sio-api"]
     names = {role["name"] for role in realm["roles"]["client"]["sio-api"]}

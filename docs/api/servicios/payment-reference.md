@@ -28,13 +28,13 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Permiso | Operaciones | Grupos de la plantilla que lo tienen |
 |---|---|---|
-| `perm:payment-reference:global_payment_condition_types:read` | Listar y consultar tipos de condición | `administradores`, `supervisores`, `compras` y `ventas` (vía `perm:payment-reference:all:read`), `reportes`, `consulta` |
-| `perm:payment-reference:global_payment_condition_types:create` | Crear tipo de condición | `administradores`, `supervisores` (`perm:all:all:create`) |
-| `perm:payment-reference:global_payment_condition_types:update` | Actualizar y reactivar tipo de condición | `administradores`, `supervisores` (`perm:all:all:update`) |
-| `perm:payment-reference:global_payment_condition_types:delete` | Inactivar tipo de condición | `administradores` |
+| `perm:payment-reference:global_payment_condition_types:read` | Listar y consultar tipos de condición | `superadmin`, `admin` y `empleado` (vía `perm:payment-reference:all:read`) |
+| `perm:payment-reference:global_payment_condition_types:create` | Crear tipo de condición | `superadmin`, `admin` (`perm:payment-reference:all:create`) |
+| `perm:payment-reference:global_payment_condition_types:update` | Actualizar y reactivar tipo de condición | `superadmin`, `admin` (`perm:payment-reference:all:update`) |
+| `perm:payment-reference:global_payment_condition_types:delete` | Inactivar tipo de condición | Solo `superadmin` |
 | `perm:payment-reference:global_payment_methods:read` | Listar y consultar métodos de pago | Igual que la lectura de tipos |
-| `perm:payment-reference:global_payment_methods:create` | Crear método de pago | `administradores`, `supervisores` |
-| `perm:payment-reference:global_payment_methods:update` | Actualizar método de pago | `administradores`, `supervisores` |
+| `perm:payment-reference:global_payment_methods:create` | Crear método de pago | `superadmin`, `admin` |
+| `perm:payment-reference:global_payment_methods:update` | Actualizar método de pago | `superadmin`, `admin` |
 
 ## Alcance de datos
 

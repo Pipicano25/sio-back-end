@@ -22,7 +22,7 @@ GET /api/v1/group-types/<GT_GROUP_1>/groups?code=0005
 
 **Permiso que exige la URL:** `perm:product-catalog:group-types:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`), `reportes.test` (por `perm:product-catalog:group-types:read`), `consulta.test` (por `perm:product-catalog:group-types:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -56,8 +56,8 @@ POST /api/v1/group-types/<GT_GROUP_1>/groups
 
 **Permiso que exige la URL:** `perm:product-catalog:group-types:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
 - ℹ️ Los grupos se crean dentro de su tipo de grupo: exige `create` sobre `group-types`.
 
 **Por qué se hace así**
@@ -94,8 +94,8 @@ POST /api/v1/products/<PRODUCTO>/group-assignments
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
 - ℹ️ Todo lo que se agrega **dentro** de un producto (categorías, valores, presentaciones, códigos, grupos, imágenes) exige `update` sobre `products`.
 
 **Por qué se hace así**
@@ -124,7 +124,7 @@ GET /api/v1/group-types/<GT_GROUP_2>/groups?code=0016
 
 **Permiso que exige la URL:** `perm:product-catalog:group-types:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`), `reportes.test` (por `perm:product-catalog:group-types:read`), `consulta.test` (por `perm:product-catalog:group-types:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -158,8 +158,8 @@ POST /api/v1/group-types/<GT_GROUP_2>/groups
 
 **Permiso que exige la URL:** `perm:product-catalog:group-types:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
 - ℹ️ Los grupos se crean dentro de su tipo de grupo: exige `create` sobre `group-types`.
 
 **Por qué se hace así**
@@ -196,8 +196,8 @@ POST /api/v1/products/<PRODUCTO>/group-assignments
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
 - ℹ️ Todo lo que se agrega **dentro** de un producto (categorías, valores, presentaciones, códigos, grupos, imágenes) exige `update` sobre `products`.
 
 **Por qué se hace así**
@@ -226,7 +226,7 @@ GET /api/v1/group-types/<GT_GROUP_4>/groups?code=0213
 
 **Permiso que exige la URL:** `perm:product-catalog:group-types:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`), `reportes.test` (por `perm:product-catalog:group-types:read`), `consulta.test` (por `perm:product-catalog:group-types:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -260,8 +260,8 @@ POST /api/v1/group-types/<GT_GROUP_4>/groups
 
 **Permiso que exige la URL:** `perm:product-catalog:group-types:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
 - ℹ️ Los grupos se crean dentro de su tipo de grupo: exige `create` sobre `group-types`.
 
 **Por qué se hace así**
@@ -298,8 +298,8 @@ POST /api/v1/products/<PRODUCTO>/group-assignments
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
 - ℹ️ Todo lo que se agrega **dentro** de un producto (categorías, valores, presentaciones, códigos, grupos, imágenes) exige `update` sobre `products`.
 
 **Por qué se hace así**

@@ -53,14 +53,14 @@ def test_inventory_unavailable_is_503(seller, world, make_draft, fakes) -> None:
 
 def test_readers_with_membership_can_consult_without_branch_assignment(as_user, world, make_draft) -> None:
     draft = make_draft()
-    assert as_user("reportes.test").get(url(world, draft)).status_code == 200
+    assert as_user("lector.sintetico").get(url(world, draft)).status_code == 200
 
 
 def test_permission_membership_and_isolation(as_user, world, make_draft, fakes) -> None:
     draft = make_draft()
-    assert as_user("compras.test").get(url(world, draft)).status_code == 403
+    assert as_user("sin-ventas.sintetico").get(url(world, draft)).status_code == 403
     assert as_user("ventas.test").get(f"{base(world)}/sales/{uuid4()}/availability").status_code == 404
     from tests.conftest import user_sub
 
-    fakes.oc.members.pop((user_sub("reportes.test"), world.company))
-    assert as_user("reportes.test").get(url(world, draft)).status_code == 404
+    fakes.oc.members.pop((user_sub("lector.sintetico"), world.company))
+    assert as_user("lector.sintetico").get(url(world, draft)).status_code == 404

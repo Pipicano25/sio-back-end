@@ -29,11 +29,11 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>` 
 
 | Permiso | Operaciones | Quién lo tiene en la plantilla del realm |
 |---|---|---|
-| `perm:audit:audit-events:create` | Registrar eventos (una y por lote) | Solo cuentas de servicio técnicas de los microservicios. Ningún grupo de usuarios lo tiene salvo `administradores` vía `perm:all:all:all`, pero además la ruta exige que el token sea de una **cuenta de servicio** (ver más abajo) |
-| `perm:audit:audit-events:read` | Consultas de una empresa | `administradores` (`perm:all:all:all`), `supervisores` (`perm:all:all:read`) |
-| `perm:audit:platform-events:read` | Consultas de plataforma | `administradores`, `supervisores` |
+| `perm:audit:audit-events:create` | Registrar eventos (una y por lote) | Solo cuentas de servicio técnicas de los microservicios. Ningún grupo de usuarios lo tiene salvo `superadmin` vía `perm:all:all:all`, pero además la ruta exige que el token sea de una **cuenta de servicio** (ver más abajo) |
+| `perm:audit:audit-events:read` | Consultas de una empresa | `superadmin` (`perm:all:all:all`), `admin` (`perm:audit:audit-events:read`) |
+| `perm:audit:platform-events:read` | Consultas de plataforma | Solo `superadmin` |
 
-Los grupos `compras`, `ventas`, `inventario`, `reportes` y `consulta` **no** tienen permisos de Audit en la plantilla: sus usuarios reciben `403` en todas las consultas.
+El grupo `empleado` **no** tiene permisos de Audit en la plantilla: sus usuarios reciben `403` en todas las consultas.
 
 **Restricción de las rutas de registro:** además del permiso, el token debe pertenecer a una cuenta de servicio de Keycloak. El código comprueba que el token tenga el claim `client_id` y que `preferred_username` sea exactamente `service-account-<client_id>`. Un token de usuario (`sio-web`) recibe `403 AUDIT.FORBIDDEN` aunque tuviera el permiso. El frontend **no debe** registrar eventos: los generan los propios microservicios.
 
@@ -660,7 +660,7 @@ Ejemplo de respuesta `200` (`AuditEventPage`; valores ilustrativos):
 
 | Respuesta | Causa | Qué hacer |
 |---|---|---|
-| `403 AUDIT.FORBIDDEN` en consultas | El grupo del usuario no tiene permisos de Audit (solo administradores y supervisores en la plantilla) | Ocultar el módulo de auditoría a los demás perfiles |
+| `403 AUDIT.FORBIDDEN` en consultas | El grupo del usuario no tiene permisos de Audit (solo `superadmin` y `admin` en la plantilla; la de plataforma, solo `superadmin`) | Ocultar el módulo de auditoría a los demás perfiles |
 | `403 AUDIT.FORBIDDEN` al registrar | Token de usuario en una ruta reservada a cuentas de servicio | No registrar eventos desde el frontend |
 | `403 AUDIT.OPERATIONAL_ACCESS_DENIED` | El token no cubre `perm:operational-context:application_users:read` | Revisar permisos del grupo |
 | `404 AUDIT.NOT_FOUND` | Empresa sin membresía, evento de otra empresa o de plataforma, `audit_id` inexistente | Verificar `company_id` en `/me/operational-context` y usar `id` (no `event_id`) |

@@ -32,10 +32,10 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Consulta | Permiso | Grupos de la plantilla que lo tienen |
 |---|---|---|
-| Productos (`product-overviews`) | `perm:product-inventory-query:product_overviews:read` | `administradores`, `supervisores`, `ventas`, `inventario` |
-| Existencias (`inventory-overviews`) | `perm:product-inventory-query:inventory_overviews:read` | `administradores`, `supervisores`, `ventas`, `inventario` |
-| Bajo mínimo (`low-stock-products`) | `perm:product-inventory-query:low_stock_products:read` **más** `perm:product-inventory-query:stock:read` y `perm:inventory:product-policies:read` | `administradores`, `supervisores`, `inventario` |
-| Resumen (`inventory-summary`) | `perm:product-inventory-query:inventory_summary:read` | `administradores`, `supervisores`, `inventario` |
+| Productos (`product-overviews`) | `perm:product-inventory-query:product_overviews:read` | `superadmin`, `admin`, `empleado` |
+| Existencias (`inventory-overviews`) | `perm:product-inventory-query:inventory_overviews:read` | `superadmin`, `admin`, `empleado` |
+| Bajo mínimo (`low-stock-products`) | `perm:product-inventory-query:low_stock_products:read` **más** `perm:product-inventory-query:stock:read` y `perm:inventory:product-policies:read` | `superadmin`, `admin`, `empleado` |
+| Resumen (`inventory-summary`) | `perm:product-inventory-query:inventory_summary:read` | `superadmin`, `admin`, `empleado` |
 
 ### Bloques opcionales de la respuesta
 
@@ -45,7 +45,7 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 | Existencias | `perm:product-inventory-query:stock:read` | `stock` (total, por sucursal y equivalencias) | `stock_state` |
 | Mínimos | `perm:inventory:product-policies:read` | `stock.branches[].minimum_stock` y `minimum_state` | `minimum_state` |
 
-Sin el permiso de un bloque, el campo se omite o es `null` y la consulta responde `200`. Usar un **filtro** de un bloque no autorizado produce `403 PRODUCT_INVENTORY_QUERY.FORBIDDEN`. El grupo `ventas` ve precios y existencias pero no mínimos; `inventario` ve existencias y mínimos pero no precios (según la plantilla del realm).
+Sin el permiso de un bloque, el campo se omite o es `null` y la consulta responde `200`. Usar un **filtro** de un bloque no autorizado produce `403 PRODUCT_INVENTORY_QUERY.FORBIDDEN`. Los tres grupos (`superadmin`, `admin` y `empleado`) ven precios, existencias y mínimos (según la plantilla del realm).
 
 ## Alcance de datos
 

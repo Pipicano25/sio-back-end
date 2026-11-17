@@ -28,13 +28,15 @@ def call(client, method, url, world):
     return client.get(url)
 
 
-@pytest.mark.parametrize("username", ["admin.test", "supervisor.test", "inventario.test"])
+@pytest.mark.parametrize(
+    "username", ["admin.test", "supervisor.test", "inventario.test", "compras.test", "ventas.test"]
+)
 def test_members_with_read_permission(as_user, world, username) -> None:
     for method, url in read_urls(world):
         assert call(as_user(username), method, url, world).status_code == 200
 
 
-@pytest.mark.parametrize("username", ["compras.test", "ventas.test", "reportes.test", "consulta.test"])
+@pytest.mark.parametrize("username", ["sin-permisos.test"])
 def test_without_read_permission_403(as_user, world, username) -> None:
     for method, url in read_urls(world):
         assert call(as_user(username), method, url, world).status_code == 403

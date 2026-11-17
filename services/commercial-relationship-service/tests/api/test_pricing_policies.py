@@ -207,7 +207,7 @@ def test_cpt19_deactivated_policy_is_final_and_frees_its_presentations(superviso
 def test_validations_on_create(admin, supervisor, company, catalog, fake_catalog) -> None:
     product, presentations = catalog
     inactive = create_price_list(supervisor, company, code="OFF")
-    # Inactivar listas exige `price_lists:delete` (solo administradores).
+    # Inactivar listas exige `price_lists:delete` (SuperAdmin y Admin).
     assert admin.post(f"/api/v1/price-lists/{inactive['id']}/deactivate", json={"version": 1}).status_code == 200
     response = supervisor.post(
         LIST_URL.format(company=company, price_list=inactive["id"]),

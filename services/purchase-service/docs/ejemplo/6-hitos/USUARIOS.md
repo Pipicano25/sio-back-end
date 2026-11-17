@@ -5,10 +5,8 @@
 | `admin.test` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `200` |
 | `supervisor.test` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `200` |
 | `compras.test` | `201` | `201` | `201` | `422` | `201` | `201` | `200` | `409` | `200` | `201` | `201` | `200` |
-| `ventas.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `inventario.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `reportes.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `200` |
-| `consulta.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `200` |
+| `ventas.test` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `200` |
+| `inventario.test` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `200` |
 
 ## Permiso por URL
 
@@ -29,5 +27,5 @@
 
 ## Ejemplos
 
-- Puede: `compras.test` (grupo `compras`, `perm:purchase:all:all`) registra, confirma y anula compras de las sucursales asignadas; `admin.test` también, por comodín; `supervisor.test` registra y confirma, pero no anula (no tiene `delete`); `reportes.test` y `consulta.test` solo consultan.
-- No puede: ninguna cuenta de servicio escribe compras (ni el propio `purchase-service`); `ventas.test` e `inventario.test` reciben `403`; sin asignación a la sucursal, ni el comodín permite escribir.
+- Puede: `compras.test`, `ventas.test` e `inventario.test` (grupo `empleado`, permisos explícitos de `purchase`) registran, confirman y anulan compras de las sucursales asignadas; `supervisor.test` (grupo `admin`, `perm:purchase:all:all`) también, y además ajusta la tasa de impuesto de una línea; `admin.test` (grupo `superadmin`) por comodín.
+- No puede: ninguna cuenta de servicio escribe compras (ni el propio `purchase-service`); el grupo `empleado` no ajusta tasas de línea; sin asignación a la sucursal, ni el comodín permite escribir.

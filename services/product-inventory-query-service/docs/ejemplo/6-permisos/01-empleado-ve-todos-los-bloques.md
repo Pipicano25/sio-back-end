@@ -1,4 +1,4 @@
-# Paso 2. Productos para inventario
+# Paso 1. Productos como empleado
 
 Ejercicio 6: Permisos y bloques visibles.
 
@@ -6,11 +6,11 @@ Ejercicio 6: Permisos y bloques visibles.
 
 `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Loratadina`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `ventas.test`.
 
 ### Por qué
 
-- `inventario.test` no tiene `perm:commercial-relationship:price_list_items:read`: ninguna presentación lleva `price`; sí ve los mínimos.
+- `ventas.test` (grupo `empleado`) tiene `perm:commercial-relationship:price_list_items:read`, `perm:inventory:balances:read` y `perm:inventory:product-policies:read`: ve `price`, existencias, `minimum_stock` y `minimum_state`.
 
 ## Permiso
 
@@ -21,12 +21,10 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` |
-| `compras.test` | No | `403` | no tiene `perm:product-inventory-query:product_overviews:read` |
+| `supervisor.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
+| `compras.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
 | `ventas.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
 | `inventario.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
-| `reportes.test` | No | `403` | no tiene `perm:product-inventory-query:product_overviews:read` |
-| `consulta.test` | No | `403` | no tiene `perm:product-inventory-query:product_overviews:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -94,7 +92,14 @@ Estado `200`.
           "base_quantity_factor": "1.0000",
           "has_image": false,
           "asset_id": null,
-          "image_url": null
+          "image_url": null,
+          "price": {
+            "price_list_id": null,
+            "price_list_item_id": null,
+            "unit_price": null,
+            "currency_code": null,
+            "resolution": "NO_PRICE_IN_LIST"
+          }
         },
         {
           "company_product_presentation_id": "d2280000-0000-4000-8000-000000000062",
@@ -108,7 +113,14 @@ Estado `200`.
           "base_quantity_factor": "10.0000",
           "has_image": false,
           "asset_id": null,
-          "image_url": null
+          "image_url": null,
+          "price": {
+            "price_list_id": "d22c0000-0000-4000-8000-000000000003",
+            "price_list_item_id": "d2290000-0000-4000-8000-000000000062",
+            "unit_price": "8500.00",
+            "currency_code": "COP",
+            "resolution": "PRICE_LIST_ITEM"
+          }
         }
       ],
       "stock": {

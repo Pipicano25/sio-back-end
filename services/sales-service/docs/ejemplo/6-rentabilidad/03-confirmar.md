@@ -21,7 +21,7 @@ Cabeceras: `Idempotency-Key: rentabilidad-0001`.
 ### Por qué
 
 - Inventory descuenta 3 unidades a costo FIFO 1000.
-- `ventas.test`, `reportes.test` y `consulta.test` no tienen `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
+- `ventas.test`, `compras.test` e `inventario.test` (grupo `empleado`) no tienen `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
 
 ## Permiso
 
@@ -32,12 +32,10 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:all:all:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | No | `403` | no tiene `perm:sales:sales:update` |
+| `supervisor.test` | Sí | `—` | tiene `perm:sales:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `compras.test` | Sí | `—` | tiene `perm:sales:all:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
 | `ventas.test` | Sí | `200` | tiene `perm:sales:all:update` y asignación a la sucursal |
-| `inventario.test` | No | `403` | no tiene `perm:sales:sales:update` |
-| `reportes.test` | No | `403` | no tiene `perm:sales:sales:update` |
-| `consulta.test` | No | `403` | no tiene `perm:sales:sales:update` |
+| `inventario.test` | Sí | `—` | tiene `perm:sales:all:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

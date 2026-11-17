@@ -26,18 +26,18 @@ Product Catalog es el **catálogo global de productos** de SIO, compartido por t
 
 ## Autenticación y permisos
 
-Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`. Permisos `perm:product-catalog:{recurso}:{accion}`. Este servicio usa la acción **`deactivate`** (no `delete`) para inactivar y reactivar; los comodines `perm:all:all:read|create|update` de `supervisores` **no** la cubren.
+Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`. Permisos `perm:product-catalog:{recurso}:{accion}`. Este servicio usa la acción **`deactivate`** (no `delete`) para inactivar y reactivar; los comodines `perm:product-catalog:all:read|create|update` del grupo `admin` **no** la cubren: inactivar y reactivar es solo de `superadmin`.
 
 | Recurso | Operaciones | Acciones usadas | Grupos con lectura (plantilla) | Grupos con escritura |
 |---|---|---|---|---|
-| `units-of-measure` | 3–9 | `read`, `create`, `update`, `deactivate` | Todos (`compras`, `ventas`, `inventario` vía `perm:product-catalog:all:read`; `reportes`, `consulta` por recurso) | `administradores`; `supervisores` solo `create` y `update` |
+| `units-of-measure` | 3–9 | `read`, `create`, `update`, `deactivate` | Todos (`admin` y `empleado` vía `perm:product-catalog:all:read`) | `superadmin`; `admin` solo `create` y `update` |
 | `packaging-types` | 10–15 | ídem | Todos | ídem |
 | `brands` | 16–21 | ídem | Todos | ídem |
 | `categories` | 22–35 | `read`, `update` (crear, modificar, asociar atributos), `deactivate` | Todos | ídem |
 | `attribute-definitions` | 36–46 | `read`, `update` (crear, opciones), `deactivate` | Todos | ídem |
-| `products` | 47–58, 59–62, 63–65, 66–72, 73–77, 78–81, 92–98 (subrecursos) | `read`, `create`, `update`, `deactivate`, `delete` (solo borrar un valor de atributo) | Todos | `administradores`; `supervisores` sin `deactivate` ni `delete` |
+| `products` | 47–58, 59–62, 63–65, 66–72, 73–77, 78–81, 92–98 (subrecursos) | `read`, `create`, `update`, `deactivate`, `delete` (solo borrar un valor de atributo) | Todos | `superadmin`; `admin` sin `deactivate` ni `delete` |
 | `group-types` | 82–91 (tipos y grupos) | `read`, `create`, `update`, `deactivate` | Todos | ídem |
-| `first-use` | 99–100 | `register` (cuentas técnicas), `register-manual` (administradores) | — | Cuenta técnica de Commercial Relationship (`register`); `administradores` (`register-manual` vía `perm:all:all:all`) |
+| `first-use` | 99–100 | `register` (cuentas técnicas), `register-manual` (`superadmin` y `admin`) | — | Cuenta técnica de Commercial Relationship (`register`); `superadmin` (`perm:all:all:all`) y `admin` (`register-manual` explícito) |
 
 Los subrecursos de producto (categorías, atributos, presentaciones, identificadores, grupos, activos) usan el recurso `products`: crear o modificar exige `products:update`; inactivar o reactivar, `products:deactivate`.
 
@@ -7448,7 +7448,7 @@ Códigos HTTP:
 | Alcance | Global (catálogo compartido por todas las empresas) |
 | Cabeceras | `Authorization`, `Content-Type: application/json` |
 
-Notas: Permiso `first-use:register-manual` (administradores). Mismo cuerpo; no exige elegibilidad. Tras el primer uso quedan bloqueadas la unidad base del producto y las cantidades de la presentación
+Notas: Permiso `first-use:register-manual` (grupos `superadmin` y `admin`). Mismo cuerpo; no exige elegibilidad. Tras el primer uso quedan bloqueadas la unidad base del producto y las cantidades de la presentación
 
 Parámetros:
 
@@ -7500,7 +7500,7 @@ Códigos HTTP:
 
 | Respuesta | Causa | Qué hacer |
 |---|---|---|
-| `403 PRODUCT_CATALOG.FORBIDDEN` en inactivar/reactivar | Falta la acción `deactivate` (los supervisores no la tienen por comodín) | Solo administradores |
+| `403 PRODUCT_CATALOG.FORBIDDEN` en inactivar/reactivar | Falta la acción `deactivate` (el grupo `admin` no la tiene por comodín) | Solo `superadmin` |
 | `409 PRODUCT_CATALOG.DUPLICATE_CODE` / `CODE_USED_BY_*` | Código repetido | Elegir otro código |
 | `409 …IDENTIFIER_COLLISION` | El código de barras ya pertenece a otro producto o presentación | Buscar con la operación 52 |
 | `422 …INVALID_GTIN_FORMAT` / `INVALID_CHECK_DIGIT` | GTIN/EAN/UPC inválido | Verificar el dígito de control |

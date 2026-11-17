@@ -23,8 +23,8 @@ POST /api/v1/organization-identities/<ORG_EJEMPLO>/deactivate
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:delete`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `delete`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
-- ℹ️ Inactivar exige `delete`; reactivar exige `update`. Por eso `supervisor.test` puede reactivar pero no inactivar.
+- ❌ **No pueden (responde `403`):** `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
+- ℹ️ Inactivar exige `delete`; reactivar exige `update`. Por eso `supervisor.test` (Admin) y los usuarios del grupo `empleado` pueden reactivar pero no inactivar.
 
 **Por qué se hace así**
 
@@ -59,8 +59,8 @@ POST /api/v1/organization-identities/<ORG_EJEMPLO>/deactivate
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:delete`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `delete`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
-- ℹ️ Inactivar exige `delete`; reactivar exige `update`. Por eso `supervisor.test` puede reactivar pero no inactivar.
+- ❌ **No pueden (responde `403`):** `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
+- ℹ️ Inactivar exige `delete`; reactivar exige `update`. Por eso `supervisor.test` (Admin) y los usuarios del grupo `empleado` pueden reactivar pero no inactivar.
 
 **Por qué se hace así**
 
@@ -89,12 +89,11 @@ POST /api/v1/organization-identities/<ORG_EJEMPLO>/reactivate
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `update`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:update`), `compras.test` (por `perm:party-identity:organization_identities:update`), `ventas.test` (por `perm:party-identity:organization_identities:update`), `inventario.test` (por `perm:party-identity:organization_identities:update`)
 
 **Por qué se hace así**
 
-- Reactivar exige `update`: por eso `supervisor.test` puede reactivar aunque no pueda inactivar.
+- Reactivar exige `update`: por eso `supervisor.test` (Admin) y el grupo `empleado` pueden reactivar aunque no puedan inactivar.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 
@@ -118,8 +117,7 @@ GET /api/v1/organization-identities/<ORG_EJEMPLO>
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `reportes.test` (por `perm:party-identity:organization_identities:read`), `consulta.test` (por `perm:party-identity:organization_identities:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `inventario.test` (por `perm:party-identity:organization_identities:read`)
 
 **Por qué se hace así**
 

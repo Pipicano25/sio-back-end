@@ -100,7 +100,7 @@ def test_other_company_and_permissions(as_user, as_token, service_token, world, 
     assert as_user("inventario.test").get(f"{other}/inventory-counts/{count}").status_code == 404
     assert as_user("inventario.test").get(f"{base(world.company)}/inventory-adjustments/{uuid4()}").status_code == 404
 
-    for username in ("compras.test", "ventas.test", "reportes.test", "consulta.test"):
+    for username in ("sin-permisos.test",):
         client = as_user(username)
         assert client.get(f"{base(world.company)}/inventory-adjustments").status_code == 403
         assert client.get(f"{base(world.company)}/inventory-counts").status_code == 403

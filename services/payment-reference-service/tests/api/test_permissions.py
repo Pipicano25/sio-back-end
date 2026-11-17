@@ -104,7 +104,7 @@ def test_payment_methods_with_their_specific_read_permission(as_roles):
 
 
 def test_global_update_wildcard_cannot_deactivate(as_roles, condition_type):
-    """`perm:all:all:update` (supervisores) no concede `delete`: no puede inactivar (FR-004)."""
+    """`perm:all:all:update` (comodín de actualización) no concede `delete`: no puede inactivar (FR-004)."""
     supervisor = as_roles("perm:all:all:read", "perm:all:all:create", "perm:all:all:update")
 
     response = supervisor.post(

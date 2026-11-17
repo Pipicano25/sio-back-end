@@ -23,7 +23,7 @@ POST /api/v1/identification-type-rules/<REGLA_PA_V2>/deactivate
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:delete`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `delete`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `delete`
 - ℹ️ Retirar una regla (`POST .../deactivate`) exige `delete`, aunque no la elimina: queda histórica.
 
 **Por qué se hace así**
@@ -56,7 +56,7 @@ POST /api/v1/identification-type-rules/<REGLA_PA_V2>/deactivate
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:delete`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `delete`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `delete`
 - ℹ️ Retirar una regla (`POST .../deactivate`) exige `delete`, aunque no la elimina: queda histórica.
 
 **Por qué se hace así**

@@ -23,7 +23,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:all:all`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:delete`), `ventas.test` (por `perm:purchase:purchases:delete`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:delete`)
 
 **Respuesta esperada:** `200`
 
@@ -50,7 +50,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:delete`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:delete`), `ventas.test` (por `perm:sales:all:delete`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:delete`)
 
 **Respuesta esperada:** `200`
 
@@ -77,7 +77,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:delete`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:delete`), `ventas.test` (por `perm:sales:all:delete`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:delete`)
 
 **Respuesta esperada:** `200`
 
@@ -104,7 +104,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:all:all`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:delete`), `ventas.test` (por `perm:purchase:purchases:delete`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:delete`)
 
 **Respuesta esperada:** `200`
 
@@ -122,7 +122,7 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_3>/operation
 
 **Permiso que exige la URL:** `perm:sales:sale_operations:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:sales:sale_operations:read`), `reportes.test` (por `perm:sales:sale_operations:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:read`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:read`)
 
 **Por qué se hace así**
 
@@ -140,7 +140,7 @@ GET http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases/<COMPRA_3>/oper
 
 **Permiso que exige la URL:** `perm:purchase:purchase_operations:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:all:all`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:purchase:purchase_operations:read`), `reportes.test` (por `perm:purchase:purchase_operations:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchase_operations:read`), `ventas.test` (por `perm:purchase:purchase_operations:read`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchase_operations:read`)
 
 **Por qué se hace así**
 

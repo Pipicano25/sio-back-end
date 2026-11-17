@@ -35,12 +35,10 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:all:all:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | No | `403` | no tiene `perm:sales:sale_sequences:create` |
+| `supervisor.test` | Sí | `—` | tiene `perm:sales:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `compras.test` | Sí | `—` | tiene `perm:sales:all:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
 | `ventas.test` | Sí | `409` | tiene `perm:sales:all:create` y asignación a la sucursal |
-| `inventario.test` | No | `403` | no tiene `perm:sales:sale_sequences:create` |
-| `reportes.test` | No | `403` | no tiene `perm:sales:sale_sequences:create` |
-| `consulta.test` | No | `403` | no tiene `perm:sales:sale_sequences:create` |
+| `inventario.test` | Sí | `—` | tiene `perm:sales:all:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

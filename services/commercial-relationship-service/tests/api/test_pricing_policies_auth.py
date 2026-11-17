@@ -44,7 +44,7 @@ def _calls(company, public, policy):
     ]
 
 
-@pytest.mark.parametrize("username", ["ventas.test", "compras.test", "consulta.test", "reportes.test", "inventario.test"])
+@pytest.mark.parametrize("username", ["ventas.test", "compras.test", "inventario.test"])
 def test_non_supervisors_are_forbidden_without_revealing_the_permission(as_user, company, policy, username) -> None:
     client = as_user(username)
     public, created = policy

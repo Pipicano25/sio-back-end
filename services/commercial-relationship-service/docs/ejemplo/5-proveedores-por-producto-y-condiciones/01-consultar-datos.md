@@ -20,7 +20,7 @@ GET http://localhost:8004/api/v1/me/operational-context
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`), `reportes.test` (por `perm:operational-context:application_users:read`), `consulta.test` (por `perm:operational-context:application_users:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`)
 
 **Por qué se hace así**
 
@@ -56,7 +56,7 @@ GET http://localhost:8003/api/v1/products/by-identifier/7707355056876
 
 **Permiso que exige la URL:** `perm:product-catalog:products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`), `reportes.test` (por `perm:product-catalog:products:read`), `consulta.test` (por `perm:product-catalog:products:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -90,7 +90,7 @@ GET http://localhost:8003/api/v1/products/<GP_ACETAMINOFEN>/presentations
 
 **Permiso que exige la URL:** `perm:product-catalog:products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`), `reportes.test` (por `perm:product-catalog:products:read`), `consulta.test` (por `perm:product-catalog:products:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -123,7 +123,7 @@ GET http://localhost:8003/api/v1/products/<GP_ACETAMINOFEN>
 
 **Permiso que exige la URL:** `perm:product-catalog:products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`), `reportes.test` (por `perm:product-catalog:products:read`), `consulta.test` (por `perm:product-catalog:products:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -151,8 +151,7 @@ GET http://localhost:8002/api/v1/organization-identities?search=<NIT>
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `reportes.test` (por `perm:party-identity:organization_identities:read`), `consulta.test` (por `perm:party-identity:organization_identities:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `organization_identities` de `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `inventario.test` (por `perm:party-identity:organization_identities:read`)
 
 **Por qué se hace así**
 
@@ -190,8 +189,7 @@ GET http://localhost:8105/global-payment-condition-types?code=CASH
 
 **Permiso que exige la URL:** `perm:payment-reference:global_payment_condition_types:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `reportes.test` (por `perm:payment-reference:global_payment_condition_types:read`), `consulta.test` (por `perm:payment-reference:global_payment_condition_types:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `global_payment_condition_types` de `payment-reference`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:payment-reference:all:read`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `inventario.test` (por `perm:payment-reference:all:read`)
 
 **Por qué se hace así**
 
@@ -224,8 +222,7 @@ GET http://localhost:8105/global-payment-condition-types?code=CREDIT
 
 **Permiso que exige la URL:** `perm:payment-reference:global_payment_condition_types:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `reportes.test` (por `perm:payment-reference:global_payment_condition_types:read`), `consulta.test` (por `perm:payment-reference:global_payment_condition_types:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `global_payment_condition_types` de `payment-reference`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:payment-reference:all:read`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `inventario.test` (por `perm:payment-reference:all:read`)
 
 **Por qué se hace así**
 

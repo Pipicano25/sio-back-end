@@ -10,19 +10,17 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 - **Lectura técnica** (`perm:inventory:platform:lookup`): una cuenta de servicio con lectura y esta capacidad consulta sin membresía (Sales antes de confirmar una venta).
 - **Ajustes y conteos** (`perm:inventory:adjustments:create`, `perm:inventory:counts:create`, 013) exigen un **usuario humano** miembro `ACTIVE` y con asignación `ACTIVE` a la sucursal; una cuenta de servicio recibe `403` aunque tenga el permiso. Las **políticas** (`perm:inventory:company-policies:update`, `perm:inventory:product-policies:update`) exigen un usuario humano miembro de la empresa.
 - **Lecturas de 013** (`adjustments:read`, `counts:read`, `company-policies:read`, `product-policies:read`, `valuation:read`): mismo alcance por empresa que las consultas de stock.
-- El grupo `inventario` tiene las lecturas de inventario y registra ajustes y conteos; `administradores` y `supervisores` lo obtienen todo por comodín (las políticas solo ellos). Ningún grupo puede aplicar operaciones.
+- El grupo `empleado` tiene las lecturas de inventario y registra ajustes y conteos; `superadmin` lo obtiene todo por comodín y `admin` por permisos explícitos (las políticas solo ellos dos). Ningún grupo puede aplicar operaciones.
 
 ## Usuarios de prueba
 
 | Usuario | Grupo | Stock y kardex | Ajustes y conteos | Políticas | Valoración | Aplicar operaciones |
 | --- | --- | --- | --- | --- | --- | --- |
-| `admin.test` | `administradores` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
-| `supervisor.test` | `supervisores` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
-| `compras.test` | `compras` | No | No | No | No | No (no es cuenta de servicio) |
-| `ventas.test` | `ventas` | No | No | No | No | No (no es cuenta de servicio) |
-| `inventario.test` | `inventario` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
-| `reportes.test` | `reportes` | No | No | No | No | No (no es cuenta de servicio) |
-| `consulta.test` | `consulta` | No | No | No | No | No (no es cuenta de servicio) |
+| `admin.test` | `superadmin` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
+| `supervisor.test` | `admin` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
+| `compras.test` | `empleado` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
+| `ventas.test` | `empleado` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
+| `inventario.test` | `empleado` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
 | `inventory-test-operator` | cuenta de servicio | Sí (`platform:lookup`) | No (no es usuario humano) | No (no es usuario humano) | Sí (`platform:lookup`) | Sí (entradas y salidas) |
 
 ## Cómo obtener los tokens

@@ -123,4 +123,4 @@ def test_isolation_and_permissions(as_user, admin, company, other_company, world
     line = [_line(world, "p1", "box")]
     assert _resolve(admin, other_company, line).status_code == 404
     assert _resolve(as_user("ventas.test"), company, line).status_code == 200
-    assert _resolve(as_user("inventario.test"), company, line).status_code == 403
+    assert _resolve(as_user("sin-permisos.test"), company, line).status_code == 403

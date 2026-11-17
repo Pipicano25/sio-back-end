@@ -2,7 +2,7 @@
 
 Aislamiento (`contracts/e2e-scenarios.md` §3, research R-11): cada lectura o escritura la hace un usuario
 **con** el permiso y **sin** membresía en la empresa consultada, para que el rechazo se deba al
-aislamiento: `reportes.test` e `inventario.test` (solo en B) sobre A y `admin.test` (solo en A) sobre
+aislamiento: `inventario.test` (grupo `empleado`, solo en B) sobre A y `admin.test` (solo en A) sobre
 la auditoría de B. Códigos de §3 (completados en T042): `404` en todos los servicios.
 
 Permisos (§4): S-01..S-07. Ningún caso cambia datos.
@@ -23,27 +23,27 @@ def _iso(step_id: str, title: str, user: str, permission: str, service: str, met
 
 
 ISOLATION = [
-    _iso("I-01.empresa", "reportes.test consulta la empresa A", "reportes.test", "perm:operational-context:companies:read",
+    _iso("I-01.empresa", "inventario.test consulta la empresa A", "inventario.test", "perm:operational-context:companies:read",
          "operational-context", "GET", "/companies/{empresa_a}"),
-    _iso("I-01.sucursales", "reportes.test consulta las sucursales de A", "reportes.test", "perm:operational-context:branches:read",
+    _iso("I-01.sucursales", "inventario.test consulta las sucursales de A", "inventario.test", "perm:operational-context:branches:read",
          "operational-context", "GET", "/companies/{empresa_a}/branches"),
-    _iso("I-01.usuarios", "reportes.test consulta los usuarios operativos de A", "reportes.test", "perm:operational-context:application_users:read",
+    _iso("I-01.usuarios", "inventario.test consulta los usuarios operativos de A", "inventario.test", "perm:operational-context:application_users:read",
          "operational-context", "GET", "/companies/{empresa_a}/application-users"),
-    _iso("I-02.clientes", "reportes.test consulta los clientes de A", "reportes.test", "perm:commercial-relationship:company_customers:read",
+    _iso("I-02.clientes", "inventario.test consulta los clientes de A", "inventario.test", "perm:commercial-relationship:company_customers:read",
          "commercial-relationship", "GET", "/companies/{empresa_a}/company-customers"),
-    _iso("I-02.proveedores", "reportes.test consulta los proveedores de A", "reportes.test", "perm:commercial-relationship:company_suppliers:read",
+    _iso("I-02.proveedores", "inventario.test consulta los proveedores de A", "inventario.test", "perm:commercial-relationship:company_suppliers:read",
          "commercial-relationship", "GET", "/companies/{empresa_a}/company-suppliers"),
-    _iso("I-02.productos", "reportes.test consulta los productos de A", "reportes.test", "perm:commercial-relationship:company_products:read",
+    _iso("I-02.productos", "inventario.test consulta los productos de A", "inventario.test", "perm:commercial-relationship:company_products:read",
          "commercial-relationship", "GET", "/companies/{empresa_a}/company-products"),
-    _iso("I-02.listas", "reportes.test consulta las listas de precios de A", "reportes.test", "perm:commercial-relationship:price_lists:read",
+    _iso("I-02.listas", "inventario.test consulta las listas de precios de A", "inventario.test", "perm:commercial-relationship:price_lists:read",
          "commercial-relationship", "GET", "/companies/{empresa_a}/price-lists"),
-    _iso("I-03.compras", "reportes.test consulta las compras de A", "reportes.test", "perm:purchase:purchases:read",
+    _iso("I-03.compras", "inventario.test consulta las compras de A", "inventario.test", "perm:purchase:purchases:read",
          "purchase", "GET", "/companies/{empresa_a}/purchases"),
-    _iso("I-03.compra", "reportes.test consulta la compra P1", "reportes.test", "perm:purchase:purchases:read",
+    _iso("I-03.compra", "inventario.test consulta la compra P1", "inventario.test", "perm:purchase:purchases:read",
          "purchase", "GET", "/companies/{empresa_a}/purchases/{compra_1}"),
-    _iso("I-04.ventas", "reportes.test consulta las ventas de A", "reportes.test", "perm:sales:sales:read",
+    _iso("I-04.ventas", "inventario.test consulta las ventas de A", "inventario.test", "perm:sales:sales:read",
          "sales", "GET", "/companies/{empresa_a}/sales"),
-    _iso("I-04.venta", "reportes.test consulta la venta V2", "reportes.test", "perm:sales:sales:read",
+    _iso("I-04.venta", "inventario.test consulta la venta V2", "inventario.test", "perm:sales:sales:read",
          "sales", "GET", "/companies/{empresa_a}/sales/{venta_2}"),
     _iso("I-05.saldos", "inventario.test consulta los saldos de A1", "inventario.test", "perm:inventory:balances:read",
          "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/balances"),
@@ -81,14 +81,14 @@ def _perm(step_id: str, title: str, user: str, permission: str, service: str, me
 
 
 PERMISSIONS = [
-    _perm("S-01", "ventas.test intenta registrar una compra en A", "ventas.test", "perm:purchase:purchases:create",
-          "purchase", "POST", "/companies/{empresa_a}/purchases", 403, PURCHASE_BODY),
-    _perm("S-02", "compras.test intenta registrar una venta en A", "compras.test", "perm:sales:sales:create",
-          "sales", "POST", "/companies/{empresa_a}/sales", 403, SALE_BODY),
-    _perm("S-03.compra", "consulta.test intenta registrar una compra en A", "consulta.test", "perm:purchase:purchases:create",
-          "purchase", "POST", "/companies/{empresa_a}/purchases", 403, PURCHASE_BODY),
-    _perm("S-03.venta", "consulta.test intenta registrar una venta en A", "consulta.test", "perm:sales:sales:create",
-          "sales", "POST", "/companies/{empresa_a}/sales", 403, SALE_BODY),
+    # Spec 026: ventas.test, compras.test e inventario.test son del mismo grupo (`empleado`), así que los rechazos se
+    # observan entre grupos. Todos son POST que el servicio rechaza antes de leer el cuerpo: ningún caso cambia datos.
+    _perm("S-01", "ventas.test (Empleado) intenta crear una empresa", "ventas.test", "perm:operational-context:companies:create",
+          "operational-context", "POST", "/companies", 403, {}),
+    _perm("S-02", "compras.test (Empleado) intenta crear una categoría del catálogo global", "compras.test",
+          "perm:product-catalog:categories:create", "product-catalog", "POST", "/categories", 403, {}),
+    _perm("S-03", "supervisor.test (Admin) intenta crear una empresa", "supervisor.test",
+          "perm:operational-context:platform:administer", "operational-context", "POST", "/companies", 403, {}),
     _perm("S-04.crear", "La cuenta de servicio sales-service intenta registrar una venta", "service-account-sales-service",
           "perm:sales:sales:create", "sales", "POST", "/companies/{empresa_a}/sales", 403, SALE_BODY),
     _perm("S-04.confirmar", "La cuenta de servicio sales-service intenta confirmar la venta V4", "service-account-sales-service",

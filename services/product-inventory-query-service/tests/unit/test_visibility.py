@@ -25,9 +25,9 @@ def claims(*roles: str) -> TokenClaims:
     [
         ("admin.test", {Block.PRICES, Block.STOCK, Block.MINIMUMS}),
         ("supervisor.test", {Block.PRICES, Block.STOCK, Block.MINIMUMS}),
-        ("ventas.test", {Block.PRICES, Block.STOCK}),
-        ("inventario.test", {Block.STOCK, Block.MINIMUMS}),
-        ("compras.test", set()),
+        ("vendedor.sintetico", {Block.PRICES, Block.STOCK}),
+        ("bodeguero.sintetico", {Block.STOCK, Block.MINIMUMS}),
+        ("sin-acceso.sintetico", set()),
     ],
 )
 def test_blocks_per_test_user(user, expected) -> None:
@@ -47,7 +47,7 @@ def test_there_is_no_valuation_block() -> None:
 
 
 def test_filters_of_invisible_blocks_are_403() -> None:
-    sales = visible_blocks(claims(*USER_ROLES["ventas.test"]))
+    sales = visible_blocks(claims(*USER_ROLES["vendedor.sintetico"]))
     require_filter_blocks({"stock_state", "search"}, sales)
     with pytest.raises(ForbiddenFilterError):
         require_filter_blocks({"minimum_state"}, sales)

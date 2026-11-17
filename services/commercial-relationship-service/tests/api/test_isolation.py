@@ -96,10 +96,7 @@ def test_non_member_gets_404_like_missing_uuid(as_user, company, fake_oc, fake_c
 
     response = _call(client, route, _url(route, company, resources), {"basura": True})
 
-    if route.action == "delete" and username == "supervisor.test":
-        assert response.status_code == 403  # sin permiso, antes que el alcance
-        return
-
+    # Spec 026: `supervisor.test` (grupo `admin`) también tiene `delete`; sin membresía recibe el mismo `404`.
     assert response.status_code == 404, response.text
     missing = _call(client, route, _url(route, company, resources, missing=True), {"basura": True})
     assert missing.status_code == 404
@@ -116,8 +113,8 @@ def test_non_member_gets_404_like_missing_uuid(as_user, company, fake_oc, fake_c
 
 
 def test_batch_lookup_hides_foreign_products(as_user, company, fake_oc, resources):
-    fake_oc.deactivate_member(user_sub("consulta.test"), company)
-    response = as_user("consulta.test").post(
+    fake_oc.deactivate_member(user_sub("supervisor.test"), company)
+    response = as_user("supervisor.test").post(
         "/api/v1/company-products/batch-lookup", json={"ids": [resources["product"]["id"]]}
     )
     assert response.status_code == 200
@@ -131,7 +128,7 @@ def test_batch_lookup_hides_foreign_products(as_user, company, fake_oc, resource
 @pytest.mark.parametrize("route", [r for r in ISOLATED if not r.write], ids=route_id)
 def test_inactive_company_allows_reads(as_user, company, fake_oc, resources, route):
     fake_oc.inactive_companies.add(company)
-    response = _call(as_user("consulta.test"), route, _url(route, company, resources), None, resources)
+    response = _call(as_user("supervisor.test"), route, _url(route, company, resources), None, resources)
     assert response.status_code == 200, response.text
 
 
@@ -165,12 +162,12 @@ def test_operational_context_forbidden_is_403(as_user, company, fake_oc, resourc
 
 
 def test_membership_is_evaluated_on_every_request(as_user, company, fake_oc, resources):
-    client = as_user("consulta.test")
+    client = as_user("supervisor.test")
     url = f"/api/v1/company-products/{resources['product']['id']}"
     assert client.get(url).status_code == 200
-    fake_oc.deactivate_member(user_sub("consulta.test"), company)
+    fake_oc.deactivate_member(user_sub("supervisor.test"), company)
     assert client.get(url).status_code == 404
-    fake_oc.add_member(user_sub("consulta.test"), company)
+    fake_oc.add_member(user_sub("supervisor.test"), company)
     assert client.get(url).status_code == 200
 
 

@@ -22,12 +22,10 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` |
-| `compras.test` | No | `403` | no tiene `perm:product-inventory-query:product_overviews:read` |
+| `supervisor.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
+| `compras.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
 | `ventas.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
 | `inventario.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
-| `reportes.test` | No | `403` | no tiene `perm:product-inventory-query:product_overviews:read` |
-| `consulta.test` | No | `403` | no tiene `perm:product-inventory-query:product_overviews:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -127,17 +125,23 @@ Estado `200`.
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000001",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           },
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000002",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           },
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000003",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           }
         ],
         "equivalences": [
@@ -226,17 +230,23 @@ Estado `200`.
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000001",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           },
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000002",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           },
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000003",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           }
         ],
         "equivalences": [

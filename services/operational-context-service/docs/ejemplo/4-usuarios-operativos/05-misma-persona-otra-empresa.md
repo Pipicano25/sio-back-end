@@ -26,8 +26,8 @@ POST /api/v1/companies/<EMPRESA_B>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `operational-context` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `create`
 - ℹ️ Para registrar un usuario operativo el token debe poder leer `person_identities` en Party Identity (el servicio valida la persona con ese token); la cuenta de Keycloak la verifica el servicio con su propia identidad técnica.
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
@@ -65,8 +65,8 @@ POST /api/v1/application-users/<USR_COMPRADOR_B>/deactivate
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `operational-context` solo tienen `read`; les falta `delete`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:delete`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `delete`
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
@@ -90,7 +90,7 @@ GET /api/v1/application-users/<USR_COMPRADOR_A>
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`), `reportes.test` (por `perm:operational-context:application_users:read`), `consulta.test` (por `perm:operational-context:application_users:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`)
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
@@ -121,8 +121,8 @@ POST /api/v1/application-users/<USR_COMPRADOR_B>/reactivate
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `operational-context` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `update`
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**

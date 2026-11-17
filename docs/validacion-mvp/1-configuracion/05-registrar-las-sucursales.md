@@ -24,7 +24,7 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/branches
 
 **Permiso que exige la URL:** `perm:operational-context:branches:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Por qué se hace así**
 
@@ -56,7 +56,7 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_B>/branches
 
 **Permiso que exige la URL:** `perm:operational-context:branches:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Por qué se hace así**
 

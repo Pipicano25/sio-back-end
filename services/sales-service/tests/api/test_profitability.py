@@ -62,8 +62,8 @@ def test_without_permission_every_sale_response_omits_profitability(seller, worl
 def test_with_permission_every_sale_response_includes_profitability(supervisor, world, fakes, make_sequence, make_draft, confirm, cancel) -> None:
     make_sequence()
     responses = responses_for(supervisor, world, fakes, make_draft, confirm, cancel, "supervisor.test")
-    # La matriz del realm no da `delete` a supervisores: borrar líneas y anular son 403 para ellos.
-    assert responses["delete_line"].status_code == responses["cancel"].status_code == 403
+    # Spec 026: el grupo `admin` tiene `perm:sales:all:all`, así que también borra líneas y anula.
+    assert responses["delete_line"].status_code in (200, 204) and responses["cancel"].status_code == 200
     for name in ("create", "update", "add_line", "update_line", "confirm", "confirm_replay", "get"):
         body = responses[name].json()
         assert "has_unknown_cost" in body, name
@@ -74,7 +74,7 @@ def test_with_permission_every_sale_response_includes_profitability(supervisor, 
     assert confirmed_line["cost_known"] is True and confirmed_line["gross_margin_amount"] is not None
 
 
-@pytest.mark.parametrize("username", ["reportes.test", "consulta.test"])
+@pytest.mark.parametrize("username", ["lector.sintetico", "compras.test"])
 def test_readers_do_not_see_profitability(as_user, seller, world, make_sequence, make_draft, confirm, username) -> None:
     make_sequence()
     draft = make_draft()

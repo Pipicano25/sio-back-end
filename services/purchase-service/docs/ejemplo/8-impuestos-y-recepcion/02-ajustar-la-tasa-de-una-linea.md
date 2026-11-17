@@ -1,4 +1,4 @@
-# Paso 2. Agregar una línea con la tasa de la factura (supervisor)
+# Paso 2. Agregar una línea con la tasa de la factura (Admin)
 
 Ejercicio 8: Impuesto de compra por tasa.
 
@@ -36,12 +36,10 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `201` | tiene `perm:all:all:create` y asignación a la sucursal |
+| `supervisor.test` | Sí | `201` | tiene `perm:purchase:all:all` y asignación a la sucursal |
 | `compras.test` | Sí | `—` | tiene `perm:purchase:purchase_details:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `ventas.test` | No | `403` | no tiene `perm:purchase:purchase_details:create` |
-| `inventario.test` | No | `403` | no tiene `perm:purchase:purchase_details:create` |
-| `reportes.test` | No | `403` | no tiene `perm:purchase:purchase_details:create` |
-| `consulta.test` | No | `403` | no tiene `perm:purchase:purchase_details:create` |
+| `ventas.test` | Sí | `—` | tiene `perm:purchase:purchase_details:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `inventario.test` | Sí | `—` | tiene `perm:purchase:purchase_details:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

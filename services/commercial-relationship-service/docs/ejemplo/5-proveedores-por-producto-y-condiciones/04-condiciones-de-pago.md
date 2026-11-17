@@ -25,8 +25,8 @@ POST /api/v1/companies/<EMPRESA>/supplier-payment-conditions
 
 **Permiso que exige la URL:** `perm:commercial-relationship:supplier_payment_conditions:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `supplier_payment_conditions` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `supplier_payment_conditions` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `supplier_payment_conditions` solo tienen `read`; les falta `create`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
@@ -68,8 +68,8 @@ POST /api/v1/companies/<EMPRESA>/supplier-payment-conditions
 
 **Permiso que exige la URL:** `perm:commercial-relationship:supplier_payment_conditions:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `supplier_payment_conditions` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `supplier_payment_conditions` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `supplier_payment_conditions` solo tienen `read`; les falta `create`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
@@ -112,8 +112,8 @@ POST /api/v1/companies/<EMPRESA>/supplier-payment-conditions
 
 **Permiso que exige la URL:** `perm:commercial-relationship:supplier_payment_conditions:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `supplier_payment_conditions` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `supplier_payment_conditions` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `supplier_payment_conditions` solo tienen `read`; les falta `create`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**

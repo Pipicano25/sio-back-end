@@ -3,15 +3,15 @@
 Se evalúa con `sio-auth` (incluidos los comodines) sobre la plantilla versionada:
 
 - Los permisos nuevos de políticas, tasas y actualizaciones automáticas solo los tienen
-  `administradores` (por `perm:all:all:all`) y `supervisores` (comodines más asignación explícita).
-- `compras` y `ventas` ya no tienen los comodines `perm:purchase:all:all` ni
-  `perm:commercial-relationship:all:read`: se reemplazaron por la lista explícita equivalente, de modo
-  que conservan exactamente sus permisos anteriores sin ganar los nuevos (costos, porcentajes y el
-  ajuste de tasa de línea).
-- `automatic_price_update_requests:submit` lo tiene solo la cuenta técnica de Purchase; los
-  administradores lo cubren por su comodín total, pero la ruta exige además identidad técnica (DS-05).
+  `superadmin` (por `perm:all:all:all`) y `admin` (comodines por servicio más `resolve` explícito), con los
+  tres grupos de la spec 026.
+- `empleado` (antes `compras`, `ventas` e `inventario`) no tiene los comodines `perm:purchase:all:all` ni
+  `perm:commercial-relationship:all:read`: conserva la lista explícita equivalente, sin ganar los permisos de
+  la spec 021 (costos, porcentajes y el ajuste de tasa de línea).
+- `automatic_price_update_requests:submit` lo tiene solo la cuenta técnica de Purchase; el SuperAdmin lo
+  cubre por su comodín total, pero la ruta exige además identidad técnica (DS-05).
 - `pricing_policy_coverage:read` (FR-021-35, 2026-10-16) lo tiene la cuenta técnica de Purchase; entre los grupos, solo
-  administradores y supervisores por sus comodines de lectura (compras y ventas no).
+  `superadmin` y `admin` por sus comodines de lectura (`empleado` no).
 """
 
 from __future__ import annotations
@@ -65,13 +65,9 @@ def test_new_roles_exist() -> None:
 @pytest.mark.parametrize(
     ("group", "expected"),
     [
-        ("administradores", True),
-        ("supervisores", True),
-        ("compras", False),
-        ("ventas", False),
-        ("inventario", False),
-        ("reportes", False),
-        ("consulta", False),
+        ("superadmin", True),
+        ("admin", True),
+        ("empleado", False),
     ],
 )
 def test_sensitive_permissions_only_for_admins_and_supervisors(group: str, expected: bool, permission) -> None:
@@ -82,26 +78,26 @@ def test_submit_only_for_purchase_technical_account() -> None:
     holders = {name for name, roles in ACCOUNTS.items() if evaluate_permission(roles, SUBMIT)}
     assert holders == {"service-account-purchase-service"}
     groups = {name for name, roles in GROUPS.items() if evaluate_permission(roles, SUBMIT)}
-    assert groups == {"administradores"}  # comodín total; la ruta exige además identidad técnica
+    assert groups == {"superadmin"}  # comodín total; la ruta exige además identidad técnica
 
 
-@pytest.mark.parametrize("group", ["compras", "ventas"])
-def test_wildcards_replaced_by_explicit_equivalent(group: str) -> None:
-    roles = GROUPS[group]
+def test_wildcards_replaced_by_explicit_equivalent() -> None:
+    roles = GROUPS["empleado"]
     assert "perm:commercial-relationship:all:read" not in roles
     assert "perm:purchase:all:all" not in roles
     for permission in concrete(f"perm:{CR}:", "read"):
         assert evaluate_permission(roles, permission), permission
 
 
-def test_purchasers_keep_every_previous_purchase_permission() -> None:
+def test_employees_keep_every_previous_purchase_permission() -> None:
     for permission in concrete("perm:purchase:"):
-        assert evaluate_permission(GROUPS["compras"], permission), permission
+        assert evaluate_permission(GROUPS["empleado"], permission), permission
 
 
-def test_sellers_keep_sales_permissions_without_purchase_access() -> None:
-    assert evaluate_permission(GROUPS["ventas"], SioPermission("sales", "sales", "create"))
-    assert not evaluate_permission(GROUPS["ventas"], SioPermission("purchase", "purchases", "read"))
+def test_employees_keep_sales_permissions_without_line_tax_override() -> None:
+    assert evaluate_permission(GROUPS["empleado"], SioPermission("sales", "sales", "create"))
+    assert evaluate_permission(GROUPS["empleado"], SioPermission("purchase", "purchases", "read"))
+    assert not evaluate_permission(GROUPS["empleado"], SioPermission("purchase", "purchase_line_taxes", "override"))
 
 
 def test_coverage_for_the_purchase_technical_account_without_percentages() -> None:
@@ -110,4 +106,4 @@ def test_coverage_for_the_purchase_technical_account_without_percentages() -> No
     assert evaluate_permission(purchase, COVERAGE)
     assert not evaluate_permission(purchase, SioPermission(CR, "pricing_policies", "read"))
     groups = {name for name, roles in GROUPS.items() if evaluate_permission(roles, COVERAGE)}
-    assert "compras" not in groups and "ventas" not in groups
+    assert groups == {"superadmin", "admin"}

@@ -40,7 +40,7 @@ def test_service_account_with_wildcard_is_forbidden(as_token, service_token, wor
 
 
 def test_human_without_permission_is_forbidden(as_user, world) -> None:
-    for username in ("compras.test", "ventas.test", "reportes.test", "consulta.test"):
+    for username in ("sin-permisos.test",):
         assert as_user(username).post(url(world.company), json=body(world)).status_code == 403
 
 

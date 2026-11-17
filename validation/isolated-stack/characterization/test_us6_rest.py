@@ -49,7 +49,7 @@ def world(seed, users, run_id):
     state = {"company": company, "member": member, "organization": organization, "person": person,
              "location": location, "aliases": aliases, "run": run_id, "memberships": []}
     yield state
-    # `consulta.test` debe quedar solo en sus empresas: el resumen de la Historia 4 cuenta sus membresías activas.
+    # `compras.test` debe quedar solo en sus empresas: el resumen de la Historia 4 cuenta sus membresías activas.
     for member_id in state["memberships"]:
         current = expect(admin.get(f"{OC}/application-users/{member_id}"))
         if current["status"] == "ACTIVE":
@@ -130,8 +130,8 @@ def test_usuario_operativo_nuevo(world, users, book, reads):
     company = world["company"]
     response, requests = _observe("operational-context", lambda: admin.post(
         f"{OC}/companies/{company}/application-users",
-        json={"username": "consulta.test", "person_identity_id": world["person"],
-              "display_name": f"consulta.test (ficticio {world['run']})"}))
+        json={"username": "compras.test", "person_identity_id": world["person"],
+              "display_name": f"compras.test (ficticio {world['run']})"}))
     if response.status_code == 201:
         world["memberships"].append(response.json()["id"])
     _check(world, book, reads, "usuario_operativo_nuevo", response, requests, 201)

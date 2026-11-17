@@ -17,20 +17,20 @@ PLACEHOLDER = re.compile(r"<[A-Z0-9_]+>")
 NOTES = {
     "perm:operational-context:companies:delete": "Inactivar una empresa (`POST .../deactivate`) exige `delete`, "
     "aunque no la elimina; reactivar (`POST .../reactivate`) exige `update`. Desde la Fase B ambas exigen además "
-    "`perm:operational-context:platform:administer`: `supervisor.test` no puede ninguna de las dos.",
+    "`perm:operational-context:platform:administer`: `supervisor.test` (grupo `admin`) no puede ninguna de las dos.",
     "perm:operational-context:platform:administer": "Alcance de plataforma (Fase B, DS-05): registrar, inactivar y "
     "reactivar empresas y ver todas las empresas sin ser miembro. Solo lo concede `perm:all:all:all` "
-    "(`administradores`); los comodines de lectura, creación o modificación **no** lo conceden.",
+    "(grupo `superadmin`); los comodines de lectura, creación, modificación o eliminación **no** lo conceden.",
     "perm:operational-context:platform:lookup": "Consulta técnica entre servicios (Fase B, FR-045): leer por UUID sin "
     "membresía y comprobar el acceso de otro usuario. Es para identidades técnicas; ningún grupo de usuarios la tiene "
-    "salvo `administradores` (por `perm:all:all:all`).",
+    "salvo `superadmin` (por `perm:all:all:all`).",
     "perm:operational-context:application_users:create": "Para registrar un usuario operativo el token debe poder leer "
     "`person_identities` en Party Identity (el servicio valida la persona con ese token); la cuenta de Keycloak la "
     "verifica el servicio con su propia identidad técnica.",
     "perm:operational-context:branches:delete": "Inactivar una sucursal exige `delete`; reactivarla exige `update`.",
     "perm:operational-context:companies:create": "Para registrar o cambiar la organización o la ubicación, el token "
     "del usuario debe poder además **leer** en Party Identity y Geography: el servicio valida esas referencias con el "
-    "mismo token. `administradores` y `supervisores` tienen esa lectura.",
+    "mismo token. Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.",
     "perm:operational-context:branches:read": "Las rutas de sucursales exigen solo permisos de `branches`, aunque la "
     "colección y el alta estén bajo `/api/v1/companies/{id}/branches`.",
 }
@@ -212,8 +212,8 @@ def render_users(ex, records):
     out += user_summary(rows)
     out += ["", "**Para hacer el ejercicio completo use `admin.test`** (tiene `platform:administer` por "
             "`perm:all:all:all`). Los demás usuarios solo operan en las empresas donde tienen membresía `ACTIVE`; "
-            "`supervisor.test` puede crear y modificar allí, pero no inactivar ni registrar, inactivar o reactivar "
-            "empresas.", ""]
+            "`supervisor.test` (grupo `admin`) puede crear, modificar e inactivar allí, pero no registrar, inactivar o "
+            "reactivar empresas; los usuarios del grupo `empleado` solo consultan.", ""]
 
     out += ["## Permiso por URL", "",
             "✅ = el usuario tiene el permiso (o los permisos) de la llamada · ❌ = recibe `403 Forbidden`. "
@@ -242,18 +242,18 @@ def render_users(ex, records):
                 "Reemplace las variables `<…>` por los `id` guardados.", ""]
 
     n += 1
-    consulta = next(u for u in USERS if u["username"] == "consulta.test")
+    empleado = next(u for u in USERS if u["username"] == "ventas.test")
     denied = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] != "GET"
-                          and not allowed_all(consulta, p))
+                          and not allowed_all(empleado, p))
     if denied:
         s_i, c_i, s, c, p, r = denied
-        out += [f"### {n}. `consulta.test` intenta crear (rechazado)", ""]
-        out += token_command("consulta.test", "TOKEN_CONSULTA")
+        out += [f"### {n}. `ventas.test` (Empleado) intenta crear o modificar (rechazado)", ""]
+        out += token_command("ventas.test", "TOKEN_EMPLEADO")
         out += ["", f"Intenta el paso {s_i + 1:02d} (*{s['title']}*), llamada {c_i + 1}:", ""]
-        out += curl_for(c, "TOKEN_CONSULTA")
+        out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += [f"`consulta.test` solo tiene lecturas explícitas (sin `create`, `update` ni `delete`): puede **leer**, "
+        out += [f"El grupo `empleado` solo tiene `perm:operational-context:all:read` en este servicio: puede **leer**, "
                 f"pero la URL exige {permission_text(p)}. El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
 
     read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET")
@@ -261,40 +261,31 @@ def render_users(ex, records):
         n += 1
         s_i, c_i, s, c, p, r = read
         verified = r.get("verified", {})
-        out += [f"### {n}. `consulta.test` consulta", ""]
-        out += curl_for(c, "TOKEN_CONSULTA")
-        if verified.get("consulta.test", 200) == 404:
-            out += ["", f"Responde `404 Not Found`: `{matching_grant(consulta, as_list(p)[0])}` cubre {permission_text(p)}, pero "
-                    "`consulta.test` **no es miembro** de la empresa del paso " f"{s_i + 1:02d}. Fuera de su alcance, "
-                    "el recurso se trata como inexistente (aislamiento por empresa, DS-06).", ""]
+        out += [f"### {n}. `ventas.test` (Empleado) consulta", ""]
+        out += curl_for(c, "TOKEN_EMPLEADO")
+        if verified.get("ventas.test", 200) == 404:
+            out += ["", f"Responde `404 Not Found`: `{matching_grant(empleado, as_list(p)[0])}` cubre {permission_text(p)}, pero "
+                    "`ventas.test` **no es miembro** de la empresa del paso " f"{s_i + 1:02d}. Fuera de su alcance, "
+                    "el recurso se trata como inexistente (aislamiento por empresa, DS-06). Tener el permiso no basta: "
+                    "también se necesita la membresía.", ""]
         else:
             out += ["", f"Responde `200 OK` con la misma información que ve `admin.test` en el paso {s_i + 1:02d}: "
-                    f"`{matching_grant(consulta, as_list(p)[0])}` cubre {permission_text(p)}.", ""]
-
-        n += 1
-        out += [f"### {n}. `inventario.test` consulta", ""]
-        out += token_command("inventario.test", "TOKEN_INVENTARIO")
-        out += [""]
-        out += curl_for(c, "TOKEN_INVENTARIO")
-        if verified.get("inventario.test", 200) == 404:
-            out += ["", "Responde `404 Not Found`: `inventario.test` tiene `perm:operational-context:all:read`, pero no "
-                    "es miembro de la empresa. Tener el permiso no basta: también se necesita la membresía.", ""]
-        else:
-            out += ["", "Responde `200 OK`: `inventario.test` tiene `perm:operational-context:all:read` y es miembro "
+                    f"`{matching_grant(empleado, as_list(p)[0])}` cubre {permission_text(p)} y `ventas.test` es miembro "
                     "de la empresa.", ""]
 
-    deactivate = pick_example(rows, lambda s_i, c, p, r: p[0].endswith(":delete"))
-    if deactivate:
+    platform = pick_example(rows, lambda s_i, c, p, r: any(x.endswith(":platform:administer") for x in as_list(p)))
+    if platform:
         n += 1
-        s_i, c_i, s, c, p, r = deactivate
-        out += [f"### {n}. `supervisor.test` intenta inactivar (rechazado)", ""]
+        s_i, c_i, s, c, p, r = platform
+        out += [f"### {n}. `supervisor.test` (Admin) intenta una acción de plataforma (rechazado)", ""]
         out += token_command("supervisor.test", "TOKEN_SUPERVISOR")
         out += [""]
         out += curl_for(c, "TOKEN_SUPERVISOR")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += ["`supervisor.test` tiene `perm:all:all:read`, `perm:all:all:create` y `perm:all:all:update`, pero **no** "
-                "`delete`. Inactivar queda para `admin.test`.", ""]
+        out += ["El grupo `admin` tiene `create`, `read`, `update` y `delete` de Operational Context, pero **no** "
+                "`perm:operational-context:platform:administer`. Registrar, inactivar y reactivar empresas queda para "
+                "`admin.test` (grupo `superadmin`).", ""]
 
     n += 1
     out += [f"### {n}. Sin token (rechazado)", "",
@@ -327,10 +318,9 @@ def render_general(exercises, all_records):
             "3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, "
             "`all` vale como comodín en cualquier parte:",
             "   - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.",
-            "   - `perm:all:all:read` → solo `read`, pero en todos los servicios (en el realm vigente solo lo tiene "
-            "`supervisores`; `reportes` y `consulta` tienen lecturas **explícitas** de todos los servicios, salvo los "
-            "datos de contacto y representantes legales de Party Identity).",
-            "   - `perm:operational-context:all:read` → solo `read`, solo en Operational Context.",
+            "   - `perm:operational-context:all:delete` → solo `delete`, solo en Operational Context (lo tiene el "
+            "grupo `admin`, junto con `:all:create`, `:all:read` y `:all:update`).",
+            "   - `perm:operational-context:all:read` → solo `read`, solo en Operational Context (grupo `empleado`).",
             "4. Cada URL exige un permiso concreto (por ejemplo `perm:operational-context:companies:create`); registrar, "
             "inactivar y reactivar empresas exigen además `perm:operational-context:platform:administer`. "
             "Si falta alguno, el servicio responde `403 Forbidden` e indica cuál. "
@@ -345,13 +335,11 @@ def render_general(exercises, all_records):
             "| Usuario | Grupo | Permisos del grupo | En Operational Context puede |", "| --- | --- | --- | --- |"]
     summary = {
         "admin.test": "Todo, en todas las empresas (alcance de plataforma)",
-        "supervisor.test": "En sus empresas: consultar, crear, modificar y reactivar sucursales, usuarios y asignaciones. "
-        "**No** inactivar ni registrar, inactivar o reactivar empresas",
+        "supervisor.test": "En sus empresas: consultar, crear, modificar, inactivar y reactivar sucursales, usuarios y "
+        "asignaciones, y modificar la empresa. **No** registrar, inactivar ni reactivar empresas",
         "compras.test": "Solo consultar, en sus empresas",
         "ventas.test": "Solo consultar, en sus empresas",
         "inventario.test": "Solo consultar, en sus empresas",
-        "reportes.test": "Solo consultar, en sus empresas",
-        "consulta.test": "Solo consultar, en sus empresas",
     }
     for u in USERS:
         if len(u["perms"]) <= 10:
@@ -365,17 +353,17 @@ def render_general(exercises, all_records):
 
     out += ["## Cómo obtener el token de cada usuario", "",
             "Cambie `username` por el usuario que quiera probar:", ""]
-    out += token_command("consulta.test", "TOKEN")
+    out += token_command("ventas.test", "TOKEN")
     out += ["", "En **PowerShell** (Windows):", "",
             "```powershell",
             "$body = @{ grant_type = 'password'; client_id = 'sio-web'; scope = 'openid'",
-            "           username = 'consulta.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
+            "           username = 'ventas.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
             f"$TOKEN = (Invoke-RestMethod -Method Post -Uri '{KEYCLOAK}' -Body $body).access_token",
             f"Invoke-RestMethod -Uri '{SERVICE_URL}/api/v1/companies' `",
             "  -Headers @{ Authorization = \"Bearer $TOKEN\" }",
             "```", "",
             "Luego envíe el token en cada llamada:", "", "```http", "Authorization: Bearer <TOKEN>", "```", "",
-            "Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python services/get_token.py consulta)`) "
+            "Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python services/get_token.py ventas)`) "
             "obtiene el token de `<rol>.test`. Lee la contraseña de `KEYCLOAK_TEST_USER_PASSWORD` o de `infrastructure/.env`.", ""]
 
     out += ["## Permiso de cada URL de los ejercicios", "",
@@ -397,7 +385,9 @@ def render_general(exercises, all_records):
     out += ["## Qué usuario usar", "",
             "| Para… | Usuario |", "| --- | --- |",
             "| Hacer los ejercicios completos | `admin.test` |",
-            "| Crear y modificar sin poder inactivar, dentro de sus empresas | `supervisor.test` (con membresía) |",
-            "| Verificar lo cargado | `consulta.test` o `reportes.test` (con membresía en la empresa) |",
-            "| Probar rechazos por falta de permiso | `consulta.test` o `inventario.test` en cualquier `POST` o `PUT`; `supervisor.test` al inactivar |", ""]
+            "| Administrar sucursales, usuarios y asesores de sus empresas | `supervisor.test` (Admin, con membresía) |",
+            "| Verificar lo cargado | `ventas.test`, `compras.test` o `inventario.test` (Empleado, con membresía en la "
+            "empresa) |",
+            "| Probar rechazos por falta de permiso | `ventas.test` en cualquier `POST` o `PUT`; `supervisor.test` al "
+            "registrar, inactivar o reactivar empresas |", ""]
     return "\n".join(out)

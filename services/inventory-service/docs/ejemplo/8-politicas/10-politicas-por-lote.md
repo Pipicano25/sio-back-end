@@ -33,12 +33,10 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa y tener `perm:operat
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` |
-| `compras.test` | No | `403` | no tiene `perm:inventory:product-policies:read` |
-| `ventas.test` | No | `403` | no tiene `perm:inventory:product-policies:read` |
+| `supervisor.test` | Sí | `200` | tiene `perm:inventory:product-policies:read` |
+| `compras.test` | Sí | `200` | tiene `perm:inventory:product-policies:read` |
+| `ventas.test` | Sí | `200` | tiene `perm:inventory:product-policies:read` |
 | `inventario.test` | Sí | `200` | tiene `perm:inventory:product-policies:read` |
-| `reportes.test` | No | `403` | no tiene `perm:inventory:product-policies:read` |
-| `consulta.test` | No | `403` | no tiene `perm:inventory:product-policies:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

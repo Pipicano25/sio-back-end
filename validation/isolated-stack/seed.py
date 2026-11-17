@@ -7,7 +7,7 @@ sin escribir nada.
 
 Datos (todos ficticios: crema dental, jarabe y analgésicos; ningún NIT, razón social ni dato de DAO):
 
-- empresa A con 3 sucursales (PPAL, NORTE, SUR) y los 7 usuarios de prueba como miembros; `inventario.test`
+- empresa A con 3 sucursales (PPAL, NORTE, SUR) y los 5 usuarios de prueba como miembros (spec 026); `inventario.test`
   asignado solo a PPAL (A-08) y `admin.test` a las tres;
 - empresa B, de la que solo `admin.test` y `ventas.test` son miembros (cursores de otra empresa);
 - productos globales con marca, categoría, presentaciones e imagen principal (PNG real en el almacenamiento), y
@@ -60,8 +60,7 @@ URLS = {
     "product_inventory_query": "http://127.0.0.1:18112/api/v1",
     "object_storage": "http://127.0.0.1:18902",
 }
-USERS = ("admin.test", "supervisor.test", "compras.test", "ventas.test", "inventario.test", "reportes.test",
-         "consulta.test")
+USERS = ("admin.test", "supervisor.test", "compras.test", "ventas.test", "inventario.test")
 
 
 def guard():

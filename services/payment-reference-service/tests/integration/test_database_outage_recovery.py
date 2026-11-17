@@ -81,7 +81,7 @@ def client():
         httpx.get(f"{BASE}/health/ready", timeout=5).raise_for_status()
         token = httpx.post(TOKEN_URL, data={
             "grant_type": "password", "client_id": "sio-web", "scope": "openid",
-            "username": "reportes.test", "password": password,
+            "username": "supervisor.test", "password": password,
         }, timeout=10).raise_for_status().json()["access_token"]
     except (httpx.HTTPError, KeyError):
         pytest.skip("Entorno integrado de Payment Reference o Keycloak no disponible.")

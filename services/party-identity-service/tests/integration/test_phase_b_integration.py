@@ -224,9 +224,9 @@ def test_company_without_membership_is_rejected(context, geography, organization
 
 
 def test_reads_with_least_privilege_groups(context, organization_id) -> None:
-    """Q-C1 con tokens reales: compras lee el perfil; consulta recibe 403."""
+    """Q-C1 con tokens reales (spec 026): un empleado y un Admin leen el perfil de contacto."""
     statuses = {}
-    for username in ("compras.test", "consulta.test"):
+    for username in ("compras.test", "supervisor.test"):
         try:
             token = _token(context["http"], username, context["password"])
         except (httpx.HTTPError, KeyError):
@@ -236,4 +236,4 @@ def test_reads_with_least_privilege_groups(context, organization_id) -> None:
             headers={"Authorization": f"Bearer {token}"},
         ).status_code
 
-    assert statuses == {"compras.test": 200, "consulta.test": 403}
+    assert statuses == {"compras.test": 200, "supervisor.test": 200}

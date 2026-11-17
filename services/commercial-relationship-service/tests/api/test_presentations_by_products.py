@@ -70,7 +70,7 @@ def test_limits_and_permissions(as_user, as_token, service_token, company, other
     assert client.post(url, json={"company_product_ids": [str(uuid4()) for _ in range(101)]}).status_code == 422
     assert client.post(url, json={"company_product_ids": []}).status_code == 422
     assert client.post(url, json={"company_product_ids": [str(uuid4())], "extra": 1}).status_code == 422
-    assert as_user("inventario.test").post(url, json={"company_product_ids": [str(uuid4())]}).status_code == 403
+    assert as_user("sin-permisos.test").post(url, json={"company_product_ids": [str(uuid4())]}).status_code == 403
     assert client.post(URL.format(company=other_company), json={"company_product_ids": [str(uuid4())]}).status_code == 404
 
     technical = as_token(service_token(READ, LOOKUP, client_id="product-inventory-query-service"))

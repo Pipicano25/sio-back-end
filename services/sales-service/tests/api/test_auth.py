@@ -22,7 +22,7 @@ def test_service_account_gets_403_even_with_wildcards(as_token, service_token, u
     technical = as_token(service_token(*SERVICE_ACCOUNT_ROLES, client_id="sales-service"))
     response = technical.request(method, fill(path, world.company), json={})
     assert response.status_code == 403, response.text
-    no_permission = as_token(user_token("compras.test")).request(method, fill(path, world.company), json={})
+    no_permission = as_token(user_token("sin-ventas.sintetico")).request(method, fill(path, world.company), json={})
     assert no_permission.status_code == 403
     assert response.json()["detail"] == no_permission.json()["detail"]  # mismo cuerpo, sin revelar el motivo
 

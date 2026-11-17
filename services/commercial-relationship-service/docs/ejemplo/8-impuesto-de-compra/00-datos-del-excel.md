@@ -19,7 +19,7 @@
 | Tema | Decisión |
 | --- | --- |
 | Sin configurar ≠ 0 % | `null` significa que nadie definió la tasa; `0` es una tasa válida (por ejemplo, un producto exento). Solo con tasa se puede confirmar una compra del producto. |
-| Permiso propio | La tasa se modifica con `company_product_purchase_taxes:update`, no con el `PUT` del producto. Solo administradores y supervisores. |
+| Permiso propio | La tasa se modifica con `company_product_purchase_taxes:update`, no con el `PUT` del producto. Solo los grupos `superadmin` y `admin`. |
 | Sin efecto en compras confirmadas | Cada línea de compra congela su tasa al confirmar; cambiar la tasa del producto no modifica compras históricas. |
 
 [Empezar → paso 01](01-consultar-datos.md)

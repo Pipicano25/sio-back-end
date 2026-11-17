@@ -46,7 +46,6 @@ def world(seed, users, run_id, stack_env):
     colombia = expect(admin.get(f"{URLS['geography']}/global-countries", params={"iso3_code": "COL"}))["items"][0]["id"]
     company = seed.company(admin, colombia, f"US1{run_id}")
     admin_member = seed.member(admin, colombia, company, "admin.test")
-    seed.member(admin, colombia, company, "reportes.test")
     b1, b2 = (
         expect(admin.post(f"{OC}/companies/{company}/branches", json={
             "code": f"{code}{run_id}", "name": f"Sucursal ficticia {code} {run_id}"}))["id"]
@@ -196,8 +195,11 @@ def test_insufficient_stock(world, users, book, reads):
     _check_contract(reads, "existencias_insuficientes", requests)
 
 
-def test_user_without_permission(world, users, book):
-    admin, reports = users("admin.test"), users("reportes.test")
+def test_user_without_permission(world, users, book, seed, stack_env):
+    # Desde la spec 026 todos los grupos de usuario confirman ventas: el 403 se observa con un cliente técnico sin
+    # permisos de Sales (`inventory-test-operator`); la respuesta es la misma que recibía un usuario sin el permiso.
+    admin = users("admin.test")
+    reports = seed.service(stack_env, "inventory-test-operator", "INVENTORY_TEST_OPERATOR_CLIENT_SECRET")
     draft = expect(_draft(admin, world), 201)
     response, requests = _observe(world, lambda: _confirm(reports, world, draft))
     book.check("usuario_sin_permiso", _case(world, response), requests=requests)

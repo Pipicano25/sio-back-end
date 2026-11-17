@@ -62,16 +62,15 @@ def test_get_sale_lines_and_operations(seller, world, make_sequence, make_draft,
 def test_reads_need_membership_but_not_assignment(as_user, world, fakes, make_draft) -> None:
     draft = make_draft()
     fakes.oc.assignments.clear()
-    for username in ("reportes.test", "consulta.test", "ventas.test", "supervisor.test"):
+    for username in ("lector.sintetico", "compras.test", "ventas.test", "supervisor.test"):
         reader = as_user(username)
         assert reader.get(f"{base(world)}/sales").status_code == 200
         assert reader.get(f"{base(world)}/sales/{draft['id']}").status_code == 200
-    assert as_user("reportes.test").post(f"{base(world)}/sales", json={}).status_code == 403
-    assert as_user("consulta.test").post(f"{base(world)}/sales", json={}).status_code == 403
+    assert as_user("lector.sintetico").post(f"{base(world)}/sales", json={}).status_code == 403
 
 
 def test_users_without_read_permission(as_user, world) -> None:
-    for username in ("inventario.test", "compras.test"):
+    for username in ("sin-ventas.sintetico",):
         assert as_user(username).get(f"{base(world)}/sales").status_code == 403
 
 

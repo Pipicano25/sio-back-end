@@ -193,7 +193,7 @@ def test_inactive_company(as_user, company, fake_catalog, fake_oc):
     assert code_of(response) == "COMPANY_INACTIVE"
 
 
-@pytest.mark.parametrize("username", ["compras.test", "ventas.test", "reportes.test", "inventario.test"])
+@pytest.mark.parametrize("username", ["compras.test", "ventas.test", "inventario.test"])
 def test_without_create_permission_is_403(as_user, company, fake_catalog, fake_oc, username):
     response = _post(as_user(username), company, product_body(fake_catalog.add(uuid4())))
     assert response.status_code == 403

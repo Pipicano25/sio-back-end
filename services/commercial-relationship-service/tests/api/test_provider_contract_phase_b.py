@@ -126,7 +126,7 @@ def test_presentation_batch_lookup(as_user, company, other_company, fake_catalog
     assert missing["found"] is False and all(value is None for key, value in missing.items() if key not in {"id", "found"})
 
     # Un humano sin membresía ve la presentación como no encontrada.
-    human = as_user("consulta.test").post("/api/v1/company-product-presentations/batch-lookup", json={"ids": [known]})
+    human = as_user("supervisor.test").post("/api/v1/company-product-presentations/batch-lookup", json={"ids": [known]})
     assert human.json()["items"][0]["found"] is False
 
     too_many = as_token(service_token(READ["presentation"], LOOKUP)).post(

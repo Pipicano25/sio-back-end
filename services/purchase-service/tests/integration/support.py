@@ -363,7 +363,7 @@ def build_world(admin: httpx.Client) -> RealWorld:
 
     admin_user = _member(admin, company_id, "admin.test", _person(admin, colombia, "A"))
     buyer = _member(admin, company_id, "compras.test", _person(admin, colombia, "C"))
-    _member(admin, company_id, "reportes.test", _person(admin, colombia, "R"))
+    _member(admin, company_id, "supervisor.test", _person(admin, colombia, "R"))
 
     branch = admin.post(f"{OPERATIONAL_CONTEXT}/companies/{company_id}/branches", json={
         "code": f"PUR{RUN_ID}", "name": f"Bodega ficticia de validación COMPRAS {RUN_ID}",

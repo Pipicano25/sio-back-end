@@ -30,7 +30,7 @@ def get_csv(client, url: str, **params):
 
 def test_top_products_csv_matches_json(as_user, fakes) -> None:
     seed_sales(fakes)
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     data = client.get(f"{base(fakes)}/top-selling-products", params=PERIOD).json()
     response = get_csv(client, f"{base(fakes)}/top-selling-products")
     assert response.headers["content-disposition"] == (
@@ -48,7 +48,7 @@ def test_top_products_csv_matches_json(as_user, fakes) -> None:
 def test_sales_by_branch_and_purchases_csv_match_json(as_user, fakes) -> None:
     seed_sales(fakes)
     seed_purchases(fakes, 3)
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     branches = client.get(f"{base(fakes)}/sales-by-branch", params=PERIOD).json()
     rows = rows_of(get_csv(client, f"{base(fakes)}/sales-by-branch").text)
     assert [[r[0], r[4], r[5]] for r in rows[1:3]] == [
@@ -64,7 +64,7 @@ def test_sales_by_branch_and_purchases_csv_match_json(as_user, fakes) -> None:
 
 def test_csv_walks_all_pages_one_at_a_time(as_user, fakes) -> None:
     seed_purchases(fakes, 250)
-    rows = rows_of(get_csv(as_user("reportes.test"), f"{base(fakes)}/purchases", page_size="10").text)
+    rows = rows_of(get_csv(as_user("supervisor.test"), f"{base(fakes)}/purchases", page_size="10").text)
     assert rows[-1] == ["TOTAL FILAS", "250"]
     pages = [args["page"] for name, args in fakes.log.calls if name == "purchase_period"]
     sizes = {args["page_size"] for name, args in fakes.log.calls if name == "purchase_period"}
@@ -94,14 +94,14 @@ def test_formula_injection_is_neutralized_in_text_cells(as_user, fakes, name) ->
 
     fakes.product_sales = [ProductSales(product, name, name, "COP", D("1"), D("-5"), 1, [])]
     fakes.sales_totals = [SalesTotal("COP", D("-5"), 1)]
-    rows = rows_of(get_csv(as_user("reportes.test"), f"{base(fakes)}/top-selling-products").text)
+    rows = rows_of(get_csv(as_user("supervisor.test"), f"{base(fakes)}/top-selling-products").text)
     assert rows[1][1] == "'" + name and rows[1][2] == "'" + name
     assert rows[1][5] == "-5.00"  # los números negativos no se alteran
 
 
 def test_bom_can_be_disabled(as_user, fakes) -> None:
     seed_sales(fakes)
-    response = as_user("reportes.test").get(f"{base(fakes)}/top-selling-products",
+    response = as_user("supervisor.test").get(f"{base(fakes)}/top-selling-products",
                                             params={**PERIOD, "format": "csv", "bom": "false"})
     assert not response.text.startswith("﻿") and response.text.startswith("Puesto,")
 
@@ -109,7 +109,7 @@ def test_bom_can_be_disabled(as_user, fakes) -> None:
 def test_error_before_the_first_byte_is_a_problem_response(as_user, fakes) -> None:
     seed_purchases(fakes, 5)
     fakes.fail.add("purchase_period")
-    response = as_user("reportes.test").get(f"{base(fakes)}/purchases", params={**PERIOD, "format": "csv"})
+    response = as_user("supervisor.test").get(f"{base(fakes)}/purchases", params={**PERIOD, "format": "csv"})
     assert response.status_code == 503
     assert response.headers["content-type"].startswith("application/problem+json")
 
@@ -146,7 +146,7 @@ def test_too_many_rows_is_422_before_streaming(as_user, fakes, test_settings) ->
     from dataclasses import replace
 
     seed_purchases(fakes, 120)
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     client._client.app.state.settings = replace(test_settings, csv_max_rows=100)
     response = client.get(f"{base(fakes)}/purchases", params={**PERIOD, "format": "csv"})
     assert response.status_code == 422 and response.json()["errors"][0]["code"] == "CSV_TOO_LARGE"

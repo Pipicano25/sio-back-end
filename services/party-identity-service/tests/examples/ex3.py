@@ -21,7 +21,7 @@ EX3 = dict(
     focus=(
         "Registrar una organización con NIT, los rechazos por **formato** (regla `NIT`) y por **país inexistente**, "
         "y el ciclo **inactivar → reactivar**, incluido el rechazo de una transición repetida y quién puede hacer "
-        "cada acción (`supervisor.test` reactiva pero no inactiva)."
+        "cada acción (`supervisor.test`, del grupo `admin`, reactiva pero no inactiva)."
     ),
     data=[
         ("Razón social", "COMERCIALIZADORA EJEMPLO FICTICIA S.A.S. (**ficticia**)"),
@@ -114,7 +114,7 @@ EX3 = dict(
                     "POST",
                     f"{API}/organization-identities/<ORG_EJEMPLO>/reactivate",
                     body={"version": 2},
-                    why=["Reactivar exige `update`: por eso `supervisor.test` puede reactivar aunque no pueda inactivar."],
+                    why=["Reactivar exige `update`: por eso `supervisor.test` (Admin) y el grupo `empleado` pueden reactivar aunque no puedan inactivar."],
                     show=ORG_SHOW,
                 ),
                 call(

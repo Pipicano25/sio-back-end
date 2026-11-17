@@ -23,12 +23,10 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all`, `perm:all:all:all`, `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read`, `perm:all:all:read`, `perm:all:all:read` |
-| `compras.test` | No | `403` | no tiene `perm:product-inventory-query:low_stock_products:read` |
-| `ventas.test` | No | `403` | no tiene `perm:product-inventory-query:low_stock_products:read` |
+| `supervisor.test` | Sí | `200` | tiene `perm:product-inventory-query:low_stock_products:read`, `perm:product-inventory-query:stock:read`, `perm:inventory:product-policies:read` |
+| `compras.test` | Sí | `200` | tiene `perm:product-inventory-query:low_stock_products:read`, `perm:product-inventory-query:stock:read`, `perm:inventory:product-policies:read` |
+| `ventas.test` | Sí | `200` | tiene `perm:product-inventory-query:low_stock_products:read`, `perm:product-inventory-query:stock:read`, `perm:inventory:product-policies:read` |
 | `inventario.test` | Sí | `200` | tiene `perm:product-inventory-query:low_stock_products:read`, `perm:product-inventory-query:stock:read`, `perm:inventory:product-policies:read` |
-| `reportes.test` | No | `403` | no tiene `perm:product-inventory-query:low_stock_products:read` |
-| `consulta.test` | No | `403` | no tiene `perm:product-inventory-query:low_stock_products:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

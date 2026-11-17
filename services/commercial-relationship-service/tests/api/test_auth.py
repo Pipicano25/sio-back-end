@@ -63,6 +63,6 @@ def test_exact_permission_passes_authorization(make_token, as_token, route):
     assert _call(as_token(token), route).status_code not in {401, 403}
 
 
-def test_inventario_has_no_commercial_relationship_permissions(as_user, company):
+def test_member_without_permissions_is_forbidden_everywhere(as_user, company):
     for route in ROUTES:
-        assert _call(as_user("inventario.test"), route).status_code == 403, route_id(route)
+        assert _call(as_user("sin-permisos.test"), route).status_code == 403, route_id(route)

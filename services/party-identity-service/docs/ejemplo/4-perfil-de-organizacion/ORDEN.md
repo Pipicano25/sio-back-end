@@ -2,7 +2,7 @@
 
 [← Todos los ejercicios](../README.md)
 
-**Qué enseña:** Registrar el contacto vigente de un proveedor **confirmado desde una empresa**, ver que una solicitud idéntica no crea versión, **reemplazarlo** (se cierra la versión anterior y se crea otra), consultar el **historial**, los rechazos por **geografía incoherente**, por **usuario sin membresía** y por **dependencia caída**, y **cerrar** el perfil sin reemplazo (y el `409` al repetirlo). Muestra además que `compras.test` lee el contacto y `reportes.test`/`consulta.test` no.
+**Qué enseña:** Registrar el contacto vigente de un proveedor **confirmado desde una empresa**, ver que una solicitud idéntica no crea versión, **reemplazarlo** (se cierra la versión anterior y se crea otra), consultar el **historial**, los rechazos por **geografía incoherente**, por **usuario sin membresía** y por **dependencia caída**, y **cerrar** el perfil sin reemplazo (y el `409` al repetirlo). Muestra además que los usuarios del grupo `empleado` (por ejemplo `compras.test`) leen el contacto.
 
 **Datos:** **ficticios** — detalle y decisiones en [00-datos-ficticios.md](00-datos-ficticios.md).
 

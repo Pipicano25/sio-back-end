@@ -23,8 +23,8 @@ POST /api/v1/categories
 
 **Permiso que exige la URL:** `perm:product-catalog:categories:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
 
 **Por qué se hace así**
 
@@ -59,8 +59,8 @@ POST /api/v1/categories
 
 **Permiso que exige la URL:** `perm:product-catalog:categories:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
 
 **Por qué se hace así**
 

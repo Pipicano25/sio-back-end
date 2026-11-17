@@ -2,7 +2,7 @@
 
 [← Flujos](README.md) · [← Índice](../index.md) · Ficha: [Purchase](../servicios/purchase.md)
 
-Flujo de compras del MVP: compra de contado, confirmación (numera, no mueve inventario) y recepción completa (ingresa la mercancía). Perfil típico: grupo `compras`.
+Flujo de compras del MVP: compra de contado, confirmación (numera, no mueve inventario) y recepción completa (ingresa la mercancía). Perfil típico: grupo `empleado`.
 
 ## 1. Contexto operativo
 

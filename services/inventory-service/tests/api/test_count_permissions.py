@@ -39,7 +39,7 @@ def test_service_accounts_are_forbidden(as_token, service_token, world, count) -
 
 
 def test_users_without_permission_are_forbidden(as_user, world, count) -> None:
-    for username in ("compras.test", "ventas.test", "reportes.test", "consulta.test"):
+    for username in ("sin-permisos.test",):
         for method, url, body in calls(world, count):
             assert as_user(username).request(method, url, json=body).status_code == 403, (username, url)
 

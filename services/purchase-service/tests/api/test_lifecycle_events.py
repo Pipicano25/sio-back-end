@@ -95,8 +95,8 @@ def test_never_writes_commercial_relationship(buyer, world, fakes, make_draft) -
 
 def test_permissions_and_assignment(as_user, buyer, world, fakes, make_draft) -> None:
     draft = make_draft()
-    assert record(as_user("reportes.test"), world, draft, "ORDERED", 1).status_code == 403
-    assert as_user("reportes.test").get(f"{base(world)}/purchases/{draft['id']}/lifecycle-events").status_code == 200
+    assert record(as_user("lector.sintetico"), world, draft, "ORDERED", 1).status_code == 403
+    assert as_user("lector.sintetico").get(f"{base(world)}/purchases/{draft['id']}/lifecycle-events").status_code == 200
     fakes.oc.assignments.discard((user_sub("compras.test"), world.branch))
     assert record(buyer, world, draft, "ORDERED", 1).status_code == 403
 

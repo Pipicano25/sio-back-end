@@ -16,8 +16,7 @@ GET /api/v1/global-business-sectors?classification_system=CIIU_REV5_AC&level_roo
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `reportes.test` (por `perm:party-identity:global_business_sectors:read`), `consulta.test` (por `perm:party-identity:global_business_sectors:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `inventario.test` (por `perm:party-identity:global_business_sectors:read`)
 
 **Por qué se hace así**
 
@@ -39,8 +38,7 @@ GET /api/v1/global-business-sectors?classification_system=CIIU_REV5_AC&code=A
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `reportes.test` (por `perm:party-identity:global_business_sectors:read`), `consulta.test` (por `perm:party-identity:global_business_sectors:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `inventario.test` (por `perm:party-identity:global_business_sectors:read`)
 
 **Por qué se hace así**
 
@@ -64,8 +62,7 @@ GET /api/v1/global-business-sectors?parent_sector_id=<SECCION_A>
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `reportes.test` (por `perm:party-identity:global_business_sectors:read`), `consulta.test` (por `perm:party-identity:global_business_sectors:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `inventario.test` (por `perm:party-identity:global_business_sectors:read`)
 
 **Por qué se hace así**
 
@@ -87,8 +84,7 @@ GET /api/v1/global-business-sectors?classification_system=CIIU_REV5_AC&code=0123
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `reportes.test` (por `perm:party-identity:global_business_sectors:read`), `consulta.test` (por `perm:party-identity:global_business_sectors:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `inventario.test` (por `perm:party-identity:global_business_sectors:read`)
 
 **Por qué se hace así**
 
@@ -112,8 +108,7 @@ GET /api/v1/global-business-sectors?classification_system=CIIU_REV5_AC&search=47
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `reportes.test` (por `perm:party-identity:global_business_sectors:read`), `consulta.test` (por `perm:party-identity:global_business_sectors:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `inventario.test` (por `perm:party-identity:global_business_sectors:read`)
 
 **Por qué se hace así**
 
@@ -137,8 +132,7 @@ GET /api/v1/global-business-sectors/<CLASE_CAFE>
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `reportes.test` (por `perm:party-identity:global_business_sectors:read`), `consulta.test` (por `perm:party-identity:global_business_sectors:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:global_business_sectors:read`), `ventas.test` (por `perm:party-identity:global_business_sectors:read`), `inventario.test` (por `perm:party-identity:global_business_sectors:read`)
 
 **Por qué se hace así**
 

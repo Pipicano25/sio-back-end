@@ -167,10 +167,10 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `ventas.test` consulta productos e inventario (con precios y existencias, sin mínimos); "
-        "`inventario.test` consulta las cuatro (con existencias y mínimos, sin precios); `supervisor.test` y "
-        "`admin.test` ven todos los bloques.",
-        "- No puede: `compras.test`, `reportes.test` y `consulta.test` reciben `403` en las cuatro consultas.",
+        "- Puede: `ventas.test`, `compras.test` e `inventario.test` (grupo `empleado`) consultan las cuatro rutas con "
+        "precios, existencias y mínimos; `supervisor.test` (grupo `admin`) y `admin.test` (grupo `superadmin`) también.",
+        "- No puede: un usuario sin los permisos de estas consultas recibe `403` (ningún usuario de prueba del realm "
+        "está en ese caso desde la spec 026).",
     ]
     return "\n".join(lines) + "\n"
 
@@ -217,8 +217,8 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "propios permisos.",
         "- Los precios de venta y su moneda vienen de Commercial Relationship; las existencias, de Inventory, y las "
         "imágenes, de Product Catalog.",
-        "- `ventas` ve existencias sin tener `perm:inventory:balances:read`: las ve por "
-        "`perm:product-inventory-query:stock:read` (D-022-1).",
+        "- Las existencias se ven por `perm:product-inventory-query:stock:read` (D-022-1), aunque el usuario no tenga "
+        "`perm:inventory:balances:read`.",
         "",
         "## Usuarios de prueba",
         "",

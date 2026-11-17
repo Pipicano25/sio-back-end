@@ -117,7 +117,7 @@ def test_validation_and_permissions(as_user, as_token, service_token, world) -> 
     assert reader.post(url(world), json={"branch_ids": []}).status_code == 422
     assert reader.post(url(world), json={"branch_ids": [str(world.branch)], "x": 1}).status_code == 422
     assert reader.post(url(world), json={"branch_ids": [str(uuid4()) for _ in range(101)]}).status_code == 422
-    assert as_user("ventas.test").post(url(world), json={"branch_ids": [str(world.branch)]}).status_code == 403
+    assert as_user("sin-permisos.test").post(url(world), json={"branch_ids": [str(world.branch)]}).status_code == 403
     technical = as_token(service_token(BALANCES_READ, PRODUCT_POLICIES_READ, VALUATION_READ, PLATFORM_LOOKUP,
                                        client_id="product-inventory-query-service"))
     assert technical.post(url(world), json={"branch_ids": [str(world.branch)], "include_valuation": True}).status_code == 200

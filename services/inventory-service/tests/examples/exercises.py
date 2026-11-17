@@ -947,7 +947,7 @@ EXERCISES += [
                 "method": "GET",
                 "path": f"{COMPANY_BASE}/inventory-policies?branch_id={BRANCH}",
                 "expect": 200,
-                "why": ["La bodega consulta las políticas pero no las configura (solo administradores y supervisores)."],
+                "why": ["La bodega consulta las políticas pero no las configura (solo los grupos `superadmin` y `admin`)."],
             },
             {
                 "file": "09-nueva-politica-del-arroz.md",

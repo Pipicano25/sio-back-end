@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from collections.abc import Generator
@@ -73,30 +74,29 @@ OPERATOR = "inventory-test-operator"
 PURCHASE_CLIENT = "purchase-service"
 SALES_CLIENT = "sales-service"
 
-# Roles de cada usuario de prueba según su grupo en la plantilla del realm
-# (incluida la asignación de esta fase al grupo `inventario`, DS-17).
-USER_ROLES: dict[str, tuple[str, ...]] = {
-    "admin.test": ("perm:all:all:all",),
-    "supervisor.test": ("perm:all:all:read", "perm:all:all:create", "perm:all:all:update"),
-    "compras.test": ("perm:purchase:all:all", "perm:commercial-relationship:all:read", "perm:operational-context:all:read"),
-    "ventas.test": ("perm:sales:all:all", "perm:commercial-relationship:all:read", "perm:operational-context:all:read"),
-    "inventario.test": (
-        "perm:operational-context:all:read",
-        "perm:product-catalog:all:read",
-        BALANCES_READ,
-        MOVEMENTS_READ,
-        "perm:commercial-relationship:company_products:read",
-        # 013 (DS-14): ajustes, conteos y todas las lecturas; políticas solo por comodín.
-        ADJUSTMENTS_CREATE,
-        COUNTS_CREATE,
-        *READS_013,
-        STOCK_EVOLUTION_READ,
-    ),
-    # Spec 023 (DR-11): `reportes` recibe solo `stock_evolution:read` de Inventory (nunca `movements:read`).
-    "reportes.test": ("perm:operational-context:application_users:read", "perm:commercial-relationship:company_products:read",
-                      STOCK_EVOLUTION_READ),
-    "consulta.test": ("perm:operational-context:application_users:read", "perm:commercial-relationship:company_products:read"),
+# Roles de cada usuario de prueba: los de su grupo en la plantilla del realm (spec 026: `superadmin`, `admin` y
+# `empleado`). Se leen de la plantilla para que las pruebas sigan siempre al realm vigente.
+_REALM = json.loads(
+    (PROJECT_ROOT.parents[1] / "infrastructure" / "keycloak" / "realm-template" / "sio-realm.template.json")
+    .read_text(encoding="utf-8")
+)
+_GROUP_ROLES = {"/" + group["name"]: tuple(group["clientRoles"]["sio-api"]) for group in _REALM["groups"]}
+REALM_USER_ROLES: dict[str, tuple[str, ...]] = {
+    user["username"]: _GROUP_ROLES[user["groups"][0]]
+    for user in _REALM["users"]
+    if "serviceAccountClientId" not in user
 }
+
+# Identidades sintéticas de prueba (no existen en el realm): miembros de la empresa sin permisos de Inventory, para
+# comprobar los `403` que ningún grupo del realm permite ya probar (los tres grupos tienen lecturas de Inventory).
+SYNTHETIC_USER_ROLES: dict[str, tuple[str, ...]] = {
+    "sin-permisos.test": ("perm:operational-context:application_users:read",
+                          "perm:commercial-relationship:company_products:read"),
+    # DR-11 (spec 023): solo `stock_evolution:read` de Inventory, nunca `movements:read` ni la valoración.
+    "solo-evolucion.test": ("perm:operational-context:application_users:read",
+                            "perm:commercial-relationship:company_products:read", STOCK_EVOLUTION_READ),
+}
+USER_ROLES: dict[str, tuple[str, ...]] = {**REALM_USER_ROLES, **SYNTHETIC_USER_ROLES}
 
 TABLES = (
     "inventory_count_details",

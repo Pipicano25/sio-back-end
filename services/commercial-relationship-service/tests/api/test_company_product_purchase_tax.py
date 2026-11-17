@@ -104,7 +104,7 @@ def test_batch_limits_and_ownership(supervisor, as_user, company, other_company,
     assert response.status_code == 422 and code_of(response) == "COMPANY_PRODUCT_NOT_FOUND"
 
 
-@pytest.mark.parametrize("username", ["compras.test", "ventas.test", "consulta.test", "reportes.test", "inventario.test"])
+@pytest.mark.parametrize("username", ["compras.test", "ventas.test", "inventario.test"])
 def test_only_admins_and_supervisors_configure_the_tax(as_user, supervisor, company, fake_catalog, username) -> None:
     product = adopt(supervisor, company, fake_catalog)
     client = as_user(username)

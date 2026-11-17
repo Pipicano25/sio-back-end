@@ -5,7 +5,7 @@ Para cada paso:
 1. lo repite con una identidad sin permisos y lee el permiso exacto del log de `sio-auth` (el `403` nunca lo
    revela, y se comprueba);
 2. comprueba que ese permiso exista en la plantilla del realm;
-3. cada usuario de prueba sin el permiso recibe `403` (`compras`, `reportes` y `consulta` en todas las consultas);
+3. cada usuario de prueba sin el permiso recibe `403` (desde la spec 026 ningún usuario del realm está en ese caso);
    cada usuario con él, y con los permisos de bloque que el paso exija (`requires`), obtiene `allowed_status`, y
    los que tienen el permiso funcional pero no los de bloque reciben `403`;
 4. lo ejecuta con el actor y comprueba el estado documentado.

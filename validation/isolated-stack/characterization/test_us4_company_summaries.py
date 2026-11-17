@@ -4,7 +4,7 @@ Lo grabado con las lecturas por HTTP debe repetirse igual con las lecturas por c
 ``GET /company-summaries`` no hace **ninguna** solicitud a otros servicios y responde en menos de 1 s con
 ``page_size=100`` (SC-003).
 
-Mundo propio de cada ejecución (datos ficticios): ``consulta.test`` es miembro activo de 101 empresas nuevas
+Mundo propio de cada ejecución (datos ficticios): ``compras.test`` (grupo ``empleado``) es miembro activo de 101 empresas nuevas
 (una con la membresía inactivada, que no debe aparecer, y otra con la empresa inactivada, que aparece con
 ``company_status=INACTIVE``); se observan ``page_size=100`` y la segunda página con ``page_size=60``. Al terminar se inactivan sus membresías para que la siguiente ejecución vea solo las suyas.
 
@@ -15,6 +15,7 @@ las pruebas de paridad de CR (T062).
 
 from __future__ import annotations
 
+import base64
 import json
 import time
 
@@ -24,7 +25,7 @@ from support import Normalizer, RequestWindow, outage_case, owner_database_down,
 
 OC, CR, PI = (URLS[k] for k in ("operational_context", "commercial_relationship", "party_identity"))
 CONTAINERS = tuple(f"sio-it-{name}-service" for name in ("commercial-relationship", "operational-context", "party-identity"))
-USER = "consulta.test"
+USER = "compras.test"
 COMPANIES = 100
 LIMIT_MS = 1000
 
@@ -36,6 +37,17 @@ def world(seed, users, run_id):
     person = seed.party(admin, colombia, "PERSON", "CC", "person-identities", {
         "identification_country_id": colombia, "identification_type": "CC",
         "first_name": f"CONSULTAUS4{run_id}", "last_name": "DATO FICTICIO", "birth_date": "1990-01-01"})
+    # La semilla hace a USER miembro de la empresa A: esas membresías previas se inactivan durante el módulo para
+    # que el usuario tenga exactamente las empresas de este mundo, y se reactivan al final.
+    previous = []
+    own = _summaries(users(USER), page=1, page_size=100)
+    subject = _subject(own.request.headers["Authorization"])
+    for item in expect(own)["items"]:
+        listed = expect(admin.get(f"{OC}/companies/{item['company_id']}/application-users",
+                                  params={"keycloak_user_id": subject, "page_size": 100}))
+        for member in listed["items"]:
+            _deactivate(admin, member)
+            previous.append(member)
     memberships, names = [], {}
     for index in range(COMPANIES + 1):
         legal_name = f"EMPRESA FICTICIA US4 {index:03d} {run_id} (DATO FICTICIO DE VALIDACION)"
@@ -55,6 +67,16 @@ def world(seed, users, run_id):
     yield {"names": names, "run": run_id, "total": COMPANIES}
     for member in memberships[:-1]:
         _deactivate(admin, member)
+    for member in previous:
+        current = expect(admin.get(f"{OC}/application-users/{member['id']}"))
+        if current["status"] != "ACTIVE":
+            expect(admin.post(f"{OC}/application-users/{member['id']}/reactivate", json={"version": current["version"]}))
+
+
+def _subject(authorization: str) -> str:
+    """`sub` del token (la membresía guarda `keycloak_user_id`, no el nombre de usuario)."""
+    payload = authorization.split()[1].split(".")[1]
+    return json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))["sub"]
 
 
 def _deactivate(admin, member):
@@ -131,9 +153,9 @@ def test_company_summaries(world, users, book, reads, name, params):
 def test_caida_del_propietario(world, users, outage_book, owner):
     """T079: Commercial Relationship → Operational Context y → Party Identity con la base del propietario caída."""
     # Con http, Operational Context consulta Party Identity por cada empresa del usuario (`/me/operational-context`):
-    # para `consulta.test`, con cientos de membresías acumuladas, eso ya agota los 5 s sin ninguna caída y el 503
-    # grabado sería ese. Se usa `reportes.test` (pocas empresas) y una página de 5.
-    client = users("reportes.test")
+    # para un usuario con cientos de membresías, eso ya agota los 5 s sin ninguna caída y el 503 grabado sería ese.
+    # Se usa `inventario.test` (pocas empresas) y una página de 5.
+    client = users("inventario.test")
     with owner_database_down(owner):
         start = time.monotonic()
         response = _summaries(client, page=1, page_size=5)

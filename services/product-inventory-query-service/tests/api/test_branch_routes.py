@@ -106,7 +106,7 @@ def test_stock_and_minimums_are_only_from_the_branch(world, seeded, as_user) -> 
 
 
 def test_low_stock_isolation_between_branches(world, seeded, as_user) -> None:
-    client = as_user("inventario.test")
+    client = as_user("bodeguero.sintetico")
     zero = client.get(branch_url(world, "low-stock-products", world.branches[0])).json()["items"]
     one = client.get(branch_url(world, "low-stock-products", world.branches[1])).json()["items"]
     assert {pair["company_product_id"] for pair in zero} == {seeded["low_0"].id}
@@ -115,7 +115,7 @@ def test_low_stock_isolation_between_branches(world, seeded, as_user) -> None:
 
 
 def test_summary_of_one_branch(world, seeded, as_user) -> None:
-    client = as_user("inventario.test")
+    client = as_user("bodeguero.sintetico")
     body = client.get(branch_url(world, "inventory-summary", world.branches[0])).json()
     assert [row["branch_id"] for row in body["branches"]] == [str(world.branches[0])]
     branch = {key: value for key, value in body["branches"][0].items() if key != "branch_id"}
@@ -202,7 +202,7 @@ def test_anonymous_is_401(world, as_token, endpoint) -> None:
     assert as_token(None).get(branch_url(world, endpoint)).status_code == 401
 
 
-@pytest.mark.parametrize("user", ["compras.test", "reportes.test", "consulta.test"])
+@pytest.mark.parametrize("user", ["sin-acceso.sintetico", "sin-permisos.sintetico"])
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
 def test_users_without_the_functional_permission_are_403(world, as_user, user, endpoint) -> None:
     response = as_user(user).get(branch_url(world, endpoint))
@@ -210,7 +210,7 @@ def test_users_without_the_functional_permission_are_403(world, as_user, user, e
 
 
 def test_ventas_sees_prices_and_stock_but_not_minimums_and_no_low_stock(world, seeded, as_user) -> None:
-    client = as_user("ventas.test")
+    client = as_user("vendedor.sintetico")
     body = client.get(branch_url(world, "inventory-overviews")).json()
     assert body["items"] and all("minimum_state" not in row for item in body["items"]
                                  for row in item["stock"]["branches"])
@@ -220,7 +220,7 @@ def test_ventas_sees_prices_and_stock_but_not_minimums_and_no_low_stock(world, s
 
 
 def test_inventario_does_not_see_prices(world, seeded, as_user) -> None:
-    items = as_user("inventario.test").get(branch_url(world, "product-overviews")).json()["items"]
+    items = as_user("bodeguero.sintetico").get(branch_url(world, "product-overviews")).json()["items"]
     assert items and all("price" not in presentation for item in items for presentation in item["presentations"])
 
 

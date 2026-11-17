@@ -23,7 +23,7 @@ POST /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile:close
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:delete`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test` — sobre `party-identity` solo tienen `read`; les falta `delete`; `inventario.test` — no tiene ningún permiso sobre `party-identity`; `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `organization_contact_profiles`
+- ❌ **No pueden (responde `403`):** `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
 - ℹ️ Cerrar el perfil (`POST .../contact-profile:close`) exige `delete`, aunque no elimina: la versión queda en el historial.
 
 **Por qué se hace así**
@@ -60,7 +60,7 @@ POST /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile:close
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:delete`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test` — sobre `party-identity` solo tienen `read`; les falta `delete`; `inventario.test` — no tiene ningún permiso sobre `party-identity`; `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `organization_contact_profiles`
+- ❌ **No pueden (responde `403`):** `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
 - ℹ️ Cerrar el perfil (`POST .../contact-profile:close`) exige `delete`, aunque no elimina: la versión queda en el historial.
 
 **Por qué se hace así**
@@ -84,8 +84,7 @@ GET /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:organization_contact_profiles:read`), `ventas.test` (por `perm:party-identity:organization_contact_profiles:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`; `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `organization_contact_profiles`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_contact_profiles:read`), `ventas.test` (por `perm:party-identity:organization_contact_profiles:read`), `inventario.test` (por `perm:party-identity:organization_contact_profiles:read`)
 
 **Por qué se hace así**
 

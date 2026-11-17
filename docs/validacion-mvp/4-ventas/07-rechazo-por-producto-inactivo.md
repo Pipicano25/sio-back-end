@@ -20,7 +20,7 @@ POST http://127.0.0.1:8106/api/v1/company-products/<PRODUCTO_EMPRESA_B>/deactiva
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_products:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:delete`)
 
 **Respuesta esperada:** `200`
 
@@ -46,7 +46,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:update`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:update`)
 
 **Respuesta esperada:** `409`
 
@@ -66,7 +66,7 @@ POST http://127.0.0.1:8106/api/v1/company-products/<PRODUCTO_EMPRESA_B>/reactiva
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:update`)
 
 **Respuesta esperada:** `200`
 

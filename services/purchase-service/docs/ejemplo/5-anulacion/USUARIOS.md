@@ -3,12 +3,10 @@
 | Usuario | Paso 1 | Paso 2 | Paso 3 | Paso 4 | Paso 5 | Paso 6 | Paso 7 | Paso 8 | Paso 9 | Paso 10 | Paso 11 | Paso 12 | Paso 13 | Paso 14 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `admin.test` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` |
-| `supervisor.test` | `—` | `—` | `403` | `—` | `—` | `403` | `—` | `—` | `—` | `403` | `—` | `—` | `—` | `403` |
+| `supervisor.test` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` |
 | `compras.test` | `201` | `201` | `200` | `201` | `200` | `200` | `201` | `200` | `200` | `200` | `201` | `200` | `200` | `409` |
-| `ventas.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `inventario.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `reportes.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `consulta.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `ventas.test` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` |
+| `inventario.test` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` | `—` |
 
 ## Permiso por URL
 
@@ -31,5 +29,5 @@
 
 ## Ejemplos
 
-- Puede: `compras.test` (grupo `compras`, `perm:purchase:all:all`) registra, confirma y anula compras de las sucursales asignadas; `admin.test` también, por comodín; `supervisor.test` registra y confirma, pero no anula (no tiene `delete`); `reportes.test` y `consulta.test` solo consultan.
-- No puede: ninguna cuenta de servicio escribe compras (ni el propio `purchase-service`); `ventas.test` e `inventario.test` reciben `403`; sin asignación a la sucursal, ni el comodín permite escribir.
+- Puede: `compras.test`, `ventas.test` e `inventario.test` (grupo `empleado`, permisos explícitos de `purchase`) registran, confirman y anulan compras de las sucursales asignadas; `supervisor.test` (grupo `admin`, `perm:purchase:all:all`) también, y además ajusta la tasa de impuesto de una línea; `admin.test` (grupo `superadmin`) por comodín.
+- No puede: ninguna cuenta de servicio escribe compras (ni el propio `purchase-service`); el grupo `empleado` no ajusta tasas de línea; sin asignación a la sucursal, ni el comodín permite escribir.

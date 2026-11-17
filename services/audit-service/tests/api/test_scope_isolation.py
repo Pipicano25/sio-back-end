@@ -36,7 +36,7 @@ def test_company_route_never_returns_platform_or_other_company(as_user, emitter,
     assert admin.get(f"{url(company)}/{platform['id']}").status_code == 404
 
 
-@pytest.mark.parametrize("username", ["compras.test", "ventas.test", "inventario.test", "reportes.test", "consulta.test"])
+@pytest.mark.parametrize("username", ["compras.test", "ventas.test", "inventario.test"])
 def test_membership_does_not_grant_audit(as_user, company, username) -> None:
     """FR-037: ser miembro no da acceso; sin `perm:audit:audit-events:read` → 403."""
     response = as_user(username).get(url(company))

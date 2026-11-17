@@ -51,7 +51,7 @@ def test_duplicate_supplier_and_same_org_as_customer(as_user, company, fake_part
 def test_block_requires_delete_and_reason(as_user, company, fake_party):
     created = supplier(as_user("admin.test"), company, fake_party)
 
-    assert _action(as_user("supervisor.test"), created, "block", block_reason="Incumplimiento").status_code == 403
+    assert _action(as_user("ventas.test"), created, "block", block_reason="Incumplimiento").status_code == 403
 
     missing = _action(as_user("admin.test"), created, "block")
     assert missing.status_code == 422 and code_of(missing) == "VALIDATION_ERROR"

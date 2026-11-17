@@ -14,6 +14,6 @@ Ejecute los archivos en este orden; cada paso usa los `id` guardados en los ante
 | 02 | [02-registrar-las-compras.md](02-registrar-las-compras.md) | Registrar las compras | 5 | `<COMPRA_1>`, `<COMPRA_1_VERSION>`, `<COMPRA_2>`, `<COMPRA_2_VERSION>`, `<COMPRA_3>`, `<COMPRA_3_VERSION>`, `<COMPRA_4>`, `<COMPRA_4_VERSION>` |
 | 03 | [03-confirmar-las-compras.md](03-confirmar-las-compras.md) | Confirmar las compras | 3 | `<COMPRA_1_NUMERO>`, `<COMPRA_1_VERSION>`, `<COMPRA_2_NUMERO>`, `<COMPRA_2_VERSION>`, `<COMPRA_3_NUMERO>`, `<COMPRA_3_VERSION>` |
 | 04 | [04-confirmar-la-recepcion-fisica-de-las-compras.md](04-confirmar-la-recepcion-fisica-de-las-compras.md) | Confirmar la recepción física de las compras | 3 | `<COMPRA_1_OPERACION>`, `<COMPRA_1_VERSION>`, `<COMPRA_2_OPERACION>`, `<COMPRA_2_VERSION>`, `<COMPRA_3_OPERACION>`, `<COMPRA_3_VERSION>` |
-| 05 | [05-consultar-el-inventario-tras-las-compras.md](05-consultar-el-inventario-tras-las-compras.md) | Consultar el inventario tras las compras | 5 | — |
+| 05 | [05-consultar-el-inventario-tras-las-compras.md](05-consultar-el-inventario-tras-las-compras.md) | Consultar el inventario tras las compras | 6 | — |
 
 Usuarios y permisos de este ejercicio: [USUARIOS.md](USUARIOS.md).

@@ -6,7 +6,7 @@ Ejercicio 8: Consultas.
 
 `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000099/sales/<VENTA>`
 
-Ejecuta: `reportes.test`.
+Ejecuta: `compras.test`.
 
 ### Por qué
 
@@ -21,12 +21,10 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (Operational Context
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `404` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `404` | tiene `perm:all:all:read` |
-| `compras.test` | No | `403` | no tiene `perm:sales:sales:read` |
+| `supervisor.test` | Sí | `404` | tiene `perm:sales:all:all` |
+| `compras.test` | Sí | `404` | tiene `perm:sales:all:read` |
 | `ventas.test` | Sí | `404` | tiene `perm:sales:all:read` |
-| `inventario.test` | No | `403` | no tiene `perm:sales:sales:read` |
-| `reportes.test` | Sí | `404` | tiene `perm:sales:sales:read` |
-| `consulta.test` | Sí | `404` | tiene `perm:sales:sales:read` |
+| `inventario.test` | Sí | `404` | tiene `perm:sales:all:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

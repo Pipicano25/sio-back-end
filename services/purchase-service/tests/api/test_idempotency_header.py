@@ -82,5 +82,5 @@ def test_authentication_and_authorization_are_still_checked_first(as_token, as_u
     draft = make_draft()
     url = f"{base(world)}/purchases/{draft['id']}/confirmation"
     assert as_token(None).post(url, json={"version": 1}).status_code == 401  # sin token: 401 aunque falte la cabecera
-    response = as_user("consulta.test").post(url, json={"version": 1})  # sin permiso: 403 aunque falte la cabecera
+    response = as_user("lector.sintetico").post(url, json={"version": 1})  # sin permiso: 403 aunque falte la cabecera
     assert response.status_code == 403 and response.json()["code"] == "PURCHASE.FORBIDDEN"

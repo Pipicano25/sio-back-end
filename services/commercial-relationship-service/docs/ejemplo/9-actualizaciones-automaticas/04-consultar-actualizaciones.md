@@ -18,14 +18,14 @@ GET /api/v1/companies/<EMPRESA>/automatic-price-applications
 
 **Permiso que exige la URL:** `perm:commercial-relationship:automatic_price_applications:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `automatic_price_applications` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:read`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `automatic_price_applications` de `commercial-relationship`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
 
 - Paginado. Filtros: `status`, `price_list_id`, `company_product_presentation_id` y `purchase_id`.
-- Solo administradores y supervisores: la respuesta incluye costos y porcentajes.
+- Solo los grupos `superadmin` y `admin`: la respuesta incluye costos y porcentajes.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 
@@ -57,8 +57,8 @@ GET /api/v1/companies/<EMPRESA>/automatic-price-applications?status=FAILED
 
 **Permiso que exige la URL:** `perm:commercial-relationship:automatic_price_applications:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `automatic_price_applications` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:read`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `automatic_price_applications` de `commercial-relationship`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Respuesta esperada — `200 OK`** (abreviada)
@@ -87,8 +87,8 @@ GET /api/v1/companies/<EMPRESA>/automatic-price-applications/<FALLIDA>
 
 **Permiso que exige la URL:** `perm:commercial-relationship:automatic_price_applications:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `automatic_price_applications` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:read`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `automatic_price_applications` de `commercial-relationship`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**

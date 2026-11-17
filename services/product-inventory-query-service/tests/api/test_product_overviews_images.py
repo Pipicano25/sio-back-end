@@ -70,7 +70,7 @@ def test_include_images_uses_the_same_batch_calls(world, as_user) -> None:
     """FR-024-42: las mismas llamadas por lotes con y sin `include_images` (sin consultas por fila)."""
     for index in range(5):
         world.product(f"Producto {index}", presentations=TWO, has_image=True)
-    client = as_user("ventas.test")
+    client = as_user("vendedor.sintetico")
     log = world.fakes.log
 
     items(world, client)
@@ -86,7 +86,7 @@ def test_include_images_is_not_part_of_the_cursor(world, as_user) -> None:
     """FR-024-41: cambiar `include_images` entre páginas no reinicia la paginación."""
     for index in range(5):
         world.product(f"Producto {index}", has_image=True)
-    client = as_user("ventas.test")
+    client = as_user("vendedor.sintetico")
     first = body(world, client, "page_size=2")
     second = body(world, client, f"page_size=2&include_images=true&cursor={first['next_cursor']}")
     assert second["pagination_reset"] is False
@@ -99,7 +99,7 @@ def test_has_image_filter_means_any_presentation_with_a_primary_image(world, as_
     second_only = world.product("Solo la caja", presentations=TWO)
     world.fakes.pc.add_image(second_only.global_presentations[1])
     without = world.product("Sin imagen")
-    client = as_user("ventas.test")
+    client = as_user("vendedor.sintetico")
     assert [i["company_product_id"] for i in items(world, client, "has_image=true")] == [second_only.id]
     assert [i["company_product_id"] for i in items(world, client, "has_image=false")] == [without.id]
     found = by_code(items(world, client, "has_image=true")[0])
@@ -112,12 +112,12 @@ def test_has_image_false_never_carries_a_url(world, as_user) -> None:
     presentation = item.global_presentations[0]
     info = world.fakes.pc.presentation_rows[presentation]
     world.fakes.pc.presentation_rows[presentation] = replace(info, image_url="https://pc.test/x", image_asset_id=uuid4())
-    found = items(world, as_user("ventas.test"))[0]["presentations"][0]
+    found = items(world, as_user("vendedor.sintetico"))[0]["presentations"][0]
     assert (found["has_image"], found["asset_id"], found["image_url"]) == (False, None, None)
 
 
 def test_include_images_must_be_boolean(world, as_user) -> None:
-    response = as_user("ventas.test").get(f"{world.base}/product-overviews?include_images=quizas")
+    response = as_user("vendedor.sintetico").get(f"{world.base}/product-overviews?include_images=quizas")
     assert response.status_code == 422
     assert response.json()["errors"][0]["field"] == "include_images"
 
@@ -125,7 +125,7 @@ def test_include_images_must_be_boolean(world, as_user) -> None:
 def test_filter_is_applied_before_selecting_the_page(world, as_user) -> None:
     """FR-022-48 y CP-20: con 30 productos y solo los últimos 8 con imagen, la primera página trae 5 con imagen."""
     created = [world.product(f"Producto {index:02d}", has_image=index >= 22) for index in range(30)]
-    client = as_user("ventas.test")
+    client = as_user("vendedor.sintetico")
     first = items(world, client, "has_image=true&page_size=5")
     assert [i["display_name"] for i in first] == [f"Producto {index:02d}" for index in range(22, 27)]
     assert all(any(p["has_image"] for p in i["presentations"]) for i in first)
@@ -142,7 +142,7 @@ def test_has_image_combined_with_brand_and_search(world, as_user) -> None:
         item = world.product(f"Colgate {index:02d}", brand=brand if index % 2 == 0 else uuid4(), has_image=index % 3 != 0)
         if index % 2 == 0 and index % 3 != 0:
             expected.append(item.id)
-    walked, pages = walk(as_user("ventas.test"),
+    walked, pages = walk(as_user("vendedor.sintetico"),
                          f"{world.base}/product-overviews?search=Colgate&brand_id={brand}&has_image=true&page_size=4")
     assert [i["company_product_id"] for i in walked] == expected
     assert len(walked) == len(set(i["company_product_id"] for i in walked))
@@ -154,7 +154,7 @@ def test_image_filter_is_evaluated_by_product_catalog_on_the_candidates_only(wor
     for index in range(3):
         world.product(f"Colgate {index}", has_image=True)
     world.product("Otra marca", has_image=True)
-    items(world, as_user("ventas.test"), "search=Colgate&has_image=true")
+    items(world, as_user("vendedor.sintetico"), "search=Colgate&has_image=true")
     log = world.fakes.log
     assert log.order.index("search_products") < log.order.index("match_candidates")
     ((_, arguments),) = [key for key in log.calls if key[0] == "match_candidates"]

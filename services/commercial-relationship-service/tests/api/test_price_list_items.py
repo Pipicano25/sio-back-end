@@ -178,8 +178,8 @@ def test_permissions(as_user, admin, company, world):
     url = f"/api/v1/price-list-items/{created['id']}"
     assert as_user("ventas.test").get(url).status_code == 200
     assert as_user("ventas.test").post(url + "/change-price", json={"unit_price": "1", "version": 1}).status_code == 403
-    assert as_user("supervisor.test").post(url + "/deactivate", json={"version": 1}).status_code == 403
-    assert as_user("inventario.test").get(URL.format(company=company)).status_code == 403
+    assert as_user("ventas.test").post(url + "/deactivate", json={"version": 1}).status_code == 403
+    assert as_user("sin-permisos.test").get(URL.format(company=company)).status_code == 403
 
 
 # --- spec 019: precios exclusivamente por presentación ---------------------------------------------------------------

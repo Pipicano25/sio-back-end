@@ -31,14 +31,14 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>` 
 
 | Permiso | Operaciones | Grupos de la plantilla |
 |---|---|---|
-| `perm:sales:sales:create` | Crear venta | `administradores`, `supervisores`, `ventas` (`perm:sales:all:*`) |
-| `perm:sales:sales:read` | Listar, consultar, disponibilidad, agregaciones | `administradores`, `supervisores`, `ventas`, `reportes`, `consulta` |
-| `perm:sales:sales:update` | Editar cabecera, **confirmar** | `administradores`, `supervisores`, `ventas` |
-| `perm:sales:sales:delete` | **Anular** | `administradores`, `ventas` |
-| `perm:sales:sale_details:create` / `read` / `update` / `delete` | Líneas | `administradores`, `supervisores` (salvo `delete`), `ventas`; lectura también `reportes` y `consulta` |
-| `perm:sales:sale_operations:read` | Operaciones de confirmación y anulación | `administradores`, `supervisores`, `ventas`, `reportes`, `consulta` |
-| `perm:sales:sale_sequences:create` / `read` / `update` | Secuencias | `administradores`, `supervisores`, `ventas`; lectura también `reportes` y `consulta` |
-| `perm:sales:sales:read-profitability` | Añade costo y margen a las respuestas de venta y líneas | `administradores`, `supervisores` (permiso explícito; los comodines `read` **no** lo cubren) |
+| `perm:sales:sales:create` | Crear venta | `superadmin`, `admin`, `empleado` (`perm:sales:all:*`) |
+| `perm:sales:sales:read` | Listar, consultar, disponibilidad, agregaciones | `superadmin`, `admin`, `empleado` |
+| `perm:sales:sales:update` | Editar cabecera, **confirmar** | `superadmin`, `admin`, `empleado` |
+| `perm:sales:sales:delete` | **Anular** | `superadmin`, `admin`, `empleado` |
+| `perm:sales:sale_details:create` / `read` / `update` / `delete` | Líneas | `superadmin`, `admin`, `empleado` |
+| `perm:sales:sale_operations:read` | Operaciones de confirmación y anulación | `superadmin`, `admin`, `empleado` |
+| `perm:sales:sale_sequences:create` / `read` / `update` | Secuencias | `superadmin`, `admin`, `empleado` |
+| `perm:sales:sales:read-profitability` | Añade costo y margen a las respuestas de venta y líneas | `superadmin`, `admin` (vía `perm:sales:all:all`; los comodines `read` **no** lo cubren). El grupo `empleado` **no** lo tiene |
 
 ## Alcance de datos
 

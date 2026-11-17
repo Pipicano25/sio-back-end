@@ -1,16 +1,17 @@
 """Fixtures compartidos de product-inventory-query-service.
 
 - Sin base de datos: el servicio no persiste (spec 022, A-02).
-- `sio-auth` real con un JWKS local: tokens firmados en la prueba (sin Keycloak). Los usuarios llevan
-  los roles de su grupo en la plantilla del realm **más** los permisos nuevos de la spec 022
-  (FR-022-111); las cuentas de servicio llevan `client_id` y `preferred_username`.
+- `sio-auth` real con un JWKS local: tokens firmados en la prueba (sin Keycloak). Los usuarios del realm
+  llevan los roles de su grupo en la plantilla (spec 026), más identidades sintéticas para la visibilidad por bloque; las cuentas de servicio llevan `client_id` y `preferred_username`.
 - Las dependencias (OC, CR, PC, Inventory) se sustituyen por `tests/fakes.py` (Principio IV).
 """
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Generator
+from pathlib import Path
 from typing import Any
 
 import jwt
@@ -28,10 +29,27 @@ TEST_KID = "test-key"
 TEST_CURSOR_SECRET = "cursor-secret-for-tests-only-0123456789abcdef"
 
 PIQ = "perm:product-inventory-query"
+REALM = Path(__file__).resolve().parents[3] / "infrastructure" / "keycloak" / "realm-template" / "sio-realm.template.json"
+
+
+def _realm_user_roles() -> dict[str, tuple[str, ...]]:
+    """Roles de cada usuario de prueba según su grupo en la plantilla del realm (spec 026: superadmin, admin, empleado)."""
+    data = json.loads(REALM.read_text(encoding="utf-8"))
+    groups = {"/" + group["name"]: tuple(group["clientRoles"]["sio-api"]) for group in data["groups"]}
+    return {
+        user["username"]: groups[user["groups"][0]]
+        for user in data["users"]
+        if "serviceAccountClientId" not in user
+    }
+
+
+# Usuarios de prueba del realm más identidades **sintéticas** (no existen en el realm) que conservan las combinaciones
+# de permisos que ya ningún grupo tiene por separado desde la spec 026, para seguir probando la visibilidad por bloque:
+# `vendedor.sintetico` (precios y existencias, sin mínimos), `bodeguero.sintetico` (existencias y mínimos, sin precios),
+# `sin-acceso.sintetico` (sin permisos de este servicio) y `sin-permisos.sintetico` (solo lectura de usuarios de OC).
 USER_ROLES: dict[str, tuple[str, ...]] = {
-    "admin.test": ("perm:all:all:all",),
-    "supervisor.test": ("perm:all:all:read", "perm:all:all:create", "perm:all:all:update"),
-    "ventas.test": (
+    **_realm_user_roles(),
+    "vendedor.sintetico": (
         "perm:commercial-relationship:price_list_items:read",
         "perm:commercial-relationship:company_products:read",
         "perm:product-catalog:all:read",
@@ -40,7 +58,7 @@ USER_ROLES: dict[str, tuple[str, ...]] = {
         f"{PIQ}:inventory_overviews:read",
         f"{PIQ}:stock:read",
     ),
-    "inventario.test": (
+    "bodeguero.sintetico": (
         "perm:operational-context:all:read",
         "perm:product-catalog:all:read",
         "perm:inventory:balances:read",
@@ -52,9 +70,8 @@ USER_ROLES: dict[str, tuple[str, ...]] = {
         f"{PIQ}:low_stock_products:read",
         f"{PIQ}:stock:read",
     ),
-    "compras.test": ("perm:product-catalog:all:read", "perm:operational-context:all:read"),
-    "reportes.test": ("perm:operational-context:application_users:read",),
-    "consulta.test": ("perm:operational-context:application_users:read",),
+    "sin-acceso.sintetico": ("perm:product-catalog:all:read", "perm:operational-context:all:read"),
+    "sin-permisos.sintetico": ("perm:operational-context:application_users:read",),
 }
 
 

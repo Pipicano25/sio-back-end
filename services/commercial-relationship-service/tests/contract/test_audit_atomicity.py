@@ -20,7 +20,7 @@ def test_rejections_record_no_event(admin, as_user, as_token, company, other_com
     url = f"/api/v1/company-products/{product['id']}"
 
     assert as_token(None).put(url, json=product_update_body(product, display_name="X")).status_code == 401
-    assert as_user("consulta.test").put(url, json=product_update_body(product, display_name="X")).status_code == 403
+    assert as_user("ventas.test").put(url, json=product_update_body(product, display_name="X")).status_code == 403
     assert admin.put(url, json=product_update_body(product, display_name="X", version=99)).status_code == 409
     assert admin.put(url, json=product_update_body(product, currency_code="XX")).status_code == 422
     duplicated = admin.post(

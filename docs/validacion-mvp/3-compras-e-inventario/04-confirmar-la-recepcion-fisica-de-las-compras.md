@@ -23,7 +23,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:update`), `ventas.test` (por `perm:purchase:purchases:update`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:update`)
 
 **Por qué se hace así**
 
@@ -54,7 +54,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:update`), `ventas.test` (por `perm:purchase:purchases:update`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:update`)
 
 **Por qué se hace así**
 
@@ -85,7 +85,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:update`), `ventas.test` (por `perm:purchase:purchases:update`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:update`)
 
 **Por qué se hace así**
 

@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from collections.abc import Generator
@@ -50,16 +51,20 @@ READ = "perm:audit:audit-events:read"
 PLATFORM_READ = "perm:audit:platform-events:read"
 EMITTER = "audit-test-emitter"
 
-# Roles de cada usuario de prueba según su grupo en la plantilla del realm (DS-18:
-# ningún grupo recibe permisos de auditoría explícitos; solo los comodines).
+# Roles de cada usuario de prueba: los de su grupo en la plantilla del realm (spec 026: `superadmin`, `admin` y
+# `empleado`), leídos de la plantilla. DS-18: `superadmin` tiene la auditoría por su comodín y `admin` solo la
+# lectura de empresa (`audit-events:read`); `empleado` no tiene permisos de auditoría.
+_REALM = json.loads(
+    (PROJECT_ROOT.parents[1] / "infrastructure" / "keycloak" / "realm-template" / "sio-realm.template.json")
+    .read_text(encoding="utf-8")
+)
+_GROUP_ROLES = {"/" + group["name"]: tuple(group["clientRoles"]["sio-api"]) for group in _REALM["groups"]}
 USER_ROLES: dict[str, tuple[str, ...]] = {
-    "admin.test": ("perm:all:all:all",),
-    "supervisor.test": ("perm:all:all:read", "perm:all:all:create", "perm:all:all:update"),
-    "compras.test": ("perm:commercial-relationship:all:read", "perm:operational-context:all:read"),
-    "ventas.test": ("perm:commercial-relationship:all:read", "perm:operational-context:all:read"),
-    "reportes.test": ("perm:operational-context:application_users:read",),
-    "consulta.test": ("perm:operational-context:application_users:read",),
-    "inventario.test": ("perm:operational-context:all:read", "perm:product-catalog:all:read"),
+    **{
+        user["username"]: _GROUP_ROLES[user["groups"][0]]
+        for user in _REALM["users"]
+        if "serviceAccountClientId" not in user
+    },
     # Grupo hipotético al que se concedió solo la lectura de auditoría en Keycloak,
     # sin el permiso que exige Operational Context (FR-037).
     "auditor.sin-oc": (READ,),

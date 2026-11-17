@@ -26,8 +26,8 @@ curl -X POST "http://localhost:8003/api/v1/products/<PRODUCTO>/presentations/<PR
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
 - ℹ️ Todo lo que se agrega **dentro** de un producto (categorías, valores, presentaciones, códigos, grupos, imágenes) exige `update` sobre `products`.
 
 **Por qué se hace así**
@@ -71,8 +71,8 @@ curl -X POST "http://localhost:8003/api/v1/products/<PRODUCTO>/presentations/<PR
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
 - ℹ️ Todo lo que se agrega **dentro** de un producto (categorías, valores, presentaciones, códigos, grupos, imágenes) exige `update` sobre `products`.
 
 **Por qué se hace así**
@@ -105,8 +105,8 @@ curl -X POST "http://localhost:8003/api/v1/products/<PRODUCTO>/presentations/<PR
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
 - ℹ️ Todo lo que se agrega **dentro** de un producto (categorías, valores, presentaciones, códigos, grupos, imágenes) exige `update` sobre `products`.
 
 **Por qué se hace así**
@@ -134,7 +134,7 @@ GET /api/v1/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets
 
 **Permiso que exige la URL:** `perm:product-catalog:products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`), `reportes.test` (por `perm:product-catalog:products:read`), `consulta.test` (por `perm:product-catalog:products:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -174,7 +174,7 @@ POST /api/v1/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets/<ACTIVO_IMA
 **Permiso que exige la URL:** `perm:product-catalog:products:deactivate`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `product-catalog` solo tiene `create`, `read`, `update`; le falta `deactivate`; `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `deactivate`
+- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `product-catalog` solo tiene `create`, `read`, `update`; le falta `deactivate`; `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `deactivate`
 - ℹ️ Inactivar es una acción propia (`deactivate`): no la cubren `create` ni `update`.
 
 **Por qué se hace así**
@@ -211,7 +211,7 @@ POST /api/v1/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets/<ACTIVO_IMA
 **Permiso que exige la URL:** `perm:product-catalog:products:deactivate`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `product-catalog` solo tiene `create`, `read`, `update`; le falta `deactivate`; `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `deactivate`
+- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `product-catalog` solo tiene `create`, `read`, `update`; le falta `deactivate`; `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `deactivate`
 - ℹ️ Inactivar es una acción propia (`deactivate`): no la cubren `create` ni `update`.
 
 **Por qué se hace así**
@@ -245,8 +245,8 @@ POST /api/v1/products/<PRODUCTO>/presentations/<PRES_PACK_X2>/assets/<ACTIVO_IMA
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
 - ℹ️ Todo lo que se agrega **dentro** de un producto (categorías, valores, presentaciones, códigos, grupos, imágenes) exige `update` sobre `products`.
 
 **Por qué se hace así**
@@ -283,8 +283,8 @@ POST /api/v1/products/<PRODUCTO>/assets
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
 - ℹ️ Todo lo que se agrega **dentro** de un producto (categorías, valores, presentaciones, códigos, grupos, imágenes) exige `update` sobre `products`.
 
 **Por qué se hace así**

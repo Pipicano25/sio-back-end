@@ -21,12 +21,10 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (Operational Context
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` |
+| `supervisor.test` | Sí | `200` | tiene `perm:purchase:all:all` |
 | `compras.test` | Sí | `200` | tiene `perm:purchase:purchase_lifecycle_events:read` |
-| `ventas.test` | No | `403` | no tiene `perm:purchase:purchase_lifecycle_events:read` |
-| `inventario.test` | No | `403` | no tiene `perm:purchase:purchase_lifecycle_events:read` |
-| `reportes.test` | Sí | `200` | tiene `perm:purchase:purchase_lifecycle_events:read` |
-| `consulta.test` | Sí | `200` | tiene `perm:purchase:purchase_lifecycle_events:read` |
+| `ventas.test` | Sí | `200` | tiene `perm:purchase:purchase_lifecycle_events:read` |
+| `inventario.test` | Sí | `200` | tiene `perm:purchase:purchase_lifecycle_events:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

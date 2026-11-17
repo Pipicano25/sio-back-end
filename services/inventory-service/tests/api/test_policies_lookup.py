@@ -43,7 +43,7 @@ def test_limits_permissions_and_technical_lookup(as_user, as_token, service_toke
     assert reader.post(url(world), json={"company_product_ids": [str(uuid4()) for _ in range(101)]}).status_code == 422
     assert reader.post(url(world), json={"company_product_ids": []}).status_code == 422
     assert reader.post(url(world), json={"company_product_ids": [str(uuid4())], "x": 1}).status_code == 422
-    assert as_user("ventas.test").post(url(world), json={"company_product_ids": [str(uuid4())]}).status_code == 403
+    assert as_user("sin-permisos.test").post(url(world), json={"company_product_ids": [str(uuid4())]}).status_code == 403
     technical = as_token(service_token(PRODUCT_POLICIES_READ, PLATFORM_LOOKUP, client_id="product-inventory-query-service"))
     assert technical.post(url(world), json={"company_product_ids": [str(uuid4())]}).status_code == 200
     without_permission = as_token(service_token(BALANCES_READ, PLATFORM_LOOKUP, client_id="product-inventory-query-service"))

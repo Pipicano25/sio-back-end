@@ -22,12 +22,10 @@ Como el servicio consulta a los propietarios **con el token del usuario**, el us
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` y los permisos de lectura del propietario |
-| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` y los permisos de lectura del propietario |
+| `supervisor.test` | Sí | `200` | tiene `perm:business-reporting:purchases:read` y los permisos de lectura del propietario |
 | `compras.test` | Sí | `200` | tiene `perm:business-reporting:purchases:read` y los permisos de lectura del propietario |
-| `ventas.test` | No | `403` | no tiene `perm:business-reporting:purchases:read` |
-| `inventario.test` | No | `403` | no tiene `perm:business-reporting:purchases:read` |
-| `reportes.test` | Sí | `200` | tiene `perm:business-reporting:purchases:read` y los permisos de lectura del propietario |
-| `consulta.test` | No | `403` | no tiene `perm:business-reporting:purchases:read` |
+| `ventas.test` | Sí | `200` | tiene `perm:business-reporting:purchases:read` y los permisos de lectura del propietario |
+| `inventario.test` | Sí | `200` | tiene `perm:business-reporting:purchases:read` y los permisos de lectura del propietario |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

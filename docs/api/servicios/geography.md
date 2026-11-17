@@ -28,10 +28,10 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Acción | Operaciones | Grupos de la plantilla que la tienen |
 |---|---|---|
-| `read` | Listar y consultar | Todos los grupos: `administradores`, `supervisores`, `compras`, `ventas`, `inventario` (vía `perm:geography:all:read`), `reportes` y `consulta` (permisos de lectura por recurso) |
-| `create` | Crear | `administradores`, `supervisores` (`perm:all:all:create`) |
-| `update` | Actualizar | `administradores`, `supervisores` (`perm:all:all:update`) |
-| `delete` | Eliminar físicamente | `administradores` |
+| `read` | Listar y consultar | Todos los grupos: `superadmin` (`perm:all:all:all`), `admin` y `empleado` (vía `perm:geography:all:read`) |
+| `create` | Crear | `superadmin`, `admin` (`perm:geography:all:create`) |
+| `update` | Actualizar | `superadmin`, `admin` (`perm:geography:all:update`) |
+| `delete` | Eliminar físicamente | Solo `superadmin` |
 
 ## Alcance de datos
 

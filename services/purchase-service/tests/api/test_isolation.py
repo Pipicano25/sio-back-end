@@ -32,9 +32,9 @@ def test_member_of_another_company_never_sees_foreign_data(as_user, world, fakes
     sequence = make_sequence()
     draft = make_draft()
     confirmed = confirm(draft).json()
-    fakes.oc.add_member(user_sub("reportes.test"), world.other_company)
-    fakes.oc.members.pop((user_sub("reportes.test"), world.company))
-    reader = as_user("reportes.test")
+    fakes.oc.add_member(user_sub("lector.sintetico"), world.other_company)
+    fakes.oc.members.pop((user_sub("lector.sintetico"), world.company))
+    reader = as_user("lector.sintetico")
     other = f"/api/v1/companies/{world.other_company}"
     assert reader.get(f"{other}/purchases").json()["items"] == []
     assert reader.get(f"{other}/purchases/{draft['id']}").status_code == 404
@@ -50,8 +50,8 @@ def test_member_of_another_company_never_sees_foreign_data(as_user, world, fakes
 
 def test_foreign_id_and_unknown_id_give_identical_404(as_user, world, fakes, make_draft) -> None:
     draft = make_draft()
-    fakes.oc.add_member(user_sub("reportes.test"), world.other_company)
-    reader = as_user("reportes.test")
+    fakes.oc.add_member(user_sub("lector.sintetico"), world.other_company)
+    reader = as_user("lector.sintetico")
     other = f"/api/v1/companies/{world.other_company}"
     foreign = reader.get(f"{other}/purchases/{draft['id']}").json()
     unknown = reader.get(f"{other}/purchases/{uuid4()}").json()

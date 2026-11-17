@@ -22,8 +22,8 @@ POST /api/v1/user-branches/<ASIGNACION>/deactivate
 
 **Permiso que exige la URL:** `perm:operational-context:user_branches:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `operational-context` solo tienen `read`; les falta `delete`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:delete`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `delete`
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
@@ -52,8 +52,8 @@ GET /api/v1/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=compra
 **Permisos que exige la URL (todos):** `perm:operational-context:application_users:read` + `perm:operational-context:platform:lookup`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `read`, `update`; le falta `lookup`; `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `lookup`; `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `operational-context`
-- ℹ️ Consulta técnica entre servicios (Fase B, FR-045): leer por UUID sin membresía y comprobar el acceso de otro usuario. Es para identidades técnicas; ningún grupo de usuarios la tiene salvo `administradores` (por `perm:all:all:all`).
+- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `delete`, `read`, `update`; le falta `lookup`; `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `lookup`
+- ℹ️ Consulta técnica entre servicios (Fase B, FR-045): leer por UUID sin membresía y comprobar el acceso de otro usuario. Es para identidades técnicas; ningún grupo de usuarios la tiene salvo `superadmin` (por `perm:all:all:all`).
 
 **Por qué se hace así**
 
@@ -85,8 +85,8 @@ POST /api/v1/branches/<SUC_PRINCIPAL>/deactivate
 
 **Permiso que exige la URL:** `perm:operational-context:branches:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `operational-context` solo tienen `read`; les falta `delete`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:delete`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `delete`
 - ℹ️ Inactivar una sucursal exige `delete`; reactivarla exige `update`.
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
@@ -112,8 +112,8 @@ GET /api/v1/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=compra
 **Permisos que exige la URL (todos):** `perm:operational-context:application_users:read` + `perm:operational-context:platform:lookup`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `read`, `update`; le falta `lookup`; `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `lookup`; `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `operational-context`
-- ℹ️ Consulta técnica entre servicios (Fase B, FR-045): leer por UUID sin membresía y comprobar el acceso de otro usuario. Es para identidades técnicas; ningún grupo de usuarios la tiene salvo `administradores` (por `perm:all:all:all`).
+- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `delete`, `read`, `update`; le falta `lookup`; `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `lookup`
+- ℹ️ Consulta técnica entre servicios (Fase B, FR-045): leer por UUID sin membresía y comprobar el acceso de otro usuario. Es para identidades técnicas; ningún grupo de usuarios la tiene salvo `superadmin` (por `perm:all:all:all`).
 
 **Por qué se hace así**
 

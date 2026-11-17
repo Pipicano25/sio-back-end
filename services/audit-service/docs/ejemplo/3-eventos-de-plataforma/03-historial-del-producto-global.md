@@ -6,7 +6,7 @@ Ejercicio 3: Eventos de plataforma (sin empresa).
 
 `GET /api/v1/platform-entity-history/GlobalProduct/b22e0000-0000-4000-8000-000000000030`
 
-Ejecuta: `supervisor.test`.
+Ejecuta: `admin.test`.
 
 ### Por qué
 
@@ -21,12 +21,10 @@ No exige membresía: es el permiso independiente de los eventos de plataforma.
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` |
+| `supervisor.test` | No | `403` | no tiene `perm:audit:platform-events:read` |
 | `compras.test` | No | `403` | no tiene `perm:audit:platform-events:read` |
 | `ventas.test` | No | `403` | no tiene `perm:audit:platform-events:read` |
 | `inventario.test` | No | `403` | no tiene `perm:audit:platform-events:read` |
-| `reportes.test` | No | `403` | no tiene `perm:audit:platform-events:read` |
-| `consulta.test` | No | `403` | no tiene `perm:audit:platform-events:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

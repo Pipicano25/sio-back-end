@@ -14,7 +14,7 @@ GET http://127.0.0.1:8103/api/v1/units-of-measure?status=ACTIVE&page_size=100
 
 **Permiso que exige la URL:** `perm:product-catalog:units-of-measure:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:product-catalog:units-of-measure:read`), `reportes.test` (por `perm:product-catalog:units-of-measure:read`), `inventario.test` (por `perm:product-catalog:all:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `supervisor.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
 
 **Respuesta esperada:** `200`
 
@@ -30,7 +30,7 @@ GET http://127.0.0.1:8105/global-payment-condition-types?page_size=100
 
 **Permiso que exige la URL:** `perm:payment-reference:global_payment_condition_types:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:payment-reference:global_payment_condition_types:read`), `reportes.test` (por `perm:payment-reference:global_payment_condition_types:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `supervisor.test` (por `perm:payment-reference:all:read`), `inventario.test` (por `perm:payment-reference:all:read`)
 
 **Respuesta esperada:** `200`
 
@@ -46,7 +46,7 @@ GET http://127.0.0.1:8105/global-payment-methods?page_size=100
 
 **Permiso que exige la URL:** `perm:payment-reference:global_payment_methods:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:payment-reference:global_payment_methods:read`), `reportes.test` (por `perm:payment-reference:global_payment_methods:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `supervisor.test` (por `perm:payment-reference:all:read`), `inventario.test` (por `perm:payment-reference:all:read`)
 
 **Por qué se hace así**
 

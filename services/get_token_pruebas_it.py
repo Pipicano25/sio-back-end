@@ -66,8 +66,6 @@ USUARIOS = (
     "compras.test",
     "ventas.test",
     "inventario.test",
-    "reportes.test",
-    "consulta.test",
 )
 USUARIO_PREDETERMINADO = "inventario.test"
 TIMEOUT_SEGUNDOS = 5

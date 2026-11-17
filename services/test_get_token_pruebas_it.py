@@ -351,7 +351,7 @@ class Empresas(unittest.TestCase):
         self.assertEqual(it.empresas_del_usuario(TOKEN_IT, abrir), [])
         errores = io.StringIO()
         with mock.patch("sys.stderr", errores):
-            it.mostrar_empresas("consulta.test", TOKEN_IT, abrir)
+            it.mostrar_empresas("compras.test", TOKEN_IT, abrir)
         self.assertIn("no tiene membresías ACTIVE", errores.getvalue())
 
     def test_membresias_no_legibles_no_se_confirman(self):

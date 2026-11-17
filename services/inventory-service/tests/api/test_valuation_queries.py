@@ -113,9 +113,9 @@ def test_unknown_cost_opening_is_explicit_and_distinct_from_a_real_zero(operator
 def test_scope_and_permissions(operator, as_user, as_token, service_token, world, fake_oc) -> None:
     apply(operator, world)
     url = f"{base(world)}/branches/{world.branch}/valuation"
-    assert as_user("inventario.test").get(url).status_code == 200
-    for username in ("compras.test", "ventas.test", "reportes.test", "consulta.test"):
-        assert as_user(username).get(url).status_code == 403
+    for username in ("inventario.test", "compras.test", "ventas.test"):  # grupo `empleado` (spec 026)
+        assert as_user(username).get(url).status_code == 200
+    assert as_user("sin-permisos.test").get(url).status_code == 403
 
     other = f"/api/v1/companies/{world.other_company}/branches/{world.other_company_branch}/valuation"
     assert as_user("inventario.test").get(other).status_code == 404

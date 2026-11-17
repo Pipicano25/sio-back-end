@@ -272,7 +272,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 ### ¿Qué hace esta API?
 
-Da de alta en el catálogo global un producto que la [API 1](#1-buscar-productos-globales) no encontró. El producto queda disponible para todas las empresas. Es una operación de catálogo compartido que normalmente hacen administradores o supervisores, no el flujo de venta.
+Da de alta en el catálogo global un producto que la [API 1](#1-buscar-productos-globales) no encontró. El producto queda disponible para todas las empresas. Es una operación de catálogo compartido que hacen los grupos `superadmin` y `admin`, no el flujo de venta.
 
 Efectos verificados en el código: normaliza el nombre (recorta y une espacios; máximo efectivo 200 caracteres aunque el esquema admita 400); valida que la marca y la unidad base existan y estén `ACTIVE`; si se envía fabricante, lo valida en Party Identity con el token del usuario; crea el producto `ACTIVE` con `version` `1`, devuelve `Location: /api/v1/products/{id}` y registra `CREATE_PRODUCT` en Audit. Si existe otro producto con el mismo nombre normalizado y la misma marca **no** falla: lo crea y devuelve una advertencia `POSSIBLE_DUPLICATE` en `warnings[]`. El producto recién creado **no es adoptable**: le faltan categoría y presentación (`eligible_for_adoption: false`) hasta completar la [API 4](#4-asignar-una-categoría-al-producto-global) y la [API 6](#6-crear-una-presentación-global), y los atributos obligatorios de su categoría si los hay.
 
@@ -2540,7 +2540,7 @@ Ejemplo de `409`:
 
 ### ¿Qué hace esta API?
 
-Lista, con paginación, las políticas de ganancia de una lista con su porcentaje vigente y cuántas presentaciones cubren. Es la fuente de `policy_id`. Las presentaciones de una política se consultan con CR 66 y el historial de porcentajes con CR 65. Solo la ven administradores y supervisores: expone porcentajes internos y no admite la exención técnica.
+Lista, con paginación, las políticas de ganancia de una lista con su porcentaje vigente y cuántas presentaciones cubren. Es la fuente de `policy_id`. Las presentaciones de una política se consultan con CR 66 y el historial de porcentajes con CR 65. Solo la ven los grupos `superadmin` y `admin`: expone porcentajes internos y no admite la exención técnica.
 
 Antes necesita: `company_id` con membresía `ACTIVE` y el `price_list_id`.
 
@@ -3065,7 +3065,7 @@ curl -X POST \
 
 ### ¿Qué hace esta API?
 
-Lista, con paginación, el resultado de cada actualización automática de precio: una por línea de compra recibida y lista de precios. Muestra el costo usado, el porcentaje aplicado, el precio anterior y el nuevo. El cálculo lo hace un proceso asíncrono de Commercial Relationship después de la recepción, por lo que el precio nuevo puede tardar unos segundos en aparecer. Solo la ven administradores y supervisores porque expone costos y porcentajes.
+Lista, con paginación, el resultado de cada actualización automática de precio: una por línea de compra recibida y lista de precios. Muestra el costo usado, el porcentaje aplicado, el precio anterior y el nuevo. El cálculo lo hace un proceso asíncrono de Commercial Relationship después de la recepción, por lo que el precio nuevo puede tardar unos segundos en aparecer. Solo la ven los grupos `superadmin` y `admin` porque expone costos y porcentajes.
 
 Estados posibles: `PENDING` (aún no procesada), `FAILED` (falló y se reintentará; ver `attempts`, `next_attempt_at` y `last_error_code`) y los finales `APPLIED`, `UNCHANGED`, `SKIPPED_NO_POLICY`, `SKIPPED_LIST_NOT_EFFECTIVE`, `SKIPPED_CURRENCY_MISMATCH`, `SKIPPED_PRESENTATION_INACTIVE`, `SKIPPED_ZERO_COST` y `RESOLVED`. Una `PENDING` o `FAILED` puede cerrarse administrativamente con CR 74, sin modificar precios.
 

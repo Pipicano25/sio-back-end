@@ -1,4 +1,4 @@
-# Paso 5. Consultar como supervisor
+# Paso 5. Consultar como Admin
 
 Ejercicio 6: Rentabilidad y costo desconocido.
 
@@ -10,7 +10,7 @@ Ejecuta: `supervisor.test`.
 
 ### Por qué
 
-- `supervisor.test` tiene `perm:sales:sales:read-profitability`: costo 1000.0000 por unidad base, costo total 3000.00, margen 1500.00 (33.3333 %).
+- `supervisor.test` (grupo `admin`) tiene la rentabilidad por `perm:sales:all:all`: costo 1000.0000 por unidad base, costo total 3000.00, margen 1500.00 (33.3333 %).
 
 ## Permiso
 
@@ -21,12 +21,10 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (Operational Context
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` |
-| `compras.test` | No | `403` | no tiene `perm:sales:sales:read` |
+| `supervisor.test` | Sí | `200` | tiene `perm:sales:all:all` |
+| `compras.test` | Sí | `200` | tiene `perm:sales:all:read` |
 | `ventas.test` | Sí | `200` | tiene `perm:sales:all:read` |
-| `inventario.test` | No | `403` | no tiene `perm:sales:sales:read` |
-| `reportes.test` | Sí | `200` | tiene `perm:sales:sales:read` |
-| `consulta.test` | Sí | `200` | tiene `perm:sales:sales:read` |
+| `inventario.test` | Sí | `200` | tiene `perm:sales:all:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

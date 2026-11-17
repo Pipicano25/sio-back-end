@@ -154,7 +154,7 @@ EXERCISES = [
                   "producto tenga imagen (la «Caja x 12» del paso 2).",
                   "`image_url` es la URL directa que construye Product Catalog: se usa sin token en `<img src>`.",
                   "Sin `include_images`, las presentaciones no traen `images`.",
-                  "`ventas.test` ve precios y existencias, pero no los mínimos."],
+                  "`ventas.test` (grupo `empleado`) ve precios, existencias y mínimos."],
                  save={"CURSOR": "next_cursor"}),
             step("02-segunda-pagina.md", "Página siguiente con el cursor", "ventas.test",
                  f"{BASE}/product-overviews?search=Colgate&has_image=true&page_size=2&cursor=<CURSOR>", 200,
@@ -268,29 +268,25 @@ EXERCISES = [
         folder="6-permisos",
         title="Permisos y bloques visibles",
         purpose=(
-            "La misma consulta muestra bloques distintos según los permisos: `ventas` sin mínimos, `inventario` sin "
-            "precios, y `compras`, `reportes` y `consulta` sin acceso."
+            "Cada bloque de la respuesta (precios, existencias y mínimos) depende de un permiso propio. Con los grupos "
+            "de la spec 026, `empleado` y `admin` tienen los tres; un usuario con permisos parciales vería menos "
+            "bloques (lo verifican las pruebas automáticas del servicio con identidades sintéticas)."
         ),
         steps=[
-            step("01-ventas-sin-minimos.md", "Productos para ventas", "ventas.test",
+            step("01-empleado-ve-todos-los-bloques.md", "Productos como empleado", "ventas.test",
                  f"{BASE}/product-overviews?search=Loratadina", 200,
-                 ["`ventas.test` ve precios y existencias (`stock:read`, sin `perm:inventory:balances:read`), pero no "
-                  "`minimum_stock` ni `minimum_state`."]),
-            step("02-inventario-sin-precios.md", "Productos para inventario", "inventario.test",
+                 ["`ventas.test` (grupo `empleado`) tiene `perm:commercial-relationship:price_list_items:read`, "
+                  "`perm:inventory:balances:read` y `perm:inventory:product-policies:read`: ve `price`, existencias, "
+                  "`minimum_stock` y `minimum_state`."]),
+            step("02-admin-ve-todos-los-bloques.md", "Productos como Admin", "supervisor.test",
                  f"{BASE}/product-overviews?search=Loratadina", 200,
-                 ["`inventario.test` no tiene `perm:commercial-relationship:price_list_items:read`: ninguna "
-                  "presentación lleva `price`; sí ve los mínimos."]),
-            step("03-filtro-no-autorizado.md", "Filtro de mínimos sin el permiso", "ventas.test",
-                 f"{BASE}/inventory-overviews?minimum_state=BELOW_MINIMUM", 403,
-                 ["`minimum_state` depende del bloque de mínimos, que `ventas.test` no puede ver: `403`.",
-                  "Quien sí tiene `perm:inventory:product-policies:read` (`inventario`, `supervisor`, `admin`) "
-                  "obtiene `200`."],
-                 requires=(MINIMUMS,), allowed_status=200),
-            step("04-compras-sin-acceso.md", "Compras no consulta el resumen", "compras.test",
-                 f"{BASE}/inventory-summary", 403,
-                 ["`compras`, `reportes` y `consulta` no tienen ningún permiso de estas consultas: `403` sin revelar "
-                  "el permiso."],
-                 allowed_status=200),
+                 ["`supervisor.test` (grupo `admin`) ve los mismos bloques; tampoco recibe costos ni valoración: el "
+                  "servicio no los devuelve a nadie."]),
+            step("03-filtro-de-minimos.md", "Filtro de mínimos", "ventas.test",
+                 f"{BASE}/inventory-overviews?minimum_state=BELOW_MINIMUM", 200,
+                 ["`minimum_state` depende del bloque de mínimos: exige además `perm:inventory:product-policies:read`, "
+                  "que tienen los tres grupos. Sin ese permiso la respuesta sería `403` sin revelar el permiso."],
+                 requires=(MINIMUMS,)),
         ],
     ),
 ]

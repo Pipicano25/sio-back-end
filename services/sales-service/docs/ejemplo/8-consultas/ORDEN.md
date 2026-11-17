@@ -11,8 +11,8 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 | 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `ventas.test` | `201` |
 | 2 | [02-venta.md](02-venta.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales` | `ventas.test` | `201` |
 | 3 | [03-confirmar.md](03-confirmar.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `ventas.test` | `200` |
-| 4 | [04-listar-confirmadas.md](04-listar-confirmadas.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales?status=CONFIRMED&number=FV-202611-000001` | `reportes.test` | `200` |
-| 5 | [05-otra-empresa.md](05-otra-empresa.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000099/sales/<VENTA>` | `reportes.test` | `404` |
+| 4 | [04-listar-confirmadas.md](04-listar-confirmadas.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales?status=CONFIRMED&number=FV-202611-000001` | `compras.test` | `200` |
+| 5 | [05-otra-empresa.md](05-otra-empresa.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000099/sales/<VENTA>` | `compras.test` | `404` |
 
 ## Por qué este orden
 

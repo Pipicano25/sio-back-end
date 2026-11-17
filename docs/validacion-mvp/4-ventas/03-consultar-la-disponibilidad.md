@@ -14,7 +14,7 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_2>/availabil
 
 **Permiso que exige la URL:** `perm:sales:sales:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:sales:sales:read`), `reportes.test` (por `perm:sales:sales:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:read`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:read`)
 
 **Respuesta esperada:** `200` — `all_available` = `true`
 
@@ -28,6 +28,6 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_4>/availabil
 
 **Permiso que exige la URL:** `perm:sales:sales:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:sales:sales:read`), `reportes.test` (por `perm:sales:sales:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:read`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:read`)
 
 **Respuesta esperada:** `200` — `all_available` = `false`

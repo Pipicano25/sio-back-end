@@ -54,3 +54,19 @@ propuesta requiere una autorización aparte y su propia evaluación de impacto.
    de valoración. (El retiro de `perm:inventory:valuation:read` del cliente técnico ya se aplicó en la plantilla.)
 
 Ninguna de estas acciones forma parte de la spec 022.
+
+## Actualización (spec 026, 2026-11-17)
+
+Las tablas anteriores describen los 7 grupos vigentes en la revisión del 2026-10-17. Desde la spec 026 el realm
+tiene solo tres grupos:
+
+- `superadmin` (`perm:all:all:all`) ve todo, como antes `administradores`.
+- `admin` (antes `supervisores`) ve todo en sus empresas, incluidos los costos de compra por línea, los precios y la
+  rentabilidad. Tiene además `perm:product-inventory-query:inventory_valuation:read`: ese rol ya no está "sin grupo"
+  (fila de `inventory_valuation:read`), aunque ningún endpoint lo evalúa todavía.
+- `empleado` (antes `ventas`, `compras` e `inventario`, más los usuarios de `reportes` y `consulta`) tiene la unión
+  de esos permisos: ve importes y costos de compra por línea en Purchase (fila 5) y los precios de las listas
+  (filas 6 y 7). No ve la rentabilidad de ventas.
+
+La acción 3 ("evaluar si `compras`, `reportes` y `consulta` deben ver los costos de compra por línea") quedó resuelta
+por la spec 026: el Empleado los ve.

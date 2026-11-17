@@ -25,8 +25,8 @@ PUT /api/v1/company-customers/<CLIENTE_ORG>
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_customers:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `company_customers` solo tienen `read`; les falta `update`; `inventario.test` — no tiene ningún permiso sobre `company_customers` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `company_customers` solo tienen `create`, `read`; les falta `update`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
@@ -59,8 +59,8 @@ POST /api/v1/company-customers/<CLIENTE_PERSONA>/deactivate
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_customers:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `company_customers` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `company_customers` solo tienen `read`; les falta `delete`; `inventario.test` — no tiene ningún permiso sobre `company_customers` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:delete`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `company_customers` solo tienen `create`, `read`; les falta `delete`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
@@ -91,8 +91,8 @@ POST /api/v1/company-customers/<CLIENTE_PERSONA>/reactivate
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_customers:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `company_customers` solo tienen `read`; les falta `update`; `inventario.test` — no tiene ningún permiso sobre `company_customers` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `company_customers` solo tienen `create`, `read`; les falta `update`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
@@ -117,8 +117,7 @@ GET /api/v1/companies/<EMPRESA>/company-customers?customer_kind=ORGANIZATION
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_customers:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:commercial-relationship:company_customers:read`), `ventas.test` (por `perm:commercial-relationship:company_customers:read`), `reportes.test` (por `perm:commercial-relationship:company_customers:read`), `consulta.test` (por `perm:commercial-relationship:company_customers:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `company_customers` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:read`), `compras.test` (por `perm:commercial-relationship:company_customers:read`), `ventas.test` (por `perm:commercial-relationship:company_customers:read`), `inventario.test` (por `perm:commercial-relationship:company_customers:read`)
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**

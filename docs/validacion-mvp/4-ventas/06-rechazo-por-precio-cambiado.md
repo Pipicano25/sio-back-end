@@ -21,7 +21,7 @@ POST http://127.0.0.1:8106/api/v1/price-list-items/<ITEM_GENERAL>/change-price
 
 **Permiso que exige la URL:** `perm:commercial-relationship:price_list_items:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:update`)
 
 **Por qué se hace así**
 
@@ -51,6 +51,6 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:update`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:update`)
 
 **Respuesta esperada:** `409`

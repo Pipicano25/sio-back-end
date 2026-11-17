@@ -53,7 +53,7 @@ ADMIN = f"{KEYCLOAK}/admin/realms/{REALM}"
 
 COUNTRIES_READ = SioPermission("geography", "global_countries", "read")
 DIRECT_ROLE = "perm:geography:global_countries:read"
-GROUP = "inventario"  # incluye perm:geography:all:read (plantilla del realm)
+GROUP = "empleado"  # incluye perm:geography:all:read (plantilla del realm, spec 026)
 
 
 def _guard():
@@ -189,7 +189,7 @@ def test_login_entrega_los_permisos_efectivos_en_la_estructura_de_sio_auth(user,
     assert claims.roles == user.effective_roles()
     assert "perm:geography:all:read" in claims.roles  # del grupo
     assert DIRECT_ROLE in claims.roles  # asignación directa
-    # Además de los `perm:*`, cada grupo trae su rol de perfil (`inventario`), que sio-auth no interpreta.
+    # Además de los `perm:*`, cada grupo trae su rol de perfil (`empleado`), que sio-auth no interpreta.
     perms = {role for role in claims.roles if role.startswith("perm:")}
     assert claims.roles - perms == {GROUP}
     assert len(claims.permissions) == len(perms)

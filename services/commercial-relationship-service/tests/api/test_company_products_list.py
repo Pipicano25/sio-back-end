@@ -79,4 +79,4 @@ def test_pagination(as_user, company, fake_catalog):
 def test_inactive_company_still_readable(as_user, company, fake_catalog, fake_oc):
     adopt(as_user("admin.test"), company, fake_catalog)
     fake_oc.inactive_companies.add(company)
-    assert _list(as_user("consulta.test"), company)["total_records"] == 1
+    assert _list(as_user("supervisor.test"), company)["total_records"] == 1

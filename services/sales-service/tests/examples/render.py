@@ -206,12 +206,12 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `ventas.test` (grupo `ventas`, `perm:sales:all:create|read|update|delete`) registra, confirma y "
-        "anula ventas de las sucursales asignadas, **sin** ver costo ni margen; `admin.test` también, por comodín, y "
-        "ve la rentabilidad; `supervisor.test` registra y confirma, ve la rentabilidad, pero no anula (no tiene "
-        "`delete`); `reportes.test` y `consulta.test` solo consultan, sin rentabilidad.",
-        "- No puede: ninguna cuenta de servicio escribe ventas (ni el propio `sales-service`); `compras.test` e "
-        "`inventario.test` reciben `403`; sin asignación a la sucursal, ni el comodín permite escribir.",
+        "- Puede: `ventas.test`, `compras.test` e `inventario.test` (grupo `empleado`, "
+        "`perm:sales:all:create|read|update|delete`) registran, confirman y anulan ventas de las sucursales "
+        "asignadas, **sin** ver costo ni margen; `supervisor.test` (grupo `admin`, `perm:sales:all:all`) también, y ve "
+        "la rentabilidad; `admin.test` (grupo `superadmin`) por comodín, con rentabilidad.",
+        "- No puede: ninguna cuenta de servicio escribe ventas (ni el propio `sales-service`); el grupo `empleado` no "
+        "ve la rentabilidad; sin asignación a la sucursal, ni el comodín permite escribir.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -246,11 +246,11 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "tener `perm:sales:all:update` o `perm:all:all:all` no basta sin la asignación.",
         "- **Secuencias** exigen membresía (no asignación). **Leer** exige permiso y membresía.",
         "- Crear una venta con líneas exige además `perm:sales:sale_details:create`; anular exige "
-        "`perm:sales:sales:delete` (`supervisor.test` no lo tiene).",
+        "`perm:sales:sales:delete` (lo tienen los tres grupos).",
         "- **Rentabilidad** (costo, `cost_known`, margen, porcentaje y `has_unknown_cost`): solo con "
         "`perm:sales:sales:read-profitability`, que no abre ninguna ruta por sí solo. **No obvio**: "
-        "`perm:sales:all:read` no la incluye; el grupo `ventas` no la tiene (C-08); `supervisores` la tiene "
-        "asignada explícitamente y `administradores` por `perm:all:all:all`. Sin el permiso, los campos se omiten.",
+        "`perm:sales:all:read` no la incluye; el grupo `empleado` no la tiene (C-08); `admin` la tiene por "
+        "`perm:sales:all:all` y `superadmin` por `perm:all:all:all`. Sin el permiso, los campos se omiten.",
         "",
         "## Usuarios de prueba",
         "",

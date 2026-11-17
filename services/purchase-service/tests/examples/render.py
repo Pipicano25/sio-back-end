@@ -213,11 +213,12 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `compras.test` (grupo `compras`, `perm:purchase:all:all`) registra, confirma y anula compras de las "
-        "sucursales asignadas; `admin.test` también, por comodín; `supervisor.test` registra y confirma, pero no anula "
-        "(no tiene `delete`); `reportes.test` y `consulta.test` solo consultan.",
-        "- No puede: ninguna cuenta de servicio escribe compras (ni el propio `purchase-service`); `ventas.test` e "
-        "`inventario.test` reciben `403`; sin asignación a la sucursal, ni el comodín permite escribir.",
+        "- Puede: `compras.test`, `ventas.test` e `inventario.test` (grupo `empleado`, permisos explícitos de "
+        "`purchase`) registran, confirman y anulan compras de las sucursales asignadas; `supervisor.test` (grupo "
+        "`admin`, `perm:purchase:all:all`) también, y además ajusta la tasa de impuesto de una línea; `admin.test` "
+        "(grupo `superadmin`) por comodín.",
+        "- No puede: ninguna cuenta de servicio escribe compras (ni el propio `purchase-service`); el grupo `empleado` "
+        "no ajusta tasas de línea; sin asignación a la sucursal, ni el comodín permite escribir.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -252,7 +253,8 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "tener `perm:purchase:all:all` o `perm:all:all:all` no basta sin la asignación.",
         "- **Secuencias** exigen membresía (no asignación). **Leer** exige permiso y membresía.",
         "- Crear una compra con líneas exige además `perm:purchase:purchase_details:create`; anular exige "
-        "`perm:purchase:purchases:delete` (`supervisor.test` no lo tiene).",
+        "`perm:purchase:purchases:delete` (lo tienen los tres grupos). Ajustar la tasa de una línea exige "
+        "`perm:purchase:purchase_line_taxes:override`, que el grupo `empleado` no tiene.",
         "",
         "## Usuarios de prueba",
         "",

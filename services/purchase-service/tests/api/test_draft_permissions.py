@@ -38,7 +38,7 @@ def test_non_member_gets_404(as_user, world, fakes) -> None:
 
 
 def test_users_without_purchase_permission_get_403(as_user, world) -> None:
-    for username in ("inventario.test", "ventas.test", "reportes.test", "consulta.test"):
+    for username in ("sin-compras.sintetico", "lector.sintetico"):
         assert as_user(username).post(f"{base(world)}/purchases", json=purchase_body(world)).status_code == 403
 
 

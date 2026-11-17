@@ -9,8 +9,8 @@
 - Las cinco dependencias se sustituyen por `tests/fakes.py` inyectados en `create_app`.
 - `ventas.test` y `supervisor.test` son miembros de la empresa ficticia y están asignados a la
   sucursal A.
-- Los roles reproducen la matriz del realm tras C-08: `ventas` con CRUD explícito de sales (sin
-  rentabilidad); `supervisores` con `perm:sales:sales:read-profitability`.
+- Los roles se leen de la plantilla del realm (spec 026): `empleado` con CRUD explícito de sales (sin
+  rentabilidad); `admin` con `perm:sales:all:all` (incluye la rentabilidad); `superadmin` con `perm:all:all:all`.
 """
 
 from __future__ import annotations
@@ -48,38 +48,35 @@ TEST_ISSUER = "https://keycloak.test/realms/sio"
 TEST_AUDIENCE = "sio-api"
 TEST_KID = "test-key"
 
-# Roles de cada usuario de prueba según su grupo en la plantilla del realm.
 SALES_READS = (
     "perm:sales:sale_details:read",
     "perm:sales:sale_operations:read",
     "perm:sales:sale_sequences:read",
     "perm:sales:sales:read",
 )
+REALM = PROJECT_ROOT.parents[1] / "infrastructure" / "keycloak" / "realm-template" / "sio-realm.template.json"
+
+
+def _realm_user_roles() -> dict[str, tuple[str, ...]]:
+    """Roles de cada usuario de prueba según su grupo en la plantilla del realm (spec 026: superadmin, admin, empleado)."""
+    import json
+
+    data = json.loads(REALM.read_text(encoding="utf-8"))
+    groups = {"/" + group["name"]: tuple(group["clientRoles"]["sio-api"]) for group in data["groups"]}
+    return {
+        user["username"]: groups[user["groups"][0]]
+        for user in data["users"]
+        if "serviceAccountClientId" not in user
+    }
+
+
+# Usuarios de prueba del realm (`admin.test` superadmin; `supervisor.test` admin; `ventas.test`, `compras.test` e
+# `inventario.test` empleado) más dos identidades **sintéticas** que no existen en el realm, para cubrir casos que los
+# tres grupos ya no tienen: un lector de ventas sin escritura ni rentabilidad y un usuario sin permisos de Sales.
 USER_ROLES: dict[str, tuple[str, ...]] = {
-    "admin.test": ("perm:all:all:all",),
-    "supervisor.test": (
-        "perm:all:all:read",
-        "perm:all:all:create",
-        "perm:all:all:update",
-        "perm:sales:sales:read-profitability",
-    ),
-    "ventas.test": (
-        "perm:sales:all:create",
-        "perm:sales:all:read",
-        "perm:sales:all:update",
-        "perm:sales:all:delete",
-        "perm:commercial-relationship:all:read",
-        "perm:operational-context:all:read",
-    ),
-    "compras.test": ("perm:purchase:all:all", "perm:commercial-relationship:all:read"),
-    "inventario.test": (
-        "perm:operational-context:all:read",
-        "perm:product-catalog:all:read",
-        "perm:inventory:balances:read",
-        "perm:inventory:movements:read",
-    ),
-    "reportes.test": (*SALES_READS, "perm:operational-context:application_users:read"),
-    "consulta.test": (*SALES_READS, "perm:operational-context:application_users:read"),
+    **_realm_user_roles(),
+    "lector.sintetico": (*SALES_READS, "perm:operational-context:application_users:read"),
+    "sin-ventas.sintetico": ("perm:purchase:all:all", "perm:commercial-relationship:all:read"),
 }
 
 TABLES = (
@@ -272,8 +269,8 @@ def fakes() -> Fakes:
     built.oc.add_member(user_sub("ventas.test"), world.company, branches=(world.branch,))
     built.oc.add_member(user_sub("admin.test"), world.company, branches=(world.branch, world.branch_b))
     built.oc.add_member(user_sub("supervisor.test"), world.company, branches=(world.branch,))
-    built.oc.add_member(user_sub("reportes.test"), world.company)
-    built.oc.add_member(user_sub("consulta.test"), world.company)
+    built.oc.add_member(user_sub("lector.sintetico"), world.company)
+    built.oc.add_member(user_sub("sin-ventas.sintetico"), world.company, branches=(world.branch,))
     built.oc.add_member(user_sub("inventario.test"), world.company, branches=(world.branch,))
     built.oc.add_member(user_sub("compras.test"), world.company, branches=(world.branch,))
     return built

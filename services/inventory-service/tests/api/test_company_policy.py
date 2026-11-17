@@ -114,7 +114,7 @@ def test_periodic_does_not_change_the_engine(admin, operator, world) -> None:
 
 
 def test_permissions(as_user, as_token, service_token, world, fake_oc) -> None:
-    for username in ("inventario.test", "compras.test", "consulta.test"):
+    for username in ("inventario.test", "compras.test", "sin-permisos.test"):
         assert as_user(username).post(url(world), json=BODY).status_code == 403, username
     assert as_user("supervisor.test").post(url(world), json=BODY).status_code == 201
 
@@ -122,7 +122,7 @@ def test_permissions(as_user, as_token, service_token, world, fake_oc) -> None:
     assert service.request("PUT", url(world), json={**BODY, "version": 1}).status_code == 403
 
     assert as_user("inventario.test").get(url(world)).status_code == 200
-    assert as_user("compras.test").get(url(world)).status_code == 403
+    assert as_user("sin-permisos.test").get(url(world)).status_code == 403
     fake_oc.fail_if_called = True
     assert as_token(service_token(COMPANY_POLICIES_READ, PLATFORM_LOOKUP)).get(url(world)).status_code == 200
 

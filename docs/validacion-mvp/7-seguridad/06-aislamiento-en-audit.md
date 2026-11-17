@@ -14,7 +14,7 @@ GET http://127.0.0.1:8110/api/v1/companies/<EMPRESA_B>/audit-events
 
 **Permiso que exige la URL:** `perm:audit:audit-events:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:audit:audit-events:read`)
 
 **Por qué se hace así**
 
@@ -32,7 +32,7 @@ GET http://127.0.0.1:8110/api/v1/companies/<EMPRESA_B>/entity-history/Company/<E
 
 **Permiso que exige la URL:** `perm:audit:audit-events:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:audit:audit-events:read`)
 
 **Por qué se hace así**
 

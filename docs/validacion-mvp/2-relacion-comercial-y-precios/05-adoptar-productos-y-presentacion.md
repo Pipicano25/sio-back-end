@@ -24,7 +24,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_products:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -56,7 +56,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_products:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -86,7 +86,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presenta
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_product_presentations:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -116,7 +116,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presenta
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_product_presentations:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -146,7 +146,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presenta
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_product_presentations:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 

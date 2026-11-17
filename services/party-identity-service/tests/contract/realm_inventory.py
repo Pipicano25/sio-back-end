@@ -127,8 +127,17 @@ def declared_read_permissions() -> tuple[set[str], list[str]]:
     return resolved, sorted(dynamic)
 
 
-READ_ONLY_GROUPS = ("compras", "ventas", "reportes", "consulta")
-ALL_GROUPS = ("administradores", "supervisores", "compras", "ventas", "inventario", "reportes", "consulta")
+# Grupos de la instantánea (plantilla anterior a Q-C1). Desde la spec 026 el realm tiene solo `superadmin`, `admin` y
+# `empleado`; `PREVIOUS_TO_CURRENT` dice qué grupo nuevo hereda las lecturas de cada grupo de la instantánea.
+SNAPSHOT_GROUPS = ("administradores", "supervisores", "compras", "ventas", "inventario", "reportes", "consulta")
+ALL_GROUPS = ("superadmin", "admin", "empleado")
+PREVIOUS_TO_CURRENT = {
+    "administradores": "superadmin",
+    "supervisores": "admin",
+    "compras": "empleado",
+    "ventas": "empleado",
+    "inventario": "empleado",
+}
 
 
 def build_snapshot() -> dict:
@@ -141,7 +150,7 @@ def build_snapshot() -> dict:
         ),
         "explicit_read_roles": explicit_read_roles(realm),
         "groups": {name: {"roles": group_roles(name, realm), "reads": effective_reads(name, realm)}
-                   for name in ALL_GROUPS},
+                   for name in SNAPSHOT_GROUPS},
     }
 
 

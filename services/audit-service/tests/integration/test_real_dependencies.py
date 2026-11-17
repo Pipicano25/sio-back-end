@@ -101,12 +101,12 @@ def test_user_without_audit_permission_is_403(company) -> None:
         assert client.get(f"{AUDIT}/companies/{company}/audit-events").status_code == 403
 
 
-def test_platform_events_with_supervisor(emitter) -> None:
+def test_platform_events_with_superadmin(emitter) -> None:
     platform = emitter.post(f"{AUDIT}/audit-events", json=_event(entity_type="GlobalProduct"))
     assert platform.status_code == 201
 
-    with user_client("supervisor.test") as supervisor:
-        response = supervisor.get(f"{AUDIT}/platform-audit-events/{platform.json()['id']}")
+    with user_client("admin.test") as superadmin:  # spec 026: solo `superadmin` lee la auditoría de plataforma
+        response = superadmin.get(f"{AUDIT}/platform-audit-events/{platform.json()['id']}")
     assert response.status_code == 200
     assert response.json()["company_id"] is None
 

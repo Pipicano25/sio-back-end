@@ -2,7 +2,7 @@
 
 [← Todos los ejercicios](../README.md)
 
-**Qué enseña:** Registrar una organización con NIT, los rechazos por **formato** (regla `NIT`) y por **país inexistente**, y el ciclo **inactivar → reactivar**, incluido el rechazo de una transición repetida y quién puede hacer cada acción (`supervisor.test` reactiva pero no inactiva).
+**Qué enseña:** Registrar una organización con NIT, los rechazos por **formato** (regla `NIT`) y por **país inexistente**, y el ciclo **inactivar → reactivar**, incluido el rechazo de una transición repetida y quién puede hacer cada acción (`supervisor.test`, del grupo `admin`, reactiva pero no inactiva).
 
 **Datos:** **ficticios** — detalle y decisiones en [00-datos-ficticios.md](00-datos-ficticios.md).
 

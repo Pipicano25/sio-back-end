@@ -158,7 +158,7 @@ def test_batch_lookup_with_exemption(as_user, company, fake_catalog, resources, 
 
 
 def test_batch_lookup_human_checks_once_per_company(as_user, company, fake_catalog, fake_oc):
-    client = as_user("consulta.test")
+    client = as_user("supervisor.test")
     admin = as_user("admin.test")
     other = uuid4()
     fake_oc.add_member(user_sub("admin.test"), other)

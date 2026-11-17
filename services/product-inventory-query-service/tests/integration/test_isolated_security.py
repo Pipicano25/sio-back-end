@@ -18,11 +18,10 @@ ENDPOINTS = ("product-overviews", "inventory-overviews", "low-stock-products", "
 MATRIX = {
     "admin.test": (200, 200, 200, 200),
     "supervisor.test": (200, 200, 200, 200),
-    "ventas.test": (200, 200, 403, 403),
+    # Spec 026: ventas.test, inventario.test y compras.test son del grupo `empleado`, con las cuatro consultas.
+    "ventas.test": (200, 200, 200, 200),
     "inventario.test": (200, 200, 200, 200),
-    "compras.test": (403, 403, 403, 403),
-    "reportes.test": (403, 403, 403, 403),
-    "consulta.test": (403, 403, 403, 403),
+    "compras.test": (200, 200, 200, 200),
 }
 COSTS = re.compile(r"inventory_value|average_unit_cost|unit_cost|margin|fifo|valuation", re.IGNORECASE)
 
@@ -39,9 +38,9 @@ def test_matrix_per_group_with_real_keycloak_tokens(users, seed, username) -> No
         if endpoint == "product-overviews" and expected == 200:
             items = response.json()["items"]
             has_price = any("price" in p for i in items for p in i["presentations"])
-            assert has_price == (username != "inventario.test"), username  # inventario no ve precios
+            assert has_price, username  # spec 026: los tres grupos ven precios
             has_minimums = any("minimum_state" in b for i in items for b in (i.get("stock") or {}).get("branches", []))
-            assert has_minimums == (username != "ventas.test"), username  # ventas no ve mínimos
+            assert has_minimums, username  # y mínimos
 
 
 def test_no_token_and_forged_token_are_401(seed) -> None:

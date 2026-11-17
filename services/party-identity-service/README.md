@@ -401,11 +401,9 @@ no concede leerlos.
 
 | Usuario de prueba | En Party Identity |
 | --- | --- |
-| `admin.test` | Todo |
-| `supervisor.test` | Todo menos `delete` |
-| `compras.test`, `ventas.test` | Leer identidades, reglas, contactos y sectores; **no** representantes legales |
-| `reportes.test`, `consulta.test` | Leer identidades, reglas y sectores; **no** contactos ni representantes legales |
-| `inventario.test` | Sin acceso |
+| `admin.test` (`superadmin`) | Todo |
+| `supervisor.test` (`admin`) | Todo menos `delete` (no inactiva ni cierra) |
+| `ventas.test`, `compras.test`, `inventario.test` (`empleado`) | Crear, leer y modificar personas, organizaciones, perfiles de contacto y personas de contacto; leer reglas, sectores y representantes legales; nunca `delete` |
 
 Para **confirmar** un perfil además se necesita membresía `ACTIVE` en la empresa (sin permisos de
 Operational Context). Detalle y ejemplos en

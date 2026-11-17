@@ -33,7 +33,7 @@ def test_only_strictly_below_minimum_with_active_policy(world, as_user) -> None:
     world.minimum(zero, "0")
     world.product("Sin politica")  # stock 0 y sin política
 
-    body = low_stock(world, as_user("inventario.test"))
+    body = low_stock(world, as_user("bodeguero.sintetico"))
     (pair,) = body["items"]
     assert pair == {
         "company_product_id": below.id, "display_name": "Clarityne", "internal_code": below.product.internal_code,
@@ -47,7 +47,7 @@ def test_unregistered_balance_counts_as_zero(world, as_user) -> None:
     """FR-022-50: un par con política y sin registro de saldo tiene cantidad 0."""
     item = world.product("Sin movimientos")
     world.minimum(item, "2")
-    (pair,) = low_stock(world, as_user("inventario.test"))["items"]
+    (pair,) = low_stock(world, as_user("bodeguero.sintetico"))["items"]
     assert (pair["base_quantity"], pair["shortfall"]) == ("0.0000", "2.0000")
 
 
@@ -62,7 +62,7 @@ def test_pairs_in_shortfall_order_and_continuation_by_pairs(world, as_user) -> N
             expected.append((10 + branch - index, item.id, str(world.branches[branch])))
     expected.sort(key=lambda row: (-row[0], row[1], row[2]))
 
-    walked, pages = walk(as_user("inventario.test"), f"{world.base}/low-stock-products?page_size=1")
+    walked, pages = walk(as_user("bodeguero.sintetico"), f"{world.base}/low-stock-products?page_size=1")
     assert [(item["company_product_id"], item["branch_id"]) for item in walked] == [(p, b) for _, p, b in expected]
     assert [item["shortfall"] for item in walked] == [f"{s}.0000" for s, _, _ in expected]
     assert all(page["sort_applied"] == "shortfall:desc" for page in pages)
@@ -77,7 +77,7 @@ def test_explicit_sort_makes_cr_drive_and_inventory_evaluate(world, as_user) -> 
         if index % 2 == 0:  # además bajo mínimo en la sucursal 1
             world.minimum(item, "1", branch=1)
     world.product("Sin politica")
-    client = as_user("inventario.test")
+    client = as_user("bodeguero.sintetico")
     walked, pages = walk(client, f"{world.base}/low-stock-products?sort=display_name&page_size=1")
     assert all(page["sort_applied"] == "display_name:asc" for page in pages)
     rows = [(item["display_name"], item["branch_id"]) for item in walked]
@@ -95,7 +95,7 @@ def test_explicit_sort_walk_with_more_pairs_than_page_size_in_one_product(world,
     item = world.product("Unico")
     for branch in (0, 1):
         world.minimum(item, "3", branch=branch)
-    walked, _ = walk(as_user("inventario.test"), f"{world.base}/low-stock-products?sort=internal_code:desc&page_size=1")
+    walked, _ = walk(as_user("bodeguero.sintetico"), f"{world.base}/low-stock-products?sort=internal_code:desc&page_size=1")
     assert sorted(i["branch_id"] for i in walked) == sorted(str(b) for b in world.branches)
 
 
@@ -107,7 +107,7 @@ def test_filters_apply_to_the_pairs(world, as_user) -> None:
     inactive = world.product("Colgate inactivo", brand=brand, status="INACTIVE")
     for item in (hit, miss, inactive):
         world.minimum(item, "1")
-    client = as_user("inventario.test")
+    client = as_user("bodeguero.sintetico")
     assert [i["company_product_id"] for i in low_stock(world, client, f"brand_id={brand}")["items"]] == [hit.id]
     assert [i["company_product_id"] for i in low_stock(world, client, "search=colgate")["items"]] == [hit.id]
     assert {i["company_product_id"] for i in low_stock(world, client, "status=ALL")["items"]} == {
@@ -118,7 +118,7 @@ def test_without_policies_the_answer_is_empty_and_final(world, as_user) -> None:
     """CP-95."""
     item = world.product("Sin politica")
     world.stock(item, "0")
-    body = low_stock(world, as_user("inventario.test"))
+    body = low_stock(world, as_user("bodeguero.sintetico"))
     assert body["items"] == [] and body["has_next"] is False and body["next_cursor"] is None
 
 
@@ -131,11 +131,11 @@ def test_requires_minimums_and_stock_permissions(world, as_token, make_token, as
         response = as_token(make_token(*roles)).get(f"{world.base}/low-stock-products")
         assert response.status_code == 403, roles
     assert as_token(make_token(functional, stock, minimums)).get(f"{world.base}/low-stock-products").status_code == 200
-    assert as_user("ventas.test").get(f"{world.base}/low-stock-products").status_code == 403
+    assert as_user("vendedor.sintetico").get(f"{world.base}/low-stock-products").status_code == 403
 
 
 def test_stock_state_and_minimum_state_are_not_parameters_here(world, as_user) -> None:
-    client = as_user("inventario.test")
+    client = as_user("bodeguero.sintetico")
     for query in ("stock_state=IN_STOCK", "minimum_state=BELOW_MINIMUM", f"price_list_id={uuid4()}"):
         assert client.get(f"{world.base}/low-stock-products?{query}").status_code == 422, query
 
@@ -144,18 +144,18 @@ def test_inventory_failure_is_503(world, as_user) -> None:
     item = world.product("Producto")
     world.minimum(item, "2")
     world.fakes.inventory.fail.add("below_minimum_pairs")
-    assert as_user("inventario.test").get(f"{world.base}/low-stock-products").status_code == 503
+    assert as_user("bodeguero.sintetico").get(f"{world.base}/low-stock-products").status_code == 503
 
 
 def test_no_cost_fields(world, as_user) -> None:
     item = world.product("Producto")
     world.minimum(item, "2")
-    keys = keys_in(low_stock(world, as_user("inventario.test")))
+    keys = keys_in(low_stock(world, as_user("bodeguero.sintetico")))
     assert not {key for key in keys if any(word in key for word in COST_WORDS)} and "inventory_value" not in keys
 
 
 def test_include_images_is_not_a_low_stock_parameter(world, as_user) -> None:
     """Spec 024 (FR-024-43): low-stock no trae imágenes; `include_images` responde `422`."""
-    response = as_user("inventario.test").get(f"{world.base}/low-stock-products?include_images=true")
+    response = as_user("bodeguero.sintetico").get(f"{world.base}/low-stock-products?include_images=true")
     assert response.status_code == 422
     assert response.json()["errors"][0]["field"] == "include_images"

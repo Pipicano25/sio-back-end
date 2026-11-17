@@ -17,11 +17,11 @@ REPORTS = ("top-selling-products", "sales-by-branch", "purchases", "stock-evolut
 MATRIX = {
     "admin.test": (200, 200, 200, 200),
     "supervisor.test": (200, 200, 200, 200),
-    "ventas.test": (200, 403, 403, 403),
-    "compras.test": (403, 403, 200, 403),
-    "inventario.test": (403, 403, 403, 200),
-    "reportes.test": (200, 200, 200, 200),
-    "consulta.test": (403, 403, 403, 403),
+    # Spec 026: los tres usuarios del grupo `empleado` tienen la unión de ventas, compras e inventario (sin el reporte
+    # de ventas por sucursal, que era de `reportes` y hoy es de `admin`).
+    "ventas.test": (200, 403, 200, 200),
+    "compras.test": (200, 403, 200, 200),
+    "inventario.test": (200, 403, 200, 200),
 }
 
 
@@ -47,16 +47,18 @@ def test_matrix_per_group_with_template_roles(as_user, seeded, username) -> None
                 assert "perm:" not in response.text
 
 
-def test_reportes_reads_stock_evolution_without_kardex_permission() -> None:
-    roles = USER_ROLES["reportes.test"]
+def test_empleado_reads_stock_evolution_with_its_own_permission() -> None:
+    """El grupo `empleado` lee la evolución con el permiso explícito (DR-11); que el kardex solo no la abre lo prueba
+    `test_kardex_permission_alone_does_not_open_stock_evolution`."""
+    roles = USER_ROLES["inventario.test"]
     assert "perm:inventory:stock_evolution:read" in roles
-    assert "perm:inventory:movements:read" not in roles and "perm:inventory:valuation:read" not in roles
+    assert "perm:business-reporting:stock_evolution:read" in roles
 
 
 def test_owner_permission_is_required_too(as_user, as_token, make_token, seeded) -> None:
     """Con el permiso del reporte pero sin el del propietario: `403` genérico (DR-07)."""
     only_report = as_token(make_token("perm:business-reporting:all:read", "perm:operational-context:all:read",
-                                      sub="sub-reportes.test"))
+                                      sub="sub-supervisor.test"))
     for report in REPORTS:
         response = only_report.get(url(seeded, report), params=PERIOD)
         assert response.status_code == 403, (report, response.text)
@@ -77,15 +79,15 @@ def test_anonymous_is_401(as_token, seeded) -> None:
 
 
 def test_non_member_other_company_and_foreign_branch_are_404_before_owners(as_user, seeded) -> None:
-    seeded.members.discard("sub-reportes.test")
+    seeded.members.discard("sub-supervisor.test")
     for report in REPORTS:
-        assert as_user("reportes.test").get(url(seeded, report), params=PERIOD).status_code == 404
-    seeded.members.add("sub-reportes.test")
+        assert as_user("supervisor.test").get(url(seeded, report), params=PERIOD).status_code == 404
+    seeded.members.add("sub-supervisor.test")
     other = f"/api/v1/companies/{uuid4()}/reports/top-selling-products"
-    assert as_user("reportes.test").get(other, params=PERIOD).status_code == 404
+    assert as_user("supervisor.test").get(other, params=PERIOD).status_code == 404
     foreign = f"/api/v1/companies/{seeded.company.id}/branches/{uuid4()}/reports/stock-evolution"
-    assert as_user("reportes.test").get(foreign, params=PERIOD).status_code == 404
-    assert as_user("reportes.test").get(f"{base(seeded)}/purchases",
+    assert as_user("supervisor.test").get(foreign, params=PERIOD).status_code == 404
+    assert as_user("supervisor.test").get(f"{base(seeded)}/purchases",
                                         params={**PERIOD, "branch_id": str(uuid4())}).status_code == 404
     owners = {"sales_by_product", "sales_by_branch", "purchase_period", "stock_evolution", "company_products_search"}
     assert not owners & set(seeded.log.names())
@@ -93,7 +95,7 @@ def test_non_member_other_company_and_foreign_branch_are_404_before_owners(as_us
 
 def test_inactive_branch_can_be_named_explicitly(as_user, seeded) -> None:
     closed = seeded.branches[2]
-    response = as_user("reportes.test").get(f"{base(seeded)}/sales-by-branch",
+    response = as_user("supervisor.test").get(f"{base(seeded)}/sales-by-branch",
                                             params={**PERIOD, "branch_id": str(closed.id)})
     assert response.status_code == 200
     assert [row["branch_code"] for row in response.json()["items"]] == ["CERRADA"]
@@ -110,7 +112,7 @@ def test_inactive_branch_can_be_named_explicitly(as_user, seeded) -> None:
     {**PERIOD, "desconocido": "x"},
 ])
 def test_invalid_parameters_are_422(as_user, seeded, params) -> None:
-    response = as_user("reportes.test").get(f"{base(seeded)}/top-selling-products", params=params)
+    response = as_user("supervisor.test").get(f"{base(seeded)}/top-selling-products", params=params)
     assert response.status_code == 422, response.text
     assert response.json()["code"] == "BUSINESS_REPORTING.VALIDATION_ERROR"
 
@@ -123,6 +125,6 @@ def test_branch_or_scope_in_query_of_stock_evolution_is_422(as_user, seeded) -> 
 
 def test_dependency_failure_is_503_without_naming_it(as_user, seeded) -> None:
     seeded.fail.add("sales_by_product")
-    response = as_user("reportes.test").get(f"{base(seeded)}/top-selling-products", params=PERIOD)
+    response = as_user("supervisor.test").get(f"{base(seeded)}/top-selling-products", params=PERIOD)
     assert response.status_code == 503
     assert "sales" not in response.json()["detail"].lower()

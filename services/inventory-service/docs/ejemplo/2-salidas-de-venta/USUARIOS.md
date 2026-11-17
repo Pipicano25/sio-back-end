@@ -8,8 +8,6 @@
 | `compras.test` | `403` | `403` | `403` | `403` |
 | `ventas.test` | `403` | `403` | `403` | `403` |
 | `inventario.test` | `403` | `403` | `403` | `403` |
-| `reportes.test` | `403` | `403` | `403` | `403` |
-| `consulta.test` | `403` | `403` | `403` | `403` |
 
 ## Permiso por URL
 
@@ -22,5 +20,5 @@
 
 ## Ejemplos
 
-- Puede: `inventario.test`, `admin.test` y `supervisor.test` consultan inventario de las empresas donde son miembros; `inventario.test` registra ajustes y conteos en las sucursales asignadas; `admin.test` y `supervisor.test` configuran políticas (comodín).
-- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.test`, que tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; `compras.test`, `ventas.test`, `reportes.test` y `consulta.test` reciben `403`.
+- Puede: `admin.test` (SuperAdmin), `supervisor.test` (Admin) y los usuarios del grupo `empleado` (`inventario.test`, `compras.test`, `ventas.test`) consultan inventario de las empresas donde son miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.test` y `supervisor.test` configuran políticas.
+- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.test`, que tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; el grupo `empleado` recibe `403` al configurar políticas.

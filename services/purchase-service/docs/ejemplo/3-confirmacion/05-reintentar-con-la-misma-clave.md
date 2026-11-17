@@ -35,12 +35,10 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:all:all:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `supervisor.test` | Sí | `—` | tiene `perm:purchase:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
 | `compras.test` | Sí | `200` | tiene `perm:purchase:purchases:update` y asignación a la sucursal |
-| `ventas.test` | No | `403` | no tiene `perm:purchase:purchases:update` |
-| `inventario.test` | No | `403` | no tiene `perm:purchase:purchases:update` |
-| `reportes.test` | No | `403` | no tiene `perm:purchase:purchases:update` |
-| `consulta.test` | No | `403` | no tiene `perm:purchase:purchases:update` |
+| `ventas.test` | Sí | `—` | tiene `perm:purchase:purchases:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `inventario.test` | Sí | `—` | tiene `perm:purchase:purchases:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

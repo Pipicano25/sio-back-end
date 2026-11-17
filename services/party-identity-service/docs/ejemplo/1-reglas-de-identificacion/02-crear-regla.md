@@ -30,8 +30,8 @@ POST /api/v1/identification-type-rules
 
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `create`
 - ℹ️ Crear una **nueva versión** de una regla (`POST .../versions`) también exige `create`: el resultado es una regla nueva.
 
 **Por qué se hace así**
@@ -79,8 +79,8 @@ POST /api/v1/identification-type-rules
 
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `create`
 - ℹ️ Crear una **nueva versión** de una regla (`POST .../versions`) también exige `create`: el resultado es una regla nueva.
 
 **Por qué se hace así**
@@ -116,8 +116,8 @@ POST /api/v1/identification-type-rules
 
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `create`
 - ℹ️ Crear una **nueva versión** de una regla (`POST .../versions`) también exige `create`: el resultado es una regla nueva.
 
 **Por qué se hace así**

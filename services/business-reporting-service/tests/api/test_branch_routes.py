@@ -13,11 +13,10 @@ from tests.api.support import PERIOD, base, seed_purchases, seed_sales
 from tests.fakes import purchase
 
 REPORTS = ("top-selling-products", "sales-by-branch", "purchases")
-CAN = {"top-selling-products": {"admin.test", "supervisor.test", "ventas.test", "reportes.test"},
-       "sales-by-branch": {"admin.test", "supervisor.test", "reportes.test"},
-       "purchases": {"admin.test", "supervisor.test", "compras.test", "reportes.test"}}
-USERS = ("admin.test", "supervisor.test", "ventas.test", "compras.test", "inventario.test", "reportes.test",
-         "consulta.test")
+CAN = {"top-selling-products": {"admin.test", "supervisor.test", "ventas.test", "compras.test", "inventario.test"},
+       "sales-by-branch": {"admin.test", "supervisor.test"},
+       "purchases": {"admin.test", "supervisor.test", "ventas.test", "compras.test", "inventario.test"}}
+USERS = ("admin.test", "supervisor.test", "ventas.test", "compras.test", "inventario.test")
 
 
 def branch_url(fakes, report: str, branch=None) -> str:
@@ -39,7 +38,7 @@ def seeded(fakes):
 
 @pytest.mark.parametrize("report", ["top-selling-products", "purchases"])
 def test_same_result_as_the_company_route_with_one_branch_id(as_user, seeded, report) -> None:
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     branch = seeded.branches[0].id
     by_path = client.get(branch_url(seeded, report), params=PERIOD)
     by_query = client.get(f"{base(seeded)}/{report}", params={**PERIOD, "branch_id": str(branch)})
@@ -49,7 +48,7 @@ def test_same_result_as_the_company_route_with_one_branch_id(as_user, seeded, re
 
 def test_owner_receives_only_the_branch_of_the_path(as_user, seeded) -> None:
     branch = seeded.branches[1].id
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     for report in REPORTS:
         assert client.get(branch_url(seeded, report, branch), params=PERIOD).status_code == 200
     for name in ("sales_by_product", "sales_by_branch", "purchase_period"):
@@ -65,7 +64,7 @@ def test_purchases_of_the_branch_only(as_user, seeded) -> None:
 
 
 def test_sales_of_one_branch_without_share_and_with_zero(as_user, seeded) -> None:
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     principal = client.get(branch_url(seeded, "sales-by-branch"), params=PERIOD).json()
     assert principal["branch_code"] == "PPAL" and "share_percentage" not in str(principal)
     assert principal["items"] == [{"currency_code": "COP", "sales_count": 60, "total_amount": "750000.00"}]
@@ -75,7 +74,7 @@ def test_sales_of_one_branch_without_share_and_with_zero(as_user, seeded) -> Non
 
 
 def test_company_route_share_is_over_the_branches_in_the_response(as_user, seeded) -> None:
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     whole = client.get(f"{base(seeded)}/sales-by-branch", params=PERIOD).json()
     assert {i["branch_code"]: i["share_percentage"] for i in whole["items"]} == {"PPAL": "75.0000", "NORTE": "25.0000"}
     one = client.get(f"{base(seeded)}/sales-by-branch", params={**PERIOD, "branch_id": str(seeded.branches[1].id)}).json()
@@ -84,18 +83,18 @@ def test_company_route_share_is_over_the_branches_in_the_response(as_user, seede
 
 @pytest.mark.parametrize("report", REPORTS)
 def test_query_branch_id_is_rejected_in_branch_routes(as_user, seeded, report) -> None:
-    response = as_user("reportes.test").get(branch_url(seeded, report),
+    response = as_user("supervisor.test").get(branch_url(seeded, report),
                                             params={**PERIOD, "branch_id": str(seeded.branches[1].id)})
     assert response.status_code == 422 and response.json()["errors"][0]["code"] == "UNKNOWN_FIELD"
 
 
 @pytest.mark.parametrize("report", REPORTS)
 def test_foreign_branch_other_company_and_non_member_are_404(as_user, seeded, report) -> None:
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     assert client.get(branch_url(seeded, report, uuid4()), params=PERIOD).status_code == 404
     other = f"/api/v1/companies/{uuid4()}/branches/{seeded.branches[0].id}/reports/{report}"
     assert client.get(other, params=PERIOD).status_code == 404
-    seeded.members.discard("sub-reportes.test")
+    seeded.members.discard("sub-supervisor.test")
     assert client.get(branch_url(seeded, report), params=PERIOD).status_code == 404
     owners = {"sales_by_product", "sales_by_branch", "purchase_period"}
     assert not owners & set(seeded.log.names())
@@ -103,7 +102,7 @@ def test_foreign_branch_other_company_and_non_member_are_404(as_user, seeded, re
 
 def test_inactive_branch_by_uuid(as_user, seeded) -> None:
     closed = seeded.branches[2].id
-    assert as_user("reportes.test").get(branch_url(seeded, "purchases", closed), params=PERIOD).status_code == 200
+    assert as_user("supervisor.test").get(branch_url(seeded, "purchases", closed), params=PERIOD).status_code == 200
 
 
 @pytest.mark.parametrize("report", REPORTS)

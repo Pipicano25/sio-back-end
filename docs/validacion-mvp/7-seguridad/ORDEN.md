@@ -16,9 +16,9 @@ Ejecute los archivos en este orden; cada paso usa los `id` guardados en los ante
 | 04 | [04-aislamiento-en-sales.md](04-aislamiento-en-sales.md) | Aislamiento en Sales | 2 | — |
 | 05 | [05-aislamiento-en-inventory.md](05-aislamiento-en-inventory.md) | Aislamiento en Inventory | 4 | — |
 | 06 | [06-aislamiento-en-audit.md](06-aislamiento-en-audit.md) | Aislamiento en Audit | 2 | — |
-| 07 | [07-permisos-el-vendedor-no-compra.md](07-permisos-el-vendedor-no-compra.md) | Permisos: el vendedor no compra | 1 | — |
-| 08 | [08-permisos-el-comprador-no-vende.md](08-permisos-el-comprador-no-vende.md) | Permisos: el comprador no vende | 1 | — |
-| 09 | [09-permisos-consulta-no-escribe.md](09-permisos-consulta-no-escribe.md) | Permisos: consulta no escribe | 2 | — |
+| 07 | [07-permisos-el-empleado-no-crea-empresas.md](07-permisos-el-empleado-no-crea-empresas.md) | Permisos: el empleado no crea empresas | 1 | — |
+| 08 | [08-permisos-el-empleado-no-modifica-el-catalogo-global.md](08-permisos-el-empleado-no-modifica-el-catalogo-global.md) | Permisos: el empleado no modifica el catálogo global | 1 | — |
+| 09 | [09-permisos-el-admin-no-crea-empresas.md](09-permisos-el-admin-no-crea-empresas.md) | Permisos: el Admin no crea empresas | 1 | — |
 | 10 | [10-permisos-la-cuenta-de-servicio-de-sales-no-vende.md](10-permisos-la-cuenta-de-servicio-de-sales-no-vende.md) | Permisos: la cuenta de servicio de Sales no vende | 2 | — |
 | 11 | [11-permisos-la-cuenta-de-servicio-de-purchase-no-compra.md](11-permisos-la-cuenta-de-servicio-de-purchase-no-compra.md) | Permisos: la cuenta de servicio de Purchase no compra | 2 | — |
 | 12 | [12-sin-token-y-con-token-invalido.md](12-sin-token-y-con-token-invalido.md) | Sin token y con token inválido | 40 | — |

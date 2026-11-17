@@ -31,7 +31,7 @@ def test_roles_that_grant_profitability(roles) -> None:
         set(),
         {"perm:sales:all:read"},
         {"perm:sales:sales:read"},
-        {"perm:all:all:read"},  # supervisores: la acción read no cubre read-profitability
+        {"perm:all:all:read"},  # comodín global de lectura: la acción read no cubre read-profitability
         {"perm:sales:all:create", "perm:sales:all:read", "perm:sales:all:update", "perm:sales:all:delete"},
         {"perm:sales:sale_details:read-profitability"},
         {"ventas", "supervisor"},

@@ -22,7 +22,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-suppliers
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_suppliers:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -50,7 +50,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/supplier-payment-conditi
 
 **Permiso que exige la URL:** `perm:commercial-relationship:supplier_payment_conditions:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 

@@ -4,12 +4,10 @@
 | --- | --- | --- | --- | --- |
 | `audit-test-emitter` | `201` | — (no consulta) | — (no consulta) | — (no consulta) |
 | `admin.test` | `403` | `200` | `200` | `404` |
-| `supervisor.test` | `403` | `200` | `200` | `404` |
+| `supervisor.test` | `403` | `403` | `403` | `404` |
 | `compras.test` | `403` | `403` | `403` | `403` |
 | `ventas.test` | `403` | `403` | `403` | `403` |
 | `inventario.test` | `403` | `403` | `403` | `403` |
-| `reportes.test` | `403` | `403` | `403` | `403` |
-| `consulta.test` | `403` | `403` | `403` | `403` |
 
 ## Permiso por URL
 

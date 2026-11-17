@@ -124,7 +124,7 @@ EX7 = dict(
                       expect=422, show=ERROR_SHOW),
                  call("Listar las políticas de la lista", "GET",
                       f"{API}/companies/<EMPRESA>/price-lists/<LISTA>/pricing-policies",
-                      why=["Solo administradores y supervisores: las políticas exponen porcentajes internos."],
+                      why=["Solo los grupos `superadmin` y `admin`: las políticas exponen porcentajes internos."],
                       show=["items[].name", "items[].markup_percentage", "items[].presentation_count", "total_records"]),
              ]),
         step("04-modificar-politicas.md", "Cambiar el porcentaje, retirar e inactivar",

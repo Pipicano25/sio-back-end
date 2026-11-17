@@ -301,7 +301,7 @@ EXERCISES = [
             {
                 "file": "02-listar-eventos-de-plataforma.md",
                 "title": "Listar los eventos de plataforma",
-                "actor": "supervisor.test",
+                "actor": "admin.test",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": "/api/v1/platform-audit-events",
@@ -311,7 +311,7 @@ EXERCISES = [
             {
                 "file": "03-historial-del-producto-global.md",
                 "title": "Historial del producto global",
-                "actor": "supervisor.test",
+                "actor": "admin.test",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/platform-entity-history/GlobalProduct/{GLOBAL_PRODUCT}",

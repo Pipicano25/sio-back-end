@@ -23,7 +23,7 @@ POST http://127.0.0.1:8101/api/v1/organization-identities
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:organization_identities:create`), `ventas.test` (por `perm:party-identity:organization_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:organization_identities:create`)
 
 **Por qué se hace así**
 
@@ -54,7 +54,7 @@ POST http://127.0.0.1:8101/api/v1/organization-identities
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:organization_identities:create`), `ventas.test` (por `perm:party-identity:organization_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:organization_identities:create`)
 
 **Por qué se hace así**
 
@@ -85,7 +85,7 @@ POST http://127.0.0.1:8101/api/v1/organization-identities
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:organization_identities:create`), `ventas.test` (por `perm:party-identity:organization_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:organization_identities:create`)
 
 **Por qué se hace así**
 

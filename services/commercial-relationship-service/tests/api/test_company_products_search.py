@@ -156,7 +156,7 @@ def test_validation_errors(as_user, company, fake_catalog) -> None:
 
 def test_other_company_is_404_and_permission_is_required(as_user, as_token, make_token, company, other_company) -> None:
     assert as_user("admin.test").post(URL.format(company=other_company), json={"limit": 5}).status_code == 404
-    assert as_user("inventario.test").post(URL.format(company=company), json={"limit": 5}).status_code == 403
+    assert as_user("sin-permisos.test").post(URL.format(company=company), json={"limit": 5}).status_code == 403
     assert as_token(None).post(URL.format(company=company), json={"limit": 5}).status_code == 401
 
 

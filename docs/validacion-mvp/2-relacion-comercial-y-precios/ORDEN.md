@@ -15,6 +15,6 @@ Ejecute los archivos en este orden; cada paso usa los `id` guardados en los ante
 | 03 | [03-incorporar-el-cliente.md](03-incorporar-el-cliente.md) | Incorporar el cliente | 1 | `<CLIENTE>` |
 | 04 | [04-crear-los-productos-globales.md](04-crear-los-productos-globales.md) | Crear los productos globales | 8 | `<CATEGORIA>`, `<CATEGORIA_PRODUCTO_A>`, `<CATEGORIA_PRODUCTO_B>`, `<PRESENTACION_BASE_A>`, `<PRESENTACION_BASE_B>`, `<PRESENTACION_CAJA_A>`, `<PRODUCTO_A>`, `<PRODUCTO_B>` |
 | 05 | [05-adoptar-productos-y-presentacion.md](05-adoptar-productos-y-presentacion.md) | Adoptar productos y presentación | 5 | `<PRESENTACION_BASE_EMPRESA_A>`, `<PRESENTACION_BASE_EMPRESA_B>`, `<PRESENTACION_CAJA_EMPRESA_A>`, `<PRODUCTO_EMPRESA_A>`, `<PRODUCTO_EMPRESA_A_VERSION>`, `<PRODUCTO_EMPRESA_B>`, `<PRODUCTO_EMPRESA_B_VERSION>` |
-| 06 | [06-crear-las-listas-de-precios.md](06-crear-las-listas-de-precios.md) | Crear las listas de precios | 5 | `<ITEM_B>`, `<ITEM_GENERAL>`, `<ITEM_GENERAL_VERSION>`, `<ITEM_MAYORISTA>`, `<LISTA_GENERAL>`, `<LISTA_MAYORISTA>` |
+| 06 | [06-crear-las-listas-de-precios.md](06-crear-las-listas-de-precios.md) | Crear las listas de precios | 8 | `<ITEM_B>`, `<ITEM_GENERAL>`, `<ITEM_GENERAL_VERSION>`, `<ITEM_MAYORISTA>`, `<LISTA_AUTOMATICA>`, `<LISTA_GENERAL>`, `<LISTA_MAYORISTA>`, `<POLITICA>`, `<PRODUCTO_EMPRESA_A_VERSION>`, `<PRODUCTO_EMPRESA_B_VERSION>` |
 
 Usuarios y permisos de este ejercicio: [USUARIOS.md](USUARIOS.md).

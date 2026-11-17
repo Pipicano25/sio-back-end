@@ -21,12 +21,10 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `404` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `404` | tiene `perm:all:all:read` |
-| `compras.test` | No | `403` | no tiene `perm:product-inventory-query:inventory_overviews:read` |
+| `supervisor.test` | Sí | `404` | tiene `perm:product-inventory-query:inventory_overviews:read` |
+| `compras.test` | Sí | `404` | tiene `perm:product-inventory-query:inventory_overviews:read` |
 | `ventas.test` | Sí | `404` | tiene `perm:product-inventory-query:inventory_overviews:read` |
 | `inventario.test` | Sí | `404` | tiene `perm:product-inventory-query:inventory_overviews:read` |
-| `reportes.test` | No | `403` | no tiene `perm:product-inventory-query:inventory_overviews:read` |
-| `consulta.test` | No | `403` | no tiene `perm:product-inventory-query:inventory_overviews:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

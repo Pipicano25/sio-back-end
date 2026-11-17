@@ -36,8 +36,8 @@ ALEMBIC_SERVICES = [
     }
 ]
 RECONCILERS = {
-    "sio-purchase-reconciler": "purchase_service.reconciler",
-    "sio-sales-reconciler": "sales_service.reconciler",
+    f"{config.CONTAINER_PREFIX}purchase-reconciler": "purchase_service.reconciler",
+    f"{config.CONTAINER_PREFIX}sales-reconciler": "sales_service.reconciler",
 }
 REVISION = re.compile(r"^([0-9A-Za-z_]+) \(head\)", re.MULTILINE)
 
@@ -63,7 +63,7 @@ def test_e01_docker_running(docker, journal):
     )
 
 
-@pytest.mark.parametrize("container", ["sio-keycloak", "sio-keycloak-db"])
+@pytest.mark.parametrize("container", [f"{config.CONTAINER_PREFIX}keycloak", f"{config.CONTAINER_PREFIX}keycloak-db"])
 def test_e02_keycloak_healthy(docker, container):
     state = docker.inspect(container)
     assert state.healthy, f"{container} no está sano: {state.status}/{state.health} (E-02)"
@@ -186,7 +186,7 @@ def test_e09_operational_context_admin_api(clients, run_context, journal):
         f"/companies/{company.body['id']}/application-users",
         step_id="E-09",
         json_body={
-            "username": "consulta.test",
+            "username": "ventas.test",
             "person_identity_id": person,
             "display_name": run_context.label("Preflight consulta"),
         },

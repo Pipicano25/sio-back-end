@@ -29,8 +29,8 @@ POST /api/v1/companies/<EMPRESA>/price-lists/<LISTA>/pricing-policies
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
@@ -71,8 +71,8 @@ POST /api/v1/companies/<EMPRESA>/price-lists/<LISTA>/pricing-policies
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
@@ -114,8 +114,8 @@ POST /api/v1/companies/<EMPRESA>/price-lists/<LISTA>/pricing-policies
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
@@ -154,8 +154,8 @@ POST /api/v1/companies/<EMPRESA>/price-lists/<LISTA>/pricing-policies
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
@@ -187,13 +187,13 @@ GET /api/v1/companies/<EMPRESA>/price-lists/<LISTA>/pricing-policies
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:read`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
 
 **Por qué se hace así**
 
-- Solo administradores y supervisores: las políticas exponen porcentajes internos.
+- Solo los grupos `superadmin` y `admin`: las políticas exponen porcentajes internos.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 

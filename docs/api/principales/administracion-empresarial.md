@@ -47,7 +47,7 @@ Convenciones de todo el módulo:
 
 **Método:** `POST`
 **URL:** `https://sio-operational-context-dev.onrender.com/api/v1/companies`
-**Permiso requerido:** `perm:operational-context:companies:create` **y** `perm:operational-context:platform:administer` (ambos; en el realm de desarrollo solo el grupo `administradores` tiene el segundo).
+**Permiso requerido:** `perm:operational-context:companies:create` **y** `perm:operational-context:platform:administer` (ambos; en el realm de desarrollo solo el grupo `superadmin` tiene el segundo).
 
 ### ¿Qué hace esta API?
 

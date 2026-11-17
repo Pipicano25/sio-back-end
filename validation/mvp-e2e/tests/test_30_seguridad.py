@@ -19,7 +19,7 @@ A_DATA = (
     "producto_empresa_a", "producto_empresa_b", "lista_general", "lista_mayorista", "item_general",
     "usuario_admin", "usuario_compras", "usuario_ventas",
 )
-B_DATA = ("empresa_b", "sucursal_b1", "org_empresa_b", "usuario_reportes", "usuario_inventario")
+B_DATA = ("empresa_b", "sucursal_b1", "org_empresa_b", "usuario_inventario")
 
 
 def without_instance(body):

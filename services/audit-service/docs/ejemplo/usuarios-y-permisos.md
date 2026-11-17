@@ -8,19 +8,17 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 - **Registrar** (`perm:audit:audit-events:create`) exige además un token de **cuenta de servicio**: ningún usuario humano registra eventos, aunque tenga el permiso por comodín.
 - **Auditoría de una empresa** (`perm:audit:audit-events:read`) exige además la membresía `ACTIVE` en la empresa y `perm:operational-context:application_users:read`, que pide Operational Context al resolver el acceso. Ser miembro de una empresa **no** da acceso a su auditoría (FR-037).
 - **Eventos de plataforma** (`perm:audit:platform-events:read`): permiso independiente, sin membresía. El permiso de empresa no da acceso a estos eventos y viceversa.
-- Ningún grupo recibe permisos de auditoría explícitos: `administradores` y `supervisores` los obtienen por comodín. Otro grupo se habilita asignándolos en Keycloak, sin cambios de código.
+- `superadmin` tiene toda la auditoría por su comodín; `admin` solo la lectura de sus empresas (`perm:audit:audit-events:read`), nunca la de plataforma; `empleado` no tiene permisos de auditoría. Otro grupo se habilita asignándolos en Keycloak, sin cambios de código.
 
 ## Usuarios de prueba
 
 | Usuario | Grupo | Lectura de empresa | Lectura de plataforma | Registro |
 | --- | --- | --- | --- | --- |
-| `admin.test` | `administradores` | Sí | Sí | No (no es cuenta de servicio) |
-| `supervisor.test` | `supervisores` | Sí | Sí | No (no es cuenta de servicio) |
-| `compras.test` | `compras` | No | No | No (no es cuenta de servicio) |
-| `ventas.test` | `ventas` | No | No | No (no es cuenta de servicio) |
-| `inventario.test` | `inventario` | No | No | No (no es cuenta de servicio) |
-| `reportes.test` | `reportes` | No | No | No (no es cuenta de servicio) |
-| `consulta.test` | `consulta` | No | No | No (no es cuenta de servicio) |
+| `admin.test` | `superadmin` | Sí | Sí | No (no es cuenta de servicio) |
+| `supervisor.test` | `admin` | Sí | No | No (no es cuenta de servicio) |
+| `compras.test` | `empleado` | No | No | No (no es cuenta de servicio) |
+| `ventas.test` | `empleado` | No | No | No (no es cuenta de servicio) |
+| `inventario.test` | `empleado` | No | No | No (no es cuenta de servicio) |
 | `audit-test-emitter` | cuenta de servicio | No | No | Sí (`perm:audit:audit-events:create`) |
 
 ## Cómo obtener los tokens

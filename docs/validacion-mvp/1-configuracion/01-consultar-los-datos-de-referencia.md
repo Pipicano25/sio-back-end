@@ -14,7 +14,7 @@ GET http://127.0.0.1:8102/global-countries?iso3_code=COL
 
 **Permiso que exige la URL:** `perm:geography:global_countries:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:geography:all:read`), `ventas.test` (por `perm:geography:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:geography:global_countries:read`), `reportes.test` (por `perm:geography:global_countries:read`), `inventario.test` (por `perm:geography:all:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:geography:all:read`), `ventas.test` (por `perm:geography:all:read`), `supervisor.test` (por `perm:geography:all:read`), `inventario.test` (por `perm:geography:all:read`)
 
 **Por qué se hace así**
 
@@ -34,7 +34,7 @@ GET http://127.0.0.1:8102/global-cities?country_id=<PAIS_CO>&search=Bogot
 
 **Permiso que exige la URL:** `perm:geography:global_cities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:geography:all:read`), `ventas.test` (por `perm:geography:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:geography:global_cities:read`), `reportes.test` (por `perm:geography:global_cities:read`), `inventario.test` (por `perm:geography:all:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:geography:all:read`), `ventas.test` (por `perm:geography:all:read`), `supervisor.test` (por `perm:geography:all:read`), `inventario.test` (por `perm:geography:all:read`)
 
 **Por qué se hace así**
 
@@ -54,7 +54,7 @@ GET http://127.0.0.1:8101/api/v1/identification-type-rules?party_kind=ORGANIZATI
 
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:identification_type_rules:read`), `ventas.test` (por `perm:party-identity:identification_type_rules:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:party-identity:identification_type_rules:read`), `reportes.test` (por `perm:party-identity:identification_type_rules:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:identification_type_rules:read`), `ventas.test` (por `perm:party-identity:identification_type_rules:read`), `supervisor.test` (por `perm:party-identity:all:read`), `inventario.test` (por `perm:party-identity:identification_type_rules:read`)
 
 **Por qué se hace así**
 
@@ -74,7 +74,7 @@ GET http://127.0.0.1:8101/api/v1/identification-type-rules?party_kind=PERSON&cou
 
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:identification_type_rules:read`), `ventas.test` (por `perm:party-identity:identification_type_rules:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:party-identity:identification_type_rules:read`), `reportes.test` (por `perm:party-identity:identification_type_rules:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:identification_type_rules:read`), `ventas.test` (por `perm:party-identity:identification_type_rules:read`), `supervisor.test` (por `perm:party-identity:all:read`), `inventario.test` (por `perm:party-identity:identification_type_rules:read`)
 
 **Respuesta esperada:** `200`
 

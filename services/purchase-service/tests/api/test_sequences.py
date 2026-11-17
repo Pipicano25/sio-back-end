@@ -82,8 +82,8 @@ def test_invalid_bodies(buyer, world) -> None:
 def test_permissions_and_membership(as_user, world, fakes) -> None:
     from tests.conftest import user_sub
 
-    assert as_user("reportes.test").post(url(world), json=sequence_body()).status_code == 403
-    assert as_user("reportes.test").get(url(world)).status_code == 200
+    assert as_user("lector.sintetico").post(url(world), json=sequence_body()).status_code == 403
+    assert as_user("lector.sintetico").get(url(world)).status_code == 200
     fakes.oc.members.pop((user_sub("compras.test"), world.company))
     assert as_user("compras.test").get(url(world)).status_code == 404
 

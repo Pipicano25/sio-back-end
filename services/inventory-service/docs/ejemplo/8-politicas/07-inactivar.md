@@ -29,12 +29,10 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `—` | tiene `perm:all:all:update`; no se repite (cambiaría el estado) |
+| `supervisor.test` | Sí | `—` | tiene `perm:inventory:product-policies:update`; no se repite (cambiaría el estado) |
 | `compras.test` | No | `403` | no tiene `perm:inventory:product-policies:update` |
 | `ventas.test` | No | `403` | no tiene `perm:inventory:product-policies:update` |
 | `inventario.test` | No | `403` | no tiene `perm:inventory:product-policies:update` |
-| `reportes.test` | No | `403` | no tiene `perm:inventory:product-policies:update` |
-| `consulta.test` | No | `403` | no tiene `perm:inventory:product-policies:update` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

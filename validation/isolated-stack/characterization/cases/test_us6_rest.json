@@ -367,7 +367,7 @@
           "company_status": "ACTIVE",
           "created_at": "<fecha>",
           "created_by": "<id:1>",
-          "display_name": "consulta.test (ficticio <run>)",
+          "display_name": "compras.test (ficticio <run>)",
           "id": "<id:2>",
           "keycloak_user_id": "<id:3>",
           "person_identity_id": "<persona>",

@@ -208,8 +208,8 @@ def test_update_and_immutables(as_user, company, fake_party):
 def test_status_actions(as_user, company, fake_party):
     customer = person_customer(as_user("admin.test"), company, fake_party)
 
-    assert as_user("supervisor.test").post(f"/api/v1/company-customers/{customer['id']}/deactivate",
-                                           json={"version": 1}).status_code == 403
+    assert as_user("ventas.test").post(f"/api/v1/company-customers/{customer['id']}/deactivate",
+                                       json={"version": 1}).status_code == 403
     inactive = as_user("admin.test").post(f"/api/v1/company-customers/{customer['id']}/deactivate", json={"version": 1})
     assert inactive.status_code == 200 and inactive.json()["status"] == "INACTIVE"
 

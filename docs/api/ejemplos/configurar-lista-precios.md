@@ -2,7 +2,7 @@
 
 [← Flujos](README.md) · [← Índice](../index.md) · Ficha: [Commercial Relationship](../servicios/commercial-relationship.md) · Módulo: [Productos y precios](../principales/productos-y-precios.md)
 
-Cómo una empresa crea su lista de precios, define un porcentaje de ganancia sobre el costo de compra, asocia las presentaciones y obtiene precios actualizados automáticamente cuando recibe mercancía. Perfil típico: grupos `administradores` o `supervisores`. Identificadores ficticios; cuerpos y respuestas según los modelos reales.
+Cómo una empresa crea su lista de precios, define un porcentaje de ganancia sobre el costo de compra, asocia las presentaciones y obtiene precios actualizados automáticamente cuando recibe mercancía. Perfil típico: grupo `admin` (o `superadmin`). Identificadores ficticios; cuerpos y respuestas según los modelos reales.
 
 **Conceptos verificados en el código de Commercial Relationship:**
 

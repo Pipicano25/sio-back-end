@@ -19,15 +19,15 @@ NOTES = {
     "usuario: la elegibilidad y el registro de primer uso los hace el servicio con su propia identidad técnica "
     "(cliente `commercial-relationship-service`).",
     "perm:commercial-relationship:company_products:delete": "Inactivar exige `delete` aunque no borra nada; reactivar "
-    "exige `update`. `supervisor.test` no tiene `delete`.",
+    "exige `update`. El grupo `empleado` no tiene `delete`.",
     "perm:commercial-relationship:company_customers:create": "Para incorporar clientes el token del usuario debe "
     "poder además **leer** en Party Identity (personas, organizaciones y personas de contacto) y, para "
     "organizaciones, `perm:operational-context:companies:read` (comprobación de la propia empresa). "
-    "`administradores` y `supervisores` tienen esa lectura.",
+    "Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.",
     "perm:commercial-relationship:company_suppliers:create": "Igual que los clientes: el token debe poder leer "
     "organizaciones y personas de contacto en Party Identity y la empresa en Operational Context.",
     "perm:commercial-relationship:company_suppliers:delete": "Inactivar **y bloquear** un proveedor exigen `delete` "
-    "(DS-16); reactivar y desbloquear exigen `update`. `supervisor.test` no puede bloquear.",
+    "(DS-16); reactivar y desbloquear exigen `update`. El grupo `empleado` no puede bloquear.",
 }
 
 
@@ -201,8 +201,8 @@ def render_users(ex, records):
     out += user_summary(rows)
     out += ["", "**Para hacer el ejercicio completo use `admin.test`**, siempre que tenga membresía `ACTIVE` en la "
             "empresa: en Commercial Relationship ni siquiera `perm:all:all:all` exime de la membresía (DS-03). "
-            "`supervisor.test` puede crear y modificar, pero no inactivar ni bloquear (salvo políticas de ganancia, "
-            "spec 021).", ""]
+            "`supervisor.test` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios del grupo "
+            "`empleado` consultan e incorporan clientes, pero no adoptan, modifican, inactivan ni bloquean.", ""]
 
     out += ["## Permiso por URL", "",
             "✅ = el usuario tiene el permiso de la llamada · ❌ = recibe `403 Forbidden`. "
@@ -231,51 +231,46 @@ def render_users(ex, records):
                 f"{permission_text(create[4])}. Reemplace las variables `<…>` por los `id` guardados.", ""]
 
     n += 1
-    consulta = next(u for u in USERS if u["username"] == "consulta.test")
+    empleado = next(u for u in USERS if u["username"] == "ventas.test")
     denied = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] != "GET"
-                          and not allowed_all(consulta, p))
+                          and not allowed_all(empleado, p) and not p[0].endswith(":delete"))
     if denied:
         s_i, c_i, s, c, p, r = denied
-        out += [f"### {n}. `consulta.test` intenta escribir (rechazado)", ""]
-        out += token_command("consulta.test", "TOKEN_CONSULTA")
+        out += [f"### {n}. `ventas.test` (Empleado) intenta escribir (rechazado)", ""]
+        out += token_command("ventas.test", "TOKEN_EMPLEADO")
         out += ["", f"Intenta el paso {s_i + 1:02d} (*{s['title']}*), llamada {c_i + 1}:", ""]
-        out += curl_for(c, "TOKEN_CONSULTA")
+        out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += [f"`consulta.test` solo tiene lecturas: puede **leer**, pero la URL exige {permission_text(p)}. El "
-                "servicio no ejecuta nada: ni siquiera consulta Operational Context ni valida el cuerpo.", ""]
+        out += [f"En Commercial Relationship el grupo `empleado` consulta e incorpora clientes, pero la URL exige "
+                f"{permission_text(p)}. El servicio no ejecuta nada: ni siquiera consulta Operational Context ni "
+                "valida el cuerpo.", ""]
 
-    read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET")
+    read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET"
+                        and allowed_all(empleado, p))
     if read:
         n += 1
         s_i, c_i, s, c, p, r = read
-        out += [f"### {n}. `consulta.test` consulta", ""]
-        out += curl_for(c, "TOKEN_CONSULTA")
+        out += [f"### {n}. `ventas.test` (Empleado) consulta", ""]
+        if not denied:
+            out += token_command("ventas.test", "TOKEN_EMPLEADO")
+            out += [""]
+        out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", f"Responde `200 OK` con la misma información que ve `admin.test` en el paso {s_i + 1:02d}: "
-                f"`{matching_grant(consulta, as_list(p)[0])}` cubre {permission_text(p)} y `consulta.test` es miembro "
+                f"`{matching_grant(empleado, as_list(p)[0])}` cubre {permission_text(p)} y `ventas.test` es miembro "
                 "de la empresa. Sin membresía respondería `404`.", ""]
 
-        n += 1
-        out += [f"### {n}. `inventario.test` consulta (rechazado)", ""]
-        out += token_command("inventario.test", "TOKEN_INVENTARIO")
-        out += [""]
-        out += curl_for(c, "TOKEN_INVENTARIO")
-        out += ["", "Responde `403 Forbidden`: `inventario.test` no tiene ningún permiso de Commercial Relationship "
-                "en el realm vigente, aunque sea miembro de la empresa.", ""]
-
-    deactivate = pick_example(rows, lambda s_i, c, p, r: p[0].endswith(":delete"))
+    deactivate = pick_example(rows, lambda s_i, c, p, r: p[0].endswith(":delete") and not allowed_all(empleado, p))
     if deactivate:
         n += 1
         s_i, c_i, s, c, p, r = deactivate
         action = "bloquear" if c["path"].endswith("/block") else "inactivar"
-        out += [f"### {n}. `supervisor.test` intenta {action} (rechazado)", ""]
-        out += token_command("supervisor.test", "TOKEN_SUPERVISOR")
-        out += [""]
-        out += curl_for(c, "TOKEN_SUPERVISOR")
+        out += [f"### {n}. `ventas.test` (Empleado) intenta {action} (rechazado)", ""]
+        out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += ["`supervisor.test` tiene `perm:all:all:read`, `perm:all:all:create` y `perm:all:all:update`, pero **no** "
-                f"`delete`. {action.capitalize()} queda para `admin.test`.", ""]
+        out += [f"El grupo `empleado` no tiene `delete` en Commercial Relationship. {action.capitalize()} queda para "
+                "`admin.test` (SuperAdmin) y `supervisor.test` (Admin), siempre con membresía en la empresa.", ""]
 
     n += 1
     out += [f"### {n}. Sin token (rechazado)", "",
@@ -308,9 +303,10 @@ def render_general(exercises, all_records):
             "3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, "
             "`all` vale como comodín en cualquier parte:",
             "   - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.",
-            "   - `perm:all:all:read` → solo `read`, en todos los servicios (`supervisores`).",
-            "   - `perm:commercial-relationship:all:read` → solo `read`, solo en Commercial Relationship "
-            "(`compras` y `ventas`).",
+            "   - `perm:commercial-relationship:all:read` → solo `read`, solo en Commercial Relationship (el grupo "
+            "`admin` lo tiene junto con `:all:create`, `:all:update` y `:all:delete`).",
+            "   - El grupo `empleado` tiene lecturas explícitas de Commercial Relationship (sin políticas de ganancia ni "
+            "actualizaciones automáticas, que exponen costos) y `company_customers:create`.",
             "4. Cada URL exige un permiso concreto (por ejemplo `perm:commercial-relationship:company_products:create`). "
             "Si falta, el servicio responde `403 Forbidden` e indica cuál. Sin token, o con un token vencido, responde "
             "`401 Unauthorized`.",
@@ -328,14 +324,11 @@ def render_general(exercises, all_records):
             "| Usuario | Grupo | Permisos del grupo en Commercial Relationship | Puede |", "| --- | --- | --- | --- |"]
     summary = {
         "admin.test": "Todo, en las empresas donde es miembro",
-        "supervisor.test": "Consultar, adoptar, incorporar, seleccionar, modificar, reactivar y desbloquear; "
-        "administrar políticas de ganancia (incluido inactivarlas) y resolver actualizaciones automáticas (spec 021). "
-        "**No** inactivar ni bloquear el resto",
-        "compras.test": "Solo consultar (sin políticas de ganancia ni actualizaciones automáticas)",
-        "ventas.test": "Solo consultar (sin políticas de ganancia ni actualizaciones automáticas)",
-        "inventario.test": "Nada (`403`)",
-        "reportes.test": "Solo consultar",
-        "consulta.test": "Solo consultar",
+        "supervisor.test": "Todo en las empresas donde es miembro (grupo `admin`): adoptar, incorporar, modificar, "
+        "inactivar, bloquear, administrar políticas de ganancia y resolver actualizaciones automáticas",
+        "compras.test": "Consultar (sin políticas de ganancia ni actualizaciones automáticas) e incorporar clientes",
+        "ventas.test": "Igual que `compras.test` (grupo `empleado`)",
+        "inventario.test": "Igual que `compras.test` (grupo `empleado`)",
     }
     for u in USERS:
         own = [p for p in u["perms"] if p.startswith("perm:commercial-relationship:") or p.startswith("perm:all:")]
@@ -348,17 +341,17 @@ def render_general(exercises, all_records):
 
     out += ["## Cómo obtener el token de cada usuario", "",
             "Cambie `username` por el usuario que quiera probar:", ""]
-    out += token_command("consulta.test", "TOKEN")
+    out += token_command("ventas.test", "TOKEN")
     out += ["", "En **PowerShell** (Windows):", "",
             "```powershell",
             "$body = @{ grant_type = 'password'; client_id = 'sio-web'; scope = 'openid'",
-            "           username = 'consulta.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
+            "           username = 'ventas.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
             f"$TOKEN = (Invoke-RestMethod -Method Post -Uri '{KEYCLOAK}' -Body $body).access_token",
             f"Invoke-RestMethod -Uri '{SERVICE_URL}/api/v1/companies/<EMPRESA>/company-products' `",
             "  -Headers @{ Authorization = \"Bearer $TOKEN\" }",
             "```", "",
             "Luego envíe el token en cada llamada:", "", "```http", "Authorization: Bearer <TOKEN>", "```", "",
-            "Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python services/get_token.py consulta)`) "
+            "Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python services/get_token.py ventas)`) "
             "obtiene el token de `<rol>.test`. Lee la contraseña de `KEYCLOAK_TEST_USER_PASSWORD` o de `infrastructure/.env`.", ""]
 
     out += ["## Permiso de cada URL de los ejercicios", "",
@@ -381,8 +374,8 @@ def render_general(exercises, all_records):
     out += ["## Qué usuario usar", "",
             "| Para… | Usuario |", "| --- | --- |",
             "| Hacer los ejercicios completos | `admin.test` (con membresía en la empresa) |",
-            "| Crear y modificar sin poder inactivar ni bloquear | `supervisor.test` (con membresía) |",
-            "| Verificar lo cargado | `consulta.test`, `reportes.test`, `compras.test` o `ventas.test` (con membresía) |",
-            "| Probar rechazos por falta de permiso | `consulta.test` en cualquier `POST` o `PUT`; `inventario.test` en "
-            "cualquier URL; `supervisor.test` al inactivar o bloquear |", ""]
+            "| Lo mismo como gerente de la empresa | `supervisor.test` (grupo `admin`, con membresía) |",
+            "| Verificar lo cargado | `ventas.test`, `compras.test` o `inventario.test` (grupo `empleado`, con membresía) |",
+            "| Probar rechazos por falta de permiso | `ventas.test` en adoptar, modificar, inactivar o bloquear y en "
+            "políticas de ganancia |", ""]
     return "\n".join(out)

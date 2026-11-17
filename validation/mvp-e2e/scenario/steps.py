@@ -146,8 +146,6 @@ OPERATIONAL_USERS = (
     ("compras", "compras.test", "a", "a1"),
     ("ventas", "ventas.test", "a", "a1"),
     ("supervisor", "supervisor.test", "a", "a1"),
-    ("consulta", "consulta.test", "a", None),
-    ("reportes", "reportes.test", "b", None),
     ("inventario", "inventario.test", "b", "b1"),
 )
 PERSONS = ("cliente",) + tuple(name for name, *_ in OPERATIONAL_USERS)

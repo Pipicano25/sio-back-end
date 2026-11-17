@@ -86,7 +86,7 @@ EX6 = dict(
                      f"{API}/companies/<EMPRESA>/advisor-assignments/change-primary", also=DELETE,
                      body={"current_assignment_id": "<ASESORIA_1>", "version": 1,
                            "person_identity_id": "<PERSONA_ASESOR_2>", "effective_at": "2026-06-01T00:00:00-05:00"},
-                     why=["Exige `create` **y** `delete` de asesores: `supervisor.test` no puede.",
+                     why=["Exige `create` **y** `delete` de asesores: el grupo `admin` puede; el grupo `empleado`, no.",
                           "Cierra la asignación 1 (`valid_to` = `effective_at`) y crea la 2 en la misma transacción."],
                      save={"ASESORIA_2": "created.id"},
                      show=["closed.id", "closed.status", "created.id", "created.person_identity_id",

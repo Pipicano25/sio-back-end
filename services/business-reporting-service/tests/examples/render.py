@@ -87,15 +87,15 @@ def render_general(results: dict[int, list[dict]]) -> str:
              "- El servicio consulta Sales, Purchase, Inventory, Operational Context, Commercial Relationship y "
              "Product Catalog **con el token del usuario** (DR-07): el usuario necesita además el permiso de lectura "
              "de cada propietario. Si el propietario responde `403`, el reporte responde el mismo `403` genérico.",
-             "- `reportes` consulta la evolución de existencias con `perm:inventory:stock_evolution:read`, que **no** "
-             "abre el kardex ni los costos (DR-11).",
+             "- La evolución de existencias exige `perm:inventory:stock_evolution:read`, distinto del kardex y de los "
+             "costos (DR-11). La tienen los tres grupos (`superadmin`, `admin` y `empleado`).",
              "- Sin costos ni márgenes: el margen bruto es de la fase 2 de la spec 023.", "",
              "## Usuarios de prueba", "", "| Usuario | Grupo |", "| --- | --- |"]
     lines += [f"| `{u['username']}` | `{u['group']}` |" for u in USERS]
     lines += ["", "## Cómo obtener el token", "", "```bash",
               "curl -s -X POST \"$KEYCLOAK_TOKEN_URL\" \\",
               "  -d grant_type=password -d client_id=sio-web \\",
-              "  -d username=reportes.test -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"", "```", "",
+              "  -d username=supervisor.test -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"", "```", "",
               "## Matriz de las URL", "", "| Ejercicio | Paso | URL | Permiso | "
               + " | ".join(f"`{u['username']}`" for u in USERS) + " |",
               "| --- | --- | --- | --- | " + " | ".join("---" for _ in USERS) + " |"]

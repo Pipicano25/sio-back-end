@@ -2,7 +2,7 @@
 
 [← Flujos](README.md) · [← Índice](../index.md) · Ficha: [Sales](../servicios/sales.md) · Módulo: [Ventas](../principales/ventas.md)
 
-Flujo del punto de venta: venta de contado, **lista de precios elegida por el vendedor en cada línea**, precio resuelto por el sistema, confirmación con descuento de inventario. Perfil típico: grupo `ventas`. Los identificadores son ficticios y las respuestas siguen los modelos reales de cada servicio.
+Flujo del punto de venta: venta de contado, **lista de precios elegida por el vendedor en cada línea**, precio resuelto por el sistema, confirmación con descuento de inventario. Perfil típico: grupo `empleado`. Los identificadores son ficticios y las respuestas siguen los modelos reales de cada servicio.
 
 Regla aprobada: el frontend consulta los precios vigentes de la presentación en todas las listas, los muestra de mayor a menor precio, preselecciona el mayor, el vendedor elige y el frontend envía `price_list_id` en la línea. **Nunca envía `unit_price`** (`422 UNIT_PRICE_NOT_ALLOWED`).
 

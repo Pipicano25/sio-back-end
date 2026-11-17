@@ -51,7 +51,7 @@ confirmada no se recalculan nunca (RN-04).
   `NUMERIC(7,4)`; con costo desconocido (`cost_known = false`) los márgenes quedan nulos y la cabecera
   marca `has_unknown_cost`. El log `sales.margin.percentage_outcome` registra el motivo por línea.
 - **Rentabilidad** (DS-12): costo, `cost_known`, márgenes y `has_unknown_cost` solo aparecen con
-  `perm:sales:sales:read-profitability` (grupos `supervisores` y `administradores`); sin él se omiten
+  `perm:sales:sales:read-profitability` (grupos `superadmin` y `admin`); sin él se omiten
   de todas las respuestas. Los eventos de auditoría nunca los incluyen.
 
 ## Flujo de confirmación (research.md R-04, R-05)

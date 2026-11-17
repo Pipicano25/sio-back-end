@@ -27,8 +27,8 @@ POST /api/v1/categories/<CAT_PANALES_BEBE>/attributes
 
 **Permiso que exige la URL:** `perm:product-catalog:categories:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
 - ℹ️ Asociar un atributo a una categoría modifica la categoría: exige `update`.
 
 **Por qué se hace así**
@@ -66,8 +66,8 @@ POST /api/v1/categories/<CAT_PANALES_BEBE>/attributes
 
 **Permiso que exige la URL:** `perm:product-catalog:categories:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
 - ℹ️ Asociar un atributo a una categoría modifica la categoría: exige `update`.
 
 **Por qué se hace así**

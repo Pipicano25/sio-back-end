@@ -2,7 +2,7 @@
 
 [← Flujos](README.md) · [← Índice](../index.md) · Fichas: [Operational Context](../servicios/operational-context.md), [Party Identity](../servicios/party-identity.md) · Módulo: [Administración empresarial](../principales/administracion-empresarial.md)
 
-Alta completa de una empresa cliente de SIO hasta que su primer usuario puede operar en una sucursal. Perfil: administrador de la plataforma (`perm:operational-context:platform:administer`, grupo `administradores` en el realm de desarrollo). Identificadores ficticios; cuerpos y respuestas según los modelos reales.
+Alta completa de una empresa cliente de SIO hasta que su primer usuario puede operar en una sucursal. Perfil: administrador de la plataforma (`perm:operational-context:platform:administer`, grupo `superadmin` en el realm de desarrollo). Identificadores ficticios; cuerpos y respuestas según los modelos reales.
 
 **Orden y efectos verificados en el código de Operational Context:** cada paso es explícito. Crear la empresa **no** crea sucursales ni membresías; crear la membresía **no** asigna sucursales; crear la sucursal **no** asigna usuarios. Las secuencias de numeración de ventas y compras tampoco se crean solas.
 

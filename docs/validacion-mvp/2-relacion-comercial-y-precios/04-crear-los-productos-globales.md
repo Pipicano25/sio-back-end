@@ -21,7 +21,7 @@ POST http://127.0.0.1:8103/api/v1/categories
 
 **Permiso que exige la URL:** `perm:product-catalog:categories:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
 
 **Por qué se hace así**
 
@@ -51,7 +51,7 @@ POST http://127.0.0.1:8103/api/v1/products
 
 **Permiso que exige la URL:** `perm:product-catalog:products:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -75,7 +75,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/categories
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
 
 **Respuesta esperada:** `201`
 
@@ -103,7 +103,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/presentations
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
 
 **Respuesta esperada:** `201`
 
@@ -131,7 +131,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/presentations
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
 
 **Por qué se hace así**
 
@@ -161,7 +161,7 @@ POST http://127.0.0.1:8103/api/v1/products
 
 **Permiso que exige la URL:** `perm:product-catalog:products:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -185,7 +185,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_B>/categories
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
 
 **Respuesta esperada:** `201`
 
@@ -213,7 +213,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_B>/presentations
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
 
 **Respuesta esperada:** `201`
 

@@ -23,7 +23,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-customers
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_customers:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:commercial-relationship:company_customers:create`), `ventas.test` (por `perm:commercial-relationship:company_customers:create`), `supervisor.test` (por `perm:commercial-relationship:all:create`), `inventario.test` (por `perm:commercial-relationship:company_customers:create`)
 
 **Respuesta esperada:** `201`
 

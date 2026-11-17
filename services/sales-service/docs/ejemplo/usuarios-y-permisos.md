@@ -8,20 +8,18 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 - **Todas** las rutas exigen un **usuario humano**: una cuenta de servicio recibe `403` aunque tenga el permiso por comodín (ni siquiera el cliente técnico `sales-service`, que solo consulta dependencias y opera Inventory).
 - **Escribir** ventas y líneas, confirmar y anular exige además membresía `ACTIVE` en la empresa y asignación `ACTIVE` a la sucursal de la venta (Operational Context con el token del usuario). **No obvio**: tener `perm:sales:all:update` o `perm:all:all:all` no basta sin la asignación.
 - **Secuencias** exigen membresía (no asignación). **Leer** exige permiso y membresía.
-- Crear una venta con líneas exige además `perm:sales:sale_details:create`; anular exige `perm:sales:sales:delete` (`supervisor.test` no lo tiene).
-- **Rentabilidad** (costo, `cost_known`, margen, porcentaje y `has_unknown_cost`): solo con `perm:sales:sales:read-profitability`, que no abre ninguna ruta por sí solo. **No obvio**: `perm:sales:all:read` no la incluye; el grupo `ventas` no la tiene (C-08); `supervisores` la tiene asignada explícitamente y `administradores` por `perm:all:all:all`. Sin el permiso, los campos se omiten.
+- Crear una venta con líneas exige además `perm:sales:sale_details:create`; anular exige `perm:sales:sales:delete` (lo tienen los tres grupos).
+- **Rentabilidad** (costo, `cost_known`, margen, porcentaje y `has_unknown_cost`): solo con `perm:sales:sales:read-profitability`, que no abre ninguna ruta por sí solo. **No obvio**: `perm:sales:all:read` no la incluye; el grupo `empleado` no la tiene (C-08); `admin` la tiene por `perm:sales:all:all` y `superadmin` por `perm:all:all:all`. Sin el permiso, los campos se omiten.
 
 ## Usuarios de prueba
 
 | Usuario | Grupo | Registrar y confirmar | Anular | Secuencias | Consultar | Ve rentabilidad |
 | --- | --- | --- | --- | --- | --- | --- |
-| `admin.test` | `administradores` | Sí | Sí | Sí | Sí | Sí |
-| `supervisor.test` | `supervisores` | Sí | No | Sí | Sí | Sí |
-| `compras.test` | `compras` | No | No | No | No | No |
-| `ventas.test` | `ventas` | Sí | Sí | Sí | Sí | No |
-| `inventario.test` | `inventario` | No | No | No | No | No |
-| `reportes.test` | `reportes` | No | No | No | Sí | No |
-| `consulta.test` | `consulta` | No | No | No | Sí | No |
+| `admin.test` | `superadmin` | Sí | Sí | Sí | Sí | Sí |
+| `supervisor.test` | `admin` | Sí | Sí | Sí | Sí | Sí |
+| `compras.test` | `empleado` | Sí | Sí | Sí | Sí | No |
+| `ventas.test` | `empleado` | Sí | Sí | Sí | Sí | No |
+| `inventario.test` | `empleado` | Sí | Sí | Sí | Sí | No |
 
 Las escrituras requieren además la asignación a la sucursal.
 

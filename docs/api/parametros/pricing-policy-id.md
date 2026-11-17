@@ -12,7 +12,7 @@
 | Obligatorio | Sí para asignar o retirar presentaciones, cambiar el porcentaje o inactivar la política |
 | Ejemplo (ficticio) | `7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d` |
 | Quién lo genera | Commercial Relationship, al crear la política (`id` de la respuesta `201`) |
-| Alcance | Empresa (la de la lista de precios); solo la consultan administradores y supervisores |
+| Alcance | Empresa (la de la lista de precios); solo la consultan los grupos `superadmin` y `admin` |
 
 ## Cómo obtenerlo
 

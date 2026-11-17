@@ -87,5 +87,5 @@ def test_authentication_and_authorization_are_still_checked_first(as_token, as_u
     # sin token: 401 aunque falte la cabecera (no revela reglas de validación)
     assert as_token(None).post(url, json={"version": 1}).status_code == 401
     # sin permiso de confirmar: 403 aunque falte la cabecera
-    response = as_user("consulta.test").post(url, json={"version": 1})
+    response = as_user("lector.sintetico").post(url, json={"version": 1})
     assert response.status_code == 403 and response.json()["code"] == "SALES.FORBIDDEN"

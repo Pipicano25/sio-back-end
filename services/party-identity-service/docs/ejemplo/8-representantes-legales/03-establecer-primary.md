@@ -25,8 +25,8 @@ POST /api/v1/organization-identities/<ORG_INV>/legal-representatives:set-primary
 
 **Permiso que exige la URL:** `perm:party-identity:organization_legal_representatives:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `organization_legal_representatives`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `create`
 - ℹ️ `:set-primary` también exige `create`: crea el primer `PRIMARY` o sustituye el vigente cerrándolo.
 
 **Por qué se hace así**
@@ -64,8 +64,8 @@ POST /api/v1/organization-identities/<ORG_INV>/legal-representatives
 
 **Permiso que exige la URL:** `perm:party-identity:organization_legal_representatives:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `organization_legal_representatives`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `create`
 - ℹ️ `:set-primary` también exige `create`: crea el primer `PRIMARY` o sustituye el vigente cerrándolo.
 
 **Por qué se hace así**
@@ -98,8 +98,8 @@ POST /api/v1/organization-identities/<ORG_INV>/legal-representatives:set-primary
 
 **Permiso que exige la URL:** `perm:party-identity:organization_legal_representatives:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `organization_legal_representatives`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `create`
 - ℹ️ `:set-primary` también exige `create`: crea el primer `PRIMARY` o sustituye el vigente cerrándolo.
 
 **Por qué se hace así**

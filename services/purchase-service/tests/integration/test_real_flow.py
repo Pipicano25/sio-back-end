@@ -172,13 +172,14 @@ def test_branch_assignment_and_roles_with_real_tokens(admin, buyer, real_world) 
     world = real_world
     other_branch = buyer.post(url(world, "/purchases"), json={**draft_body(world), "branch_id": world.branch_b})
     assert other_branch.status_code == 403 and other_branch.json()["code"] == "PURCHASE.BRANCH_ACCESS_DENIED"
-    with user_client("reportes.test") as reader:
+    # Spec 026: `supervisor.test` (Admin) es miembro sin asignación a sucursales: consulta, pero no escribe.
+    with user_client("supervisor.test") as reader:
         assert reader.get(url(world, "/purchases")).status_code == 200
         assert reader.post(url(world, "/purchases"), json=draft_body(world)).status_code == 403
-    with user_client("ventas.test") as seller:
-        assert seller.get(url(world, "/purchases")).status_code == 403
-    with user_client("inventario.test") as outsider:  # no es miembro de la empresa ficticia, sin permiso
-        assert outsider.get(url(world, "/purchases")).status_code == 403
+    # `ventas.test` e `inventario.test` (Empleado) tienen permiso de compras, pero no son miembros: `404`.
+    for username in ("ventas.test", "inventario.test"):
+        with user_client(username) as outsider:
+            assert outsider.get(url(world, "/purchases")).status_code == 404
     foreign = admin.get(f"{PURCHASE}/companies/{world.foreign_company}/purchases")
     assert foreign.status_code == 404
 

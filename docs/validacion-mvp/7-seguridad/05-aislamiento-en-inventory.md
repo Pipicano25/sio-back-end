@@ -14,7 +14,7 @@ GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/ba
 
 **Permiso que exige la URL:** `perm:inventory:balances:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `inventario.test` (por `perm:inventory:balances:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:inventory:balances:read`), `ventas.test` (por `perm:inventory:balances:read`), `supervisor.test` (por `perm:inventory:balances:read`), `inventario.test` (por `perm:inventory:balances:read`)
 
 **Por qué se hace así**
 
@@ -32,7 +32,7 @@ GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/ka
 
 **Permiso que exige la URL:** `perm:inventory:movements:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `inventario.test` (por `perm:inventory:movements:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:inventory:movements:read`), `ventas.test` (por `perm:inventory:movements:read`), `supervisor.test` (por `perm:inventory:movements:read`), `inventario.test` (por `perm:inventory:movements:read`)
 
 **Por qué se hace así**
 
@@ -50,7 +50,7 @@ GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/va
 
 **Permiso que exige la URL:** `perm:inventory:valuation:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `inventario.test` (por `perm:inventory:valuation:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:inventory:valuation:read`), `ventas.test` (por `perm:inventory:valuation:read`), `supervisor.test` (por `perm:inventory:valuation:read`), `inventario.test` (por `perm:inventory:valuation:read`)
 
 **Por qué se hace así**
 
@@ -79,7 +79,7 @@ POST http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/inventory-adjustments
 
 **Permiso que exige la URL:** `perm:inventory:adjustments:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`), `inventario.test` (por `perm:inventory:adjustments:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:inventory:adjustments:create`), `ventas.test` (por `perm:inventory:adjustments:create`), `supervisor.test` (por `perm:inventory:adjustments:create`), `inventario.test` (por `perm:inventory:adjustments:create`)
 
 **Por qué se hace así**
 

@@ -27,13 +27,13 @@ POST /api/v1/companies/<EMPRESA>/advisor-assignments/change-primary
 
 **Permisos que exige la URL (todos):** `perm:operational-context:company_advisor_assignments:create` + `perm:operational-context:company_advisor_assignments:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test`, `reportes.test`, `consulta.test` — sobre `operational-context` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`, `perm:operational-context:all:delete`)
+- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `create`
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
 
-- Exige `create` **y** `delete` de asesores: `supervisor.test` no puede.
+- Exige `create` **y** `delete` de asesores: el grupo `admin` puede; el grupo `empleado`, no.
 - Cierra la asignación 1 (`valid_to` = `effective_at`) y crea la 2 en la misma transacción.
 
 **Respuesta esperada — `201 Created`** (abreviada)

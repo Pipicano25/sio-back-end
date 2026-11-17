@@ -20,7 +20,7 @@ GET http://localhost:8004/api/v1/me/operational-context
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`), `reportes.test` (por `perm:operational-context:application_users:read`), `consulta.test` (por `perm:operational-context:application_users:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`)
 
 **Por qué se hace así**
 
@@ -56,8 +56,7 @@ GET http://localhost:8002/api/v1/organization-identities?search=<NIT>
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `reportes.test` (por `perm:party-identity:organization_identities:read`), `consulta.test` (por `perm:party-identity:organization_identities:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `organization_identities` de `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `inventario.test` (por `perm:party-identity:organization_identities:read`)
 
 **Por qué se hace así**
 
@@ -95,8 +94,7 @@ GET http://localhost:8002/api/v1/person-identities?search=<documento>
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:person_identities:read`), `ventas.test` (por `perm:party-identity:person_identities:read`), `reportes.test` (por `perm:party-identity:person_identities:read`), `consulta.test` (por `perm:party-identity:person_identities:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `person_identities` de `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:person_identities:read`), `ventas.test` (por `perm:party-identity:person_identities:read`), `inventario.test` (por `perm:party-identity:person_identities:read`)
 
 **Por qué se hace así**
 
@@ -134,8 +132,7 @@ GET http://localhost:8002/api/v1/organization-identities?search=<NIT>
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `reportes.test` (por `perm:party-identity:organization_identities:read`), `consulta.test` (por `perm:party-identity:organization_identities:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `organization_identities` de `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `inventario.test` (por `perm:party-identity:organization_identities:read`)
 
 **Por qué se hace así**
 
@@ -173,8 +170,7 @@ GET http://localhost:8002/api/v1/organization-identities/<ORG_CLIENTE>/contact-p
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:organization_contact_persons:read`), `ventas.test` (por `perm:party-identity:organization_contact_persons:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `organization_contact_persons` de `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_contact_persons:read`), `ventas.test` (por `perm:party-identity:organization_contact_persons:read`), `inventario.test` (por `perm:party-identity:organization_contact_persons:read`)
 
 **Por qué se hace así**
 
@@ -211,8 +207,7 @@ GET http://localhost:8002/api/v1/organization-identities?search=<NIT>
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `reportes.test` (por `perm:party-identity:organization_identities:read`), `consulta.test` (por `perm:party-identity:organization_identities:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `organization_identities` de `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `inventario.test` (por `perm:party-identity:organization_identities:read`)
 
 **Por qué se hace así**
 
@@ -250,8 +245,7 @@ GET http://localhost:8002/api/v1/organization-identities/<ORG_OTRA>/contact-pers
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:organization_contact_persons:read`), `ventas.test` (por `perm:party-identity:organization_contact_persons:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test`, `reportes.test`, `consulta.test` — no tienen ningún permiso sobre `organization_contact_persons` de `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_contact_persons:read`), `ventas.test` (por `perm:party-identity:organization_contact_persons:read`), `inventario.test` (por `perm:party-identity:organization_contact_persons:read`)
 
 **Por qué se hace así**
 

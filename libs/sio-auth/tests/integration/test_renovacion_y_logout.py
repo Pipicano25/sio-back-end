@@ -1,6 +1,6 @@
 """Renovación, rotación y logout de sesiones de `sio-web` contra la pila aislada `sio-it-*`.
 
-Pruebas activas: emiten, renuevan y revocan tokens del usuario de prueba `consulta.test` solo en Keycloak de la
+Pruebas activas: emiten, renuevan y revocan tokens del usuario de prueba `ventas.test` solo en Keycloak de la
 pila aislada (`validation/isolation_guard.py` antes de la primera solicitud). Se omiten sin `SIO_TEST_TARGET=isolated`.
 Política verificada (plantilla del realm): `revokeRefreshToken=true`, `refreshTokenMaxReuse=0`, sin `offline_access`
 en `sio-web` y clientes técnicos con `client_credentials` sin Refresh Token.
@@ -51,7 +51,7 @@ def isolated() -> None:
 def _login(scope: str = "openid") -> httpx.Response:
     return httpx.post(f"{OIDC}/token", timeout=30, data={
         "grant_type": "password", "client_id": "sio-web", "scope": scope,
-        "username": "consulta.test", "password": _secret("KEYCLOAK_TEST_USER_PASSWORD")})
+        "username": "ventas.test", "password": _secret("KEYCLOAK_TEST_USER_PASSWORD")})
 
 
 def _refresh(refresh_token: str) -> httpx.Response:

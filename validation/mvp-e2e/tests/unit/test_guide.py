@@ -20,7 +20,7 @@ STEP = Step(
 class FakeRealm:
     PERMS = {"admin.test": {"perm:all:all:all"}, "compras.test": {"perm:purchase:all:all"}}
     users = {name: {"groups": [f"/{name.split('.')[0]}"]} for name in (
-        "admin.test", "compras.test", "ventas.test", "supervisor.test", "consulta.test", "reportes.test", "inventario.test")}
+        "admin.test", "compras.test", "ventas.test", "supervisor.test", "inventario.test")}
 
     def user_permissions(self, user):
         return set(self.PERMS.get(user, set()))

@@ -143,7 +143,7 @@ def test_resolution_validates_version_and_reason(supervisor, client, company, fa
     assert supervisor.post(url, json={"version": row["version"], "reason": REASON}).status_code == 200  # desde PENDING
 
 
-@pytest.mark.parametrize("username", ["ventas.test", "compras.test", "consulta.test", "reportes.test", "inventario.test"])
+@pytest.mark.parametrize("username", ["ventas.test", "compras.test", "inventario.test"])
 def test_cp67_only_admins_and_supervisors(as_user, supervisor, client, company, fake_catalog, test_engine, username) -> None:
     _processed_world(supervisor, client, company, fake_catalog, test_engine)
     [row] = applications(test_engine)

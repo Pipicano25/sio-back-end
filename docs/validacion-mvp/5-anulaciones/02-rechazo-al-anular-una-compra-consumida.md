@@ -23,7 +23,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:all:all`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:delete`), `ventas.test` (por `perm:purchase:purchases:delete`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:delete`)
 
 **Respuesta esperada:** `409`
 

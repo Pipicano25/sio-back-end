@@ -30,8 +30,7 @@ POST /api/v1/person-identities
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:person_identities:create`), `ventas.test` (por `perm:party-identity:person_identities:create`), `inventario.test` (por `perm:party-identity:person_identities:create`)
 
 **Por qué se hace así**
 
@@ -67,8 +66,7 @@ POST /api/v1/person-identities/<PERSONA_CLIENTE>/contact-profile
 
 **Permiso que exige la URL:** `perm:party-identity:person_contact_profiles:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`; `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `person_contact_profiles`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:person_contact_profiles:create`), `ventas.test` (por `perm:party-identity:person_contact_profiles:create`), `inventario.test` (por `perm:party-identity:person_contact_profiles:create`)
 - ℹ️ Igual que en organizaciones: se exige membresía `ACTIVE` en la empresa desde la que se confirma, sin permisos de Operational Context.
 
 **Por qué se hace así**
@@ -97,8 +95,7 @@ GET /api/v1/person-identities/<PERSONA_CLIENTE>/contact-profile
 
 **Permiso que exige la URL:** `perm:party-identity:person_contact_profiles:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:person_contact_profiles:read`), `ventas.test` (por `perm:party-identity:person_contact_profiles:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`; `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `person_contact_profiles`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:person_contact_profiles:read`), `ventas.test` (por `perm:party-identity:person_contact_profiles:read`), `inventario.test` (por `perm:party-identity:person_contact_profiles:read`)
 
 **Por qué se hace así**
 

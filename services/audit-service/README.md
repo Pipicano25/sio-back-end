@@ -37,8 +37,8 @@ y nunca sustituye la identidad del usuario por una técnica. Librerías: `libs/s
 | Permiso | Operación | Quién |
 | --- | --- | --- |
 | `perm:audit:audit-events:create` | Registrar uno o varios eventos | Solo **cuentas de servicio**: un usuario humano recibe `403` aunque tenga el permiso por comodín |
-| `perm:audit:audit-events:read` | Consultar eventos **de empresa** (lista, `id`, historial) | Hoy `administradores` y `supervisores` (comodines) |
-| `perm:audit:platform-events:read` | Consultar eventos **de plataforma** (sin empresa) | Hoy `administradores` y `supervisores` (comodines) |
+| `perm:audit:audit-events:read` | Consultar eventos **de empresa** (lista, `id`, historial) | `superadmin` (comodín) y `admin` (explícito) |
+| `perm:audit:platform-events:read` | Consultar eventos **de plataforma** (sin empresa) | Solo `superadmin` (comodín) |
 
 **Dependencia de permisos (FR-037, FR-050)**: consultar la auditoría de una empresa exige
 `perm:audit:audit-events:read` **más** `perm:operational-context:application_users:read` (lo exige

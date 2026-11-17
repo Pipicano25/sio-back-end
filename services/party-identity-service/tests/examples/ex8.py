@@ -42,8 +42,8 @@ EX8 = dict(
         ("PRIMARY único", "Como máximo un `PRIMARY` vigente por organización; `ALTERNATE` y `OTHER` pueden ser varios."),
         ("set-primary", "Establece el primero o sustituye el vigente en una operación; nunca dos `PUT`."),
         ("Vigencia", "`[valid_from, valid_to)`: cerrar antes de que empiece la vigencia deja `valid_to = valid_from`."),
-        ("Datos sensibles", "Se leen con `organization_legal_representatives:read`, que solo tienen administradores y "
-         "supervisores."),
+        ("Datos sensibles", "Se leen con `organization_legal_representatives:read`, que tienen los tres grupos; "
+         "crearlos o modificarlos es solo de `superadmin` y `admin`."),
     ],
     order_rules=[
         ("Identidades primero", "Organización y personas deben existir y estar `ACTIVE`."),

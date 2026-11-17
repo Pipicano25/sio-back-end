@@ -40,7 +40,7 @@ EX9 = dict(
         "Ver cómo una **recepción física** de compra actualiza el precio de una lista con políticas: el "
         "**costo real** de la línea (con su impuesto) más el porcentaje de la política. Consultar las "
         "**actualizaciones automáticas** (cálculo y estado) y **resolver administrativamente** una que falló, sin "
-        "cambiar precios. Solo administradores y supervisores las ven, porque exponen costos (spec 021)."
+        "cambiar precios. Solo los grupos `superadmin` y `admin` las ven, porque exponen costos (spec 021)."
     ),
     data=[
         ("Fuente", "`docs/CAMPOS PRODUCTOS.xlsx`, hoja `Hoja1` (encabezados en la fila 2)"),
@@ -134,7 +134,7 @@ EX9 = dict(
                       f"{API}/companies/<EMPRESA>/automatic-price-applications",
                       why=["Paginado. Filtros: `status`, `price_list_id`, `company_product_presentation_id` y "
                            "`purchase_id`.",
-                           "Solo administradores y supervisores: la respuesta incluye costos y porcentajes."],
+                           "Solo los grupos `superadmin` y `admin`: la respuesta incluye costos y porcentajes."],
                       show=LIST_SHOW),
                  call("Listar solo las fallidas", "GET",
                       f"{API}/companies/<EMPRESA>/automatic-price-applications?status=FAILED",

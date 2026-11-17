@@ -3,8 +3,8 @@
 Verifica, contra la API con OC, CR, PC e Inventory simulados (Principio IV):
 
 - el estado de cada llamada, incluidos los errores esperados;
-- el permiso de cada URL (leído del log de `sio-auth`), que exista en la plantilla del realm, que `compras`,
-  `reportes` y `consulta` reciban `403` y que los usuarios con permiso obtengan su respuesta;
+- el permiso de cada URL (leído del log de `sio-auth`), que exista en la plantilla del realm, que cada usuario
+  de prueba del realm obtenga la respuesta de quien tiene el permiso (spec 026: los tres grupos lo tienen);
 - que la documentación versionada sea exactamente la generada;
 - que no haya secretos y que los tokens se pidan con variables de entorno.
 
@@ -104,13 +104,14 @@ def test_each_exercise_has_order_and_users() -> None:
         assert (folder / "ORDEN.md").is_file() and (folder / "USUARIOS.md").is_file()
 
 
-def test_users_without_any_query_permission_get_403_in_every_step() -> None:
-    """T128: `compras`, `reportes` y `consulta` reciben `403` en todos los pasos."""
+def test_every_realm_user_gets_the_allowed_status_in_every_step() -> None:
+    """T128 (spec 026): los tres grupos tienen los permisos de estas consultas, así que cada usuario de prueba obtiene
+    el estado de quien tiene el permiso; el `403` sin permisos lo muestra el token sin roles del ejecutor."""
     assert len(RESULTS) == len(EXERCISES), "Ejecute la prueba completa de tests/examples"
     for records in RESULTS.values():
         for record in records:
-            for name in ("compras.test", "reportes.test", "consulta.test"):
-                assert record["access"][name]["status"] == 403
+            for user in USERS:
+                assert record["access"][user["username"]]["status"] == record["step"]["allowed_status"], user["username"]
 
 
 SECRET_PATTERNS = (

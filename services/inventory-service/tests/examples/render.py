@@ -253,12 +253,13 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `inventario.test`, `admin.test` y `supervisor.test` consultan inventario de las "
-        "empresas donde son miembros; `inventario.test` registra ajustes y conteos en las sucursales "
-        "asignadas; `admin.test` y `supervisor.test` configuran políticas (comodín).",
+        "- Puede: `admin.test` (SuperAdmin), `supervisor.test` (Admin) y los usuarios del grupo `empleado` "
+        "(`inventario.test`, `compras.test`, `ventas.test`) consultan inventario de las empresas donde son "
+        "miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.test` y "
+        "`supervisor.test` configuran políticas.",
         "- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.test`, que "
         "tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; "
-        "`compras.test`, `ventas.test`, `reportes.test` y `consulta.test` reciben `403`.",
+        "el grupo `empleado` recibe `403` al configurar políticas.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -300,8 +301,8 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "usuario humano miembro de la empresa.",
         "- **Lecturas de 013** (`adjustments:read`, `counts:read`, `company-policies:read`, "
         "`product-policies:read`, `valuation:read`): mismo alcance por empresa que las consultas de stock.",
-        "- El grupo `inventario` tiene las lecturas de inventario y registra ajustes y conteos; "
-        "`administradores` y `supervisores` lo obtienen todo por comodín (las políticas solo ellos). "
+        "- El grupo `empleado` tiene las lecturas de inventario y registra ajustes y conteos; `superadmin` "
+        "lo obtiene todo por comodín y `admin` por permisos explícitos (las políticas solo ellos dos). "
         "Ningún grupo puede aplicar operaciones.",
         "",
         "## Usuarios de prueba",

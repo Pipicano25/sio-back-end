@@ -28,15 +28,12 @@ SECTORS = {
 }
 CONTACTS = SENSITIVE - {"perm:party-identity:organization_legal_representatives:read"}
 
-# Matriz objetivo de Q-C1: recursos sensibles y sectores que cada grupo puede leer.
+# Matriz objetivo de Q-C1 con los tres grupos de la spec 026: los tres leen contactos, representantes y sectores
+# (el Empleado registra y corrige personas y organizaciones; FR-010, FR-011).
 EXPECTED = {
-    "administradores": SENSITIVE | SECTORS,
-    "supervisores": SENSITIVE | SECTORS,
-    "compras": CONTACTS | SECTORS,
-    "ventas": CONTACTS | SECTORS,
-    "reportes": SECTORS,
-    "consulta": SECTORS,
-    "inventario": set(),
+    "superadmin": SENSITIVE | SECTORS,
+    "admin": SENSITIVE | SECTORS,
+    "empleado": SENSITIVE | SECTORS,
 }
 SNAPSHOT = json.loads(inventory.SNAPSHOT.read_text(encoding="utf-8"))
 
@@ -54,56 +51,34 @@ def test_q_c1_matrix_for_sensitive_and_sector_resources(realm, group) -> None:
     assert granted == EXPECTED[group]
 
 
-@pytest.mark.parametrize("group", inventory.ALL_GROUPS)
-def test_no_previous_read_was_lost_except_q_c1_exclusions(realm, group) -> None:
-    """No regresión: toda lectura previa se conserva salvo las excluidas por Q-C1."""
-    roles = inventory.group_roles(group, realm)
-    previous = set(SNAPSHOT["groups"][group]["reads"])
-    excluded = SENSITIVE - EXPECTED[group]
+@pytest.mark.parametrize(("previous", "current"), sorted(inventory.PREVIOUS_TO_CURRENT.items()))
+def test_no_previous_read_was_lost(realm, previous, current) -> None:
+    """No regresión: el grupo nuevo conserva toda lectura del grupo de la instantánea que lo origina."""
+    roles = inventory.group_roles(current, realm)
+    expected_previous = set(SNAPSHOT["groups"][previous]["reads"]) - (SENSITIVE - EXPECTED[current])
 
-    lost = {permission for permission in previous - excluded if not inventory.grants(roles, permission)}
+    lost = {permission for permission in expected_previous if not inventory.grants(roles, permission)}
 
     assert not lost, lost
 
 
-# Altas posteriores documentadas: la spec 021 asignó a `supervisores` tres permisos nuevos de otros servicios (políticas
-# de precios, resolución de actualizaciones automáticas y ajuste de la tasa de una línea de compra). No afectan a Party
-# Identity; cualquier otro cambio en estos grupos sigue fallando.
-LATER_ADDITIONS = {
-    "supervisores": {
-        "perm:commercial-relationship:pricing_policies:delete",
-        "perm:commercial-relationship:automatic_price_applications:resolve",
-        "perm:purchase:purchase_line_taxes:override",
-    },
-    # Spec 022 (FR-022-111): permisos del servicio de consultas consolidadas para `inventario`. No afectan a Party
-    # Identity.
-    "inventario": {
-        "perm:product-inventory-query:product_overviews:read",
-        "perm:product-inventory-query:inventory_overviews:read",
-        "perm:product-inventory-query:inventory_summary:read",
-        "perm:product-inventory-query:low_stock_products:read",
-        "perm:product-inventory-query:stock:read",
-        # Spec 023 (DR-11): evolución de existencias (solo cantidades) y su reporte. No afectan a Party Identity.
-        "perm:inventory:stock_evolution:read",
-        "perm:business-reporting:stock_evolution:read",
-    },
-}
+def test_superadmin_keeps_the_global_wildcard(realm) -> None:
+    assert inventory.group_roles("superadmin", realm) == ["superadmin", "perm:all:all:all"]
 
 
-@pytest.mark.parametrize("group", ["administradores", "supervisores", "inventario"])
-def test_unchanged_groups_keep_their_roles(realm, group) -> None:
-    current = inventory.group_roles(group, realm)
-    before = SNAPSHOT["groups"][group]["roles"]
-    assert [role for role in current if role in before] == before  # conserva todos, en el mismo orden
-    assert set(current) - set(before) == LATER_ADDITIONS.get(group, set())
-
-
-@pytest.mark.parametrize("group", inventory.READ_ONLY_GROUPS)
-def test_read_only_groups_no_longer_use_broad_read_wildcards(realm, group) -> None:
+@pytest.mark.parametrize("group", ["admin", "empleado"])
+def test_user_groups_do_not_use_global_read_wildcards(realm, group) -> None:
     roles = inventory.group_roles(group, realm)
 
     assert "perm:all:all:read" not in roles
-    assert "perm:party-identity:all:read" not in roles
+    assert "perm:all:all:all" not in roles
+
+
+@pytest.mark.parametrize("group", ["admin", "empleado"])
+def test_user_groups_never_delete_in_party_identity(realm, group) -> None:
+    deletes = [name for name in inventory.realm_roles(realm) if name.startswith("perm:party-identity:")
+               and name.endswith(":delete") and ":all:" not in name]
+    assert [name for name in deletes if inventory.grants(inventory.group_roles(group, realm), name)] == []
 
 
 def test_party_identity_service_account_can_query_operational_context(realm) -> None:
@@ -124,19 +99,17 @@ def test_phase_b_roles_exist(realm) -> None:
             assert f"perm:party-identity:{resource}:{action}" in names
 
 
-def test_every_read_permission_declared_by_code_exists_and_is_preserved(realm) -> None:
-    """T083: los permisos `read` que declaran los routers existen como rol y los conservan reportes/consulta."""
+def test_every_read_permission_declared_by_code_exists_and_admin_reads_it(realm) -> None:
+    """T083: los permisos `read` que declaran los routers existen como rol y el Admin los cubre todos, salvo la lectura
+    de auditoría de plataforma, exclusiva del SuperAdmin (spec 026, FR-005)."""
     declared, _ = inventory.declared_read_permissions()
     names = set(inventory.realm_roles(realm))
 
     assert declared <= names, declared - names
-    # La lectura de auditoría es exclusiva de quien la feature 011 decidió (no de reportes/consulta).
-    audit_reads = {permission for permission in declared if permission.startswith("perm:audit:")}
-    for group in ("reportes", "consulta"):
-        roles = inventory.group_roles(group, realm)
-        missing = {
-            permission
-            for permission in declared - SENSITIVE - audit_reads
-            if not inventory.grants(roles, permission)
-        }
-        assert not missing, (group, missing)
+    roles = inventory.group_roles("admin", realm)
+    missing = {
+        permission
+        for permission in declared - {"perm:audit:platform-events:read"}
+        if not inventory.grants(roles, permission)
+    }
+    assert not missing, missing

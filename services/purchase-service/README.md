@@ -143,7 +143,7 @@ Las pruebas de integración escriben en servicios reales: **solo** se ejecutan c
 ## Permisos
 
 `perm:purchase:{purchases,purchase_details,purchase_lifecycle_events,purchase_sequences,purchase_operations}:{create,read,update,delete}`
-y, desde la spec 021, `perm:purchase:purchase_line_taxes:override` (solo administradores y supervisores).
+y, desde la spec 021, `perm:purchase:purchase_line_taxes:override` (solo grupos `superadmin` y `admin`).
 Todas las rutas exigen usuario humano; escribir compras, líneas e hitos y confirmar o anular exige
 además asignación a la sucursal. Ver `docs/ejemplo/usuarios-y-permisos.md`.
 

@@ -11,7 +11,7 @@ from tests.fakes import D
 
 def test_top_products_default_rank_by_quantity_with_units_and_mixed_flag(as_user, fakes) -> None:
     tablets, syrup = seed_sales(fakes)
-    response = as_user("reportes.test").get(f"{base(fakes)}/top-selling-products", params=PERIOD)
+    response = as_user("supervisor.test").get(f"{base(fakes)}/top-selling-products", params=PERIOD)
     assert response.status_code == 200, response.text
     body = response.json()
     assert [item["company_product_id"] for item in body["items"]] == [str(syrup), str(tablets)]  # 2400 > 1250
@@ -41,7 +41,7 @@ def test_top_products_by_amount_with_presentations_and_one_branch(as_user, fakes
 
 def test_one_batch_to_cr_and_pc_per_report(as_user, fakes) -> None:
     seed_sales(fakes)
-    as_user("reportes.test").get(f"{base(fakes)}/top-selling-products", params=PERIOD)
+    as_user("supervisor.test").get(f"{base(fakes)}/top-selling-products", params=PERIOD)
     assert fakes.log.count("company_products_search") == 1 and fakes.log.count("product_summaries") == 1
     assert fakes.log.names()[:3].count("operational_access") == 1  # OC antes que cualquier propietario
     assert fakes.log.names().index("sales_by_product") > fakes.log.names().index("operational_access")
@@ -49,7 +49,7 @@ def test_one_batch_to_cr_and_pc_per_report(as_user, fakes) -> None:
 
 def test_sales_by_branch_fills_zero_branches_and_share(as_user, fakes) -> None:
     seed_sales(fakes)
-    body = as_user("reportes.test").get(f"{base(fakes)}/sales-by-branch", params=PERIOD).json()
+    body = as_user("supervisor.test").get(f"{base(fakes)}/sales-by-branch", params=PERIOD).json()
     rows = {row["branch_code"]: row for row in body["items"]}
     assert set(rows) == {"PPAL", "NORTE"}  # la inactiva sin ventas no aparece en el alcance de la empresa
     assert (rows["PPAL"]["total_amount"], rows["PPAL"]["share_percentage"]) == ("750000.00", "75.0000")
@@ -58,7 +58,7 @@ def test_sales_by_branch_fills_zero_branches_and_share(as_user, fakes) -> None:
 
 
 def test_sales_by_branch_without_sales_has_zero_rows_in_company_currency(as_user, fakes) -> None:
-    body = as_user("reportes.test").get(f"{base(fakes)}/sales-by-branch", params=PERIOD).json()
+    body = as_user("supervisor.test").get(f"{base(fakes)}/sales-by-branch", params=PERIOD).json()
     assert {(r["branch_code"], r["sales_count"], r["total_amount"], r["share_percentage"]) for r in body["items"]} == {
         ("PPAL", 0, "0.00", "0.0000"), ("NORTE", 0, "0.00", "0.0000")}
     assert body["totals"] == [{"currency_code": "COP", "sales_count": 0, "total_amount": "0.00"}]
@@ -70,7 +70,7 @@ def test_sales_of_a_branch_outside_the_company_is_an_integrity_incident(as_user,
     from business_reporting_service.application.ports import BranchSales
 
     fakes.branch_sales = [BranchSales(uuid4(), "COP", 1, D("10"))]
-    response = as_user("reportes.test").get(f"{base(fakes)}/sales-by-branch", params=PERIOD)
+    response = as_user("supervisor.test").get(f"{base(fakes)}/sales-by-branch", params=PERIOD)
     assert response.status_code == 503 and response.json()["code"] == "BUSINESS_REPORTING.DEPENDENCY_UNAVAILABLE"
 
 

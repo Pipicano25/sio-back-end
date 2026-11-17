@@ -25,7 +25,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchase-sequences
 
 **Permiso que exige la URL:** `perm:purchase:purchase_sequences:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchase_sequences:create`), `ventas.test` (por `perm:purchase:purchase_sequences:create`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchase_sequences:create`)
 
 **Por qué se hace así**
 
@@ -58,7 +58,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sale-sequences
 
 **Permiso que exige la URL:** `perm:sales:sale_sequences:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
 
 **Respuesta esperada:** `201`
 

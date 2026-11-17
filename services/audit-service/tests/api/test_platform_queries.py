@@ -40,8 +40,9 @@ def test_platform_permission_alone_cannot_see_company(platform_reader, company, 
 
 
 def test_wildcards_give_platform_access(as_user) -> None:
-    for username in ("admin.test", "supervisor.test"):
-        assert as_user(username).get("/api/v1/platform-audit-events").status_code == 200
+    assert as_user("admin.test").get("/api/v1/platform-audit-events").status_code == 200
+    # Spec 026 (FR-005): el grupo `admin` lee la auditoría de sus empresas, nunca la de plataforma.
+    assert as_user("supervisor.test").get("/api/v1/platform-audit-events").status_code == 403
 
 
 def test_platform_query_has_no_branch_filter(platform_reader) -> None:

@@ -168,10 +168,10 @@ Un error de base (conexión, `statement_timeout`, pool agotado) o un dato fuera 
 | --- | --- | --- |
 | `perm:inventory:entries:create` | Entradas de compra y sus reversos | Cuentas de servicio (Purchase, `inventory-test-operator`) |
 | `perm:inventory:outputs:create` | Salidas de venta y sus reversos | Cuentas de servicio (Sales, `inventory-test-operator`) |
-| `perm:inventory:balances:read` / `movements:read` | Saldos, stock, kardex y operaciones | `inventario`; `administradores` y `supervisores` (comodín) |
-| `perm:inventory:adjustments:create` / `counts:create` | Ajustes y conteos | Usuarios humanos: `inventario` y comodín |
-| `perm:inventory:company-policies:update` / `product-policies:update` | Políticas | Usuarios humanos: `administradores` y `supervisores` (comodín) |
-| `perm:inventory:adjustments:read`, `counts:read`, `company-policies:read`, `product-policies:read`, `valuation:read` | Lecturas de 013 | `inventario`, comodín e `inventory-test-operator` |
+| `perm:inventory:balances:read` / `movements:read` | Saldos, stock, kardex y operaciones | `admin` y `empleado`; `superadmin` (comodín) |
+| `perm:inventory:adjustments:create` / `counts:create` | Ajustes y conteos | Usuarios humanos: `admin`, `empleado` y `superadmin` |
+| `perm:inventory:company-policies:update` / `product-policies:update` | Políticas | Usuarios humanos: `superadmin` y `admin` |
+| `perm:inventory:adjustments:read`, `counts:read`, `company-policies:read`, `product-policies:read`, `valuation:read` | Lecturas de 013 | `admin`, `empleado`, `superadmin` e `inventory-test-operator` |
 | `perm:inventory:platform:lookup` | Lectura técnica sin membresía | Solo cuentas de servicio consumidoras |
 
 Consultar exige además membresía `ACTIVE` en la empresa (y `perm:operational-context:application_users:read`,

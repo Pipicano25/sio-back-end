@@ -165,7 +165,7 @@ def test_validation(as_user, world) -> None:
 
 def test_permissions(as_user, as_token, service_token, world) -> None:
     body = {"branch_ids": [str(world.branch)], "stock_state": "IN_STOCK", "limit": 5}
-    assert as_user("ventas.test").post(url(world), json=body).status_code == 403
+    assert as_user("sin-permisos.test").post(url(world), json=body).status_code == 403
     only_balances = as_token(service_token(BALANCES_READ, PLATFORM_LOOKUP, client_id="product-inventory-query-service"))
     assert only_balances.post(url(world), json=body).status_code == 403
     both = as_token(service_token(BALANCES_READ, PRODUCT_POLICIES_READ, PLATFORM_LOOKUP, client_id="product-inventory-query-service"))

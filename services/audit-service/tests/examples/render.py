@@ -235,8 +235,9 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "acceso. Ser miembro de una empresa **no** da acceso a su auditoría (FR-037).",
         "- **Eventos de plataforma** (`perm:audit:platform-events:read`): permiso independiente, sin "
         "membresía. El permiso de empresa no da acceso a estos eventos y viceversa.",
-        "- Ningún grupo recibe permisos de auditoría explícitos: `administradores` y `supervisores` los "
-        "obtienen por comodín. Otro grupo se habilita asignándolos en Keycloak, sin cambios de código.",
+        "- `superadmin` tiene toda la auditoría por su comodín; `admin` solo la lectura de sus empresas "
+        "(`perm:audit:audit-events:read`), nunca la de plataforma; `empleado` no tiene permisos de "
+        "auditoría. Otro grupo se habilita asignándolos en Keycloak, sin cambios de código.",
         "",
         "## Usuarios de prueba",
         "",

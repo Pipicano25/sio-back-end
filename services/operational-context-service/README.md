@@ -80,7 +80,7 @@ Qué **no** se guarda:
 Hacia Party Identity y Geography se propaga el token del usuario (D5). Para escribir, el usuario
 necesita además la lectura correspondiente en esos servicios
 (`perm:party-identity:organization_identities:read`, `perm:party-identity:person_identities:read`,
-`perm:geography:*:read`); en el realm vigente la tienen `administradores` y `supervisores`. Hacia
+`perm:geography:*:read`); en el realm vigente la tienen `superadmin` y `admin`. Hacia
 Keycloak Admin se usa **solo** la identidad técnica propia; su secreto se lee del entorno.
 
 ### Respuestas de las dependencias

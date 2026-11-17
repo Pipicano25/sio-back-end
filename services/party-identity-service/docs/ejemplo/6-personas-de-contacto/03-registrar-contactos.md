@@ -26,8 +26,7 @@ POST /api/v1/organization-identities/<ORG_LAB>/contact-persons
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`; `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `organization_contact_persons`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:organization_contact_persons:create`), `ventas.test` (por `perm:party-identity:organization_contact_persons:create`), `inventario.test` (por `perm:party-identity:organization_contact_persons:create`)
 
 **Por qué se hace así**
 
@@ -65,8 +64,7 @@ POST /api/v1/organization-identities/<ORG_LAB>/contact-persons
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`; `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `organization_contact_persons`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:organization_contact_persons:create`), `ventas.test` (por `perm:party-identity:organization_contact_persons:create`), `inventario.test` (por `perm:party-identity:organization_contact_persons:create`)
 
 **Por qué se hace así**
 
@@ -106,8 +104,7 @@ POST /api/v1/organization-identities/<ORG_LAB>/contact-persons
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test` — sobre `party-identity` solo tienen `read`; les falta `create`; `inventario.test` — no tiene ningún permiso sobre `party-identity`; `reportes.test`, `consulta.test` — tienen permisos sobre `party-identity`, pero ninguno sobre `organization_contact_persons`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:organization_contact_persons:create`), `ventas.test` (por `perm:party-identity:organization_contact_persons:create`), `inventario.test` (por `perm:party-identity:organization_contact_persons:create`)
 
 **Por qué se hace así**
 

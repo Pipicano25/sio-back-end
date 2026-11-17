@@ -23,7 +23,7 @@ POST /api/v1/person-identities/<PERSONA_ANA>/deactivate
 **Permiso que exige la URL:** `perm:party-identity:person_identities:delete`
 
 - ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` — sobre `party-identity` solo tienen `read`; les falta `delete`; `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ❌ **No pueden (responde `403`):** `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
 - ℹ️ Inactivar (`POST .../deactivate`) exige `delete`, aunque no elimina; reactivar (`POST .../reactivate`) exige `update`.
 
 **Por qué se hace así**
@@ -50,8 +50,7 @@ GET /api/v1/person-identities
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:person_identities:read`), `ventas.test` (por `perm:party-identity:person_identities:read`), `reportes.test` (por `perm:party-identity:person_identities:read`), `consulta.test` (por `perm:party-identity:person_identities:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:person_identities:read`), `ventas.test` (por `perm:party-identity:person_identities:read`), `inventario.test` (por `perm:party-identity:person_identities:read`)
 
 **Por qué se hace así**
 
@@ -73,8 +72,7 @@ GET /api/v1/person-identities?status=INACTIVE
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:read`), `compras.test` (por `perm:party-identity:person_identities:read`), `ventas.test` (por `perm:party-identity:person_identities:read`), `reportes.test` (por `perm:party-identity:person_identities:read`), `consulta.test` (por `perm:party-identity:person_identities:read`)
-- ❌ **No pueden (responde `403`):** `inventario.test` — no tiene ningún permiso sobre `party-identity`
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:person_identities:read`), `ventas.test` (por `perm:party-identity:person_identities:read`), `inventario.test` (por `perm:party-identity:person_identities:read`)
 
 **Por qué se hace así**
 

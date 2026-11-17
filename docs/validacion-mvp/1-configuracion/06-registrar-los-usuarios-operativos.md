@@ -22,7 +22,7 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Por qué se hace así**
 
@@ -52,7 +52,7 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Por qué se hace así**
 
@@ -82,7 +82,7 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Por qué se hace así**
 
@@ -112,7 +112,7 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Por qué se hace así**
 
@@ -124,67 +124,7 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
 
 **Auditoría que deja:** `CREATE_APPLICATION_USER` (operational-context)
 
-## 5. Registrar a consulta.test como usuario operativo de la empresa A
-
-Paso `C-05.consulta` · usuario **`admin.test`** · ítems de la FASE 10: 3
-
-```http
-POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
-```
-
-```json
-{
-  "username": "consulta.test",
-  "person_identity_id": "<PERSONA_CONSULTA>",
-  "display_name": "consulta.test MVP <RUN_ID> (dato ficticio)"
-}
-```
-
-**Permiso que exige la URL:** `perm:operational-context:application_users:create`
-
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-
-**Por qué se hace así**
-
-- "Crear usuario" registra el usuario operativo de una cuenta existente de Keycloak (C-01 de la Spec).
-
-**Respuesta esperada:** `201`
-
-**Guardar:** `id` → `<USUARIO_CONSULTA>`
-
-**Auditoría que deja:** `CREATE_APPLICATION_USER` (operational-context)
-
-## 6. Registrar a reportes.test como usuario operativo de la empresa B
-
-Paso `C-05.reportes` · usuario **`admin.test`** · ítems de la FASE 10: 3
-
-```http
-POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_B>/application-users
-```
-
-```json
-{
-  "username": "reportes.test",
-  "person_identity_id": "<PERSONA_REPORTES>",
-  "display_name": "reportes.test MVP <RUN_ID> (dato ficticio)"
-}
-```
-
-**Permiso que exige la URL:** `perm:operational-context:application_users:create`
-
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
-
-**Por qué se hace así**
-
-- "Crear usuario" registra el usuario operativo de una cuenta existente de Keycloak (C-01 de la Spec).
-
-**Respuesta esperada:** `201`
-
-**Guardar:** `id` → `<USUARIO_REPORTES>`
-
-**Auditoría que deja:** `CREATE_APPLICATION_USER` (operational-context)
-
-## 7. Registrar a inventario.test como usuario operativo de la empresa B
+## 5. Registrar a inventario.test como usuario operativo de la empresa B
 
 Paso `C-05.inventario` · usuario **`admin.test`** · ítems de la FASE 10: 3
 
@@ -202,7 +142,7 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_B>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Por qué se hace así**
 

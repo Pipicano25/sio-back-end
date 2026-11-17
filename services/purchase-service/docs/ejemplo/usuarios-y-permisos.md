@@ -8,19 +8,17 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 - **Todas** las rutas exigen un **usuario humano**: una cuenta de servicio recibe `403` aunque tenga el permiso por comodín (ni siquiera el cliente técnico `purchase-service`, que solo consulta dependencias y opera Inventory).
 - **Escribir** compras, líneas, hitos, confirmar y anular exige además membresía `ACTIVE` en la empresa y asignación `ACTIVE` a la sucursal de la compra (Operational Context con el token del usuario). **No obvio**: tener `perm:purchase:all:all` o `perm:all:all:all` no basta sin la asignación.
 - **Secuencias** exigen membresía (no asignación). **Leer** exige permiso y membresía.
-- Crear una compra con líneas exige además `perm:purchase:purchase_details:create`; anular exige `perm:purchase:purchases:delete` (`supervisor.test` no lo tiene).
+- Crear una compra con líneas exige además `perm:purchase:purchase_details:create`; anular exige `perm:purchase:purchases:delete` (lo tienen los tres grupos). Ajustar la tasa de una línea exige `perm:purchase:purchase_line_taxes:override`, que el grupo `empleado` no tiene.
 
 ## Usuarios de prueba
 
 | Usuario | Grupo | Registrar y confirmar | Anular | Hitos | Secuencias | Consultar |
 | --- | --- | --- | --- | --- | --- | --- |
-| `admin.test` | `administradores` | Sí | Sí | Sí | Sí | Sí |
-| `supervisor.test` | `supervisores` | Sí | No | Sí | Sí | Sí |
-| `compras.test` | `compras` | Sí | Sí | Sí | Sí | Sí |
-| `ventas.test` | `ventas` | No | No | No | No | No |
-| `inventario.test` | `inventario` | No | No | No | No | No |
-| `reportes.test` | `reportes` | No | No | No | No | Sí |
-| `consulta.test` | `consulta` | No | No | No | No | Sí |
+| `admin.test` | `superadmin` | Sí | Sí | Sí | Sí | Sí |
+| `supervisor.test` | `admin` | Sí | Sí | Sí | Sí | Sí |
+| `compras.test` | `empleado` | Sí | Sí | Sí | Sí | Sí |
+| `ventas.test` | `empleado` | Sí | Sí | Sí | Sí | Sí |
+| `inventario.test` | `empleado` | Sí | Sí | Sí | Sí | Sí |
 
 Las escrituras requieren además la asignación a la sucursal.
 

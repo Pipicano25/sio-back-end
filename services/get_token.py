@@ -2,7 +2,7 @@
 
 Uso:
     python services/get_token.py              # menú: rol de prueba o usuario de una empresa (opción 8)
-    python services/get_token.py consulta     # rol directo (también acepta el número o `consulta.test`)
+    python services/get_token.py ventas       # rol directo (también acepta el número o `ventas.test`)
     TOKEN=$(python services/get_token.py admin)
     TOKEN=$(python services/get_token.py --cliente sio-data-importer)   # cliente técnico (client_credentials)
     TOKEN=$(python services/get_token.py --usuario santiago.rodriguez)  # usuario nominal (contraseña en el entorno)
@@ -62,8 +62,6 @@ ROLES = {
     "3": "compras",
     "4": "ventas",
     "5": "inventario",
-    "6": "reportes",
-    "7": "consulta",
 }
 
 

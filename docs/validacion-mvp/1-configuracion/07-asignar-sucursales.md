@@ -20,7 +20,7 @@ POST http://127.0.0.1:8104/api/v1/application-users/<USUARIO_ADMIN>/user-branche
 
 **Permiso que exige la URL:** `perm:operational-context:user_branches:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -44,7 +44,7 @@ POST http://127.0.0.1:8104/api/v1/application-users/<USUARIO_COMPRAS>/user-branc
 
 **Permiso que exige la URL:** `perm:operational-context:user_branches:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -68,7 +68,7 @@ POST http://127.0.0.1:8104/api/v1/application-users/<USUARIO_VENTAS>/user-branch
 
 **Permiso que exige la URL:** `perm:operational-context:user_branches:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -92,7 +92,7 @@ POST http://127.0.0.1:8104/api/v1/application-users/<USUARIO_SUPERVISOR>/user-br
 
 **Permiso que exige la URL:** `perm:operational-context:user_branches:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -116,7 +116,7 @@ POST http://127.0.0.1:8104/api/v1/application-users/<USUARIO_INVENTARIO>/user-br
 
 **Permiso que exige la URL:** `perm:operational-context:user_branches:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
 
 **Respuesta esperada:** `201`
 

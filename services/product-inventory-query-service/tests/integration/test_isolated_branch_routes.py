@@ -17,11 +17,10 @@ ENDPOINTS = ("product-overviews", "inventory-overviews", "low-stock-products", "
 MATRIX = {
     "admin.test": (200, 200, 200, 200),
     "supervisor.test": (200, 200, 200, 200),
-    "ventas.test": (200, 200, 403, 403),
+    # Spec 026: ventas.test, inventario.test y compras.test son del grupo `empleado`, con las cuatro consultas.
+    "ventas.test": (200, 200, 200, 200),
     "inventario.test": (200, 200, 200, 200),
-    "compras.test": (403, 403, 403, 403),
-    "reportes.test": (403, 403, 403, 403),
-    "consulta.test": (403, 403, 403, 403),
+    "compras.test": (200, 200, 200, 200),
 }
 
 

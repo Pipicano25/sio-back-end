@@ -22,7 +22,7 @@ NOTES = {
     "perm:party-identity:person_identities:delete": "Inactivar (`POST .../deactivate`) exige `delete`, aunque no elimina; "
     "reactivar (`POST .../reactivate`) exige `update`.",
     "perm:party-identity:organization_identities:delete": "Inactivar exige `delete`; reactivar exige `update`. Por eso "
-    "`supervisor.test` puede reactivar pero no inactivar.",
+    "`supervisor.test` (Admin) y los usuarios del grupo `empleado` pueden reactivar pero no inactivar.",
     "perm:party-identity:organization_contact_profiles:create": "Registrar una versión del perfil exige además que el "
     "usuario tenga una membresía `ACTIVE` en la empresa indicada (la comprueba Party Identity con su cliente técnico "
     "contra Operational Context). El usuario **no** necesita permisos de Operational Context; un administrador de "
@@ -35,7 +35,8 @@ NOTES = {
     "perm:party-identity:organization_contact_persons:update": "`:set-primary` y `:reactivate` exigen `update`; "
     "`is_primary` no se cambia con `PUT`.",
     "perm:party-identity:organization_legal_representatives:read": "Dato sensible: solo lo leen los grupos con "
-    "necesidad explícita (`administradores`, `supervisores`); `compras`, `ventas`, `reportes` y `consulta` reciben `403`.",
+    "necesidad explícita. Con los grupos de la spec 026 lo leen los tres (`superadmin`, `admin` y `empleado`); solo "
+    "`superadmin` y `admin` lo crean o modifican.",
     "perm:party-identity:organization_legal_representatives:create": "`:set-primary` también exige `create`: crea el "
     "primer `PRIMARY` o sustituye el vigente cerrándolo.",
 }
@@ -219,55 +220,33 @@ def render_users(ex, records):
                 "Reemplace las variables `<…>` por los `id` guardados.", ""]
 
     n += 1
-    consulta = next(u for u in USERS if u["username"] == "consulta.test")
+    empleado = next(u for u in USERS if u["username"] == "ventas.test")
     denied = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] != "GET"
-                          and not matching_grant(consulta, p))
+                          and not matching_grant(empleado, p))
     if denied:
         s_i, c_i, s, c, p, r = denied
-        out += [f"### {n}. `consulta.test` intenta crear (rechazado)", ""]
-        out += token_command("consulta.test", "TOKEN_CONSULTA")
+        out += [f"### {n}. `ventas.test` (Empleado) intenta una acción reservada (rechazado)", ""]
+        out += token_command("ventas.test", "TOKEN_EMPLEADO")
         out += ["", f"Intenta el paso {s_i + 1:02d} (*{s['title']}*), llamada {c_i + 1}:", ""]
-        out += curl_for(c, "TOKEN_CONSULTA")
+        out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += [f"`consulta.test` {reason(consulta, p)}: puede **leer**, pero la URL exige `{p}`. "
+        out += [f"`ventas.test` {reason(empleado, p)}: el grupo `empleado` crea, consulta y modifica personas, "
+                f"organizaciones y sus contactos, pero la URL exige `{p}`. "
                 "El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
 
     read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET"
-                        and matching_grant(consulta, p))
+                        and matching_grant(empleado, p))
     if read:
         n += 1
         s_i, c_i, s, c, p, r = read
         readers = [f"`{u['username']}`" for u in USERS
-                   if u["username"] not in ("admin.test", "consulta.test") and matching_grant(u, p)]
-        out += [f"### {n}. `consulta.test` consulta (permitido)", ""]
-        out += curl_for(c, "TOKEN_CONSULTA")
+                   if u["username"] not in ("admin.test", "ventas.test") and matching_grant(u, p)]
+        out += [f"### {n}. `ventas.test` (Empleado) consulta (permitido)", ""]
+        out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", f"Responde `200 OK` con la misma información que ve `admin.test` en el paso {s_i + 1:02d}: "
-                f"`{matching_grant(consulta, p)}` cubre `{p}`."
+                f"`{matching_grant(empleado, p)}` cubre `{p}`."
                 + (f" También pueden: {', '.join(readers)}." if readers else ""), ""]
-
-    sensitive = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET"
-                             and not matching_grant(consulta, p))
-    if sensitive:
-        n += 1
-        s_i, c_i, s, c, p, r = sensitive
-        readers = [f"`{u['username']}`" for u in USERS if matching_grant(u, p)]
-        out += [f"### {n}. `consulta.test` consulta un dato sensible (rechazado)", ""]
-        out += curl_for(c, "TOKEN_CONSULTA")
-        out += ["", f"Responde `403 Forbidden`: `{p}` es un recurso sensible con permiso específico; "
-                f"`consulta.test` {reason(consulta, p)}. Solo pueden leerlo: {', '.join(readers)}.", ""]
-
-    sample = read or sensitive
-    if sample:
-        s_i, c_i, s, c, p, r = sample
-        inventario = next(u for u in USERS if u["username"] == "inventario.test")
-        if not matching_grant(inventario, p):
-            n += 1
-            out += [f"### {n}. `inventario.test` consulta (rechazado)", ""]
-            out += token_command("inventario.test", "TOKEN_INVENTARIO")
-            out += [""]
-            out += curl_for(c, "TOKEN_INVENTARIO")
-            out += ["", f"Responde `403 Forbidden`: `inventario.test` {reason(inventario, p)}.", ""]
 
     deactivate = pick_example(rows, lambda s_i, c, p, r: p.endswith(":delete"))
     if deactivate:
@@ -279,8 +258,9 @@ def render_users(ex, records):
         out += curl_for(c, "TOKEN_SUPERVISOR")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += ["`supervisor.test` tiene `perm:all:all:read`, `perm:all:all:create` y `perm:all:all:update`, pero **no** "
-                "`delete`. Inactivar o retirar queda para `admin.test`.", ""]
+        out += ["`supervisor.test` (grupo `admin`) tiene `perm:party-identity:all:read`, `:all:create` y `:all:update`, "
+                "pero **no** `delete`. Inactivar o retirar queda para `admin.test` (grupo `superadmin`). El grupo "
+                "`empleado` tampoco puede.", ""]
 
     n += 1
     out += [f"### {n}. Sin token (rechazado)", "",
@@ -313,15 +293,12 @@ def render_general(exercises, all_records):
             "3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, "
             "`all` vale como comodín en cualquier parte:",
             "   - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.",
-            "   - `perm:all:all:read` → solo `read`, pero en todos los servicios (en el realm vigente solo lo tiene "
-            "`supervisores`).",
-            "   - `perm:party-identity:all:read` → solo `read`, solo en Party Identity (ya no lo tiene ningún grupo de "
-            "solo lectura).",
+            "   - `perm:party-identity:all:read` → solo `read`, solo en Party Identity (lo tiene el grupo `admin`, "
+            "con `:all:create` y `:all:update`, sin `delete`).",
             "   - Mínimo privilegio (Q-C1): los perfiles de contacto, las personas de contacto y los representantes "
-            "legales exigen su **permiso específico**. `compras` y `ventas` tienen lecturas explícitas de Party Identity "
-            "que incluyen contactos pero **no** representantes legales; `reportes` y `consulta` tienen lecturas "
-            "explícitas de todos los servicios **sin** esos cuatro recursos. Leer una persona u organización no da "
-            "acceso a sus contactos.",
+            "legales exigen su **permiso específico**. El grupo `empleado` tiene permisos explícitos: crea, consulta y "
+            "modifica personas, organizaciones, perfiles de contacto y personas de contacto, y solo consulta "
+            "representantes legales, sectores y reglas. Ningún grupo salvo `superadmin` inactiva, retira ni cierra.",
             "4. Cada URL exige **un** permiso concreto (por ejemplo `perm:party-identity:person_identities:create`). "
             "Si ninguno de los permisos del usuario lo cubre, el servicio responde `403 Forbidden` e indica cuál falta. "
             "Sin token, o con un token vencido, responde `401 Unauthorized`.",
@@ -333,11 +310,10 @@ def render_general(exercises, all_records):
     summary = {
         "admin.test": "Todo, incluido inactivar, retirar y cerrar",
         "supervisor.test": "Consultar, crear, modificar y reactivar. **No** inactivar, retirar ni cerrar",
-        "compras.test": "Consultar identidades, contactos y sectores. **No** representantes legales",
-        "ventas.test": "Consultar identidades, contactos y sectores. **No** representantes legales",
-        "inventario.test": "Nada: no tiene permisos sobre `party-identity`",
-        "reportes.test": "Consultar identidades, reglas y sectores. **No** contactos ni representantes legales",
-        "consulta.test": "Consultar identidades, reglas y sectores. **No** contactos ni representantes legales",
+        "compras.test": "Crear, consultar y modificar personas, organizaciones y sus contactos; consultar el resto. "
+        "**No** inactivar, retirar ni cerrar",
+        "ventas.test": "Igual que `compras.test` (grupo `empleado`)",
+        "inventario.test": "Igual que `compras.test` (grupo `empleado`)",
     }
     for u in USERS:
         if len(u["perms"]) <= 10:
@@ -351,17 +327,17 @@ def render_general(exercises, all_records):
 
     out += ["## Cómo obtener el token de cada usuario", "",
             "Cambie `username` por el usuario que quiera probar:", ""]
-    out += token_command("consulta.test", "TOKEN")
+    out += token_command("ventas.test", "TOKEN")
     out += ["", "En **PowerShell** (Windows):", "",
             "```powershell",
             "$body = @{ grant_type = 'password'; client_id = 'sio-web'; scope = 'openid'",
-            "           username = 'consulta.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
+            "           username = 'ventas.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
             f"$TOKEN = (Invoke-RestMethod -Method Post -Uri '{KEYCLOAK}' -Body $body).access_token",
             f"Invoke-RestMethod -Uri '{SERVICE_URL}/api/v1/person-identities' `",
             "  -Headers @{ Authorization = \"Bearer $TOKEN\" }",
             "```", "",
             "Luego envíe el token en cada llamada:", "", "```http", "Authorization: Bearer <TOKEN>", "```", "",
-            "Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python services/get_token.py consulta)`) "
+            "Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python services/get_token.py ventas)`) "
             "obtiene el token de `<rol>.test`. Lee la contraseña de `KEYCLOAK_TEST_USER_PASSWORD` o de `infrastructure/.env`.", ""]
 
     out += ["## Permiso de cada URL de los ejercicios", "",
@@ -382,8 +358,9 @@ def render_general(exercises, all_records):
     out += ["## Qué usuario usar", "",
             "| Para… | Usuario |", "| --- | --- |",
             "| Hacer los ejercicios completos | `admin.test` |",
-            "| Crear y modificar sin poder inactivar ni retirar | `supervisor.test` |",
-            "| Verificar lo cargado (sin datos de contacto) | `consulta.test` o `reportes.test` |",
-            "| Consultar contactos de clientes o proveedores | `compras.test` o `ventas.test` |",
-            "| Probar rechazos por falta de permiso | `consulta.test` en cualquier `POST` o `PUT`; `inventario.test` en cualquier llamada |", ""]
+            "| Crear y modificar sin poder inactivar ni retirar | `supervisor.test` (Admin) |",
+            "| Registrar y corregir personas y organizaciones como empleado | `ventas.test`, `compras.test` o "
+            "`inventario.test` |",
+            "| Probar rechazos por falta de permiso | `ventas.test` en reglas, sectores o representantes legales "
+            "(crear o modificar) y en cualquier inactivación; `supervisor.test` en cualquier inactivación |", ""]
     return "\n".join(out)

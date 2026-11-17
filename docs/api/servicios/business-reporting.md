@@ -29,12 +29,12 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Reporte | Permiso del reporte | Permiso del propietario | Grupos de la plantilla que tienen ambos |
 |---|---|---|---|
-| Productos más vendidos | `perm:business-reporting:top_selling_products:read` | `perm:sales:sales:read` (Sales) | `administradores`, `supervisores`, `ventas`, `reportes` |
-| Ventas por sucursal | `perm:business-reporting:sales_by_branch:read` | `perm:sales:sales:read` | `administradores`, `supervisores`, `reportes` |
-| Compras | `perm:business-reporting:purchases:read` | `perm:purchase:purchases:read` (Purchase) | `administradores`, `supervisores`, `compras`, `reportes` |
-| Evolución de existencias | `perm:business-reporting:stock_evolution:read` | `perm:inventory:stock_evolution:read` (Inventory) | `administradores`, `supervisores`, `inventario`, `reportes` |
+| Productos más vendidos | `perm:business-reporting:top_selling_products:read` | `perm:sales:sales:read` (Sales) | `superadmin`, `admin`, `empleado` |
+| Ventas por sucursal | `perm:business-reporting:sales_by_branch:read` | `perm:sales:sales:read` | `superadmin`, `admin` |
+| Compras | `perm:business-reporting:purchases:read` | `perm:purchase:purchases:read` (Purchase) | `superadmin`, `admin`, `empleado` |
+| Evolución de existencias | `perm:business-reporting:stock_evolution:read` | `perm:inventory:stock_evolution:read` (Inventory) | `superadmin`, `admin`, `empleado` |
 
-El grupo `consulta` no tiene permisos de Business Reporting en la plantilla.
+El grupo `empleado` no tiene el reporte de ventas por sucursal en la plantilla.
 
 ## Alcance de datos
 

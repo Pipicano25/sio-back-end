@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from collections.abc import Generator
@@ -91,34 +92,23 @@ CR_READ = (
     "perm:commercial-relationship:price_list_items:read",
 )
 
-# Lecturas explícitas de commercial-relationship de `compras` y `ventas` en la plantilla del realm (spec 021).
-CR_EXPLICIT_READ = (
-    *CR_READ,
-    "perm:commercial-relationship:product_pricing_policies:read",
-    "perm:commercial-relationship:customer_segments:read",
-    "perm:commercial-relationship:customer_credit_profiles:read",
-    "perm:commercial-relationship:customer_payment_conditions:read",
-    "perm:commercial-relationship:supplier_commercial_conditions:read",
-    "perm:commercial-relationship:supplier_evaluations:read",
+# Roles de cada usuario de prueba: los de su grupo en la plantilla del realm (spec 026: `superadmin`, `admin` y
+# `empleado`). Se leen de la plantilla para que las pruebas sigan siempre al realm vigente.
+_REALM = json.loads(
+    (PROJECT_ROOT.parents[1] / "infrastructure" / "keycloak" / "realm-template" / "sio-realm.template.json")
+    .read_text(encoding="utf-8")
 )
-
-# Roles de cada usuario de prueba según su grupo en la plantilla del realm.
+_GROUP_ROLES = {"/" + group["name"]: tuple(group["clientRoles"]["sio-api"]) for group in _REALM["groups"]}
+REALM_USER_ROLES: dict[str, tuple[str, ...]] = {
+    user["username"]: _GROUP_ROLES[user["groups"][0]]
+    for user in _REALM["users"]
+    if "serviceAccountClientId" not in user
+}
+# Identidad sintética (no existe en el realm): miembro de la empresa sin permisos de Commercial Relationship, para
+# comprobar los `403` de lectura que ningún grupo del realm permite ya probar (los tres grupos leen este servicio).
 USER_ROLES: dict[str, tuple[str, ...]] = {
-    "admin.test": ("perm:all:all:all",),
-    # Spec 021: los supervisores tienen además inactivar políticas, resolver actualizaciones y ajustar tasas de línea.
-    "supervisor.test": (
-        "perm:all:all:read", "perm:all:all:create", "perm:all:all:update",
-        "perm:commercial-relationship:pricing_policies:delete",
-        "perm:commercial-relationship:automatic_price_applications:resolve",
-        "perm:purchase:purchase_line_taxes:override",
-    ),
-    # Spec 021: `perm:commercial-relationship:all:read` se reemplazó por sus lecturas explícitas (sin políticas ni
-    # actualizaciones automáticas, que exponen costos).
-    "compras.test": (*CR_EXPLICIT_READ, "perm:operational-context:all:read"),
-    "ventas.test": (*CR_EXPLICIT_READ, "perm:operational-context:all:read"),
-    "reportes.test": CR_READ,
-    "consulta.test": CR_READ,
-    "inventario.test": ("perm:operational-context:all:read", "perm:product-catalog:all:read"),
+    **REALM_USER_ROLES,
+    "sin-permisos.test": ("perm:operational-context:all:read", "perm:product-catalog:all:read"),
 }
 
 
@@ -426,9 +416,9 @@ def as_token(test_client):
 
 @pytest.fixture
 def company(fake_oc) -> UUID:
-    """Empresa activa con su organización y con `admin.test`, `supervisor.test`,
-    `compras.test`, `ventas.test`, `reportes.test`, `consulta.test` e `inventario.test`
-    como miembros."""
+    """Empresa activa con su organización y con todos los usuarios de prueba del realm
+    (`admin.test`, `supervisor.test`, `compras.test`, `ventas.test` e `inventario.test`) y la identidad sintética
+    `sin-permisos.test` como miembros."""
     company_id = uuid4()
     fake_oc.organizations[company_id] = uuid4()
 

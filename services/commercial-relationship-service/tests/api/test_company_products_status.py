@@ -16,7 +16,7 @@ def _action(client, product, action, version=None):
 
 def test_deactivate_requires_delete_permission(as_user, company, fake_catalog):
     product = adopt(as_user("admin.test"), company, fake_catalog)
-    assert _action(as_user("supervisor.test"), product, "deactivate").status_code == 403
+    assert _action(as_user("ventas.test"), product, "deactivate").status_code == 403
 
     response = _action(as_user("admin.test"), product, "deactivate")
     assert response.status_code == 200

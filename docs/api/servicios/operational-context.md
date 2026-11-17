@@ -30,12 +30,12 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Recurso | Acciones y operaciones | Grupos de la plantilla con lectura | Grupos con escritura |
 |---|---|---|---|
-| `companies` | `read` (listar, consultar), `create` (+ `platform:administer`), `update` (modificar, reactivar + `platform:administer`), `delete` (inactivar + `platform:administer`) | Todos (`compras`, `ventas`, `inventario` vía `perm:operational-context:all:read`; `reportes` y `consulta` por recurso) | `administradores` (único con `platform:administer`); `supervisores` pueden `PUT` (no exige `platform:administer`) |
-| `branches` | `read`, `create`, `update` (modificar, reactivar), `delete` (inactivar) | Todos | `administradores`, `supervisores` (salvo `delete`) |
-| `application_users` | `read` (listar, consultar, **`/me/operational-context`**, **`/operational-access`**), `create`, `update` (modificar, reactivar), `delete` (inactivar) | Todos | `administradores`, `supervisores` (salvo `delete`) |
-| `user_branches` | `read`, `create`, `update` (reactivar), `delete` (retirar) | Todos | `administradores`, `supervisores` (salvo `delete`) |
-| `company_advisor_assignments` | `read`, `create`, `delete` (cerrar), `create` + `delete` (cambiar principal) | Todos | `administradores`; `supervisores` solo `create` |
-| `platform` | `administer` (ver y administrar todas las empresas sin membresía), `lookup` (lecturas por UUID sin membresía, para identidades técnicas) | — | `administradores` (vía `perm:all:all:all`) |
+| `companies` | `read` (listar, consultar), `create` (+ `platform:administer`), `update` (modificar, reactivar + `platform:administer`), `delete` (inactivar + `platform:administer`) | Todos (`admin` y `empleado` vía `perm:operational-context:all:read`) | `superadmin` (único con `platform:administer`); `admin` puede `PUT` (no exige `platform:administer`) |
+| `branches` | `read`, `create`, `update` (modificar, reactivar), `delete` (inactivar) | Todos | `superadmin`, `admin` |
+| `application_users` | `read` (listar, consultar, **`/me/operational-context`**, **`/operational-access`**), `create`, `update` (modificar, reactivar), `delete` (inactivar) | Todos | `superadmin`, `admin` |
+| `user_branches` | `read`, `create`, `update` (reactivar), `delete` (retirar) | Todos | `superadmin`, `admin` |
+| `company_advisor_assignments` | `read`, `create`, `delete` (cerrar), `create` + `delete` (cambiar principal) | Todos | `superadmin`, `admin` |
+| `platform` | `administer` (ver y administrar todas las empresas sin membresía), `lookup` (lecturas por UUID sin membresía, para identidades técnicas) | — | Solo `superadmin` (vía `perm:all:all:all`) |
 
 ## Alcance de datos
 
@@ -1579,7 +1579,7 @@ Un empleado asignado a varias sucursales aparece en cada una; una sucursal sin e
 | Respuesta | Causa | Qué hacer |
 |---|---|---|
 | `404 OPERATIONAL_CONTEXT.NOT_FOUND` «La empresa solicitada no existe.» | UUID inexistente o sin membresía | Comprobar `/me/operational-context` |
-| `403 OPERATIONAL_CONTEXT.FORBIDDEN` | Falta el permiso (p. ej. `platform:administer` al crear empresas) | Solo administradores de plataforma |
+| `403 OPERATIONAL_CONTEXT.FORBIDDEN` | Falta el permiso (p. ej. `platform:administer` al crear empresas) | Solo el grupo `superadmin` |
 | `409 …DUPLICATE_BRANCH_CODE` / `DUPLICATE_MEMBERSHIP` / `DUPLICATE_USER_BRANCH` / `DUPLICATE_ORGANIZATION_IDENTITY` | Unicidad | Buscar el registro existente |
 | `409 …VERSION_CONFLICT` / `INVALID_STATUS_TRANSITION` | Concurrencia o estado | Recargar |
 | `422 …KEYCLOAK_USER_NOT_FOUND` / `KEYCLOAK_USER_DISABLED` / `TECHNICAL_ACCOUNT_NOT_ALLOWED` | La cuenta no existe, está deshabilitada o es técnica | Crear o habilitar la cuenta en Keycloak |

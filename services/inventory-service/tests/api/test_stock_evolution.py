@@ -86,7 +86,7 @@ def test_sums_by_type_identity_and_opening(as_user, world, history) -> None:
 
 
 def test_never_returns_costs(as_user, world, history) -> None:
-    response = as_user("reportes.test").get(url(world), params=window(history["middle"], history["end"]))
+    response = as_user("solo-evolucion.test").get(url(world), params=window(history["middle"], history["end"]))
     assert response.status_code == 200, response.text
     keys = {key for item in response.json()["items"] for key in item}
     assert not keys & COST_KEYS
@@ -95,7 +95,7 @@ def test_never_returns_costs(as_user, world, history) -> None:
 
 def test_reportes_cannot_read_the_kardex_or_valuation(as_user, world, history) -> None:
     """DR-11: `stock_evolution:read` no abre el kardex, las operaciones ni la valoración."""
-    reportes = as_user("reportes.test")
+    reportes = as_user("solo-evolucion.test")
     base = f"/api/v1/companies/{world.company}"
     assert reportes.get(f"{base}/branches/{world.branch}/kardex/{history['product']}").status_code == 403
     assert reportes.get(f"{base}/branches/{world.branch}/valuation").status_code == 403
@@ -106,7 +106,7 @@ def test_permission_and_isolation(as_user, as_token, make_token, world, history)
     params = window(history["middle"], history["end"])
     kardex_only = as_token(make_token("perm:inventory:movements:read", sub="solo-kardex-" + uuid4().hex))
     assert kardex_only.get(url(world), params=params).status_code == 403  # el permiso es propio
-    assert as_user("compras.test").get(url(world), params=params).status_code == 403
+    assert as_user("sin-permisos.test").get(url(world), params=params).status_code == 403
     other_company = as_user("inventario.test").get(url(world, company=uuid4()), params=params)
     assert other_company.status_code == 404
     empty = as_user("inventario.test").get(url(world, branch=uuid4()), params=params).json()
@@ -130,8 +130,9 @@ def test_product_filter_pagination_and_validation(as_user, world, history) -> No
 def test_reportes_user_has_the_new_permission() -> None:
     from tests.conftest import USER_ROLES
 
-    assert STOCK_EVOLUTION_READ in USER_ROLES["reportes.test"]
-    assert "perm:inventory:movements:read" not in USER_ROLES["reportes.test"]
+    # Spec 026: el grupo `empleado` (antes `inventario`) conserva la evolución de existencias.
+    assert STOCK_EVOLUTION_READ in USER_ROLES["inventario.test"]
+    assert "perm:inventory:movements:read" not in USER_ROLES["solo-evolucion.test"]
 
 
 # --------------------------------------------------------------------------- INV-R1C (consolidada)

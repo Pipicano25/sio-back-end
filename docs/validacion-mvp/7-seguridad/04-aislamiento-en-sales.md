@@ -4,9 +4,9 @@ Ejercicio 7 — Seguridad entre empresas y permisos · [Orden del ejercicio](ORD
 
 ---
 
-## 1. reportes.test consulta las ventas de A
+## 1. inventario.test consulta las ventas de A
 
-Paso `I-04.ventas` · usuario **`reportes.test`** · ítems de la FASE 10: 21
+Paso `I-04.ventas` · usuario **`inventario.test`** · ítems de la FASE 10: 21
 
 ```http
 GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
@@ -14,7 +14,7 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Permiso que exige la URL:** `perm:sales:sales:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:sales:sales:read`), `reportes.test` (por `perm:sales:sales:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:read`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:read`)
 
 **Por qué se hace así**
 
@@ -22,9 +22,9 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Respuesta esperada:** `404`
 
-## 2. reportes.test consulta la venta V2
+## 2. inventario.test consulta la venta V2
 
-Paso `I-04.venta` · usuario **`reportes.test`** · ítems de la FASE 10: 21
+Paso `I-04.venta` · usuario **`inventario.test`** · ítems de la FASE 10: 21
 
 ```http
 GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_2>
@@ -32,7 +32,7 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_2>
 
 **Permiso que exige la URL:** `perm:sales:sales:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:all:all:read`), `consulta.test` (por `perm:sales:sales:read`), `reportes.test` (por `perm:sales:sales:read`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:read`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:read`)
 
 **Por qué se hace así**
 

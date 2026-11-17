@@ -17,19 +17,17 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 - `low-stock-products` exige además los permisos de existencias y de mínimos.
 - Ningún usuario recibe costos unitarios, promedio ni FIFO, márgenes ni valoración económica: no existen en las respuestas. La valoración está fuera del alcance de la spec 022; sigue disponible en Inventory con sus propios permisos.
 - Los precios de venta y su moneda vienen de Commercial Relationship; las existencias, de Inventory, y las imágenes, de Product Catalog.
-- `ventas` ve existencias sin tener `perm:inventory:balances:read`: las ve por `perm:product-inventory-query:stock:read` (D-022-1).
+- Las existencias se ven por `perm:product-inventory-query:stock:read` (D-022-1), aunque el usuario no tenga `perm:inventory:balances:read`.
 
 ## Usuarios de prueba
 
 | Usuario | Grupo | Productos | Inventario | Bajo stock | Resumen | Precios | Existencias | Mínimos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `admin.test` | `administradores` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
-| `supervisor.test` | `supervisores` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
-| `compras.test` | `compras` | No | No | No | No | Sí | No | No |
-| `ventas.test` | `ventas` | Sí | Sí | No | No | Sí | Sí | No |
-| `inventario.test` | `inventario` | Sí | Sí | Sí | Sí | No | Sí | Sí |
-| `reportes.test` | `reportes` | No | No | No | No | Sí | No | No |
-| `consulta.test` | `consulta` | No | No | No | No | Sí | No | No |
+| `admin.test` | `superadmin` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| `supervisor.test` | `admin` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| `compras.test` | `empleado` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| `ventas.test` | `empleado` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| `inventario.test` | `empleado` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
 
 ## Cómo obtener los tokens
 
@@ -63,4 +61,3 @@ curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
 | 6 | 1 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Loratadina` | `perm:product-inventory-query:product_overviews:read` |
 | 6 | 2 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Loratadina` | `perm:product-inventory-query:product_overviews:read` |
 | 6 | 3 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/inventory-overviews?minimum_state=BELOW_MINIMUM` | `perm:product-inventory-query:inventory_overviews:read` |
-| 6 | 4 | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/inventory-summary` | `perm:product-inventory-query:inventory_summary:read` |

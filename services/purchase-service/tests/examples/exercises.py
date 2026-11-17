@@ -625,7 +625,7 @@ EXERCISES = [
             {
                 "file": "04-listar-confirmadas.md",
                 "title": "Listar las compras confirmadas",
-                "actor": "reportes.test",
+                "actor": "supervisor.test",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{P}/purchases?status=CONFIRMED&number=CP-202611-000001",
@@ -635,7 +635,7 @@ EXERCISES = [
             {
                 "file": "05-otra-empresa.md",
                 "title": "Consultar una compra desde otra empresa",
-                "actor": "reportes.test",
+                "actor": "supervisor.test",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/companies/{OTHER_COMPANY}/purchases/<COMPRA>",
@@ -650,8 +650,8 @@ EXERCISES = [
         "title": "Impuesto de compra por tasa",
         "purpose": (
             "Spec 021: el impuesto de cada línea ya no se escribe; Purchase lo calcula con la tasa de compra del producto "
-            "en Commercial Relationship (`(subtotal − descuento) × tasa`). Un supervisor puede ajustar la tasa de una "
-            "línea para que coincida con la factura del proveedor (permiso propio); el comprador no. Las tasas son "
+            "en Commercial Relationship (`(subtotal − descuento) × tasa`). Un usuario del grupo `admin` puede ajustar la tasa "
+            "de una línea para que coincida con la factura del proveedor (permiso propio); un empleado no. Las tasas son "
             "**ficticias**: 19 % (arroz) y 0 % (aceite) no representan tarifas reales."
         ),
         "data": COMMON_DATA,
@@ -670,7 +670,7 @@ EXERCISES = [
             ),
             {
                 "file": "02-ajustar-la-tasa-de-una-linea.md",
-                "title": "Agregar una línea con la tasa de la factura (supervisor)",
+                "title": "Agregar una línea con la tasa de la factura (Admin)",
                 "actor": "supervisor.test",
                 "kind": ACCION,
                 "method": "POST",
@@ -686,14 +686,14 @@ EXERCISES = [
             },
             {
                 "file": "03-comprador-sin-permiso-de-ajuste.md",
-                "title": "Intentar ajustar la tasa como comprador",
+                "title": "Intentar ajustar la tasa como empleado",
                 "actor": "compras.test",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/details",
                 "body": {**ln(ARROZ, "1", "1000", tax_percentage="0"), "version": 2},
                 "expect": 403,
-                "why": ["`compras` crea y edita compras, pero no ajusta tasas: `403` sin revelar el permiso exigido."],
+                "why": ["El grupo `empleado` crea y edita compras, pero no ajusta tasas: `403` sin revelar el permiso exigido."],
             },
             {
                 "file": "04-tasa-fuera-de-rango.md",

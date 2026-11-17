@@ -15,7 +15,7 @@ Ejecuta: `ventas.test`.
 - La imagen es de cada presentación (spec 024): `presentations[].has_image`, `asset_id` e `image_url`. `has_image=true` como filtro significa «al menos una presentación con imagen principal»: una presentación sin imagen propia trae `has_image = false` aunque otra presentación del producto tenga imagen (la «Caja x 12» del paso 2).
 - `image_url` es la URL directa que construye Product Catalog: se usa sin token en `<img src>`.
 - Sin `include_images`, las presentaciones no traen `images`.
-- `ventas.test` ve precios y existencias, pero no los mínimos.
+- `ventas.test` (grupo `empleado`) ve precios, existencias y mínimos.
 
 ## Permiso
 
@@ -26,12 +26,10 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` |
-| `compras.test` | No | `403` | no tiene `perm:product-inventory-query:product_overviews:read` |
+| `supervisor.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
+| `compras.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
 | `ventas.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
 | `inventario.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
-| `reportes.test` | No | `403` | no tiene `perm:product-inventory-query:product_overviews:read` |
-| `consulta.test` | No | `403` | no tiene `perm:product-inventory-query:product_overviews:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -124,17 +122,23 @@ Estado `200`.
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000001",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           },
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000002",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           },
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000003",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           }
         ],
         "equivalences": [
@@ -216,17 +220,23 @@ Estado `200`.
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000001",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           },
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000002",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           },
           {
             "branch_id": "d22b0000-0000-4000-8000-000000000003",
             "base_quantity": "0.0000",
-            "balance_state": "NOT_REGISTERED"
+            "balance_state": "NOT_REGISTERED",
+            "minimum_stock": null,
+            "minimum_state": "NO_POLICY"
           }
         ],
         "equivalences": [

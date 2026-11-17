@@ -389,8 +389,8 @@ Roles de cliente `sio-api` (plantilla `infrastructure/keycloak/realm-template/si
 | `automatic_price_applications` (spec 021) | Listar, obtener | — | `resolve`: resolución administrativa | — |
 | `automatic_price_update_requests` (spec 021) | — | `submit`: solo la identidad técnica de Purchase | — | — |
 
-Los permisos de la spec 021 solo los tienen `administradores` y `supervisores` (los de `compras` y `ventas` se
-listan explícitamente, sin comodines, para no recibirlos), salvo `automatic_price_update_requests:submit`, que es del
+Los permisos de la spec 021 solo los tienen `superadmin` y `admin` (el grupo `empleado` lista sus permisos
+explícitamente, sin comodines, para no recibirlos), salvo `automatic_price_update_requests:submit`, que es del
 cliente técnico `purchase-service`.
 
 `perm:commercial-relationship:platform:lookup` es la capacidad de consulta técnica sin membresía;
@@ -414,7 +414,7 @@ Payment Reference para registrar condiciones de pago.
   (`system:commercial-relationship-price-worker`). Variables: `CR_PRICE_WORKER_INTERVAL_SECONDS` (5),
   `CR_PRICE_WORKER_BATCH_SIZE` (50) y `CR_PRICE_WORKER_MAX_BACKOFF_SECONDS` (300).
 - **Consulta y resolución:** `GET /companies/{company_id}/automatic-price-applications[/{id}]` y
-  `POST …/{id}/resolution` (solo administradores y supervisores; exponen costos). Ejemplo: `docs/ejemplo/9-actualizaciones-automaticas/`.
+  `POST …/{id}/resolution` (solo grupos `superadmin` y `admin`; exponen costos). Ejemplo: `docs/ejemplo/9-actualizaciones-automaticas/`.
 - **Tasa de compra:** `PUT /company-products/{id}/purchase-tax` y `POST /companies/{company_id}/company-products/purchase-taxes/batch`;
   `null` = sin configurar, `0` = exento. Ninguna tasa se asigna automáticamente.
 - **Limitación (R-12):** el precio de la lista es el importe final que paga el cliente; Sales no agrega impuesto

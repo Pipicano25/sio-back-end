@@ -80,8 +80,9 @@ COMMON_DATA = [
 
 P = f"/api/v1/companies/{COMPANY}"
 PROFITABILITY_NOTE = (
-    "`ventas.test`, `reportes.test` y `consulta.test` no tienen `perm:sales:sales:read-profitability`: en sus "
-    "respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`."
+    "`ventas.test`, `compras.test` e `inventario.test` (grupo `empleado`) no tienen "
+    "`perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni "
+    "`has_unknown_cost`."
 )
 
 
@@ -472,15 +473,15 @@ EXERCISES = [
             create_draft("02-crear-la-venta.md", "Vender 3 unidades de arroz", draft(ln(ARROZ, "3")), "VENTA", ["3 × 1500 = 4500."]),
             confirm("03-confirmar.md", "Confirmar la venta", "VENTA", 1, "rentabilidad-0001",
                     ["Inventory descuenta 3 unidades a costo FIFO 1000.", PROFITABILITY_NOTE]),
-            consult("04-consultar-como-vendedor.md", "Consultar como vendedor", "ventas.test", f"{P}/sales/<VENTA>",
+            consult("04-consultar-como-vendedor.md", "Consultar como empleado", "ventas.test", f"{P}/sales/<VENTA>",
                     ["Sin costo ni margen en la respuesta (se omiten, no aparecen como nulos)."]),
             consult(
                 "05-consultar-como-supervisor.md",
-                "Consultar como supervisor",
+                "Consultar como Admin",
                 "supervisor.test",
                 f"{P}/sales/<VENTA>",
                 [
-                    "`supervisor.test` tiene `perm:sales:sales:read-profitability`: costo 1000.0000 por unidad base, "
+                    "`supervisor.test` (grupo `admin`) tiene la rentabilidad por `perm:sales:all:all`: costo 1000.0000 por unidad base, "
                     "costo total 3000.00, margen 1500.00 (33.3333 %).",
                 ],
             ),
@@ -489,7 +490,7 @@ EXERCISES = [
                          before=["unknown_cost:10"]),
             confirm("07-confirmar.md", "Confirmar la venta", "APERTURA", 1, "rentabilidad-0002",
                     ["Se confirma: `cost_known = false`, márgenes nulos y `has_unknown_cost = true` (C-03)."]),
-            consult("08-consultar-como-supervisor.md", "Consultar como supervisor", "supervisor.test", f"{P}/sales/<APERTURA>",
+            consult("08-consultar-como-supervisor.md", "Consultar como Admin", "supervisor.test", f"{P}/sales/<APERTURA>",
                     ["El margen no se inventa: queda nulo cuando el costo no es conocido."]),
         ],
     },
@@ -549,14 +550,14 @@ EXERCISES = [
             consult(
                 "04-listar-confirmadas.md",
                 "Listar las ventas confirmadas",
-                "reportes.test",
+                "compras.test",
                 f"{P}/sales?status=CONFIRMED&number=FV-202611-000001",
                 ["Filtros por estado, sucursal, cliente, fechas y número; orden estable.", PROFITABILITY_NOTE],
             ),
             consult(
                 "05-otra-empresa.md",
                 "Consultar una venta desde otra empresa",
-                "reportes.test",
+                "compras.test",
                 f"/api/v1/companies/{OTHER_COMPANY}/sales/<VENTA>",
                 ["Sin membresía en esa empresa: `404`, igual que un recurso inexistente."],
                 expect=404,

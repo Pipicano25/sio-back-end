@@ -2,7 +2,7 @@
 
 [← Flujos](README.md) · [← Índice](../index.md) · Fichas: [Product Inventory Query](../servicios/product-inventory-query.md), [Inventory](../servicios/inventory.md)
 
-Tres pantallas típicas de solo lectura y cómo resolverlas con la menor cantidad de llamadas. Perfil típico: grupo `inventario` (ve existencias y mínimos; no ve precios) o `ventas` (ve precios y existencias; no ve mínimos).
+Tres pantallas típicas de solo lectura y cómo resolverlas con la menor cantidad de llamadas. Perfil típico: grupo `empleado` (ve precios, existencias y mínimos).
 
 ## 1. Contexto operativo
 

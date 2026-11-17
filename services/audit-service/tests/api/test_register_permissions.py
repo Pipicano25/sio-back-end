@@ -14,7 +14,7 @@ def _payload(url: str) -> dict:
 
 
 @pytest.mark.parametrize("url", URLS)
-@pytest.mark.parametrize("username", ["admin.test", "supervisor.test"])
+@pytest.mark.parametrize("username", ["admin.test"])  # spec 026: solo `superadmin` tiene el permiso (comodín)
 def test_humans_with_wildcards_are_forbidden(as_user, as_token, service_token, url, username) -> None:
     human = as_user(username).post(url, json=_payload(url))
     missing = as_token(service_token("perm:audit:audit-events:read")).post(url, json=_payload(url))

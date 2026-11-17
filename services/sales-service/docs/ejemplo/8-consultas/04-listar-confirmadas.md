@@ -6,12 +6,12 @@ Ejercicio 8: Consultas.
 
 `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales?status=CONFIRMED&number=FV-202611-000001`
 
-Ejecuta: `reportes.test`.
+Ejecuta: `compras.test`.
 
 ### Por qué
 
 - Filtros por estado, sucursal, cliente, fechas y número; orden estable.
-- `ventas.test`, `reportes.test` y `consulta.test` no tienen `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
+- `ventas.test`, `compras.test` e `inventario.test` (grupo `empleado`) no tienen `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
 
 ## Permiso
 
@@ -22,12 +22,10 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (Operational Context
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
 | `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:all:all:read` |
-| `compras.test` | No | `403` | no tiene `perm:sales:sales:read` |
+| `supervisor.test` | Sí | `200` | tiene `perm:sales:all:all` |
+| `compras.test` | Sí | `200` | tiene `perm:sales:all:read` |
 | `ventas.test` | Sí | `200` | tiene `perm:sales:all:read` |
-| `inventario.test` | No | `403` | no tiene `perm:sales:sales:read` |
-| `reportes.test` | Sí | `200` | tiene `perm:sales:sales:read` |
-| `consulta.test` | Sí | `200` | tiene `perm:sales:sales:read` |
+| `inventario.test` | Sí | `200` | tiene `perm:sales:all:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

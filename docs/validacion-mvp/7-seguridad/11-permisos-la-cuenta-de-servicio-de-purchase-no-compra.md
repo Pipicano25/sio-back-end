@@ -29,7 +29,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
 
 **Permiso que exige la URL:** `perm:purchase:purchases:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:all:all`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:create`), `ventas.test` (por `perm:purchase:purchases:create`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:create`)
 
 **Respuesta esperada:** `403`
 
@@ -51,6 +51,6 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:all:all`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:update`), `ventas.test` (por `perm:purchase:purchases:update`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:update`)
 
 **Respuesta esperada:** `403`

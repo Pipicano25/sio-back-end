@@ -31,22 +31,22 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Recurso | Operaciones | Grupos con lectura (plantilla) | Grupos con escritura |
 |---|---|---|---|
-| `company_products` | 3–10, resumen de empresas (25) | Todos los grupos | `administradores`, `supervisores` (salvo `delete`) |
-| `company_product_purchase_taxes` (`update`) | Tasa de impuesto de compra (11, 12) | — | `administradores` (`perm:all:all:all`), `supervisores` (`perm:all:all:update`) |
-| `company_customers` | 13–18 | Todos | `administradores`, `supervisores` (salvo `delete`) |
-| `company_suppliers` | 19–24 | Todos | Ídem (`block` usa `delete`: solo `administradores`) |
-| `company_product_presentations` | 26–33 | Todos | `administradores`, `supervisores` (salvo `delete`) |
+| `company_products` | 3–10, resumen de empresas (25) | Todos los grupos | `superadmin`, `admin` (incluido `delete`) |
+| `company_product_purchase_taxes` (`update`) | Tasa de impuesto de compra (11, 12) | — | `superadmin` (`perm:all:all:all`), `admin` (`perm:commercial-relationship:all:update`) |
+| `company_customers` | 13–18 | Todos | `superadmin`, `admin`; `empleado` solo crea (`company_customers:create`) |
+| `company_suppliers` | 19–24 | Todos | `superadmin`, `admin` (incluido `block`, que usa `delete`) |
+| `company_product_presentations` | 26–33 | Todos | `superadmin`, `admin` |
 | `supplier_products` | 34–39 | Todos | Ídem |
 | `supplier_payment_conditions` | 40–45 | Todos | Ídem |
 | `price_lists` | 46–51 | Todos | Ídem |
 | `price_list_items` | 52–58, resolución de precio (59) | Todos | Ídem |
-| `pricing_policy_coverage` (`read`) | Cobertura (60) | `administradores`, `supervisores` (comodines) | — |
-| `pricing_policies` | 61–70 | `administradores`, `supervisores` | `administradores`; `supervisores` (incluye `delete` explícito) |
+| `pricing_policy_coverage` (`read`) | Cobertura (60) | `superadmin`, `admin` (comodines) | — |
+| `pricing_policies` | 61–70 | `superadmin`, `admin` | `superadmin`, `admin` (incluido `delete`) |
 | `automatic_price_update_requests` (`submit`) | 71 | — | Solo identidad técnica de Purchase |
-| `automatic_price_applications` (`read`, `resolve`) | 72–74 | `administradores`, `supervisores` | `resolve`: `administradores`, `supervisores` |
+| `automatic_price_applications` (`read`, `resolve`) | 72–74 | `superadmin`, `admin` | `resolve`: `superadmin`, `admin` (explícito) |
 | `platform:lookup` | Lecturas por UUID sin membresía | Cuentas técnicas | — |
 
-Los grupos `compras`, `ventas`, `reportes` y `consulta` solo leen; `inventario` lee productos empresariales.
+El grupo `empleado` lee los recursos de la empresa salvo políticas de ganancia, su cobertura y las actualizaciones automáticas de precio, y solo escribe al crear clientes.
 
 ## Alcance de datos
 
@@ -3006,7 +3006,7 @@ Ejemplo de respuesta `202` (`PriceUpdateRequestAccepted`; valores ilustrativos):
 
 ### 72. `GET /companies/{company_id}/automatic-price-applications`
 
-`READ`. URL `https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/{company_id}/automatic-price-applications`; permiso `automatic_price_applications:read` (administradores y supervisores). Parámetros: `status` (`PENDING`, `FAILED`, `APPLIED`, `UNCHANGED`, `SKIPPED_NO_POLICY`, `SKIPPED_LIST_NOT_EFFECTIVE`, `SKIPPED_CURRENCY_MISMATCH`, `SKIPPED_PRESENTATION_INACTIVE`, `SKIPPED_ZERO_COST`, `RESOLVED`), `price_list_id`, `company_product_presentation_id`, `purchase_id`, `page`, `page_size`. 
+`READ`. URL `https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/{company_id}/automatic-price-applications`; permiso `automatic_price_applications:read` (grupos `superadmin` y `admin`). Parámetros: `status` (`PENDING`, `FAILED`, `APPLIED`, `UNCHANGED`, `SKIPPED_NO_POLICY`, `SKIPPED_LIST_NOT_EFFECTIVE`, `SKIPPED_CURRENCY_MISMATCH`, `SKIPPED_PRESENTATION_INACTIVE`, `SKIPPED_ZERO_COST`, `RESOLVED`), `price_list_id`, `company_product_presentation_id`, `purchase_id`, `page`, `page_size`. 
 
 Ejemplo de solicitud (sin cuerpo):
 
@@ -3123,7 +3123,7 @@ Ejemplo de respuesta `200` (`AutomaticPriceApplicationResponse`; valores ilustra
 
 ### 74. `POST /companies/{company_id}/automatic-price-applications/{application_id}/resolution`
 
-`WRITE` (no modifica precios). URL `…/companies/{company_id}/automatic-price-applications/{application_id}/resolution`; permiso `automatic_price_applications:resolve` (administradores y supervisores). Cuerpo (`ApplicationResolution`): `version`, `reason` (10–500). Marca como `RESOLVED` una aplicación `PENDING` o `FAILED` para que deje de reintentarse; `409 APPLICATION_ALREADY_FINAL` si ya terminó. 
+`WRITE` (no modifica precios). URL `…/companies/{company_id}/automatic-price-applications/{application_id}/resolution`; permiso `automatic_price_applications:resolve` (grupos `superadmin` y `admin`). Cuerpo (`ApplicationResolution`): `version`, `reason` (10–500). Marca como `RESOLVED` una aplicación `PENDING` o `FAILED` para que deje de reintentarse; `409 APPLICATION_ALREADY_FINAL` si ya terminó. 
 
 Ejemplo de solicitud (valores ilustrativos):
 

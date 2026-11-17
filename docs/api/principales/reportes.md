@@ -2,7 +2,7 @@
 
 [← API principales](README.md) · [← Índice](../index.md)
 
-Información de negocio consolidada para dueños, administradores y supervisores: qué se vende más, cuánto vende cada sucursal, qué se compró en el período y cómo evolucionaron las existencias. Todos los reportes son de solo lectura, se calculan sobre documentos confirmados y se entregan en JSON o, con `format=csv`, como archivo CSV descargable.
+Información de negocio consolidada para dueños, gerentes y encargados: qué se vende más, cuánto vende cada sucursal, qué se compró en el período y cómo evolucionaron las existencias. Todos los reportes son de solo lectura, se calculan sobre documentos confirmados y se entregan en JSON o, con `format=csv`, como archivo CSV descargable.
 
 Servicio implicado: [Business Reporting](../servicios/business-reporting.md). Business Reporting no guarda datos propios: en cada solicitud verifica la membresía y las sucursales en Operational Context, pide **una** agregación ya calculada al servicio dueño de la información (Sales, Purchase o Inventory) y completa códigos, nombres y unidades base con Commercial Relationship y Product Catalog. Esas agregaciones se piden con el token del usuario, por eso cada reporte exige dos permisos: el del reporte y el de lectura del servicio dueño. El frontend consume solo los reportes de esta sección.
 
@@ -1093,4 +1093,4 @@ No se admite `branch_id` como parámetro de consulta en esta ruta (`422 UNKNOWN_
 - [Inventario](inventario.md) produce los movimientos que explican las API 7 y 8; el kardex de Inventario da el detalle movimiento a movimiento, y las consultas de existencias actuales, productos bajo el mínimo e indicadores del tablero son de Product Inventory Query y están documentadas allí.
 - [Productos y precios](productos-y-precios.md) aporta el `company_product_id`, el código y el nombre de los productos, y Product Catalog la unidad base en la que se expresan las cantidades.
 - [Administración empresarial](administracion-empresarial.md): la membresía, la zona horaria de la empresa y de las sucursales (que fija el corte de los días) y los nombres de sucursal salen de Operational Context.
-- [Acceso y contexto operativo](acceso-y-contexto-operativo.md): el usuario necesita el permiso del reporte y el permiso de lectura del servicio dueño en su token; en el realm de desarrollo los tienen los grupos `administradores`, `supervisores` y `reportes` (además `ventas` para las API 1 y 2, `compras` para 5 y 6 e `inventario` para 7 y 8).
+- [Acceso y contexto operativo](acceso-y-contexto-operativo.md): el usuario necesita el permiso del reporte y el permiso de lectura del servicio dueño en su token; en el realm de desarrollo los tienen los grupos `superadmin` y `admin` (además `empleado` para las API 1, 2 y 5 a 8; no tiene ventas por sucursal).

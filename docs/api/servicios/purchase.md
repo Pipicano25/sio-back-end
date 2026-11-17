@@ -31,15 +31,15 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>` 
 
 | Permiso | Operaciones | Grupos de la plantilla |
 |---|---|---|
-| `perm:purchase:purchases:create` | Crear compra | `administradores`, `supervisores`, `compras` |
-| `perm:purchase:purchases:read` | Listar, consultar, reporte del período | `administradores`, `supervisores`, `compras`, `reportes`, `consulta` |
-| `perm:purchase:purchases:update` | Editar cabecera, **confirmar**, **recibir** | `administradores`, `supervisores`, `compras` |
-| `perm:purchase:purchases:delete` | **Anular** | `administradores`, `compras` |
-| `perm:purchase:purchase_details:create` / `read` / `update` / `delete` | Líneas | `administradores`, `supervisores` (salvo `delete`), `compras`; lectura también `reportes` y `consulta` |
-| `perm:purchase:purchase_line_taxes:override` | Enviar `tax_percentage` en una línea (tasa distinta de la del producto) | `administradores`, `supervisores` (permiso explícito; los comodines CRUD **no** lo cubren). El grupo `compras` **no** lo tiene |
-| `perm:purchase:purchase_operations:read` | Operaciones de confirmación, recepción y anulación | `administradores`, `supervisores`, `compras`, `reportes`, `consulta` |
-| `perm:purchase:purchase_lifecycle_events:create` / `read` | Hitos logísticos | `administradores`, `supervisores`, `compras`; lectura también `reportes` y `consulta` |
-| `perm:purchase:purchase_sequences:create` / `read` / `update` | Secuencias | `administradores`, `supervisores`, `compras`; lectura también `reportes` y `consulta` |
+| `perm:purchase:purchases:create` | Crear compra | `superadmin`, `admin`, `empleado` |
+| `perm:purchase:purchases:read` | Listar, consultar, reporte del período | `superadmin`, `admin`, `empleado` |
+| `perm:purchase:purchases:update` | Editar cabecera, **confirmar**, **recibir** | `superadmin`, `admin`, `empleado` |
+| `perm:purchase:purchases:delete` | **Anular** | `superadmin`, `admin`, `empleado` |
+| `perm:purchase:purchase_details:create` / `read` / `update` / `delete` | Líneas | `superadmin`, `admin`, `empleado` |
+| `perm:purchase:purchase_line_taxes:override` | Enviar `tax_percentage` en una línea (tasa distinta de la del producto) | `superadmin`, `admin` (vía `perm:purchase:all:all`; los comodines CRUD **no** lo cubren). El grupo `empleado` **no** lo tiene |
+| `perm:purchase:purchase_operations:read` | Operaciones de confirmación, recepción y anulación | `superadmin`, `admin`, `empleado` |
+| `perm:purchase:purchase_lifecycle_events:create` / `read` | Hitos logísticos | `superadmin`, `admin`, `empleado` |
+| `perm:purchase:purchase_sequences:create` / `read` / `update` | Secuencias | `superadmin`, `admin`, `empleado` |
 
 ## Alcance de datos
 
@@ -1799,7 +1799,7 @@ Reglas: compras no `DRAFT` por `operation_date`; `category` deriva del estado: `
 
 | Respuesta | Causa | Qué hacer |
 |---|---|---|
-| `403 PURCHASE.FORBIDDEN` al enviar `tax_percentage` | Falta `perm:purchase:purchase_line_taxes:override` | Ocultar el ajuste de tasa a quien no lo tenga (el grupo `compras` no lo tiene) |
+| `403 PURCHASE.FORBIDDEN` al enviar `tax_percentage` | Falta `perm:purchase:purchase_line_taxes:override` | Ocultar el ajuste de tasa a quien no lo tenga (el grupo `empleado` no lo tiene) |
 | `403 PURCHASE.BRANCH_ACCESS_DENIED` | Sin acceso a la sucursal | Ofrecer solo sucursales con `allowed: true` |
 | `409 PURCHASE.PURCHASE_TAX_NOT_CONFIGURED` | Producto sin tasa de impuesto de compra | Configurar `purchase_tax_percentage` en el producto empresarial (Commercial Relationship) o ajustar la línea |
 | `409 PURCHASE.PURCHASE_TAX_CHANGED` | La tasa del producto cambió tras guardar la línea | Volver a guardar la línea |

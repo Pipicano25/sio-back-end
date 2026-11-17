@@ -140,7 +140,7 @@ def test_permissions(as_user, as_token, service_token, world) -> None:
         assert as_user(username).post(url(world), json=body(world)).status_code == 403
     assert as_token(service_token("perm:all:all:all")).post(url(world), json=body(world)).status_code == 403
     assert as_user("inventario.test").get(url(world)).status_code == 200
-    assert as_user("consulta.test").get(url(world)).status_code == 403
+    assert as_user("sin-permisos.test").get(url(world)).status_code == 403
 
 
 def test_simultaneous_creations_keep_one_active_policy(app, user_token, world) -> None:

@@ -19,6 +19,8 @@ INFRASTRUCTURE_ENV = REPO_ROOT / "infrastructure" / ".env"
 DEFAULT_TOKEN_URL = "http://127.0.0.1:8081/realms/sio/protocol/openid-connect/token"
 DEFAULT_AUDIT_BACKOFF_MAX_SECONDS = 300.0  # libs/sio-audit/src/sio_audit/worker/settings.py
 SENSITIVE_NAME = re.compile(r"(SECRET|PASSWORD|TOKEN)", re.IGNORECASE)
+# Prefijo de los contenedores: `sio-it-` en la pila aislada (`stack.sh entorno` lo exporta); `sio-` por omisión.
+CONTAINER_PREFIX = os.environ.get("SIO_INTEGRATION_CONTAINER_PREFIX", "").strip() or "sio-"
 
 
 @dataclass(frozen=True)
@@ -35,23 +37,23 @@ class Service:
 
     @property
     def container(self) -> str:
-        return f"sio-{self.key}-service"
+        return f"{CONTAINER_PREFIX}{self.key}-service"
 
     @property
     def db_container(self) -> str:
-        return f"sio-{self.key}-db"
+        return f"{CONTAINER_PREFIX}{self.key}-db"
 
     @property
     def test_db_container(self) -> str:
-        return f"sio-{self.key}-test-db"
+        return f"{CONTAINER_PREFIX}{self.key}-test-db"
 
     @property
     def worker_container(self) -> str | None:
-        return f"sio-{self.key}-audit-outbox-worker" if self.has_worker else None
+        return f"{CONTAINER_PREFIX}{self.key}-audit-outbox-worker" if self.has_worker else None
 
     @property
     def reconciler_container(self) -> str | None:
-        return f"sio-{self.key}-reconciler" if self.has_reconciler else None
+        return f"{CONTAINER_PREFIX}{self.key}-reconciler" if self.has_reconciler else None
 
     @property
     def project(self) -> str:
@@ -92,7 +94,7 @@ def managed_containers() -> list[str]:
     names += [item.db_container for item in SERVICES]
     names += [item.worker_container for item in SERVICES if item.worker_container]
     names += [item.reconciler_container for item in SERVICES if item.reconciler_container]
-    names.append("sio-keycloak")
+    names.append(f"{CONTAINER_PREFIX}keycloak")
     return names
 
 

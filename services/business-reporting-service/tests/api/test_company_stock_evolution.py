@@ -35,7 +35,7 @@ def url(fakes) -> str:
 
 
 def test_consolidates_by_product_over_all_company_branches(as_user, fakes, stocked) -> None:
-    response = as_user("reportes.test").get(url(fakes), params=PERIOD)
+    response = as_user("supervisor.test").get(url(fakes), params=PERIOD)
     assert response.status_code == 200, response.text
     body = response.json()
     rows = {row["company_product_id"]: row for row in body["items"]}
@@ -56,7 +56,7 @@ def test_consolidates_by_product_over_all_company_branches(as_user, fakes, stock
 
 
 def test_branch_filter_equals_the_branch_route(as_user, fakes, stocked) -> None:
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     norte = fakes.branches[1].id
     consolidated = client.get(url(fakes), params={**PERIOD, "branch_id": str(norte)}).json()
     single = client.get(f"/api/v1/companies/{fakes.company.id}/branches/{norte}/reports/stock-evolution",
@@ -70,20 +70,20 @@ def test_branch_filter_equals_the_branch_route(as_user, fakes, stocked) -> None:
 def test_identity_failure_is_503(as_user, fakes, stocked) -> None:
     principal = fakes.branches[0].id
     fakes.evolution[principal] = [replace(fakes.evolution[principal][0], closing_quantity=Decimal("99"))]
-    assert as_user("reportes.test").get(url(fakes), params=PERIOD).status_code == 503
+    assert as_user("supervisor.test").get(url(fakes), params=PERIOD).status_code == 503
 
 
 def test_isolation_and_permissions(as_user, fakes, stocked) -> None:
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     assert client.get(url(fakes), params={**PERIOD, "branch_id": str(uuid4())}).status_code == 404
     assert client.get(f"/api/v1/companies/{uuid4()}/reports/stock-evolution", params=PERIOD).status_code == 404
-    for name, expected in (("inventario.test", 200), ("ventas.test", 403), ("compras.test", 403),
-                           ("consulta.test", 403), ("admin.test", 200), ("supervisor.test", 200)):
+    for name, expected in (("inventario.test", 200), ("ventas.test", 200), ("compras.test", 200),
+                           ("admin.test", 200), ("supervisor.test", 200)):
         assert as_user(name).get(url(fakes), params=PERIOD).status_code == expected, name
 
 
 def test_pagination_and_product_filter(as_user, fakes, stocked) -> None:
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     first = client.get(url(fakes), params={**PERIOD, "page_size": 2}).json()
     second = client.get(url(fakes), params={**PERIOD, "page_size": 2, "page": 2}).json()
     assert (len(first["items"]), len(second["items"]), first["total_pages"]) == (2, 1, 2)
@@ -92,7 +92,7 @@ def test_pagination_and_product_filter(as_user, fakes, stocked) -> None:
 
 
 def test_csv_matches_json_with_branch_count(as_user, fakes, stocked) -> None:
-    client = as_user("reportes.test")
+    client = as_user("supervisor.test")
     data = client.get(url(fakes), params=PERIOD).json()
     response = client.get(url(fakes), params={**PERIOD, "format": "csv"})
     rows = list(csv.reader(io.StringIO(response.text[1:])))

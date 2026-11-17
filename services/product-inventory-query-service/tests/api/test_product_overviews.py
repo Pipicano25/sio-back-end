@@ -36,7 +36,7 @@ def test_one_and_several_presentations_with_and_without_price(world, as_user) ->
     double = world.product("Crema dental 100 ml", presentations=(("UND", "Unidad", "1"), ("CJ12", "Caja x 12", "12")))
     priced = world.fakes.cr.set_price(double.presentations[1], "4500.00")
 
-    body = overviews(world, as_user("ventas.test"))
+    body = overviews(world, as_user("vendedor.sintetico"))
     items = by_id(body)
     assert len(items[single.id]["presentations"]) == 1
     presentations = by_code(items[double.id])
@@ -55,7 +55,7 @@ def test_product_fields_categories_and_brand(world, as_user) -> None:
     branded = world.product("Jabón", brand=brand, categories={first, second}, identifiers={"7701234"})
     plain = world.product("Bolsa", internal_code="B-01")
 
-    items = by_id(overviews(world, as_user("ventas.test"), f"category_id={first}&category_id={second}"))
+    items = by_id(overviews(world, as_user("vendedor.sintetico"), f"category_id={first}&category_id={second}"))
     assert list(items) == [branded.id]
     item = items[branded.id]
     assert item["brand"]["id"] == str(brand) and len(item["categories"]) == 2
@@ -67,7 +67,7 @@ def test_product_fields_categories_and_brand(world, as_user) -> None:
     }
     assert item["base_unit"] == {"id": "00000000-0000-4000-8000-0000000000aa", "code": "UND", "name": "Unidad"}
 
-    no_brand = by_id(overviews(world, as_user("ventas.test"), "internal_code=b-01"))[plain.id]
+    no_brand = by_id(overviews(world, as_user("vendedor.sintetico"), "internal_code=b-01"))[plain.id]
     assert no_brand["brand"] is None and no_brand["categories"] == []
 
 
@@ -75,7 +75,7 @@ def test_status_active_by_default_inactive_with_status(world, as_user) -> None:
     """CP-08, CP-09 y FR-022-35."""
     active = world.product("Activo")
     inactive = world.product("Inactivo", status="INACTIVE")
-    client = as_user("ventas.test")
+    client = as_user("vendedor.sintetico")
     assert list(by_id(overviews(world, client))) == [active.id]
     assert list(by_id(overviews(world, client, "status=INACTIVE"))) == [inactive.id]
     assert set(by_id(overviews(world, client, "status=ALL"))) == {active.id, inactive.id}
@@ -83,13 +83,13 @@ def test_status_active_by_default_inactive_with_status(world, as_user) -> None:
 
 def test_global_product_inactive_still_appears_with_its_global_status(world, as_user) -> None:
     item = world.product("Descontinuado global", global_status="INACTIVE")
-    assert by_id(overviews(world, as_user("ventas.test")))[item.id]["global_status"] == "INACTIVE"
+    assert by_id(overviews(world, as_user("vendedor.sintetico")))[item.id]["global_status"] == "INACTIVE"
 
 
 def test_product_without_brand_image_or_price(world, as_user) -> None:
     """Escenario 4: aparece con `brand = null`, presentación sin imagen (spec 024) y precio no configurado."""
     item = world.product("Sin datos")
-    found = by_id(overviews(world, as_user("ventas.test")))[item.id]
+    found = by_id(overviews(world, as_user("vendedor.sintetico")))[item.id]
     presentation = found["presentations"][0]
     assert found["brand"] is None
     assert (presentation["has_image"], presentation["asset_id"], presentation["image_url"]) == (False, None, None)
@@ -97,16 +97,16 @@ def test_product_without_brand_image_or_price(world, as_user) -> None:
 
 
 def test_stock_block_only_with_stock_permission_and_without_minimums_for_ventas(world, as_user, make_token, as_token) -> None:
-    """Escenario 3 y FR-022-14: sin `stock:read` no hay bloque `stock`; `ventas` no ve mínimos."""
+    """Escenario 3 y FR-022-14: sin `stock:read` no hay bloque `stock`; el perfil sintético de vendedor no ve mínimos."""
     item = world.product("Arroz")
     world.stock(item, "7")
     world.minimum(item, "10")
 
-    seen = by_id(overviews(world, as_user("ventas.test")))[item.id]
+    seen = by_id(overviews(world, as_user("vendedor.sintetico")))[item.id]
     assert seen["stock"]["total_base_quantity"] == "7.0000"
     assert all("minimum_stock" not in b and "minimum_state" not in b for b in seen["stock"]["branches"])
 
-    without_stock = [role for role in USER_ROLES["ventas.test"] if role != f"{PIQ}:stock:read"]
+    without_stock = [role for role in USER_ROLES["vendedor.sintetico"] if role != f"{PIQ}:stock:read"]
     hidden = by_id(overviews(world, as_token(make_token(*without_stock))))[item.id]
     assert "stock" not in hidden
 
@@ -116,10 +116,10 @@ def test_stock_block_only_with_stock_permission_and_without_minimums_for_ventas(
 
 
 def test_prices_block_only_with_price_permission(world, as_user) -> None:
-    """CP-61: `inventario` no tiene `price_list_items:read`: ninguna presentación lleva `price`."""
+    """CP-61: el perfil sintético de bodeguero no tiene `price_list_items:read`: ninguna presentación lleva `price`."""
     item = world.product("Aceite")
     world.fakes.cr.set_price(item.presentations[0], "9800.00")
-    seen = by_id(overviews(world, as_user("inventario.test")))[item.id]
+    seen = by_id(overviews(world, as_user("bodeguero.sintetico")))[item.id]
     assert all("price" not in p for p in seen["presentations"])
     assert world.fakes.log.count("resolve_prices") == 0
 
@@ -133,7 +133,7 @@ def test_price_list_id_is_the_only_list_and_resolution_codes_pass_through(world,
     world.fakes.cr.prices[item.presentations[1].id] = PriceResult(
         item.presentations[1].id, "PRICE_LIST_NOT_APPLICABLE", None, None, own_list, None)
 
-    body = overviews(world, as_user("ventas.test"), f"price_list_id={own_list}")
+    body = overviews(world, as_user("vendedor.sintetico"), f"price_list_id={own_list}")
     presentations = by_code(by_id(body)[item.id])
     unit, six = presentations["UND"], presentations["SIX"]
     assert unit["price"]["unit_price"] == "3200.00" and unit["price"]["price_list_id"] == str(own_list)
@@ -155,7 +155,7 @@ def test_combined_filters(world, as_user) -> None:
     world.stock(no_stock, "0")
 
     query = f"search=colgate&brand_id={brand}&has_image=true&stock_state=IN_STOCK&branch_id={world.branches[0]}"
-    body = overviews(world, as_user("ventas.test"), query)
+    body = overviews(world, as_user("vendedor.sintetico"), query)
     assert [item["company_product_id"] for item in body["items"]] == [hit.id]
     assert body["sort_applied"] == "display_name:asc"
 
@@ -164,7 +164,7 @@ def test_commercial_relationship_down_is_503_never_an_empty_list(world, as_user)
     """Escenario 5 y CP-65."""
     world.product("Producto")
     world.fakes.cr.fail.add("search_products")
-    response = as_user("ventas.test").get(f"{world.base}/product-overviews")
+    response = as_user("vendedor.sintetico").get(f"{world.base}/product-overviews")
     assert response.status_code == 503
     body = response.json()
     assert body["code"] == "PRODUCT_INVENTORY_QUERY.DEPENDENCY_UNAVAILABLE" and "items" not in body
@@ -174,7 +174,7 @@ def test_commercial_relationship_down_is_503_never_an_empty_list(world, as_user)
 def test_any_dependency_failure_during_enrichment_is_503(world, as_user) -> None:
     """CP-65 a CP-67: un fallo de PC, CR-2 o Inventory al enriquecer es `503` completo."""
     world.product("Producto")
-    client = as_user("ventas.test")
+    client = as_user("vendedor.sintetico")
     for fake, operation in ((world.fakes.pc, "summaries"), (world.fakes.cr, "presentations_by_products"),
                             (world.fakes.inventory, "balances"), (world.fakes.pc, "presentations"),
                             (world.fakes.cr, "resolve_prices")):
@@ -186,7 +186,7 @@ def test_any_dependency_failure_during_enrichment_is_503(world, as_user) -> None
 def test_no_cost_fields_in_the_response(world, as_user) -> None:
     item = world.product("Arroz")
     world.stock(item, "3")
-    for user in ("ventas.test", "inventario.test", "supervisor.test"):
+    for user in ("vendedor.sintetico", "bodeguero.sintetico", "supervisor.test"):
         keys = keys_in(overviews(world, as_user(user)))
         assert not {key for key in keys if any(word in key for word in COST_WORDS)}
         assert "inventory_value" not in keys
@@ -195,6 +195,6 @@ def test_no_cost_fields_in_the_response(world, as_user) -> None:
 def test_pages_have_at_most_page_size_and_walk_the_whole_list(world, as_user) -> None:
     for index in range(23):
         world.product(f"Producto {index:02d}")
-    items, pages = walk(as_user("ventas.test"), f"{world.base}/product-overviews?page_size=10")
+    items, pages = walk(as_user("vendedor.sintetico"), f"{world.base}/product-overviews?page_size=10")
     assert [len(page["items"]) for page in pages] == [10, 10, 3]
     assert [item["display_name"] for item in items] == [f"Producto {index:02d}" for index in range(23)]

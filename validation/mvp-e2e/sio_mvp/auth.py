@@ -27,8 +27,6 @@ TEST_USERS = (
     "compras.test",
     "ventas.test",
     "supervisor.test",
-    "consulta.test",
-    "reportes.test",
     "inventario.test",
 )
 WEB_CLIENT = "sio-web"

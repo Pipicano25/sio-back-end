@@ -29,7 +29,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Permiso que exige la URL:** `perm:sales:sales:create` + `perm:sales:sale_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:all:all:create`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
 
 **Por qué se hace así**
 
@@ -59,6 +59,6 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:all:all:update`)
+- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:update`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:update`)
 
 **Respuesta esperada:** `409`

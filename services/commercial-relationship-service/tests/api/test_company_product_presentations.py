@@ -234,7 +234,7 @@ def test_list_filters_search_and_default_status(admin, company, fake_catalog, pr
     ).json()["total_records"] == 1
 
 
-@pytest.mark.parametrize("username", ["consulta.test", "reportes.test", "ventas.test", "compras.test"])
+@pytest.mark.parametrize("username", ["ventas.test", "compras.test", "inventario.test"])
 def test_readers_can_read_but_not_write(as_user, admin, company, fake_catalog, product, username):
     created = adopt_presentation(admin, company, fake_catalog, product)
     client = as_user(username)
@@ -244,13 +244,13 @@ def test_readers_can_read_but_not_write(as_user, admin, company, fake_catalog, p
     assert response.status_code == 403
 
 
-def test_supervisor_cannot_deactivate(as_user, admin, company, fake_catalog, product):
+def test_employee_cannot_deactivate(as_user, admin, company, fake_catalog, product):
     created = adopt_presentation(admin, company, fake_catalog, product)
-    response = as_user("supervisor.test").post(
+    response = as_user("ventas.test").post(
         f"/api/v1/company-product-presentations/{created['id']}/deactivate", json={"version": 1}
     )
     assert response.status_code == 403
 
 
-def test_inventory_user_has_no_access(as_user, company):
-    assert as_user("inventario.test").get(URL.format(company=company)).status_code == 403
+def test_member_without_permission_has_no_access(as_user, company):
+    assert as_user("sin-permisos.test").get(URL.format(company=company)).status_code == 403

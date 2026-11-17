@@ -2,7 +2,7 @@
 
 [← Todos los ejercicios](../README.md)
 
-**Qué enseña:** Ver cómo una **recepción física** de compra actualiza el precio de una lista con políticas: el **costo real** de la línea (con su impuesto) más el porcentaje de la política. Consultar las **actualizaciones automáticas** (cálculo y estado) y **resolver administrativamente** una que falló, sin cambiar precios. Solo administradores y supervisores las ven, porque exponen costos (spec 021).
+**Qué enseña:** Ver cómo una **recepción física** de compra actualiza el precio de una lista con políticas: el **costo real** de la línea (con su impuesto) más el porcentaje de la política. Consultar las **actualizaciones automáticas** (cálculo y estado) y **resolver administrativamente** una que falló, sin cambiar precios. Solo los grupos `superadmin` y `admin` las ven, porque exponen costos (spec 021).
 
 **Datos:** **reales** del sistema anterior (`docs/CAMPOS PRODUCTOS.xlsx`) — detalle y decisiones en [00-datos-del-excel.md](00-datos-del-excel.md).
 
