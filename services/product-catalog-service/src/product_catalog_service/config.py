@@ -3,6 +3,8 @@
 import os
 from dataclasses import dataclass
 
+from sio_contract_read import ContractReadConfigError, ContractReadSettings
+
 IMAGE_REF_SECRET_MIN_BYTES = 32
 IMAGE_STAGE_TRANSITION = "transition"
 IMAGE_STAGE_COMPLETED = "completed"
@@ -34,6 +36,9 @@ class Settings:
         image_migration_stage: etapa de las rutas por producto frente a las imágenes
             (`PRODUCT_IMAGE_MIGRATION_STAGE`; spec 024, research R2): `transition` (entrega 1,
             por defecto) o `completed` (entrega 2, después de verificar la migración).
+        party_identity_reads: fuente de la lectura del fabricante (spec 025, D27):
+            `PARTY_IDENTITY_READ_SOURCE=http` (por defecto) o `contract` (vista
+            `v1_organization_identities` con `PARTY_IDENTITY_CONTRACT_DATABASE_URL`).
     """
 
     docs_enabled: bool
@@ -52,6 +57,7 @@ class Settings:
     asset_upload_max_bytes: int = 5_242_880
     asset_upload_max_pixels: int = 40_000_000
     image_migration_stage: str = IMAGE_STAGE_TRANSITION
+    party_identity_reads: ContractReadSettings | None = None
 
     def __post_init__(self) -> None:
         if self.image_migration_stage not in IMAGE_STAGES:
@@ -99,6 +105,11 @@ def load_settings() -> Settings:
     Raises:
         RuntimeError: Si una variable obligatoria falta o tiene un valor inválido.
     """
+    party_identity_timeout = _read_float(name="PARTY_IDENTITY_TIMEOUT_SECONDS", default=3.0)
+    try:
+        party_identity_reads = ContractReadSettings.from_env("PARTY_IDENTITY", timeout_seconds=party_identity_timeout)
+    except ContractReadConfigError as error:
+        raise RuntimeError(str(error)) from None
     return Settings(
         docs_enabled=_read_bool(
             name="SIO_DOCS_ENABLED",
@@ -109,10 +120,7 @@ def load_settings() -> Settings:
             name="PARTY_IDENTITY_SERVICE_BASE_URL",
             default="http://localhost:8002",
         ),
-        party_identity_timeout_seconds=_read_float(
-            name="PARTY_IDENTITY_TIMEOUT_SECONDS",
-            default=3.0,
-        ),
+        party_identity_timeout_seconds=party_identity_timeout,
         asset_storage_endpoint=_optional_text("ASSET_STORAGE_ENDPOINT"),
         asset_storage_bucket=_read_text(name="ASSET_STORAGE_BUCKET", default="sio-product-assets"),
         asset_storage_access_key=_optional_text("ASSET_STORAGE_ACCESS_KEY"),
@@ -125,6 +133,7 @@ def load_settings() -> Settings:
         asset_upload_max_bytes=_read_int(name="ASSET_UPLOAD_MAX_BYTES", default=5_242_880),
         asset_upload_max_pixels=_read_int(name="ASSET_UPLOAD_MAX_PIXELS", default=40_000_000),
         image_migration_stage=_read_text(name="PRODUCT_IMAGE_MIGRATION_STAGE", default=IMAGE_STAGE_TRANSITION).lower(),
+        party_identity_reads=party_identity_reads,
     )
 
 

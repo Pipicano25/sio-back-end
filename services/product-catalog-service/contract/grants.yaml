@@ -1,7 +1,7 @@
 # Consumidores de las vistas de contrato de Product Catalog (constitución 3.0.0, D27; spec 025).
 # Lo aplica infrastructure/scripts/contract-readers/provision.py después de `alembic upgrade head`.
 # Agregar o quitar un consumidor o una vista solo cambia este archivo (y la migración si la vista es nueva).
-# Las vistas de resumen (v1_product_summary*) y sus consumidores (PIQ, Business Reporting) se agregan con su migración.
+# Migraciones: 0007 (v1_products, v1_presentations, v1_units_of_measure) y 0008 (resumen: v1_product_summary*).
 owner: product-catalog
 abbreviation: pc
 database_env: DATABASE_URL
@@ -17,4 +17,11 @@ consumers:
     views: [v1_products]
   product-inventory-query:
     abbreviation: piq
-    views: [v1_units_of_measure]
+    views:
+      - v1_units_of_measure
+      - v1_product_summaries
+      - v1_product_summary_categories
+      - v1_product_summary_identifiers
+  business-reporting:
+    abbreviation: brs
+    views: [v1_products, v1_units_of_measure]

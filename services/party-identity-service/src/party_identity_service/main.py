@@ -5,7 +5,9 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
-from sio_auth import SIOAuth, install_cors
+from sio_auth import SIOAuth, TokenClaims, install_cors
+from sio_contract_read import ContractReadSettings, create_contract_engine
+from sqlalchemy import Engine
 
 import party_identity_service.application.audit_events  # noqa: F401  (registra la outbox de auditoría, feature 016)
 from party_identity_service.audit_context import bind_audit_actor
@@ -41,6 +43,10 @@ from party_identity_service.api.person_identities import (
 from party_identity_service.api.security import build_auth
 from party_identity_service.api.tracing import TracingMiddleware
 from party_identity_service.config import Settings, load_settings
+from party_identity_service.infrastructure.contract_geography import (
+    ContractGeographyCountryValidator,
+    ContractGeographyLocationDirectory,
+)
 from party_identity_service.infrastructure.database import Database
 from party_identity_service.application.ports import MembershipResolver
 from party_identity_service.infrastructure.geography_country_validator import (
@@ -73,29 +79,51 @@ DOCS_PUBLIC_PATHS = {
 }
 
 
-def build_country_directory_factory(settings: Settings) -> CountryDirectoryFactory:
-    """Fábrica del adaptador HTTP de Geography, único camino productivo (FR-044).
+def _claims(request: Request) -> TokenClaims | None:
+    return getattr(request.state, "sio_claims", None)
 
-    Propaga el token del usuario de la solicitud (D5).
+
+def _contract_engine(reads: ContractReadSettings | None) -> Engine | None:
+    """Motor de lectura por vistas de contrato (spec 025, D27); `None` = Geography se lee por HTTP."""
+    if reads is None or not reads.uses_contract:
+        return None
+    return create_contract_engine(reads, application_name="party-identity-service")
+
+
+def build_country_directory_factory(
+    settings: Settings, contract_engine: Engine | None = None
+) -> CountryDirectoryFactory:
+    """Fábrica del puerto de países de Geography (FR-044).
+
+    Propaga el token del usuario de la solicitud (D5). Con `contract_engine` (`GEOGRAPHY_READ_SOURCE=contract`),
+    `exists` lee `v1_countries` con el mismo permiso de la ruta (FR-037) y `find_id_by_iso3` sigue por API (FR-036).
     """
 
-    def factory(request: Request) -> HTTPGeographyCountryValidator:
-        return HTTPGeographyCountryValidator(
+    def factory(request: Request) -> HTTPGeographyCountryValidator | ContractGeographyCountryValidator:
+        http = HTTPGeographyCountryValidator(
             base_url=settings.geography_service_base_url,
             authorization=request.headers.get("authorization"),
             timeout_seconds=settings.geography_timeout_seconds,
         )
+        if contract_engine is not None:
+            return ContractGeographyCountryValidator(engine=contract_engine, claims=_claims(request), http=http)
+        return http
 
     return factory
 
 
-def build_location_directory_factory(settings: Settings) -> LocationDirectoryFactory:
-    """Fábrica del adaptador HTTP de país, división y ciudad (R-07).
+def build_location_directory_factory(
+    settings: Settings, contract_engine: Engine | None = None
+) -> LocationDirectoryFactory:
+    """Fábrica del puerto de país, división y ciudad (R-07).
 
-    Propaga el token del usuario de la solicitud (D5), igual que la Fase A.
+    Propaga el token del usuario de la solicitud (D5), igual que la Fase A. Con `contract_engine`
+    (`GEOGRAPHY_READ_SOURCE=contract`) lee las vistas de Geography con el mismo permiso de cada ruta (FR-037).
     """
 
-    def factory(request: Request) -> HTTPGeographyLocationDirectory:
+    def factory(request: Request) -> HTTPGeographyLocationDirectory | ContractGeographyLocationDirectory:
+        if contract_engine is not None:
+            return ContractGeographyLocationDirectory(engine=contract_engine, claims=_claims(request))
         return HTTPGeographyLocationDirectory(
             base_url=settings.geography_service_base_url,
             authorization=request.headers.get("authorization"),
@@ -167,12 +195,16 @@ def create_app(
     current_settings = settings or load_settings()
     configure_logging()
     database = Database(current_settings.database_url)
+    # Spec 025 (D27): con `GEOGRAPHY_READ_SOURCE=contract` Geography se lee de sus vistas de contrato.
+    geography_engine = _contract_engine(current_settings.geography_reads)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        """Libera el pool de conexiones al detener la aplicación."""
+        """Libera los pools de conexiones al detener la aplicación."""
         yield
         database.dispose()
+        if geography_engine is not None:
+            geography_engine.dispose()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -197,11 +229,11 @@ def create_app(
     app.state.database = database
     app.state.country_directory_factory = (
         country_directory_factory
-        or build_country_directory_factory(current_settings)
+        or build_country_directory_factory(current_settings, geography_engine)
     )
     app.state.location_directory_factory = (
         location_directory_factory
-        or build_location_directory_factory(current_settings)
+        or build_location_directory_factory(current_settings, geography_engine)
     )
     app.state.membership_resolver = (
         membership_resolver

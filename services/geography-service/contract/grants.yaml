@@ -1,0 +1,13 @@
+# Consumidores de las vistas de contrato de Geography (constitución 3.0.0, D27; spec 025).
+# Lo aplica infrastructure/scripts/contract-readers/provision.py después de `alembic upgrade head`.
+# Agregar o quitar un consumidor o una vista solo cambia este archivo (y la migración si la vista es nueva).
+owner: geography
+abbreviation: geo
+database_env: DATABASE_URL
+consumers:
+  operational-context:
+    abbreviation: oc
+    views: [v1_countries, v1_administrative_divisions, v1_cities]
+  party-identity:
+    abbreviation: pi
+    views: [v1_countries, v1_administrative_divisions, v1_cities]

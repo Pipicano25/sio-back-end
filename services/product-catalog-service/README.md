@@ -92,8 +92,8 @@ Alembic en `alembic/versions/`. La migración `0001` crea la extensión `pg_trgm
 restricciones nombradas (`uq_`, `ck_`, `ix_`, `fk_`). Una migración ya aplicada en un entorno
 compartido no se edita: las correcciones van en una migración nueva.
 
-La migración `0007` (spec 025) crea el esquema `contract` con las vistas de lectura para otros servicios
-(ver [Vistas de contrato](#vistas-de-contrato-spec-025-d27)).
+La migración `0007` (spec 025) crea el esquema `contract` con las vistas de lectura para otros servicios, y la
+`0008` agrega las del resumen de productos (ver [Vistas de contrato](#vistas-de-contrato-spec-025-d27)).
 
 La migración `0004` (spec 018) agrega el tipo de identificador `IUM` (Identificador Único de
 Medicamento del INVIMA):
@@ -201,8 +201,8 @@ base detenida: `docker start sio-product-catalog-db`.
 
 ## Vistas de contrato (spec 025, D27)
 
-La migración `0007` publica el esquema `contract` con vistas de solo lectura para que otros servicios lean sin
-llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué vista está en
+Las migraciones `0007` y `0008` publican el esquema `contract` con vistas de solo lectura para que otros servicios
+lean sin llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué vista está en
 [`contract/grants.yaml`](contract/grants.yaml).
 
 | Vista | Columnas | Reemplaza | Consumidores |
@@ -210,11 +210,19 @@ llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué
 | `v1_products` | `id`, `status`, `base_unit_id` | `GET /products/{id}` | Sales, Purchase, Commercial Relationship (unidad base) |
 | `v1_presentations` | `id`, `global_product_id`, `code`, `name`, `status`, `base_quantity` | `GET /presentations/{id}` y `presentations/batch-lookup`, sin imágenes | Sales, Purchase |
 | `v1_units_of_measure` | `id`, `code`, `name`, `status`, `measurement_type`, `allows_decimals` | `GET /units-of-measure/{id}` y `units-of-measure/batch-lookup` | Sales, Purchase, PIQ |
+| `v1_product_summaries` (`0008`) | `id`, `canonical_name`, `product_type`, `status`, `brand_id`, `brand_code`, `brand_name`, `base_unit_id`, `base_unit_code`, `base_unit_name` | `products/summaries/batch-lookup` (PC-1), sin imagen | PIQ |
+| `v1_product_summary_categories` (`0008`) | `global_product_id`, `category_id`, `code`, `name`, `is_primary` | `categories` de PC-1 | PIQ |
+| `v1_product_summary_identifiers` (`0008`) | `global_product_id`, `identifier_type`, `value`, `is_primary`, `global_product_presentation_id` | `identifiers` de PC-1 | PIQ |
 
 - Las vistas incluyen filas activas e inactivas; un id inexistente no tiene fila (la API responde `404` o
   `found: false`).
 - `v1_presentations` no expone imágenes: quien las necesite sigue usando la API.
-- Las vistas de resumen (`v1_product_summaries` y sus categorías e identificadores) llegan en otra migración.
+- Resumen (PC-1): `v1_product_summaries` tiene una fila por producto en cualquier estado; sin marca, las tres
+  columnas de marca son nulas (`brand: null`). Las categorías e identificadores solo incluyen asociaciones e
+  identificadores `ACTIVE`, como PC-1. Las vistas no ordenan: el consumidor lee las categorías con
+  `ORDER BY is_primary DESC, code` y los identificadores con `ORDER BY is_primary DESC, identifier_type, value`, el
+  orden de PC-1. Los campos de imagen (`has_image`, `image_asset_id`, `image_url`) no se publican: la URL firmada
+  sigue por API (FR-036).
 
 Aplicación, siempre después de las migraciones:
 

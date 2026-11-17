@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from sio_auth import SIOAuth, install_cors
+from sio_contract_read import create_contract_engine
 
 import product_catalog_service.application.audit_events  # noqa: F401  (registra la outbox de auditoría, feature 016)
 from product_catalog_service.audit_context import bind_audit_actor
@@ -23,6 +24,7 @@ from product_catalog_service.application.ports import AssetStorage
 from product_catalog_service.config import Settings, load_settings
 from product_catalog_service.infrastructure.s3_asset_storage import S3AssetStorage
 from product_catalog_service.infrastructure.database import Database
+from product_catalog_service.infrastructure.contract_party_identity import build_contract_manufacturer_directory
 from product_catalog_service.infrastructure.party_identity_manufacturer_directory import (
     build_manufacturer_directory,
 )
@@ -41,6 +43,14 @@ DOCS_PUBLIC_PATHS = {
 }
 
 ManufacturerDirectoryFactory = Callable[[Request], ManufacturerDirectory]
+
+
+def build_manufacturer_directory_factory(settings: Settings, contract_engine=None) -> ManufacturerDirectoryFactory:
+    """Party Identity con el token del usuario; con `contract_engine` (spec 025,
+    `PARTY_IDENTITY_READ_SOURCE=contract`), la vista `v1_organization_identities` con el mismo permiso (FR-037)."""
+    if contract_engine is not None:
+        return lambda request: build_contract_manufacturer_directory(request, contract_engine)
+    return lambda request: build_manufacturer_directory(request, settings)
 
 
 def create_app(
@@ -63,11 +73,20 @@ def create_app(
     current_settings = settings or load_settings()
     configure_logging()
     database = Database(current_settings.database_url)
+    # Spec 025 (D27): con PARTY_IDENTITY_READ_SOURCE=contract el fabricante se lee de la vista de contrato.
+    party_reads = current_settings.party_identity_reads
+    party_engine = (
+        create_contract_engine(party_reads, application_name="product-catalog-service")
+        if party_reads is not None and party_reads.uses_contract and manufacturer_directory_factory is None
+        else None
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         database.dispose()
+        if party_engine is not None:
+            party_engine.dispose()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -84,9 +103,8 @@ def create_app(
     app.state.settings = current_settings
     app.state.database = database
     app.state.asset_storage = asset_storage if asset_storage is not None else S3AssetStorage.from_settings(current_settings)
-    app.state.manufacturer_directory_factory = (
-        manufacturer_directory_factory
-        or (lambda request: build_manufacturer_directory(request, current_settings))
+    app.state.manufacturer_directory_factory = manufacturer_directory_factory or build_manufacturer_directory_factory(
+        current_settings, party_engine
     )
 
     public_paths = set(HEALTH_PUBLIC_PATHS)

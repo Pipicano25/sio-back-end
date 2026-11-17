@@ -5,7 +5,9 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
-from sio_auth import SIOAuth, install_cors
+from sio_auth import SIOAuth, TokenClaims, install_cors
+from sio_contract_read import ContractReadSettings, create_contract_engine
+from sqlalchemy import Engine
 
 import operational_context_service.application.audit_events  # noqa: F401  (registra la outbox de auditoría, feature 016)
 from operational_context_service.audit_context import bind_audit_actor
@@ -30,6 +32,11 @@ from operational_context_service.api.security import build_auth
 from operational_context_service.api.tracing import TracingMiddleware
 from operational_context_service.api.user_branches import build_router as build_user_branches_router
 from operational_context_service.config import Settings, load_settings
+from operational_context_service.infrastructure.contract_geography import ContractGeographyDirectory
+from operational_context_service.infrastructure.contract_party_identity import (
+    ContractPartyIdentityOrganizationDirectory,
+    ContractPartyIdentityPersonDirectory,
+)
 from operational_context_service.infrastructure.database import Database
 from operational_context_service.infrastructure.geography_directory import HTTPGeographyDirectory
 from operational_context_service.infrastructure.keycloak_account_directory import (
@@ -52,13 +59,31 @@ HEALTH_PUBLIC_PATHS = {"/health/live", "/health/ready"}
 DOCS_PUBLIC_PATHS = {"/docs", "/openapi.json"}
 
 
-def build_organization_directory_factory(settings: Settings) -> OrganizationDirectoryFactory:
-    """Adaptador HTTP de Party Identity: único camino productivo (R-12).
+def _claims(request: Request) -> TokenClaims | None:
+    return getattr(request.state, "sio_claims", None)
 
-    Propaga el token del usuario de la solicitud (D5).
+
+def _contract_engine(reads: ContractReadSettings | None) -> Engine | None:
+    """Motor de lectura por vistas de contrato (spec 025, D27); `None` = ese propietario se lee por HTTP."""
+    if reads is None or not reads.uses_contract:
+        return None
+    return create_contract_engine(reads, application_name="operational-context-service")
+
+
+def build_organization_directory_factory(
+    settings: Settings, contract_engine: Engine | None = None
+) -> OrganizationDirectoryFactory:
+    """Organizaciones de Party Identity con el token del usuario de la solicitud (D5).
+
+    Con `contract_engine` (`PARTY_IDENTITY_READ_SOURCE=contract`) se lee `v1_organization_identities` con el mismo
+    permiso de la ruta, comprobado con el token del usuario (FR-037).
     """
 
-    def factory(request: Request) -> HTTPPartyIdentityOrganizationDirectory:
+    def factory(
+        request: Request,
+    ) -> HTTPPartyIdentityOrganizationDirectory | ContractPartyIdentityOrganizationDirectory:
+        if contract_engine is not None:
+            return ContractPartyIdentityOrganizationDirectory(engine=contract_engine, claims=_claims(request))
         return HTTPPartyIdentityOrganizationDirectory(
             base_url=settings.party_identity_base_url,
             authorization=request.headers.get("authorization"),
@@ -68,10 +93,14 @@ def build_organization_directory_factory(settings: Settings) -> OrganizationDire
     return factory
 
 
-def build_geography_directory_factory(settings: Settings) -> GeographyDirectoryFactory:
-    """Adaptador HTTP de Geography: único camino productivo (R-12)."""
+def build_geography_directory_factory(
+    settings: Settings, contract_engine: Engine | None = None
+) -> GeographyDirectoryFactory:
+    """Geography con el token del usuario; con `contract_engine` (`GEOGRAPHY_READ_SOURCE=contract`), sus vistas."""
 
-    def factory(request: Request) -> HTTPGeographyDirectory:
+    def factory(request: Request) -> HTTPGeographyDirectory | ContractGeographyDirectory:
+        if contract_engine is not None:
+            return ContractGeographyDirectory(engine=contract_engine, claims=_claims(request))
         return HTTPGeographyDirectory(
             base_url=settings.geography_base_url,
             authorization=request.headers.get("authorization"),
@@ -81,10 +110,12 @@ def build_geography_directory_factory(settings: Settings) -> GeographyDirectoryF
     return factory
 
 
-def build_person_directory_factory(settings: Settings) -> PersonDirectoryFactory:
-    """Adaptador HTTP de personas en Party Identity; propaga el token del usuario (D5, R-08)."""
+def build_person_directory_factory(settings: Settings, contract_engine: Engine | None = None) -> PersonDirectoryFactory:
+    """Personas de Party Identity; propaga el token del usuario (D5, R-08) o lee `v1_person_identities`."""
 
-    def factory(request: Request) -> HTTPPartyIdentityPersonDirectory:
+    def factory(request: Request) -> HTTPPartyIdentityPersonDirectory | ContractPartyIdentityPersonDirectory:
+        if contract_engine is not None:
+            return ContractPartyIdentityPersonDirectory(engine=contract_engine, claims=_claims(request))
         return HTTPPartyIdentityPersonDirectory(
             base_url=settings.party_identity_base_url,
             authorization=request.headers.get("authorization"),
@@ -144,11 +175,17 @@ def create_app(
     current_settings = settings or load_settings()
     configure_logging()
     database = Database(current_settings.database_url)
+    # Spec 025 (D27): cada propietario con `<PROPIETARIO>_READ_SOURCE=contract` se lee de sus vistas de contrato.
+    party_identity_engine = _contract_engine(current_settings.party_identity_reads)
+    geography_engine = _contract_engine(current_settings.geography_reads)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         yield
         database.dispose()
+        for engine in (party_identity_engine, geography_engine):
+            if engine is not None:
+                engine.dispose()
 
     app = FastAPI(
         title=SERVICE_TITLE,
@@ -168,13 +205,14 @@ def create_app(
     app.state.settings = current_settings
     app.state.database = database
     app.state.organization_directory_factory = (
-        organization_directory_factory or build_organization_directory_factory(current_settings)
+        organization_directory_factory
+        or build_organization_directory_factory(current_settings, party_identity_engine)
     )
     app.state.geography_directory_factory = (
-        geography_directory_factory or build_geography_directory_factory(current_settings)
+        geography_directory_factory or build_geography_directory_factory(current_settings, geography_engine)
     )
     app.state.person_directory_factory = (
-        person_directory_factory or build_person_directory_factory(current_settings)
+        person_directory_factory or build_person_directory_factory(current_settings, party_identity_engine)
     )
     app.state.account_directory_factory = (
         account_directory_factory or build_account_directory_factory(current_settings)

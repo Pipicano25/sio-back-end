@@ -21,14 +21,15 @@ dependencies = [
 
     "sio-auth @ file:../../libs/sio-auth",
     "sio-audit @ file:../../libs/sio-audit",
+    # sio-contract-read >= 0.1.0 (spec 025, D27): lecturas de Geography por vistas de contrato y pruebas de las
+    # vistas propias (roles lectores con `grants.yaml`).
+    "sio-contract-read @ file:../../libs/sio-contract-read",
 ]
 
 [project.optional-dependencies]
 test = [
     "pytest>=8.3,<9.0",
     "httpx>=0.27,<1.0",
-    # Solo pruebas de las vistas de contrato (spec 025): roles lectores con `grants.yaml`.
-    "sio-contract-read @ file:../../libs/sio-contract-read",
 ]
 # Solo para regenerar el snapshot CIIU (scripts/ciiu/convert_dane_ciiu.py);
 # el servicio y su `seed` no lo usan.

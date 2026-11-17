@@ -1,7 +1,7 @@
 # Consumidores de las vistas de contrato de Inventory (constitución 3.0.0, D27; spec 025).
 # Lo aplica infrastructure/scripts/contract-readers/provision.py después de `alembic upgrade head`.
 # Agregar o quitar un consumidor o una vista solo cambia este archivo (y la migración si la vista es nueva).
-# v1_inventory_policies (PIQ) llega en una fase posterior.
+# Migraciones: 0003 (saldos y operaciones por clave) y 0004 (v1_inventory_policies).
 owner: inventory
 abbreviation: inv
 database_env: DATABASE_URL
@@ -14,4 +14,4 @@ consumers:
     views: [v1_operations_by_key, v1_operation_movements]
   product-inventory-query:
     abbreviation: piq
-    views: [v1_balances]
+    views: [v1_balances, v1_inventory_policies]

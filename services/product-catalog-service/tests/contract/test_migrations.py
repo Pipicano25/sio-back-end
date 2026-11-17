@@ -6,7 +6,7 @@ from sqlalchemy.engine import Engine
 
 from tests.conftest import FUNCTIONAL_TABLES, build_alembic_config
 
-HEAD = "0007"
+HEAD = "0008"
 
 EXPECTED_CONSTRAINTS = {
     "uq_global_units_of_measure_code",
@@ -289,7 +289,8 @@ def test_restriction_migration_refuses_images_without_presentation(test_database
 
 
 def test_contract_views_migration_downgrades_and_upgrades(test_database_url: str) -> None:
-    """0007 crea el esquema `contract` con sus tres vistas y su `downgrade` los retira (spec 025, T038)."""
+    """0007 crea el esquema `contract` con sus tres vistas y su `downgrade` los retira (spec 025, T038); 0008 agrega
+    las tres del resumen (T072) y su `downgrade` solo quita las suyas."""
     config = build_alembic_config()
     engine = create_engine(test_database_url)
 
@@ -308,7 +309,14 @@ def test_contract_views_migration_downgrades_and_upgrades(test_database_url: str
     try:
         command.downgrade(config, "0006")
         assert not has_schema()
+        command.upgrade(config, "0007")
+        assert contract_views() == {"v1_products", "v1_presentations", "v1_units_of_measure"}
         command.upgrade(config, "head")
+        assert contract_views() == {
+            "v1_products", "v1_presentations", "v1_units_of_measure",
+            "v1_product_summaries", "v1_product_summary_categories", "v1_product_summary_identifiers",
+        }
+        command.downgrade(config, "0007")
         assert contract_views() == {"v1_products", "v1_presentations", "v1_units_of_measure"}
     finally:
         command.upgrade(config, "head")

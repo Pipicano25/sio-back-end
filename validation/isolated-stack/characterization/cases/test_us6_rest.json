@@ -1,0 +1,491 @@
+{
+  "cases": {
+    "condicion_de_pago_proveedor": {
+      "case": {
+        "body": {
+          "cash_discount_percentage": null,
+          "company_id": "<empresa>",
+          "company_supplier_id": "<proveedor>",
+          "created_at": "<fecha>",
+          "created_by": "<id:1>",
+          "credit_limit": null,
+          "currency_code": "COP",
+          "id": "<id:2>",
+          "interest_rate_percentage": null,
+          "is_default": false,
+          "payment_condition_type_id": "<contado>",
+          "payment_terms_days": 0,
+          "status": "ACTIVE",
+          "updated_at": "<fecha>",
+          "updated_by": "<id:1>",
+          "valid_from": "<ts>",
+          "valid_to": null,
+          "version": 1
+        },
+        "status": 201
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "payment-reference GET /global-payment-condition-types/{id}": 1
+      }
+    },
+    "condicion_de_pago_tipo_inexistente": {
+      "case": {
+        "body": {
+          "code": "COMMERCIAL_RELATIONSHIP.PAYMENT_CONDITION_TYPE_NOT_FOUND",
+          "detail": "El tipo de condición de pago indicado no existe en Payment Reference.",
+          "errors": [
+            {
+              "code": "PAYMENT_CONDITION_TYPE_NOT_FOUND",
+              "field": "payment_condition_type_id",
+              "message": "El tipo de condición de pago indicado no existe en Payment Reference."
+            }
+          ],
+          "instance": "/api/v1/companies/<empresa>/supplier-payment-conditions",
+          "status": 422,
+          "title": "Tipo de condición inexistente",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/commercial-relationship/payment-condition-type-not-found"
+        },
+        "status": 422
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "payment-reference GET /global-payment-condition-types/{id}": 1
+      }
+    },
+    "empresa_ciudad_inexistente": {
+      "case": {
+        "body": {
+          "code": "OPERATIONAL_CONTEXT.CITY_NOT_FOUND",
+          "detail": "La ciudad indicada no existe en Geography Service.",
+          "errors": [
+            {
+              "code": "CITY_NOT_FOUND",
+              "field": "city_id",
+              "message": "La ciudad indicada no existe en Geography Service."
+            }
+          ],
+          "instance": "/api/v1/companies",
+          "status": 422,
+          "title": "Ciudad inexistente",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/operational-context/city-not-found"
+        },
+        "status": 422
+      },
+      "requests": {
+        "geography GET /global-administrative-divisions/{id}": 1,
+        "geography GET /global-cities/{id}": 1,
+        "geography GET /global-countries/{id}": 1,
+        "party-identity GET /api/v1/organization-identities/{id}": 1
+      }
+    },
+    "empresa_con_ubicacion": {
+      "case": {
+        "body": {
+          "address_line": null,
+          "administrative_division_id": "<division>",
+          "city_id": "<ciudad>",
+          "country_id": "<colombia>",
+          "created_at": "<fecha>",
+          "created_by": "<id:1>",
+          "default_currency": "COP",
+          "email": null,
+          "id": "<id:2>",
+          "latitude": null,
+          "longitude": null,
+          "organization_identity_id": "<organizacion_empresa>",
+          "phone": null,
+          "postal_code": null,
+          "status": "ACTIVE",
+          "timezone": "America/Bogota",
+          "updated_at": "<fecha>",
+          "updated_by": "<id:1>",
+          "version": 1
+        },
+        "status": 201
+      },
+      "requests": {
+        "geography GET /global-administrative-divisions/{id}": 1,
+        "geography GET /global-cities/{id}": 1,
+        "geography GET /global-countries/{id}": 1,
+        "party-identity GET /api/v1/organization-identities/{id}": 1
+      }
+    },
+    "fabricante_existente": {
+      "case": {
+        "body": {
+          "base_unit_id": "<unidad>",
+          "canonical_name": "PRODUCTO FABRICANTE US6 <run>",
+          "completeness": {
+            "is_complete": false,
+            "issues": [
+              "NO_ACTIVE_CATEGORY",
+              "NO_ACTIVE_PRESENTATION"
+            ],
+            "missing_attribute_definition_ids": [],
+            "out_of_classification_value_ids": []
+          },
+          "created_at": "<fecha>",
+          "created_by": "<id:1>",
+          "description": null,
+          "detail": null,
+          "eligible_for_adoption": false,
+          "first_use_source": null,
+          "first_used_at": null,
+          "global_brand_id": null,
+          "id": "<producto_fabricante>",
+          "manufacturer_organization_id": "<organizacion>",
+          "product_type": "GOOD",
+          "status": "ACTIVE",
+          "updated_at": "<fecha>",
+          "updated_by": "<id:1>",
+          "version": 2,
+          "warnings": []
+        },
+        "status": 200
+      },
+      "requests": {
+        "party-identity GET /api/v1/organization-identities/{id}": 1
+      }
+    },
+    "fabricante_inexistente": {
+      "case": {
+        "body": {
+          "code": "PRODUCT_CATALOG.MANUFACTURER_NOT_FOUND",
+          "detail": "La organización fabricante <id:1> no existe en Party Identity Service.",
+          "instance": "/api/v1/products/<producto_fabricante>",
+          "status": 422,
+          "title": "Fabricante inexistente",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/product-catalog/manufacturer-not-found"
+        },
+        "status": 422
+      },
+      "requests": {
+        "party-identity GET /api/v1/organization-identities/{id}": 1
+      }
+    },
+    "perfil_contacto_con_ubicacion": {
+      "case": {
+        "body": {
+          "address_line": "Calle ficticia 1",
+          "administrative_division_id": "<division>",
+          "city_id": "<ciudad>",
+          "confirmed_by_company_id": "<empresa>",
+          "confirmed_by_user_id": "<admin>",
+          "country_id": "<colombia>",
+          "created_at": "<fecha>",
+          "created_by": "<id:1>",
+          "email": "contacto.us6@example.com",
+          "id": "<id:2>",
+          "is_active": true,
+          "organization_identity_id": "<organizacion>",
+          "phone": null,
+          "postal_code": null,
+          "updated_at": "<fecha>",
+          "updated_by": "<id:1>",
+          "valid_from": "<ts>",
+          "valid_to": null,
+          "version": 1
+        },
+        "status": 201
+      },
+      "requests": {
+        "geography GET /global-administrative-divisions/{id}": 1,
+        "geography GET /global-cities/{id}": 1,
+        "geography GET /global-countries/{id}": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "producto_de_proveedor": {
+      "case": {
+        "body": {
+          "company_id": "<empresa>",
+          "company_product_id": "<producto>",
+          "company_product_presentation_id": null,
+          "company_supplier_id": "<proveedor>",
+          "created_at": "<fecha>",
+          "created_by": "<id:1>",
+          "currency_code": "COP",
+          "expected_supplier_lead_time_hours": null,
+          "id": "<id:2>",
+          "is_preferred": true,
+          "minimum_order_quantity": "1.0000",
+          "negotiated_unit_cost": null,
+          "pack_quantity": "1.0000",
+          "priority": null,
+          "purchase_unit_id": "<unidad>",
+          "status": "ACTIVE",
+          "supplier_product_code": null,
+          "updated_at": "<fecha>",
+          "updated_by": "<id:1>",
+          "version": 1
+        },
+        "status": 201
+      },
+      "requests": {
+        "operational-context GET /api/v1/operational-access": 1,
+        "product-catalog GET /api/v1/products/{id}": 1
+      }
+    },
+    "reporte_de_compras": {
+      "case": {
+        "body": {
+          "branch_ids": [],
+          "company_id": "<empresa>",
+          "criteria": {
+            "categories": [
+              "RECEIVED",
+              "PENDING_RECEIPT",
+              "CANCELLED"
+            ],
+            "date_basis": "operation_date"
+          },
+          "date_from": "2026-10-01",
+          "date_to": "2026-10-31",
+          "generated_at": "<fecha>",
+          "items": [],
+          "page": 1,
+          "page_size": 50,
+          "report": "purchases",
+          "total_pages": 0,
+          "total_records": 0,
+          "totals": []
+        },
+        "status": 200
+      },
+      "requests": {
+        "operational-context GET /api/v1/companies/{id}": 1,
+        "operational-context GET /api/v1/companies/{id}/branches": 2,
+        "operational-context GET /api/v1/operational-access": 1,
+        "purchase GET /api/v1/companies/{id}/purchase-reports/period": 1
+      }
+    },
+    "resumen_inventario": {
+      "case": {
+        "body": {
+          "adopted_products": 1,
+          "branches": [
+            {
+              "branch_id": "<Q1>",
+              "products_below_minimum": 0,
+              "products_with_policy": 0,
+              "products_with_positive_balance": 0,
+              "products_with_zero_balance": 0
+            },
+            {
+              "branch_id": "<id:1>",
+              "products_below_minimum": 0,
+              "products_with_policy": 0,
+              "products_with_positive_balance": 0,
+              "products_with_zero_balance": 0
+            }
+          ],
+          "company_id": "<empresa>",
+          "consolidated": {
+            "products_below_minimum": 0,
+            "products_with_policy": 0,
+            "products_with_positive_balance": 0,
+            "products_with_zero_balance": 0
+          },
+          "resolved_at": "<fecha>"
+        },
+        "status": 200
+      },
+      "requests": {
+        "commercial-relationship GET /api/v1/companies/{id}/company-products": 1,
+        "inventory POST /api/v1/companies/{id}/inventory-summary": 1,
+        "operational-context GET /api/v1/companies/{id}/branches": 1,
+        "operational-context GET /api/v1/operational-access": 1
+      }
+    },
+    "sucursal_con_ubicacion": {
+      "case": {
+        "body": {
+          "address_line": null,
+          "administrative_division_id": "<division>",
+          "city_id": "<ciudad>",
+          "code": "G1<run>",
+          "company_id": "<empresa>",
+          "company_status": "ACTIVE",
+          "country_id": "<colombia>",
+          "created_at": "<fecha>",
+          "created_by": "<id:1>",
+          "effective_timezone": "America/Bogota",
+          "email": null,
+          "id": "<id:2>",
+          "latitude": null,
+          "longitude": null,
+          "name": "Sucursal ficticia G1 <run>",
+          "phone": null,
+          "postal_code": null,
+          "status": "ACTIVE",
+          "timezone": null,
+          "updated_at": "<fecha>",
+          "updated_by": "<id:1>",
+          "version": 1
+        },
+        "status": 201
+      },
+      "requests": {
+        "geography GET /global-administrative-divisions/{id}": 1,
+        "geography GET /global-cities/{id}": 1,
+        "geography GET /global-countries/{id}": 1
+      }
+    },
+    "sucursal_division_inexistente": {
+      "case": {
+        "body": {
+          "code": "OPERATIONAL_CONTEXT.ADMINISTRATIVE_DIVISION_NOT_FOUND",
+          "detail": "La división administrativa indicada no existe en Geography Service.",
+          "errors": [
+            {
+              "code": "ADMINISTRATIVE_DIVISION_NOT_FOUND",
+              "field": "administrative_division_id",
+              "message": "La división administrativa indicada no existe en Geography Service."
+            }
+          ],
+          "instance": "/api/v1/companies/<empresa>/branches",
+          "status": 422,
+          "title": "División administrativa inexistente",
+          "trace_id": "<volátil>",
+          "type": "https://sio/errors/operational-context/administrative-division-not-found"
+        },
+        "status": 422
+      },
+      "requests": {
+        "geography GET /global-administrative-divisions/{id}": 1,
+        "geography GET /global-countries/{id}": 1
+      }
+    },
+    "usuario_operativo_nuevo": {
+      "case": {
+        "body": {
+          "company_id": "<empresa>",
+          "company_status": "ACTIVE",
+          "created_at": "<fecha>",
+          "created_by": "<id:1>",
+          "display_name": "consulta.test (ficticio <run>)",
+          "id": "<id:2>",
+          "keycloak_user_id": "<id:3>",
+          "person_identity_id": "<persona>",
+          "reference_email": null,
+          "status": "ACTIVE",
+          "updated_at": "<fecha>",
+          "updated_by": "<id:1>",
+          "version": 1
+        },
+        "status": 201
+      },
+      "requests": {
+        "party-identity GET /api/v1/person-identities/{id}": 1
+      }
+    },
+    "vista_productos_sucursal": {
+      "case": {
+        "body": {
+          "has_next": false,
+          "items": [
+            {
+              "base_unit": {
+                "code": "UND",
+                "id": "<unidad>",
+                "name": "Unidad"
+              },
+              "brand": null,
+              "canonical_name": "PRODUCTO US6 <run>",
+              "categories": [
+                {
+                  "code": "US6-<run>",
+                  "id": "<categoria>",
+                  "is_primary": true,
+                  "name": "Categoría US6 (ficticia <run>)"
+                }
+              ],
+              "company_product_id": "<producto>",
+              "display_name": "Producto US6 <run>",
+              "global_product_id": "<producto_global>",
+              "global_status": "ACTIVE",
+              "identifiers": [],
+              "internal_code": "P6-<run>",
+              "presentations": [
+                {
+                  "asset_id": null,
+                  "base_quantity_factor": "1.0000",
+                  "code": "UND-<run>",
+                  "company_product_presentation_id": "<presentacion>",
+                  "global_product_presentation_id": "<presentacion_global>",
+                  "has_image": false,
+                  "image_url": null,
+                  "internal_code": null,
+                  "is_sellable": true,
+                  "name": "Unidad",
+                  "price": {
+                    "currency_code": null,
+                    "price_list_id": null,
+                    "price_list_item_id": null,
+                    "resolution": "NO_APPLICABLE_PRICE_LIST",
+                    "unit_price": null
+                  },
+                  "sku": "SKU-6-<run>",
+                  "status": "ACTIVE"
+                }
+              ],
+              "product_type": "GOOD",
+              "reference_code": null,
+              "status": "ACTIVE",
+              "stock": {
+                "base_unit": {
+                  "code": "UND",
+                  "id": "<unidad>",
+                  "name": "Unidad"
+                },
+                "branches": [
+                  {
+                    "balance_state": "NOT_REGISTERED",
+                    "base_quantity": "0.0000",
+                    "branch_id": "<Q1>",
+                    "minimum_state": "NO_POLICY",
+                    "minimum_stock": null
+                  }
+                ],
+                "equivalences": [
+                  {
+                    "company_product_presentation_id": "<presentacion>",
+                    "remainder_base_quantity": "0.0000",
+                    "whole_units": 0
+                  }
+                ],
+                "total_base_quantity": "0.0000"
+              }
+            }
+          ],
+          "next_cursor": null,
+          "page_size": 20,
+          "pagination_reset": false,
+          "pagination_reset_reason": null,
+          "partial": false,
+          "partial_reason": null,
+          "resolved_at": "<fecha>",
+          "sort_applied": "display_name:asc"
+        },
+        "status": 200
+      },
+      "requests": {
+        "commercial-relationship POST /api/v1/companies/{id}/applicable-prices/resolve": 1,
+        "commercial-relationship POST /api/v1/companies/{id}/company-product-presentations/by-products": 1,
+        "commercial-relationship POST /api/v1/companies/{id}/company-products/search": 1,
+        "inventory POST /api/v1/companies/{id}/branches/{id}/balances/lookup": 1,
+        "inventory POST /api/v1/companies/{id}/branches/{id}/inventory-policies/lookup": 1,
+        "operational-context GET /api/v1/companies/{id}/branches": 1,
+        "operational-context GET /api/v1/operational-access": 1,
+        "product-catalog POST /api/v1/presentations/batch-lookup": 1,
+        "product-catalog POST /api/v1/products/summaries/batch-lookup": 1
+      }
+    }
+  },
+  "module": "test_us6_rest",
+  "recorded_with": "http"
+}

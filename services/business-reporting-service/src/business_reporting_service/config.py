@@ -31,8 +31,10 @@ class Settings:
     max_period_days: int = 366
     csv_max_rows: int = 50_000
     default_timezone: str = "America/Bogota"
-    # Spec 025 (D27): origen de las lecturas de Operational Context (`http` por omisión o `contract`).
+    # Spec 025 (D27): origen de las lecturas de Operational Context y Product Catalog (`http` por omisión o
+    # `contract`).
     operational_context_reads: ContractReadSettings | None = None
+    product_catalog_reads: ContractReadSettings | None = None
 
     def __post_init__(self) -> None:
         if self.dependency_timeout_seconds > self.json_budget_seconds:
@@ -57,6 +59,7 @@ def load_settings() -> Settings:
     dependency_timeout = _read_positive_float("BRS_DEPENDENCY_TIMEOUT_SECONDS", 5.0)
     try:
         oc_reads = ContractReadSettings.from_env("OPERATIONAL_CONTEXT", timeout_seconds=dependency_timeout)
+        pc_reads = ContractReadSettings.from_env("PRODUCT_CATALOG", timeout_seconds=dependency_timeout)
     except ContractReadConfigError as error:
         raise RuntimeError(str(error)) from None
     return Settings(
@@ -76,6 +79,7 @@ def load_settings() -> Settings:
         csv_max_rows=_read_positive_int("BRS_CSV_MAX_ROWS", 50_000),
         default_timezone=_optional_text("BRS_DEFAULT_TIMEZONE") or "America/Bogota",
         operational_context_reads=oc_reads,
+        product_catalog_reads=pc_reads,
     )
 
 

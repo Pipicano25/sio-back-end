@@ -93,8 +93,8 @@ escrituras; se filtran por la empresa de la ruta y nunca devuelven costos unitar
 
 ## Vistas de contrato (spec 025, D27)
 
-La migración `0003` publica el esquema `contract` con vistas de solo lectura para que otros servicios lean sin
-llamar por HTTP. Las escrituras (entradas, salidas, ajustes, reversiones) siguen siendo solo por esta API. Quién lee
+Las migraciones `0003` y `0004` publican el esquema `contract` con vistas de solo lectura para que otros servicios
+lean sin llamar por HTTP. Las escrituras (entradas, salidas, ajustes, reversiones) siguen siendo solo por esta API. Quién lee
 qué vista está en [`contract/grants.yaml`](contract/grants.yaml); los roles los crea
 `infrastructure/scripts/contract-readers/provision.py`.
 
@@ -103,6 +103,7 @@ qué vista está en [`contract/grants.yaml`](contract/grants.yaml); los roles lo
 | `v1_balances` | `company_id`, `branch_id`, `company_product_id`, `quantity`, `balance_sequence` | `POST /companies/{c}/branches/{b}/balances/lookup` | Sales, PIQ |
 | `v1_operations_by_key` | `company_id`, `operation_key`, `operation_id`, `operation_type`, `status`, `branch_id`, `reverses_operation_id`, `reversed_by_operation_id`, `created_at` | cabecera de `GET /companies/{c}/inventory-operations/by-key/{key}` | Sales, Purchase |
 | `v1_operation_movements` | `operation_id`, `company_id`, `line_index`, `movement_id`, `origin_detail_id`, `company_product_id`, `movement_type`, `quantity`, `unit_cost`, `movement_value`, `cost_known`, `reversed_movement_id` | `movements` de la misma respuesta `by-key` | Sales, Purchase |
+| `v1_inventory_policies` (`0004`) | `company_id`, `branch_id`, `company_product_id`, `minimum_stock` | `POST /companies/{c}/branches/{b}/inventory-policies/lookup` (INV-1) | PIQ |
 
 Reglas:
 
@@ -120,11 +121,13 @@ Reglas:
   (`operation_id`, `operation_type`, `reverses_operation_id`).
 - Se publican dos vistas (cabecera y movimientos) en vez de una fila por movimiento para que una operación sea
   exactamente una fila y la cabecera no cambie si se agregan columnas de movimiento.
-- `v1_inventory_policies` (PIQ) llega en una fase posterior.
+- **Políticas**: una fila por política activa (`inventory_policies.is_active`, a lo sumo una por empresa, sucursal y
+  producto: `uq_inventory_policies_active`), la misma que devuelve INV-1. Un producto sin política activa no tiene
+  fila (INV-1 responde `policy: null`). `minimum_stock` es `NUMERIC(18,4)`: su texto es el del API (`"3.0000"`).
 
 Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); incompatibles, con una vista `v2_`.
 `tests/contract_views/` prueba la paridad con `by-key` (entrada, salida, ajuste y reversiones de entrada y de salida)
-y con `balances/lookup`, que los roles lectores de Sales y Purchase solo leen sus vistas, y el `downgrade`/`upgrade`
+y con `balances/lookup` e `inventory-policies/lookup`, que los roles lectores de Sales y Purchase solo leen sus vistas, y el `downgrade`/`upgrade`
 de `0003`.
 
 ## Lecturas por contrato de otros servicios (spec 025, D27)

@@ -850,6 +850,30 @@ No guardar credenciales directamente en `alembic.ini`.
 
 ---
 
+# Vistas de contrato (spec 025, D27)
+
+La migración `0004` publica el esquema `contract` con vistas de solo lectura para que Operational Context y Party
+Identity validen ubicaciones sin llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué
+vista está en [`contract/grants.yaml`](contract/grants.yaml); los roles los crea
+`infrastructure/scripts/contract-readers/provision.py` (propietario `geography`, abreviatura `geo`).
+
+| Vista | Columnas | Reemplaza | Permiso que comprueba el consumidor | Consumidores |
+|---|---|---|---|---|
+| `v1_countries` | `id`, `status` | `GET /global-countries/{id}` | `perm:geography:global_countries:read` | Operational Context, Party Identity |
+| `v1_administrative_divisions` | `id`, `country_id`, `status` | `GET /global-administrative-divisions/{id}` | `perm:geography:global_administrative_divisions:read` | Operational Context, Party Identity |
+| `v1_cities` | `id`, `country_id`, `administrative_division_id` (nulo sin división), `status` | `GET /global-cities/{id}` | `perm:geography:global_cities:read` | Operational Context, Party Identity |
+
+- Las filas salen en cualquier estado, igual que el `GET` por id; sin fila equivale al `404`.
+- Los consumidores leen hoy con el token del usuario: el permiso de la ruta lo comprueban ellos con ese token antes
+  de leer la vista (FR-037).
+- La búsqueda de país por ISO3 (`GET /global-countries?iso3_code=`) sigue por API (FR-036).
+
+Cambios: compatibles con `CREATE OR REPLACE VIEW` (columnas nuevas al final); incompatibles, con una vista `v2_`.
+La paridad con la API la prueba `tests/contract_views/test_geography_views_parity.py`, que usa la misma base de
+pruebas (`GEOGRAPHY_TEST_DATABASE_URL`) que las pruebas de persistencia.
+
+---
+
 # Seed de Sudamérica
 
 El servicio dispone de un proceso para precargar datos geográficos de Sudamérica y evitar altas manuales masivas.

@@ -45,10 +45,12 @@ class Settings:
     keycloak_realm: str = "sio"
     keycloak_timeout_seconds: float = 5.0
     # Spec 025 (D27): `<PROPIETARIO>_READ_SOURCE=http|contract` (por defecto `http`) por cada propietario leído
-    # con vistas de contrato: Operational Context (acceso, empresas y membresías) y Party Identity (identidades,
-    # personas de contacto y razón social).
+    # con vistas de contrato: Operational Context (acceso, empresas y membresías), Party Identity (identidades,
+    # personas de contacto y razón social), Product Catalog (unidad base) y Payment Reference (tipo de condición).
     operational_context_reads: ContractReadSettings | None = None
     party_identity_reads: ContractReadSettings | None = None
+    product_catalog_reads: ContractReadSettings | None = None
+    payment_reference_reads: ContractReadSettings | None = None
 
 
 def load_settings() -> Settings:
@@ -59,9 +61,13 @@ def load_settings() -> Settings:
     """
     oc_timeout = _read_positive_float("OPERATIONAL_CONTEXT_TIMEOUT_SECONDS", default=5.0)
     pi_timeout = _read_positive_float("PARTY_IDENTITY_TIMEOUT_SECONDS", default=5.0)
+    pc_timeout = _read_positive_float("PRODUCT_CATALOG_TIMEOUT_SECONDS", default=5.0)
+    pr_timeout = _read_positive_float("PAYMENT_REFERENCE_TIMEOUT_SECONDS", default=5.0)
     try:
         oc_reads = ContractReadSettings.from_env("OPERATIONAL_CONTEXT", timeout_seconds=oc_timeout)
         pi_reads = ContractReadSettings.from_env("PARTY_IDENTITY", timeout_seconds=pi_timeout)
+        pc_reads = ContractReadSettings.from_env("PRODUCT_CATALOG", timeout_seconds=pc_timeout)
+        pr_reads = ContractReadSettings.from_env("PAYMENT_REFERENCE", timeout_seconds=pr_timeout)
     except ContractReadConfigError as error:
         raise RuntimeError(str(error)) from None
     return Settings(
@@ -76,10 +82,7 @@ def load_settings() -> Settings:
             "PRODUCT_CATALOG_SERVICE_BASE_URL",
             default="http://localhost:8003/api/v1",
         ),
-        product_catalog_timeout_seconds=_read_positive_float(
-            "PRODUCT_CATALOG_TIMEOUT_SECONDS",
-            default=5.0,
-        ),
+        product_catalog_timeout_seconds=pc_timeout,
         party_identity_base_url=_read_text(
             "PARTY_IDENTITY_SERVICE_BASE_URL",
             default="http://localhost:8002/api/v1",
@@ -89,10 +92,7 @@ def load_settings() -> Settings:
             "PAYMENT_REFERENCE_SERVICE_BASE_URL",
             default="http://localhost:8105",
         ),
-        payment_reference_timeout_seconds=_read_positive_float(
-            "PAYMENT_REFERENCE_TIMEOUT_SECONDS",
-            default=5.0,
-        ),
+        payment_reference_timeout_seconds=pr_timeout,
         keycloak_base_url=_required_text("KEYCLOAK_BASE_URL").rstrip("/"),
         keycloak_realm=_read_text("KEYCLOAK_REALM", default="sio"),
         keycloak_client_id=_required_text("COMMERCIAL_RELATIONSHIP_CLIENT_ID"),
@@ -103,6 +103,8 @@ def load_settings() -> Settings:
         ),
         operational_context_reads=oc_reads,
         party_identity_reads=pi_reads,
+        product_catalog_reads=pc_reads,
+        payment_reference_reads=pr_reads,
     )
 
 

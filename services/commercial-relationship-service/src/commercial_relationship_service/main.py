@@ -69,6 +69,10 @@ from commercial_relationship_service.infrastructure.contract_operational_context
     ContractCompanyDirectory,
 )
 from commercial_relationship_service.infrastructure.contract_party_identity import ContractPartyDirectory
+from commercial_relationship_service.infrastructure.contract_payment_reference import (
+    ContractPaymentReferenceDirectory,
+)
+from commercial_relationship_service.infrastructure.contract_product_catalog import ContractProductCatalogDirectory
 from commercial_relationship_service.infrastructure.database import Database
 from commercial_relationship_service.infrastructure.keycloak_token_client import (
     KeycloakTokenClient,
@@ -102,6 +106,8 @@ class ContractEngines:
 
     operational_context: Engine | None = None
     party_identity: Engine | None = None
+    product_catalog: Engine | None = None
+    payment_reference: Engine | None = None
 
     def dispose(self) -> None:
         for item in fields(self):
@@ -121,6 +127,8 @@ def build_contract_engines(settings: Settings) -> ContractEngines:
     return ContractEngines(
         operational_context=_engine(settings.operational_context_reads),
         party_identity=_engine(settings.party_identity_reads),
+        product_catalog=_engine(settings.product_catalog_reads),
+        payment_reference=_engine(settings.payment_reference_reads),
     )
 
 
@@ -181,32 +189,49 @@ def build_token_client(settings: Settings) -> KeycloakTokenClient:
 
 
 def build_product_directory_factory(
-    settings: Settings, token_client: KeycloakTokenClient
+    settings: Settings, token_client: KeycloakTokenClient, contract_engine: Engine | None = None
 ) -> ProductDirectoryFactory:
-    """Product Catalog con la identidad técnica propia (R-05)."""
-    directory = HTTPProductCatalogDirectory(
+    """Product Catalog con la identidad técnica propia (R-05).
+
+    Con `contract_engine` (spec 025, `PRODUCT_CATALOG_READ_SOURCE=contract`) la unidad base se lee de `v1_products`;
+    la elegibilidad (`batch-lookup`) y el primer uso siguen por HTTP (FR-036).
+    """
+    http_directory = HTTPProductCatalogDirectory(
         base_url=settings.product_catalog_base_url,
         timeout_seconds=settings.product_catalog_timeout_seconds,
         token_client=token_client,
     )
+    directory: HTTPProductCatalogDirectory | ContractProductCatalogDirectory = (
+        http_directory
+        if contract_engine is None
+        else ContractProductCatalogDirectory(engine=contract_engine, http=http_directory)
+    )
 
-    def factory(request: Request) -> HTTPProductCatalogDirectory:
+    def factory(request: Request) -> HTTPProductCatalogDirectory | ContractProductCatalogDirectory:
         return directory
 
     return factory
 
 
 def build_payment_directory_factory(
-    settings: Settings, token_client: KeycloakTokenClient
+    settings: Settings, token_client: KeycloakTokenClient, contract_engine: Engine | None = None
 ) -> PaymentDirectoryFactory:
-    """Payment Reference con la identidad técnica propia (DS-02, R-08)."""
-    directory = HTTPPaymentReferenceDirectory(
-        base_url=settings.payment_reference_base_url,
-        timeout_seconds=settings.payment_reference_timeout_seconds,
-        token_client=token_client,
-    )
+    """Payment Reference con la identidad técnica propia (DS-02, R-08).
 
-    def factory(request: Request) -> HTTPPaymentReferenceDirectory:
+    Con `contract_engine` (spec 025, `PAYMENT_REFERENCE_READ_SOURCE=contract`) el tipo de condición se lee de
+    `v1_payment_condition_types`.
+    """
+    directory: HTTPPaymentReferenceDirectory | ContractPaymentReferenceDirectory
+    if contract_engine is not None:
+        directory = ContractPaymentReferenceDirectory(engine=contract_engine)
+    else:
+        directory = HTTPPaymentReferenceDirectory(
+            base_url=settings.payment_reference_base_url,
+            timeout_seconds=settings.payment_reference_timeout_seconds,
+            token_client=token_client,
+        )
+
+    def factory(request: Request) -> HTTPPaymentReferenceDirectory | ContractPaymentReferenceDirectory:
         return directory
 
     return factory
@@ -285,10 +310,12 @@ def create_app(
     )
     token_client = build_token_client(current_settings)
     app.state.product_directory_factory = (
-        product_directory_factory or build_product_directory_factory(current_settings, token_client)
+        product_directory_factory
+        or build_product_directory_factory(current_settings, token_client, engines.product_catalog)
     )
     app.state.payment_directory_factory = (
-        payment_directory_factory or build_payment_directory_factory(current_settings, token_client)
+        payment_directory_factory
+        or build_payment_directory_factory(current_settings, token_client, engines.payment_reference)
     )
     app.state.party_directory_factory = party_directory_factory or build_party_directory_factory(
         current_settings, engines.party_identity

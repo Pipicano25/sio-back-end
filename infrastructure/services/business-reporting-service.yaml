@@ -21,7 +21,8 @@ services:
       SIO_AUTH_AUDIENCE: sio-api
       SIO_DOCS_ENABLED: ${SIO_DOCS_ENABLED:-false}
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: http://operational-context-service:8000/api/v1
-      # Spec 025 (D27): `contract` lee la vista de Operational Context con el rol de solo lectura; `http` por omisión.
+      # Spec 025 (D27): `contract` lee las vistas de Operational Context (acceso, empresa y sucursales) con el rol de
+      # solo lectura; `http` por omisión.
       OPERATIONAL_CONTEXT_READ_SOURCE: ${OPERATIONAL_CONTEXT_READ_SOURCE:-http}
       OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://brs_contract_reader:${CONTRACT_READER_PASSWORD_BUSINESS_REPORTING:-}@operational-context-db:5432/${OPERATIONAL_CONTEXT_DB_NAME}
       SALES_SERVICE_BASE_URL: http://sales-service:8000/api/v1
@@ -29,6 +30,9 @@ services:
       INVENTORY_SERVICE_BASE_URL: http://inventory-service:8000/api/v1
       COMMERCIAL_RELATIONSHIP_SERVICE_BASE_URL: http://commercial-relationship-service:8000/api/v1
       PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
+      # Spec 025 (D27): `contract` lee la unidad base de las vistas de Product Catalog con el rol de solo lectura.
+      PRODUCT_CATALOG_READ_SOURCE: ${PRODUCT_CATALOG_READ_SOURCE:-http}
+      PRODUCT_CATALOG_CONTRACT_DATABASE_URL: postgresql+psycopg://brs_contract_reader:${CONTRACT_READER_PASSWORD_BUSINESS_REPORTING:-}@product-catalog-db:5432/${PRODUCT_CATALOG_DB_NAME}
       BRS_DEPENDENCY_TIMEOUT_SECONDS: ${BRS_DEPENDENCY_TIMEOUT_SECONDS:-5}
       BRS_JSON_BUDGET_SECONDS: ${BRS_JSON_BUDGET_SECONDS:-10}
       BRS_CSV_BUDGET_SECONDS: ${BRS_CSV_BUDGET_SECONDS:-120}

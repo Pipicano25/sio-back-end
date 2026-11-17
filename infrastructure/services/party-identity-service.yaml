@@ -74,6 +74,10 @@ services:
       # Geography publica hoy sus rutas sin /api/v1; la URL incluye su prefijo.
       GEOGRAPHY_SERVICE_BASE_URL: http://geography-service:8000
       GEOGRAPHY_TIMEOUT_SECONDS: ${GEOGRAPHY_TIMEOUT_SECONDS:-5}
+      # Spec 025 (D27): `contract` lee las vistas de Geography con el rol de solo lectura pi_contract_reader
+      # (comprobando el permiso del usuario, FR-037); `http` por omisión. La búsqueda por ISO3 del seed sigue por API.
+      GEOGRAPHY_READ_SOURCE: ${GEOGRAPHY_READ_SOURCE:-http}
+      GEOGRAPHY_CONTRACT_DATABASE_URL: postgresql+psycopg://pi_contract_reader:${CONTRACT_READER_PASSWORD_PARTY_IDENTITY:-}@geography-db:5432/${GEOGRAPHY_DB_NAME}
       # Operational Context: confirmación de perfiles de contacto (vía técnica).
       OPERATIONAL_CONTEXT_SERVICE_BASE_URL: ${OPERATIONAL_CONTEXT_SERVICE_BASE_URL:-http://operational-context-service:8000/api/v1}
       OPERATIONAL_CONTEXT_TIMEOUT_SECONDS: ${OPERATIONAL_CONTEXT_TIMEOUT_SECONDS:-5}

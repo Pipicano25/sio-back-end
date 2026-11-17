@@ -8,6 +8,7 @@ WORKDIR /app
 
 COPY libs/sio-auth /app/libs/sio-auth
 COPY libs/sio-audit /app/libs/sio-audit
+COPY libs/sio-contract-read /app/libs/sio-contract-read
 COPY services/party-identity-service /app/services/party-identity-service
 
 WORKDIR /app/services/party-identity-service

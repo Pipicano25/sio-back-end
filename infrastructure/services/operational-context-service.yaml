@@ -77,6 +77,12 @@ services:
       PARTY_IDENTITY_TIMEOUT_SECONDS: ${PARTY_IDENTITY_TIMEOUT_SECONDS:-5}
       GEOGRAPHY_SERVICE_BASE_URL: http://geography-service:8000
       GEOGRAPHY_TIMEOUT_SECONDS: ${GEOGRAPHY_TIMEOUT_SECONDS:-5}
+      # Spec 025 (D27): `contract` lee las vistas de Party Identity y Geography con el rol de solo lectura
+      # oc_contract_reader (comprobando el permiso del usuario, FR-037); `http` por omisión.
+      PARTY_IDENTITY_READ_SOURCE: ${PARTY_IDENTITY_READ_SOURCE:-http}
+      PARTY_IDENTITY_CONTRACT_DATABASE_URL: postgresql+psycopg://oc_contract_reader:${CONTRACT_READER_PASSWORD_OPERATIONAL_CONTEXT:-}@party-identity-db:5432/${PARTY_IDENTITY_DB_NAME}
+      GEOGRAPHY_READ_SOURCE: ${GEOGRAPHY_READ_SOURCE:-http}
+      GEOGRAPHY_CONTRACT_DATABASE_URL: postgresql+psycopg://oc_contract_reader:${CONTRACT_READER_PASSWORD_OPERATIONAL_CONTEXT:-}@geography-db:5432/${GEOGRAPHY_DB_NAME}
       # Admin API de Keycloak de solo lectura con el cliente técnico propio
       # (specs/005-operational-context-users/contracts/keycloak-dependency.md).
       KEYCLOAK_BASE_URL: http://keycloak:8080

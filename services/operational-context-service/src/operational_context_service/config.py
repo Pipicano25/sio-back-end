@@ -3,6 +3,8 @@
 import os
 from dataclasses import dataclass, field
 
+from sio_contract_read import ContractReadConfigError, ContractReadSettings
+
 
 @dataclass(frozen=True, slots=True)
 class Settings:
@@ -26,6 +28,9 @@ class Settings:
         keycloak_realm: Realm de SIO.
         keycloak_timeout_seconds: Tiempo de espera de cada llamada a Keycloak.
         sio_api_client_id: Cliente cuyos roles son los permisos SIO.
+        party_identity_reads: Fuente de lectura de Party Identity (spec 025, D27):
+            `PARTY_IDENTITY_READ_SOURCE=http` (por defecto) o `contract`.
+        geography_reads: Ídem para Geography (`GEOGRAPHY_READ_SOURCE`).
     """
 
     docs_enabled: bool
@@ -40,6 +45,8 @@ class Settings:
     keycloak_realm: str = "sio"
     keycloak_timeout_seconds: float = 5.0
     sio_api_client_id: str = "sio-api"
+    party_identity_reads: ContractReadSettings | None = None
+    geography_reads: ContractReadSettings | None = None
 
 
 def load_settings() -> Settings:
@@ -48,6 +55,16 @@ def load_settings() -> Settings:
     Raises:
         RuntimeError: Si una variable contiene un valor inválido.
     """
+    party_identity_timeout = _read_positive_float("PARTY_IDENTITY_TIMEOUT_SECONDS", default=5.0)
+    geography_timeout = _read_positive_float("GEOGRAPHY_TIMEOUT_SECONDS", default=5.0)
+
+    try:
+        # Spec 025 (D27): `<PROPIETARIO>_READ_SOURCE=http|contract` por cada propietario.
+        party_identity_reads = ContractReadSettings.from_env("PARTY_IDENTITY", timeout_seconds=party_identity_timeout)
+        geography_reads = ContractReadSettings.from_env("GEOGRAPHY", timeout_seconds=geography_timeout)
+    except ContractReadConfigError as error:
+        raise RuntimeError(str(error)) from None
+
     return Settings(
         docs_enabled=_read_bool("SIO_DOCS_ENABLED", default=False),
         database_url=_required_text("DATABASE_URL"),
@@ -55,18 +72,12 @@ def load_settings() -> Settings:
             "PARTY_IDENTITY_SERVICE_BASE_URL",
             default="http://localhost:8002/api/v1",
         ),
-        party_identity_timeout_seconds=_read_positive_float(
-            "PARTY_IDENTITY_TIMEOUT_SECONDS",
-            default=5.0,
-        ),
+        party_identity_timeout_seconds=party_identity_timeout,
         geography_base_url=_read_text(
             "GEOGRAPHY_SERVICE_BASE_URL",
             default="http://localhost:8000",
         ),
-        geography_timeout_seconds=_read_positive_float(
-            "GEOGRAPHY_TIMEOUT_SECONDS",
-            default=5.0,
-        ),
+        geography_timeout_seconds=geography_timeout,
         keycloak_base_url=_required_text("KEYCLOAK_BASE_URL").rstrip("/"),
         keycloak_realm=_read_text("KEYCLOAK_REALM", default="sio"),
         keycloak_client_id=_required_text("OPERATIONAL_CONTEXT_CLIENT_ID"),
@@ -76,6 +87,8 @@ def load_settings() -> Settings:
             default=5.0,
         ),
         sio_api_client_id=_read_text("SIO_API_CLIENT_ID", default="sio-api"),
+        party_identity_reads=party_identity_reads,
+        geography_reads=geography_reads,
     )
 
 

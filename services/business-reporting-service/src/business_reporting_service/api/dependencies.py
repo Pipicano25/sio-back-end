@@ -27,6 +27,7 @@ from business_reporting_service.config import Settings
 from business_reporting_service.infrastructure.catalog import HTTPCommercialRelationship, HTTPProductCatalog
 from business_reporting_service.infrastructure.http_client import AsyncDependencyClient, UserCaller
 from business_reporting_service.infrastructure.contract_operational_context import ContractOperationalContext
+from business_reporting_service.infrastructure.contract_product_catalog import ContractProductCatalog
 from business_reporting_service.infrastructure.inventory import HTTPInventory
 from business_reporting_service.infrastructure.operational_context import HTTPOperationalContext
 from business_reporting_service.infrastructure.purchase import HTTPPurchase
@@ -40,8 +41,10 @@ PortsFactory = Callable[[str | None], Ports]
 class Dependencies:
     ports_factory: PortsFactory
     close: Callable[[], Awaitable[None]]
-    # Spec 025 (D27): con OPERATIONAL_CONTEXT_READ_SOURCE=contract, envuelve el puerto de OC de cada solicitud.
-    contract_oc: Callable[[TokenClaims | None, object], object] | None = None
+    # Spec 025 (D27): con `<PROPIETARIO>_READ_SOURCE=contract`, el puerto de OC o de PC de cada solicitud se lee de
+    # las vistas de contrato con los permisos del token del usuario (FR-037).
+    contract_oc: Callable[[TokenClaims | None], object] | None = None
+    contract_pc: Callable[[TokenClaims | None], object] | None = None
 
 
 def build_http_dependencies(settings: Settings) -> Dependencies:
@@ -72,30 +75,37 @@ def build_http_dependencies(settings: Settings) -> Dependencies:
             pc=HTTPProductCatalog(user(PRODUCT_CATALOG)),
         )
 
-    oc_reads = settings.operational_context_reads
-    oc_engine = (
-        create_contract_engine(oc_reads, application_name="business-reporting-service")
-        if oc_reads is not None and oc_reads.uses_contract
-        else None
-    )
-    contract_oc = None
-    if oc_engine is not None:
-        def contract_oc(claims: TokenClaims | None, http: HTTPOperationalContext) -> ContractOperationalContext:
-            return ContractOperationalContext(engine=oc_engine, claims=claims, http=http)
+    engines = {}
+    for name, reads in ((OPERATIONAL_CONTEXT, settings.operational_context_reads),
+                        (PRODUCT_CATALOG, settings.product_catalog_reads)):
+        if reads is not None and reads.uses_contract:
+            engines[name] = create_contract_engine(reads, application_name="business-reporting-service")
+
+    contract_oc = contract_pc = None
+    if OPERATIONAL_CONTEXT in engines:
+        def contract_oc(claims: TokenClaims | None) -> ContractOperationalContext:
+            return ContractOperationalContext(engine=engines[OPERATIONAL_CONTEXT], claims=claims)
+    if PRODUCT_CATALOG in engines:
+        def contract_pc(claims: TokenClaims | None) -> ContractProductCatalog:
+            return ContractProductCatalog(engine=engines[PRODUCT_CATALOG], claims=claims)
 
     async def close() -> None:
         for client in clients.values():
             await client.aclose()
-        if oc_engine is not None:
-            oc_engine.dispose()
+        for engine in engines.values():
+            engine.dispose()
 
-    return Dependencies(factory, close, contract_oc)
+    return Dependencies(factory, close, contract_oc, contract_pc)
 
 
 def ports_of(request: Request) -> Ports:
     dependencies: Dependencies = request.app.state.dependencies
     ports = dependencies.ports_factory(request.headers.get("authorization"))
-    if dependencies.contract_oc is None:
+    if dependencies.contract_oc is None and dependencies.contract_pc is None:
         return ports
     claims = getattr(request.state, "sio_claims", None)
-    return replace(ports, oc=dependencies.contract_oc(claims, ports.oc))
+    if dependencies.contract_oc is not None:
+        ports = replace(ports, oc=dependencies.contract_oc(claims))
+    if dependencies.contract_pc is not None:
+        ports = replace(ports, pc=dependencies.contract_pc(claims))
+    return ports

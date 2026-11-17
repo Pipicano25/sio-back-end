@@ -21,10 +21,11 @@ from sio_auth.tokens import TokenClaims
 from sio_contract_read import ContractReadSettings, create_contract_engine
 from sio_contract_read.testing import create_owner_schema, provision_reader
 from sio_contract_read.testing_oc import lock_access_tables, seed_access_world
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 from product_inventory_query_service.application.exceptions import DependencyUnavailableError
+from product_inventory_query_service.application.ports import BranchInfo
 from product_inventory_query_service.infrastructure.contract_operational_context import ContractOperationalContext
 from product_inventory_query_service.infrastructure.http_client import AsyncDependencyClient
 from product_inventory_query_service.infrastructure.operational_context import HTTPOperationalContext
@@ -107,16 +108,44 @@ def test_missing_route_permission_is_false_like_403(reader, cases):
     assert asyncio.run(http(lambda request: httpx.Response(403)).has_company_access(allowed.company_id)) is False
 
 
-def test_branches_still_use_http(reader, cases):
-    calls = []
+BRANCHES = "perm:operational-context:branches:read"
 
-    def handler(request):
-        calls.append(request.url.path)
-        return httpx.Response(200, json={"items": [], "total": 0, "page": 1, "page_size": 100, "total_pages": 1})
 
-    asyncio.run(contract(reader, cases[0].subject, READ, handler=handler).branches(cases[0].company_id,
-                                                                                  status="ACTIVE"))
-    assert calls and calls[0].endswith("/branches")
+def _expected_branches(owner_url, company_id, status):
+    """Lo que hoy lista `GET /companies/{c}/branches?status=` (orden `created_at`, `id`)."""
+    engine = create_engine(owner_url)
+    try:
+        with engine.connect() as connection:
+            rows = connection.execute(text("SELECT id, company_id, status FROM branches WHERE company_id = :c AND status = :s"
+                                           " ORDER BY created_at, id"), {"c": company_id, "s": status}).all()
+    finally:
+        engine.dispose()
+    return [BranchInfo(row.id, row.company_id, row.status) for row in rows]
+
+
+def _http_branches(branches):
+    body = {"items": [{"id": str(b.id), "company_id": str(b.company_id), "status": b.status} for b in branches],
+            "page": 1, "page_size": 100, "total_records": len(branches), "total_pages": 1}
+    return http(lambda request: httpx.Response(200, json=body))
+
+
+def test_branches_match_http_for_a_member(owner_url, reader, cases):
+    """Historia 6: las sucursales se leen de `v1_branches`, con el mismo resultado y orden que el API."""
+    member = next(case for case in cases if case.name == "permitido_empresa")
+    for status in ("ACTIVE", "INACTIVE"):
+        expected = _expected_branches(owner_url, member.company_id, status)
+        observed = asyncio.run(contract(reader, member.subject, READ, BRANCHES).branches(member.company_id, status=status))
+        assert observed == asyncio.run(_http_branches(expected).branches(member.company_id, status=status)) == expected
+    assert _expected_branches(owner_url, member.company_id, "ACTIVE")
+
+
+def test_branches_hidden_like_403_and_404(reader, cases):
+    member = next(case for case in cases if case.name == "permitido_empresa")
+    foreign = next(case for case in cases if case.name == "empresa_ajena")
+    # Sin `branches:read` → [] (403 de hoy); usuario ajeno a la empresa → [] (404 de hoy).
+    assert asyncio.run(contract(reader, member.subject, READ).branches(member.company_id, status="ACTIVE")) == []
+    assert asyncio.run(contract(reader, foreign.subject, READ, BRANCHES).branches(foreign.company_id, status="ACTIVE")) == []
+    assert asyncio.run(http(lambda request: httpx.Response(404)).branches(member.company_id, status="ACTIVE")) == []
 
 
 def test_database_down_is_unavailable(cases):

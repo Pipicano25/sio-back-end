@@ -48,8 +48,13 @@ class Settings:
     max_parallel_calls: int = 8
     cursor_ttl_seconds: int = 900
     reference_cache_seconds: float = 300.0
-    # Spec 025 (D27): lectura del acceso operativo por HTTP (por defecto) o por la vista de contrato.
+    # Spec 025 (D27): cada propietario se lee por HTTP (por defecto) o por sus vistas de contrato
+    # (`<PROPIETARIO>_READ_SOURCE=http|contract`): acceso operativo (OC), resúmenes y unidades (PC), conteo de
+    # adoptados y presentaciones por productos (CR), saldos y políticas (Inventory).
     operational_context_reads: ContractReadSettings | None = None
+    product_catalog_reads: ContractReadSettings | None = None
+    commercial_relationship_reads: ContractReadSettings | None = None
+    inventory_reads: ContractReadSettings | None = None
 
     def __post_init__(self) -> None:
         if len(self.cursor_secret.encode("utf-8")) < MIN_SECRET_BYTES:
@@ -96,6 +101,9 @@ def load_settings() -> Settings:
     dependency_timeout = _read_positive_float("PIQS_DEPENDENCY_TIMEOUT_SECONDS", 3.0)
     try:
         oc_reads = ContractReadSettings.from_env("OPERATIONAL_CONTEXT", timeout_seconds=dependency_timeout)
+        pc_reads = ContractReadSettings.from_env("PRODUCT_CATALOG", timeout_seconds=dependency_timeout)
+        cr_reads = ContractReadSettings.from_env("COMMERCIAL_RELATIONSHIP", timeout_seconds=dependency_timeout)
+        inventory_reads = ContractReadSettings.from_env("INVENTORY", timeout_seconds=dependency_timeout)
     except ContractReadConfigError as error:
         raise RuntimeError(str(error)) from None
     return Settings(
@@ -121,6 +129,9 @@ def load_settings() -> Settings:
         cursor_ttl_seconds=_read_positive_int("PIQS_CURSOR_TTL_SECONDS", 900),
         reference_cache_seconds=_read_positive_float("PIQS_REFERENCE_CACHE_SECONDS", 300.0),
         operational_context_reads=oc_reads,
+        product_catalog_reads=pc_reads,
+        commercial_relationship_reads=cr_reads,
+        inventory_reads=inventory_reads,
     )
 
 

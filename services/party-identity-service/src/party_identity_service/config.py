@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass
 from uuid import UUID
 
+from sio_contract_read import ContractReadConfigError, ContractReadSettings
+
 
 @dataclass(frozen=True, slots=True)
 class Settings:
@@ -29,6 +31,8 @@ class Settings:
         client_id: Cliente técnico del servicio.
         client_secret: Secreto del cliente técnico.
         seed_country_id: País explícito para el `seed` (modo independiente).
+        geography_reads: Fuente de lectura de Geography (spec 025, D27):
+            `GEOGRAPHY_READ_SOURCE=http` (por defecto) o `contract`.
     """
 
     docs_enabled: bool
@@ -42,6 +46,7 @@ class Settings:
     client_id: str | None = None
     client_secret: str | None = None
     seed_country_id: UUID | None = None
+    geography_reads: ContractReadSettings | None = None
 
 
 def load_settings() -> Settings:
@@ -53,6 +58,17 @@ def load_settings() -> Settings:
     Raises:
         RuntimeError: Si una variable contiene un valor inválido.
     """
+    geography_timeout = _read_positive_float(
+        name="GEOGRAPHY_TIMEOUT_SECONDS",
+        default=5.0,
+    )
+
+    try:
+        # Spec 025 (D27): `GEOGRAPHY_READ_SOURCE=http|contract`.
+        geography_reads = ContractReadSettings.from_env("GEOGRAPHY", timeout_seconds=geography_timeout)
+    except ContractReadConfigError as error:
+        raise RuntimeError(str(error)) from None
+
     return Settings(
         docs_enabled=_read_bool(
             name="SIO_DOCS_ENABLED",
@@ -63,10 +79,7 @@ def load_settings() -> Settings:
             name="GEOGRAPHY_SERVICE_BASE_URL",
             default="http://localhost:8000",
         ),
-        geography_timeout_seconds=_read_positive_float(
-            name="GEOGRAPHY_TIMEOUT_SECONDS",
-            default=5.0,
-        ),
+        geography_timeout_seconds=geography_timeout,
         operational_context_service_base_url=_read_text(
             name="OPERATIONAL_CONTEXT_SERVICE_BASE_URL",
             default="http://localhost:8004/api/v1",
@@ -83,6 +96,7 @@ def load_settings() -> Settings:
         client_id=_read_optional_text("PARTY_IDENTITY_CLIENT_ID"),
         client_secret=_read_optional_text("PARTY_IDENTITY_CLIENT_SECRET"),
         seed_country_id=_read_optional_uuid("PARTY_IDENTITY_SEED_COUNTRY_ID"),
+        geography_reads=geography_reads,
     )
 
 

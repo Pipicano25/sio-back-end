@@ -79,6 +79,9 @@ services:
       OPERATIONAL_CONTEXT_CONTRACT_DATABASE_URL: postgresql+psycopg://cr_contract_reader:${CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP:-}@operational-context-db:5432/${OPERATIONAL_CONTEXT_DB_NAME}
       PRODUCT_CATALOG_SERVICE_BASE_URL: http://product-catalog-service:8000/api/v1
       PRODUCT_CATALOG_TIMEOUT_SECONDS: ${PRODUCT_CATALOG_TIMEOUT_SECONDS:-5}
+      # Spec 025 (D27): `contract` lee la unidad base de v1_products con el rol de solo lectura; `http` por omisión.
+      PRODUCT_CATALOG_READ_SOURCE: ${PRODUCT_CATALOG_READ_SOURCE:-http}
+      PRODUCT_CATALOG_CONTRACT_DATABASE_URL: postgresql+psycopg://cr_contract_reader:${CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP:-}@product-catalog-db:5432/${PRODUCT_CATALOG_DB_NAME}
       PARTY_IDENTITY_SERVICE_BASE_URL: http://party-identity-service:8000/api/v1
       PARTY_IDENTITY_TIMEOUT_SECONDS: ${PARTY_IDENTITY_TIMEOUT_SECONDS:-5}
       # Spec 025 (D27): `contract` lee las vistas de Party Identity con el rol de solo lectura; `http` por omisión.
@@ -89,6 +92,9 @@ services:
       # responden 503 con dependency=payment-reference.
       PAYMENT_REFERENCE_SERVICE_BASE_URL: http://payment-reference-service:8000
       PAYMENT_REFERENCE_TIMEOUT_SECONDS: ${PAYMENT_REFERENCE_TIMEOUT_SECONDS:-5}
+      # Spec 025 (D27): `contract` lee el tipo de condición de v1_payment_condition_types; `http` por omisión.
+      PAYMENT_REFERENCE_READ_SOURCE: ${PAYMENT_REFERENCE_READ_SOURCE:-http}
+      PAYMENT_REFERENCE_CONTRACT_DATABASE_URL: postgresql+psycopg://cr_contract_reader:${CONTRACT_READER_PASSWORD_COMMERCIAL_RELATIONSHIP:-}@payment-reference-db:5432/${PAYMENT_REFERENCE_DB_NAME}
       # Identidad técnica propia (client_credentials) hacia Product Catalog y Payment Reference.
       KEYCLOAK_BASE_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM}
