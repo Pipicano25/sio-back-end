@@ -6,7 +6,7 @@
 - **A2** `GET /companies/{company_id}/automatic-price-applications`, **A3** `GET …/{application_id}` y **A4**
   `POST …/{application_id}/resolution`: consulta y resolución administrativa con
   `perm:commercial-relationship:automatic_price_applications:{read,resolve}` y membresía en la empresa. Solo los
-  tienen administradores y supervisores, porque exponen costos y porcentajes (FR-021-32a).
+  tienen los grupos SuperAdmin y Admin, porque exponen costos y porcentajes (FR-021-32a).
 """
 
 from __future__ import annotations
@@ -149,7 +149,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         APPLICATIONS,
         response_model=PaginatedResponse[AutomaticPriceApplicationResponse],
         dependencies=[auth.permission(SERVICE, "automatic_price_applications", "read")],
-        summary="Listar las actualizaciones automáticas de precio (solo administradores y supervisores)",
+        summary="Listar las actualizaciones automáticas de precio (solo SuperAdmin y Admin)",
     )
     def list_applications(
         company_id: UUID = Depends(company_dependency(write=False)),

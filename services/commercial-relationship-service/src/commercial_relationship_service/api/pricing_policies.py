@@ -2,8 +2,8 @@
 
 - Colección y alta bajo la lista: `/companies/{company_id}/price-lists/{price_list_id}/pricing-policies`.
 - Política por UUID: `/pricing-policies/{policy_id}` y sus acciones (convención de rutas de la 010).
-- Permisos `perm:commercial-relationship:pricing_policies:{read,create,update,delete}`, solo para administradores y
-  supervisores (FR-021-32a). Siempre con membresía en la empresa: no hay exención técnica (las respuestas exponen
+- Permisos `perm:commercial-relationship:pricing_policies:{read,create,update,delete}`, solo para los grupos
+  SuperAdmin y Admin (FR-021-32a). Siempre con membresía en la empresa: no hay exención técnica (las respuestas exponen
   porcentajes internos).
 - Cobertura (FR-021-35, §3b): `POST /companies/{company_id}/pricing-policies/coverage` con
   `perm:commercial-relationship:pricing_policy_coverage:read`. Admite la exención técnica (`platform:lookup`) porque

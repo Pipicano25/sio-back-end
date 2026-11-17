@@ -519,32 +519,16 @@
     "client": {
       "sio-api": [
         {
-          "name": "administrador",
-          "description": "Administración general de SIO"
+          "name": "superadmin",
+          "description": "Perfil SuperAdmin: dueño del software; administra todas las empresas y los datos globales"
         },
         {
-          "name": "supervisor",
-          "description": "Supervisión de operaciones"
+          "name": "admin",
+          "description": "Perfil Admin: gerente o encargado; todo en sus empresas y mantenimiento de datos globales sin eliminar"
         },
         {
-          "name": "compras",
-          "description": "Gestión de compras"
-        },
-        {
-          "name": "ventas",
-          "description": "Gestión de ventas"
-        },
-        {
-          "name": "inventario",
-          "description": "Gestión y consulta de inventario"
-        },
-        {
-          "name": "reportes",
-          "description": "Consulta de reportes"
-        },
-        {
-          "name": "consulta",
-          "description": "Acceso de solo lectura"
+          "name": "empleado",
+          "description": "Perfil Empleado: ventas, compras e inventario en sus empresas"
         },
         {
           "name": "perm:all:all:all",
@@ -1815,282 +1799,156 @@
   },
   "groups": [
     {
-      "name": "administradores",
+      "name": "superadmin",
       "clientRoles": {
         "sio-api": [
-          "administrador",
+          "superadmin",
           "perm:all:all:all"
         ]
       }
     },
     {
-      "name": "supervisores",
+      "name": "admin",
       "clientRoles": {
         "sio-api": [
-          "supervisor",
-          "perm:all:all:read",
-          "perm:all:all:create",
-          "perm:all:all:update",
-          "perm:sales:sales:read-profitability",
-          "perm:commercial-relationship:pricing_policies:delete",
+          "admin",
+          "perm:audit:audit-events:read",
+          "perm:business-reporting:purchases:read",
+          "perm:business-reporting:sales_by_branch:read",
+          "perm:business-reporting:stock_evolution:read",
+          "perm:business-reporting:top_selling_products:read",
+          "perm:commercial-relationship:all:create",
+          "perm:commercial-relationship:all:delete",
+          "perm:commercial-relationship:all:read",
+          "perm:commercial-relationship:all:update",
           "perm:commercial-relationship:automatic_price_applications:resolve",
-          "perm:purchase:purchase_line_taxes:override"
-        ]
-      }
-    },
-    {
-      "name": "compras",
-      "clientRoles": {
-        "sio-api": [
-          "compras",
-          "perm:purchase:purchases:create",
-          "perm:purchase:purchases:read",
-          "perm:purchase:purchases:update",
-          "perm:purchase:purchases:delete",
-          "perm:purchase:purchase_details:create",
-          "perm:purchase:purchase_details:read",
-          "perm:purchase:purchase_details:update",
-          "perm:purchase:purchase_details:delete",
-          "perm:purchase:purchase_lifecycle_events:create",
-          "perm:purchase:purchase_lifecycle_events:read",
-          "perm:purchase:purchase_lifecycle_events:update",
-          "perm:purchase:purchase_lifecycle_events:delete",
-          "perm:purchase:purchase_sequences:create",
-          "perm:purchase:purchase_sequences:read",
-          "perm:purchase:purchase_sequences:update",
-          "perm:purchase:purchase_sequences:delete",
-          "perm:purchase:purchase_operations:create",
-          "perm:purchase:purchase_operations:read",
-          "perm:purchase:purchase_operations:update",
-          "perm:purchase:purchase_operations:delete",
+          "perm:geography:all:create",
           "perm:geography:all:read",
-          "perm:payment-reference:all:read",
-          "perm:product-catalog:all:read",
-          "perm:party-identity:identification_type_rules:read",
-          "perm:party-identity:person_identities:read",
-          "perm:party-identity:organization_identities:read",
-          "perm:party-identity:person_contact_profiles:read",
-          "perm:party-identity:organization_contact_profiles:read",
-          "perm:party-identity:organization_contact_persons:read",
-          "perm:party-identity:global_business_sectors:read",
-          "perm:party-identity:organization_business_sectors:read",
-          "perm:commercial-relationship:company_products:read",
-          "perm:commercial-relationship:product_pricing_policies:read",
-          "perm:commercial-relationship:customer_segments:read",
-          "perm:commercial-relationship:company_customers:read",
-          "perm:commercial-relationship:customer_credit_profiles:read",
-          "perm:commercial-relationship:customer_payment_conditions:read",
-          "perm:commercial-relationship:company_suppliers:read",
-          "perm:commercial-relationship:supplier_commercial_conditions:read",
-          "perm:commercial-relationship:supplier_payment_conditions:read",
-          "perm:commercial-relationship:supplier_products:read",
-          "perm:commercial-relationship:company_product_presentations:read",
-          "perm:commercial-relationship:price_lists:read",
-          "perm:commercial-relationship:price_list_items:read",
-          "perm:commercial-relationship:supplier_evaluations:read",
-          "perm:operational-context:all:read",
-          "perm:business-reporting:purchases:read"
-        ]
-      }
-    },
-    {
-      "name": "ventas",
-      "clientRoles": {
-        "sio-api": [
-          "ventas",
-          "perm:sales:all:create",
-          "perm:sales:all:read",
-          "perm:sales:all:update",
-          "perm:sales:all:delete",
-          "perm:geography:all:read",
-          "perm:payment-reference:all:read",
-          "perm:product-catalog:all:read",
-          "perm:party-identity:identification_type_rules:read",
-          "perm:party-identity:person_identities:read",
-          "perm:party-identity:person_identities:create",
-          "perm:party-identity:organization_identities:read",
-          "perm:party-identity:person_contact_profiles:read",
-          "perm:party-identity:organization_contact_profiles:read",
-          "perm:party-identity:organization_contact_persons:read",
-          "perm:party-identity:global_business_sectors:read",
-          "perm:party-identity:organization_business_sectors:read",
-          "perm:commercial-relationship:company_products:read",
-          "perm:commercial-relationship:product_pricing_policies:read",
-          "perm:commercial-relationship:customer_segments:read",
-          "perm:commercial-relationship:company_customers:read",
-          "perm:commercial-relationship:company_customers:create",
-          "perm:commercial-relationship:customer_credit_profiles:read",
-          "perm:commercial-relationship:customer_payment_conditions:read",
-          "perm:commercial-relationship:company_suppliers:read",
-          "perm:commercial-relationship:supplier_commercial_conditions:read",
-          "perm:commercial-relationship:supplier_payment_conditions:read",
-          "perm:commercial-relationship:supplier_products:read",
-          "perm:commercial-relationship:company_product_presentations:read",
-          "perm:commercial-relationship:price_lists:read",
-          "perm:commercial-relationship:price_list_items:read",
-          "perm:commercial-relationship:supplier_evaluations:read",
-          "perm:operational-context:all:read",
-          "perm:product-inventory-query:product_overviews:read",
-          "perm:product-inventory-query:inventory_overviews:read",
-          "perm:product-inventory-query:stock:read",
-          "perm:business-reporting:top_selling_products:read"
-        ]
-      }
-    },
-    {
-      "name": "inventario",
-      "clientRoles": {
-        "sio-api": [
-          "inventario",
-          "perm:geography:all:read",
-          "perm:product-catalog:all:read",
-          "perm:operational-context:all:read",
-          "perm:inventory:balances:read",
-          "perm:inventory:movements:read",
-          "perm:commercial-relationship:company_products:read",
+          "perm:geography:all:update",
           "perm:inventory:adjustments:create",
-          "perm:inventory:counts:create",
           "perm:inventory:adjustments:read",
-          "perm:inventory:counts:read",
+          "perm:inventory:balances:read",
           "perm:inventory:company-policies:read",
+          "perm:inventory:company-policies:update",
+          "perm:inventory:counts:create",
+          "perm:inventory:counts:read",
+          "perm:inventory:movements:read",
           "perm:inventory:product-policies:read",
+          "perm:inventory:product-policies:update",
+          "perm:inventory:stock_evolution:read",
           "perm:inventory:valuation:read",
+          "perm:operational-context:all:create",
+          "perm:operational-context:all:delete",
+          "perm:operational-context:all:read",
+          "perm:operational-context:all:update",
+          "perm:party-identity:all:create",
+          "perm:party-identity:all:read",
+          "perm:party-identity:all:update",
+          "perm:payment-reference:all:create",
+          "perm:payment-reference:all:read",
+          "perm:payment-reference:all:update",
+          "perm:payment_reference:global_payment_condition_types:read",
+          "perm:payment_reference:global_payment_methods:read",
+          "perm:product-catalog:all:create",
+          "perm:product-catalog:all:read",
+          "perm:product-catalog:all:update",
+          "perm:product-catalog:first-use:register-manual",
+          "perm:product-inventory-query:inventory_overviews:read",
+          "perm:product-inventory-query:inventory_summary:read",
+          "perm:product-inventory-query:inventory_valuation:read",
+          "perm:product-inventory-query:low_stock_products:read",
           "perm:product-inventory-query:product_overviews:read",
+          "perm:product-inventory-query:stock:read",
+          "perm:purchase:all:all",
+          "perm:sales:all:all"
+        ]
+      }
+    },
+    {
+      "name": "empleado",
+      "clientRoles": {
+        "sio-api": [
+          "empleado",
+          "perm:business-reporting:purchases:read",
+          "perm:business-reporting:stock_evolution:read",
+          "perm:business-reporting:top_selling_products:read",
+          "perm:commercial-relationship:company_customers:create",
+          "perm:commercial-relationship:company_customers:read",
+          "perm:commercial-relationship:company_product_presentations:read",
+          "perm:commercial-relationship:company_products:read",
+          "perm:commercial-relationship:company_suppliers:read",
+          "perm:commercial-relationship:customer_credit_profiles:read",
+          "perm:commercial-relationship:customer_payment_conditions:read",
+          "perm:commercial-relationship:customer_segments:read",
+          "perm:commercial-relationship:price_list_items:read",
+          "perm:commercial-relationship:price_lists:read",
+          "perm:commercial-relationship:product_pricing_policies:read",
+          "perm:commercial-relationship:supplier_commercial_conditions:read",
+          "perm:commercial-relationship:supplier_evaluations:read",
+          "perm:commercial-relationship:supplier_payment_conditions:read",
+          "perm:commercial-relationship:supplier_products:read",
+          "perm:geography:all:read",
+          "perm:inventory:adjustments:create",
+          "perm:inventory:adjustments:read",
+          "perm:inventory:balances:read",
+          "perm:inventory:company-policies:read",
+          "perm:inventory:counts:create",
+          "perm:inventory:counts:read",
+          "perm:inventory:movements:read",
+          "perm:inventory:product-policies:read",
+          "perm:inventory:stock_evolution:read",
+          "perm:inventory:valuation:read",
+          "perm:operational-context:all:read",
+          "perm:party-identity:global_business_sectors:read",
+          "perm:party-identity:identification_type_rules:read",
+          "perm:party-identity:organization_business_sectors:read",
+          "perm:party-identity:organization_contact_persons:create",
+          "perm:party-identity:organization_contact_persons:read",
+          "perm:party-identity:organization_contact_persons:update",
+          "perm:party-identity:organization_contact_profiles:create",
+          "perm:party-identity:organization_contact_profiles:read",
+          "perm:party-identity:organization_contact_profiles:update",
+          "perm:party-identity:organization_identities:create",
+          "perm:party-identity:organization_identities:read",
+          "perm:party-identity:organization_identities:update",
+          "perm:party-identity:organization_legal_representatives:read",
+          "perm:party-identity:person_contact_profiles:create",
+          "perm:party-identity:person_contact_profiles:read",
+          "perm:party-identity:person_contact_profiles:update",
+          "perm:party-identity:person_identities:create",
+          "perm:party-identity:person_identities:read",
+          "perm:party-identity:person_identities:update",
+          "perm:payment-reference:all:read",
+          "perm:product-catalog:all:read",
           "perm:product-inventory-query:inventory_overviews:read",
           "perm:product-inventory-query:inventory_summary:read",
           "perm:product-inventory-query:low_stock_products:read",
+          "perm:product-inventory-query:product_overviews:read",
           "perm:product-inventory-query:stock:read",
-          "perm:inventory:stock_evolution:read",
-          "perm:business-reporting:stock_evolution:read"
-        ]
-      }
-    },
-    {
-      "name": "reportes",
-      "clientRoles": {
-        "sio-api": [
-          "reportes",
-          "perm:commercial-relationship:company_customers:read",
-          "perm:commercial-relationship:company_products:read",
-          "perm:commercial-relationship:company_suppliers:read",
-          "perm:commercial-relationship:customer_credit_profiles:read",
-          "perm:commercial-relationship:customer_payment_conditions:read",
-          "perm:commercial-relationship:customer_segments:read",
-          "perm:commercial-relationship:product_pricing_policies:read",
-          "perm:commercial-relationship:supplier_commercial_conditions:read",
-          "perm:commercial-relationship:supplier_evaluations:read",
-          "perm:commercial-relationship:supplier_payment_conditions:read",
-          "perm:commercial-relationship:supplier_products:read",
-          "perm:commercial-relationship:company_product_presentations:read",
-          "perm:commercial-relationship:price_lists:read",
-          "perm:commercial-relationship:price_list_items:read",
-          "perm:geography:global_administrative_divisions:read",
-          "perm:geography:global_cities:read",
-          "perm:geography:global_countries:read",
-          "perm:operational-context:application_users:read",
-          "perm:operational-context:branches:read",
-          "perm:operational-context:companies:read",
-          "perm:operational-context:company_advisor_assignments:read",
-          "perm:operational-context:user_branches:read",
-          "perm:party-identity:global_business_sectors:read",
-          "perm:party-identity:identification_type_rules:read",
-          "perm:party-identity:organization_business_sectors:read",
-          "perm:party-identity:organization_identities:read",
-          "perm:party-identity:person_identities:read",
-          "perm:payment-reference:global_payment_condition_types:read",
-          "perm:payment-reference:global_payment_methods:read",
-          "perm:product-catalog:attribute-definitions:read",
-          "perm:product-catalog:brands:read",
-          "perm:product-catalog:categories:read",
-          "perm:product-catalog:global_categories:read",
-          "perm:product-catalog:global_category_attributes:read",
-          "perm:product-catalog:global_product_attribute_values:read",
-          "perm:product-catalog:global_products:read",
-          "perm:product-catalog:global_units_of_measure:read",
-          "perm:product-catalog:group-types:read",
-          "perm:product-catalog:packaging-types:read",
-          "perm:product-catalog:product_assets:read",
-          "perm:product-catalog:product_attribute_definitions:read",
-          "perm:product-catalog:products:read",
-          "perm:product-catalog:units-of-measure:read",
+          "perm:purchase:purchase_details:create",
+          "perm:purchase:purchase_details:delete",
           "perm:purchase:purchase_details:read",
+          "perm:purchase:purchase_details:update",
+          "perm:purchase:purchase_lifecycle_events:create",
+          "perm:purchase:purchase_lifecycle_events:delete",
           "perm:purchase:purchase_lifecycle_events:read",
+          "perm:purchase:purchase_lifecycle_events:update",
+          "perm:purchase:purchase_operations:create",
+          "perm:purchase:purchase_operations:delete",
           "perm:purchase:purchase_operations:read",
+          "perm:purchase:purchase_operations:update",
+          "perm:purchase:purchase_sequences:create",
+          "perm:purchase:purchase_sequences:delete",
           "perm:purchase:purchase_sequences:read",
+          "perm:purchase:purchase_sequences:update",
+          "perm:purchase:purchases:create",
+          "perm:purchase:purchases:delete",
           "perm:purchase:purchases:read",
-          "perm:sales:sale_details:read",
-          "perm:sales:sale_operations:read",
-          "perm:sales:sale_sequences:read",
-          "perm:sales:sales:read",
-          "perm:payment_reference:global_payment_condition_types:read",
-          "perm:payment_reference:global_payment_methods:read",
-          "perm:inventory:stock_evolution:read",
-          "perm:business-reporting:top_selling_products:read",
-          "perm:business-reporting:sales_by_branch:read",
-          "perm:business-reporting:purchases:read",
-          "perm:business-reporting:stock_evolution:read"
-        ]
-      }
-    },
-    {
-      "name": "consulta",
-      "clientRoles": {
-        "sio-api": [
-          "consulta",
-          "perm:commercial-relationship:company_customers:read",
-          "perm:commercial-relationship:company_products:read",
-          "perm:commercial-relationship:company_suppliers:read",
-          "perm:commercial-relationship:customer_credit_profiles:read",
-          "perm:commercial-relationship:customer_payment_conditions:read",
-          "perm:commercial-relationship:customer_segments:read",
-          "perm:commercial-relationship:product_pricing_policies:read",
-          "perm:commercial-relationship:supplier_commercial_conditions:read",
-          "perm:commercial-relationship:supplier_evaluations:read",
-          "perm:commercial-relationship:supplier_payment_conditions:read",
-          "perm:commercial-relationship:supplier_products:read",
-          "perm:commercial-relationship:company_product_presentations:read",
-          "perm:commercial-relationship:price_lists:read",
-          "perm:commercial-relationship:price_list_items:read",
-          "perm:geography:global_administrative_divisions:read",
-          "perm:geography:global_cities:read",
-          "perm:geography:global_countries:read",
-          "perm:operational-context:application_users:read",
-          "perm:operational-context:branches:read",
-          "perm:operational-context:companies:read",
-          "perm:operational-context:company_advisor_assignments:read",
-          "perm:operational-context:user_branches:read",
-          "perm:party-identity:global_business_sectors:read",
-          "perm:party-identity:identification_type_rules:read",
-          "perm:party-identity:organization_business_sectors:read",
-          "perm:party-identity:organization_identities:read",
-          "perm:party-identity:person_identities:read",
-          "perm:payment-reference:global_payment_condition_types:read",
-          "perm:payment-reference:global_payment_methods:read",
-          "perm:product-catalog:attribute-definitions:read",
-          "perm:product-catalog:brands:read",
-          "perm:product-catalog:categories:read",
-          "perm:product-catalog:global_categories:read",
-          "perm:product-catalog:global_category_attributes:read",
-          "perm:product-catalog:global_product_attribute_values:read",
-          "perm:product-catalog:global_products:read",
-          "perm:product-catalog:global_units_of_measure:read",
-          "perm:product-catalog:group-types:read",
-          "perm:product-catalog:packaging-types:read",
-          "perm:product-catalog:product_assets:read",
-          "perm:product-catalog:product_attribute_definitions:read",
-          "perm:product-catalog:products:read",
-          "perm:product-catalog:units-of-measure:read",
-          "perm:purchase:purchase_details:read",
-          "perm:purchase:purchase_lifecycle_events:read",
-          "perm:purchase:purchase_operations:read",
-          "perm:purchase:purchase_sequences:read",
-          "perm:purchase:purchases:read",
-          "perm:sales:sale_details:read",
-          "perm:sales:sale_operations:read",
-          "perm:sales:sale_sequences:read",
-          "perm:sales:sales:read",
-          "perm:payment_reference:global_payment_condition_types:read",
-          "perm:payment_reference:global_payment_methods:read"
+          "perm:purchase:purchases:update",
+          "perm:sales:all:create",
+          "perm:sales:all:delete",
+          "perm:sales:all:read",
+          "perm:sales:all:update"
         ]
       }
     }
@@ -2159,7 +2017,7 @@
       "lastName": "Pruebas",
       "email": "admin.test@sio.local",
       "groups": [
-        "/administradores"
+        "/superadmin"
       ],
       "clientRoles": {
         "account": [
@@ -2185,7 +2043,7 @@
       "lastName": "Pruebas",
       "email": "supervisor.test@sio.local",
       "groups": [
-        "/supervisores"
+        "/admin"
       ],
       "clientRoles": {
         "account": [
@@ -2211,7 +2069,7 @@
       "lastName": "Pruebas",
       "email": "compras.test@sio.local",
       "groups": [
-        "/compras"
+        "/empleado"
       ],
       "clientRoles": {
         "account": [
@@ -2237,7 +2095,7 @@
       "lastName": "Pruebas",
       "email": "ventas.test@sio.local",
       "groups": [
-        "/ventas"
+        "/empleado"
       ],
       "clientRoles": {
         "account": [
@@ -2263,59 +2121,7 @@
       "lastName": "Pruebas",
       "email": "inventario.test@sio.local",
       "groups": [
-        "/inventario"
-      ],
-      "clientRoles": {
-        "account": [
-          "manage-account",
-          "manage-account-links",
-          "view-profile"
-        ]
-      },
-      "credentials": [
-        {
-          "type": "password",
-          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "5f8ce181-f01a-4ff2-a0cf-952b240e0008",
-      "username": "reportes.test",
-      "enabled": true,
-      "emailVerified": true,
-      "firstName": "Reportes",
-      "lastName": "Pruebas",
-      "email": "reportes.test@sio.local",
-      "groups": [
-        "/reportes"
-      ],
-      "clientRoles": {
-        "account": [
-          "manage-account",
-          "manage-account-links",
-          "view-profile"
-        ]
-      },
-      "credentials": [
-        {
-          "type": "password",
-          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "c30a0faf-cebc-4f6c-bc4f-031efb99ea4f",
-      "username": "consulta.test",
-      "enabled": true,
-      "emailVerified": true,
-      "firstName": "Consulta",
-      "lastName": "Pruebas",
-      "email": "consulta.test@sio.local",
-      "groups": [
-        "/consulta"
+        "/empleado"
       ],
       "clientRoles": {
         "account": [

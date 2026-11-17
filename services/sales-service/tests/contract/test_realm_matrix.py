@@ -1,8 +1,8 @@
 """Matriz de grupos y cliente técnico en la plantilla del realm (C-08, DS-12; research.md R-02; T076).
 
-Se evalúa con `sio-auth` (incluidos los comodines) sobre la plantilla versionada: solo
-`administradores` (por `perm:all:all:all`) y `supervisores` (asignación explícita) ven la
-rentabilidad; `ventas` conserva el CRUD de sales sin ella; el cliente `sales-service` tiene
+Se evalúa con `sio-auth` (incluidos los comodines) sobre la plantilla versionada. Con los tres
+grupos de la spec 026: `superadmin` (por `perm:all:all:all`) y `admin` (por `perm:sales:all:all`) ven
+la rentabilidad; `empleado` conserva el CRUD de sales sin ella; el cliente `sales-service` tiene
 exactamente los roles de R-02 y nunca puede escribir ventas.
 """
 
@@ -52,29 +52,26 @@ def test_profitability_role_exists() -> None:
 @pytest.mark.parametrize(
     ("group", "expected"),
     [
-        ("administradores", True),
-        ("supervisores", True),
-        ("ventas", False),
-        ("reportes", False),
-        ("consulta", False),
-        ("compras", False),
-        ("inventario", False),
+        ("superadmin", True),
+        ("admin", True),
+        ("empleado", False),
     ],
 )
 def test_who_sees_profitability(group, expected) -> None:
     assert evaluate_permission(GROUPS[group], PROFITABILITY) is expected
 
 
-def test_ventas_keeps_full_sales_crud_without_wildcard() -> None:
-    roles = GROUPS["ventas"]
+def test_empleado_keeps_full_sales_crud_without_wildcard() -> None:
+    roles = GROUPS["empleado"]
     assert "perm:sales:all:all" not in roles
     for resource in ("sales", "sale_details", "sale_sequences", "sale_operations"):
         for action in ("create", "read", "update", "delete"):
             assert evaluate_permission(roles, SioPermission("sales", resource, action)), (resource, action)
 
 
-def test_supervisores_keep_their_wildcards() -> None:
-    assert {"perm:all:all:read", "perm:all:all:create", "perm:all:all:update"} <= set(GROUPS["supervisores"])
+def test_admin_has_all_of_sales_but_not_the_platform() -> None:
+    assert "perm:sales:all:all" in GROUPS["admin"]
+    assert not evaluate_permission(GROUPS["admin"], SioPermission("operational-context", "platform", "administer"))
 
 
 def test_sales_service_client_and_account() -> None:

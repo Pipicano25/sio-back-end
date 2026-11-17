@@ -126,7 +126,7 @@ OPENAPI_TAGS = [
             "Spec 021. Define **porcentajes de ganancia** (recargo sobre el costo real de compra, de 0 a 1000 %) "
             "para grupos de presentaciones de una lista. Una presentación pertenece a lo sumo a una política de la "
             "misma lista. **Cambiar una política no modifica precios**: los cambios rigen desde la siguiente "
-            "recepción física de una compra. Solo administradores y supervisores (expone porcentajes internos)."
+            "recepción física de una compra. Solo SuperAdmin y Admin (expone porcentajes internos)."
         ),
     },
 ]

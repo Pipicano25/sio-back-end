@@ -72,7 +72,7 @@ OPENAPI_TAGS = [
         "description": (
             "Política de la empresa (una; solo `FIFO`; `is_active` solo de lectura) y niveles de reposición "
             "por producto y sucursal (una activa). Solo configuración: no generan compras ni movimientos. "
-            "Escritura por usuarios humanos miembros con el permiso (comodín de administradores y supervisores)."
+            "Escritura por usuarios humanos miembros con el permiso (grupos SuperAdmin y Admin)."
         ),
     },
     {

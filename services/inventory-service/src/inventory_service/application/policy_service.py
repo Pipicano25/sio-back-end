@@ -1,7 +1,7 @@
 """Políticas de inventario de la empresa y por producto–sucursal (FR-010 a FR-022; DS-01 a DS-03; R-06, R-07).
 
-- Escritura: usuario humano con el permiso (comodín de `administradores` y
-  `supervisores`, DS-14) y membresía en la empresa; el usuario operativo de la
+- Escritura: usuario humano con el permiso (grupos `superadmin` y `admin`,
+  DS-14) y membresía en la empresa; el usuario operativo de la
   membresía va al evento de auditoría.
 - Lectura: permiso de lectura y alcance por empresa (lo resuelve la capa API).
 - Solo configuración: `PERIODIC`, `JIT`, `AUTO_DRAFT` y `auto_purchase_enabled` se

@@ -52,7 +52,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         "/manual",
         response_model=FirstUseResponse,
         dependencies=[permission(auth, RESOURCE, "register-manual")],
-        summary="Registrar manualmente el primer uso (administradores)",
+        summary="Registrar manualmente el primer uso (SuperAdmin y Admin)",
     )
     def register_manual(
         product_id: UUID,

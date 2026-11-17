@@ -1,7 +1,7 @@
 """Esquemas de las actualizaciones automáticas de precio (spec 021, `contracts/price-update-request.md` y §3–§4).
 
 El cuerpo de la ruta A1 es el contrato v1 que entrega Purchase: solo hechos, con importes como decimales en texto.
-Las respuestas de A2 y A3 presentan costos y porcentajes, por eso solo las consultan administradores y supervisores
+Las respuestas de A2 y A3 presentan costos y porcentajes, por eso solo las consultan los grupos SuperAdmin y Admin
 (FR-021-32a); los importes salen como texto decimal: precios con los decimales de la moneda de la lista,
 porcentajes con 4 y costos de trazabilidad sin ceros sobrantes.
 """

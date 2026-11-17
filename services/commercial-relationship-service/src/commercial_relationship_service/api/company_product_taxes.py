@@ -1,7 +1,7 @@
 """Rutas de la tasa de impuesto de compra del producto (spec 021, `contracts/commercial-relationship.md` §2).
 
 Permiso propio `perm:commercial-relationship:company_product_purchase_taxes:update` (M-5), distinto del `PUT` del
-producto; solo administradores y supervisores. Siempre con membresía en la empresa.
+producto; solo los grupos SuperAdmin y Admin. Siempre con membresía en la empresa.
 """
 
 from __future__ import annotations
