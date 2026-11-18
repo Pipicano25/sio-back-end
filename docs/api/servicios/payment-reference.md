@@ -28,7 +28,7 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Permiso | Operaciones | Grupos de la plantilla que lo tienen |
 |---|---|---|
-| `perm:payment-reference:global_payment_condition_types:read` | Listar y consultar tipos de condición | `superadmin`, `admin` y `empleado` (vía `perm:payment-reference:all:read`) |
+| `perm:payment-reference:global_payment_condition_types:read` | Listar y consultar tipos de condición | `superadmin`, `admin`, `Compras` y `Ventas` (vía `perm:payment-reference:all:read`) |
 | `perm:payment-reference:global_payment_condition_types:create` | Crear tipo de condición | `superadmin`, `admin` (`perm:payment-reference:all:create`) |
 | `perm:payment-reference:global_payment_condition_types:update` | Actualizar y reactivar tipo de condición | `superadmin`, `admin` (`perm:payment-reference:all:update`) |
 | `perm:payment-reference:global_payment_condition_types:delete` | Inactivar tipo de condición | Solo `superadmin` |

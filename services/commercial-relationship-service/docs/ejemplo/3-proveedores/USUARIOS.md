@@ -10,7 +10,7 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 - **`admin.dao`**: puede ejecutar **todo el ejercicio** (con membresía en la empresa).
 - **`operario.dao`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Seleccionar el laboratorio como proveedor*): sobre `company_suppliers` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
 
-**Para hacer el ejercicio completo use `admin.sio`**, siempre que tenga membresía `ACTIVE` en la empresa: en Commercial Relationship ni siquiera `perm:all:all:all` exime de la membresía (DS-03). `admin.dao` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios del grupo `empleado` consultan e incorporan clientes, pero no adoptan, modifican, inactivan ni bloquean.
+**Para hacer el ejercicio completo use `admin.sio`**, siempre que tenga membresía `ACTIVE` en la empresa: en Commercial Relationship ni siquiera `perm:all:all:all` exime de la membresía (DS-03). `admin.dao` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios de las áreas consultan e incorporan clientes, pero no adoptan, modifican, inactivan ni bloquean.
 
 ## Permiso por URL
 
@@ -88,7 +88,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-En Commercial Relationship el grupo `empleado` consulta e incorpora clientes, pero la URL exige `perm:commercial-relationship:company_suppliers:create`. El servicio no ejecuta nada: ni siquiera consulta Operational Context ni valida el cuerpo.
+En Commercial Relationship el operario consulta e incorpora clientes, pero la URL exige `perm:commercial-relationship:company_suppliers:create`. El servicio no ejecuta nada: ni siquiera consulta Operational Context ni valida el cuerpo.
 
 ### 3. `operario.dao` (Empleado) consulta
 
@@ -122,7 +122,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-El grupo `empleado` no tiene `delete` en Commercial Relationship. Bloquear queda para `admin.sio` (SuperAdmin) y `admin.dao` (Admin), siempre con membresía en la empresa.
+El operario (`Compras`, `Ventas` e `Inventario`) no tiene `delete` en Commercial Relationship. Bloquear queda para `admin.sio` (SuperAdmin) y `admin.dao` (Admin), siempre con membresía en la empresa.
 
 ### 5. Sin token (rechazado)
 

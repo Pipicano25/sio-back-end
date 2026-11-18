@@ -31,14 +31,14 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>` 
 
 | Permiso | Operaciones | Grupos de la plantilla |
 |---|---|---|
-| `perm:sales:sales:create` | Crear venta | `superadmin`, `admin`, `empleado` (`perm:sales:all:*`) |
-| `perm:sales:sales:read` | Listar, consultar, disponibilidad, agregaciones | `superadmin`, `admin`, `empleado` |
-| `perm:sales:sales:update` | Editar cabecera, **confirmar** | `superadmin`, `admin`, `empleado` |
-| `perm:sales:sales:delete` | **Anular** | `superadmin`, `admin`, `empleado` |
-| `perm:sales:sale_details:create` / `read` / `update` / `delete` | Líneas | `superadmin`, `admin`, `empleado` |
-| `perm:sales:sale_operations:read` | Operaciones de confirmación y anulación | `superadmin`, `admin`, `empleado` |
-| `perm:sales:sale_sequences:create` / `read` / `update` | Secuencias | `superadmin`, `admin`, `empleado` |
-| `perm:sales:sales:read-profitability` | Añade costo y margen a las respuestas de venta y líneas | `superadmin`, `admin` (vía `perm:sales:all:all`; los comodines `read` **no** lo cubren). El grupo `empleado` **no** lo tiene |
+| `perm:sales:sales:create` | Crear venta | `superadmin`, `admin`, `Ventas` (`perm:sales:all:*`) |
+| `perm:sales:sales:read` | Listar, consultar, disponibilidad, agregaciones | `superadmin`, `admin`, `Ventas` |
+| `perm:sales:sales:update` | Editar cabecera, **confirmar** | `superadmin`, `admin`, `Ventas` |
+| `perm:sales:sales:delete` | **Anular** | `superadmin`, `admin`, `Ventas` |
+| `perm:sales:sale_details:create` / `read` / `update` / `delete` | Líneas | `superadmin`, `admin`, `Ventas` |
+| `perm:sales:sale_operations:read` | Operaciones de confirmación y anulación | `superadmin`, `admin`, `Ventas` |
+| `perm:sales:sale_sequences:create` / `read` / `update` | Secuencias | `superadmin`, `admin`, `Ventas` |
+| `perm:sales:sales:read-profitability` | Añade costo y margen a las respuestas de venta y líneas | `superadmin`, `admin` (vía `perm:sales:all:all`; los comodines `read` **no** lo cubren). Los grupos de área (`Compras`, `Ventas`, `Inventario`) **no** lo tienen |
 
 ## Alcance de datos
 

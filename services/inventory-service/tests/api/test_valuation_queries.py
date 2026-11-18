@@ -113,7 +113,7 @@ def test_unknown_cost_opening_is_explicit_and_distinct_from_a_real_zero(operator
 def test_scope_and_permissions(operator, as_user, as_token, service_token, world, fake_oc) -> None:
     apply(operator, world)
     url = f"{base(world)}/branches/{world.branch}/valuation"
-    for username in ("operario.dao",):  # grupo `empleado` (spec 026)
+    for username in ("operario.dao",):  # grupos Compras, Ventas e Inventario (spec 026)
         assert as_user(username).get(url).status_code == 200
     assert as_user("sin-permisos.test").get(url).status_code == 403
 

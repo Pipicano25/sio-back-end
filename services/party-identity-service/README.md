@@ -403,7 +403,7 @@ no concede leerlos.
 | --- | --- |
 | `admin.sio` (`superadmin`) | Todo |
 | `admin.dao` (`admin`) | Todo menos `delete` (no inactiva ni cierra) |
-| `operario.dao` (`empleado`) | Crear, leer y modificar personas, organizaciones, perfiles de contacto y personas de contacto; leer reglas, sectores y representantes legales; nunca `delete` |
+| `operario.dao` (`Compras`, `Ventas`, `Inventario`) | Crear, leer y modificar personas, organizaciones, perfiles de contacto y personas de contacto; leer reglas, sectores y representantes legales; nunca `delete` |
 
 Para **confirmar** un perfil además se necesita membresía `ACTIVE` en la empresa (sin permisos de
 Operational Context). Detalle y ejemplos en

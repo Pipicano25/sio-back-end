@@ -253,13 +253,13 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `admin.sio` (SuperAdmin), `admin.dao` (Admin) y el usuario del grupo `empleado` "
+        "- Puede: `admin.sio` (SuperAdmin), `admin.dao` (Admin) y el usuario de las tres áreas "
         "(`operario.dao`) consultan inventario de las empresas donde son "
         "miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.sio` y "
         "`admin.dao` configuran políticas.",
         "- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.sio`, que "
         "tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; "
-        "el grupo `empleado` recibe `403` al configurar políticas.",
+        "el operario (`Compras`, `Ventas` e `Inventario`) recibe `403` al configurar políticas.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -301,7 +301,7 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "usuario humano miembro de la empresa.",
         "- **Lecturas de 013** (`adjustments:read`, `counts:read`, `company-policies:read`, "
         "`product-policies:read`, `valuation:read`): mismo alcance por empresa que las consultas de stock.",
-        "- El grupo `empleado` tiene las lecturas de inventario y registra ajustes y conteos; `superadmin` "
+        "- El operario (`Compras`, `Ventas` e `Inventario`) tiene las lecturas de inventario y registra ajustes y conteos; `superadmin` "
         "lo obtiene todo por comodín y `admin` por permisos explícitos (las políticas solo ellos dos). "
         "Ningún grupo puede aplicar operaciones.",
         "",

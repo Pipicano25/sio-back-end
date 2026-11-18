@@ -4,7 +4,7 @@ Ejercicio 7 — Seguridad entre empresas y permisos · [Orden del ejercicio](ORD
 
 ---
 
-## 1. operario.dao (Empleado) intenta crear una categoría del catálogo global
+## 1. operario.dao (operario) intenta crear una categoría del catálogo global
 
 Paso `S-02` · usuario **`operario.dao`** · ítems de la FASE 10: 21
 

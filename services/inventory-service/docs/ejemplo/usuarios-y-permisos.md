@@ -10,7 +10,7 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 - **Lectura técnica** (`perm:inventory:platform:lookup`): una cuenta de servicio con lectura y esta capacidad consulta sin membresía (Sales antes de confirmar una venta).
 - **Ajustes y conteos** (`perm:inventory:adjustments:create`, `perm:inventory:counts:create`, 013) exigen un **usuario humano** miembro `ACTIVE` y con asignación `ACTIVE` a la sucursal; una cuenta de servicio recibe `403` aunque tenga el permiso. Las **políticas** (`perm:inventory:company-policies:update`, `perm:inventory:product-policies:update`) exigen un usuario humano miembro de la empresa.
 - **Lecturas de 013** (`adjustments:read`, `counts:read`, `company-policies:read`, `product-policies:read`, `valuation:read`): mismo alcance por empresa que las consultas de stock.
-- El grupo `empleado` tiene las lecturas de inventario y registra ajustes y conteos; `superadmin` lo obtiene todo por comodín y `admin` por permisos explícitos (las políticas solo ellos dos). Ningún grupo puede aplicar operaciones.
+- El operario (`Compras`, `Ventas` e `Inventario`) tiene las lecturas de inventario y registra ajustes y conteos; `superadmin` lo obtiene todo por comodín y `admin` por permisos explícitos (las políticas solo ellos dos). Ningún grupo puede aplicar operaciones.
 
 ## Usuarios de prueba
 
@@ -18,7 +18,7 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 | --- | --- | --- | --- | --- | --- | --- |
 | `admin.sio` | `superadmin` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
 | `admin.dao` | `admin` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
-| `operario.dao` | `empleado` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
+| `operario.dao` | `Compras, Ventas, Inventario` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
 | `inventory-test-operator` | cuenta de servicio | Sí (`platform:lookup`) | No (no es usuario humano) | No (no es usuario humano) | Sí (`platform:lookup`) | Sí (entradas y salidas) |
 
 ## Cómo obtener los tokens

@@ -729,7 +729,7 @@ V7_REACTIVATE = Step(
 )
 SALE_PROFITABILITY = [
     Step(
-        "V-06.vendedor", "Consultar la venta V2 como Empleado (sin costo ni margen)", EX4, (16,), "operario.dao",
+        "V-06.vendedor", "Consultar la venta V2 como operario (sin costo ni margen)", EX4, (16,), "operario.dao",
         "perm:sales:sales:read", "sales", "GET", "/companies/{empresa_a}/sales/{venta_2}", 200,
         expected_note="Sin `unit_cost_snapshot`, `cost_total`, `cost_known`, `gross_margin_amount` ni `gross_margin_percentage`",
     ),
@@ -881,7 +881,7 @@ AUDIT_STEPS = [
         why="Identidades y productos globales generan eventos de plataforma (sin empresa).",
     ),
     Step(
-        "U-02.vendedor", "Consultar la auditoría como Empleado (rechazado)", EX6, (19,), "operario.dao",
+        "U-02.vendedor", "Consultar la auditoría como operario (rechazado)", EX6, (19,), "operario.dao",
         "perm:audit:audit-events:read", "audit", "GET", "/companies/{empresa_a}/audit-events", 403,
         why="`operario.dao` no tiene permiso de lectura de auditoría.",
     ),

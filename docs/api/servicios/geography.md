@@ -28,7 +28,7 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Acción | Operaciones | Grupos de la plantilla que la tienen |
 |---|---|---|
-| `read` | Listar y consultar | Todos los grupos: `superadmin` (`perm:all:all:all`), `admin` y `empleado` (vía `perm:geography:all:read`) |
+| `read` | Listar y consultar | Todos los grupos: `superadmin` (`perm:all:all:all`), `admin`, `Compras`, `Ventas` e `Inventario` (vía `perm:geography:all:read`) |
 | `create` | Crear | `superadmin`, `admin` (`perm:geography:all:create`) |
 | `update` | Actualizar | `superadmin`, `admin` (`perm:geography:all:update`) |
 | `delete` | Eliminar físicamente | Solo `superadmin` |

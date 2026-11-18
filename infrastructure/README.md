@@ -147,7 +147,11 @@ El realm incluye:
 - Clientes técnicos con cuenta de servicio (`party-identity-service`, `operational-context-service`,
   `commercial-relationship-service`, `inventory-service`, `purchase-service`, `sales-service`, y los clientes de pruebas
   `audit-test-emitter` e `inventory-test-operator`) y sus roles
-- Usuarios de prueba `admin.sio` (SuperAdmin), `admin.dao` (Admin) y `operario.dao` (Empleado), con `id` fijo
+- Grupos `superadmin`, `admin`, `Compras`, `Ventas` e `Inventario` (spec 026, igual al servidor OCI; un usuario puede
+  estar en varios y suma sus permisos)
+- Usuarios de prueba `admin.sio` (`superadmin`), `admin.dao` (`admin`) y `operario.dao` (las tres áreas), y los
+  usuarios copiados del servidor OCI (`alex`, `manuel`, `pedro`, `tomas`), todos con `id` fijo y la contraseña de
+  prueba
 
 No contiene datos de empresas, sucursales ni usuarios productivos.
 
@@ -222,11 +226,12 @@ export ACCESS_TOKEN=$(jq -r .access_token <<<"$RESP") REFRESH_TOKEN=$(jq -r .ref
 ```bash
 jwt_payload "$ACCESS_TOKEN" '{preferred_username, aud, exp, permisos: .resource_access["sio-api"].roles}'
 # {"preferred_username": "operario.dao", "aud": ["sio-api", "account"], "exp": 1792380564,
-#  "permisos": ["consulta", "perm:geography:global_countries:read", "perm:operational-context:branches:read", ...]}
+#  "permisos": ["perm:geography:all:read", "perm:operational-context:all:read", "perm:sales:all:create", ...]}
 ```
 
 Los permisos son los valores `perm:{servicio}:{recurso}:{accion}` de `resource_access.sio-api.roles` (`all` es
-comodín); el valor sin `perm:` (`consulta`) es el perfil del grupo y no concede nada. Detalle en
+comodín); un valor sin `perm:` (`admin`, `superadmin`) es el perfil del grupo y no concede nada; las áreas no traen
+valor sin `perm:`. Detalle en
 `docs/frontend-permissions.md`.
 
 4. API protegida (Geography, permiso `perm:geography:global_countries:read`):
@@ -474,7 +479,11 @@ Pruebas del script (sin borrar nada): `bash infrastructure/scripts/tests/reset-b
 | --- | --- |
 | `admin.sio` | `/superadmin` |
 | `admin.dao` | `/admin` |
-| `operario.dao` | `/empleado` |
+| `operario.dao` | `/Compras`, `/Ventas`, `/Inventario` |
+| `alex` | `/superadmin`, `/admin`, `/Compras`, `/Ventas`, `/Inventario` |
+| `manuel` | `/admin`, `/Compras`, `/Ventas`, `/Inventario` |
+| `pedro` | `/admin`, `/Compras`, `/Ventas`, `/Inventario` |
+| `tomas` | `/Compras`, `/Ventas`, `/Inventario` |
 
 ## Notas adicionales
 

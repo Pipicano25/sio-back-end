@@ -11,7 +11,7 @@ Ejecuta: `operario.dao`.
 ### Por qué
 
 - Las lecturas exigen permiso y membresía; no exigen asignación a la sucursal.
-- `operario.dao` (grupo `empleado`) no tiene `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
+- `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`) no tiene `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
 
 ## Permiso
 

@@ -64,8 +64,8 @@ tiene solo tres grupos:
 - `admin` (antes `supervisores`) ve todo en sus empresas, incluidos los costos de compra por línea, los precios y la
   rentabilidad. Tiene además `perm:product-inventory-query:inventory_valuation:read`: ese rol ya no está "sin grupo"
   (fila de `inventory_valuation:read`), aunque ningún endpoint lo evalúa todavía.
-- `empleado` (antes `ventas`, `compras` e `inventario`, más los usuarios de `reportes` y `consulta`) tiene la unión
-  de esos permisos: ve importes y costos de compra por línea en Purchase (fila 5) y los precios de las listas
+- `Compras`, `Ventas` e `Inventario` (antes `compras`, `ventas` e `inventario`; los usuarios de `reportes` y `consulta`
+  pasan a las tres) suman esos permisos: ve importes y costos de compra por línea en Purchase (fila 5) y los precios de las listas
   (filas 6 y 7). No ve la rentabilidad de ventas.
 
 La acción 3 ("evaluar si `compras`, `reportes` y `consulta` deben ver los costos de compra por línea") quedó resuelta

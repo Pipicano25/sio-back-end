@@ -25,10 +25,10 @@ NEW_ROLES = {
     f"{PIQ}:stock:read",
     f"{PIQ}:inventory_valuation:read",
 }
-# Spec 026: `empleado` reúne lo que tenían `ventas` e `inventario` (sin valoración); `admin` lee todo el servicio con
+# Spec 026: el operario (`Compras` + `Ventas` + `Inventario`) reúne lo que tenían `ventas` e `inventario` (sin valoración); `admin` lee todo el servicio con
 # permisos explícitos; `superadmin` lo cubre con `perm:all:all:all`.
 GROUP_ROLES = {
-    "empleado": {
+    "operario": {
         f"{PIQ}:product_overviews:read",
         f"{PIQ}:inventory_overviews:read",
         f"{PIQ}:inventory_summary:read",
@@ -58,7 +58,10 @@ def realm() -> dict:
 
 
 def _groups(realm) -> dict[str, set[str]]:
-    return {group["name"]: set(group.get("clientRoles", {}).get("sio-api", [])) for group in realm["groups"]}
+    groups = {group["name"]: set(group.get("clientRoles", {}).get("sio-api", [])) for group in realm["groups"]}
+    # Operario = usuario en `Compras`, `Ventas` e `Inventario` (spec 026, versión del servidor OCI).
+    groups["operario"] = groups["Compras"] | groups["Ventas"] | groups["Inventario"]
+    return groups
 
 
 def test_new_roles_exist_in_sio_api(realm) -> None:
@@ -74,9 +77,9 @@ def test_group_assignments_are_exact(realm) -> None:
         assert groups[group] & NEW_ROLES == expected, group
 
 
-def test_empleado_has_no_valuation_permission(realm) -> None:
-    empleado = _groups(realm)["empleado"]
-    assert f"{PIQ}:inventory_valuation:read" not in empleado
+def test_operario_has_no_valuation_permission(realm) -> None:
+    operario = _groups(realm)["operario"]
+    assert f"{PIQ}:inventory_valuation:read" not in operario
 
 
 def test_superadmin_covers_everything_without_explicit_roles(realm) -> None:
@@ -127,9 +130,9 @@ def test_reserved_valuation_role_is_not_assigned(realm) -> None:
 
 
 def test_inventory_valuation_assignments_are_unchanged(realm) -> None:
-    """Retirar el permiso del cliente técnico no altera los roles de Inventory: el grupo `empleado` (antes
-    `inventario`, spec 026) y la cuenta de prueba de Inventory lo conservan."""
-    assert "perm:inventory:valuation:read" in _groups(realm)["empleado"]
+    """Retirar el permiso del cliente técnico no altera los roles de Inventory: el grupo `Inventario`
+    (spec 026) y la cuenta de prueba de Inventory lo conservan."""
+    assert "perm:inventory:valuation:read" in _groups(realm)["Inventario"]
     [operator] = [u for u in realm["users"] if u["username"] == "service-account-inventory-test-operator"]
     assert "perm:inventory:valuation:read" in operator["clientRoles"]["sio-api"]
     names = {role["name"] for role in realm["roles"]["client"]["sio-api"]}

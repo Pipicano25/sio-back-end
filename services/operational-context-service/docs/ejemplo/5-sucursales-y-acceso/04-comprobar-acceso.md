@@ -22,7 +22,7 @@ GET /api/v1/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operar
 
 **Por qué se hace así**
 
-- `operario.dao` es miembro, tiene la sucursal asignada y su grupo (`empleado`) tiene `perm:purchase:all:all`: `allowed: true`.
+- `operario.dao` es miembro, tiene la sucursal asignada y su grupo `Compras` tiene `perm:purchase:purchases:create`: `allowed: true`.
 - El permiso se evalúa con los roles de `operario.dao` leídos de Keycloak, no con los del token que consulta.
 
 **Respuesta esperada — `200 OK`** (abreviada)
@@ -51,7 +51,7 @@ GET /api/v1/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operar
 
 **Por qué se hace así**
 
-- El grupo `empleado` no tiene `perm:sales:sales:read-profitability`: `allowed: false`, `PERMISSION_DENIED`, con `200` (no es un error del contrato).
+- El operario (`Compras`, `Ventas` e `Inventario`) no tiene `perm:sales:sales:read-profitability`: `allowed: false`, `PERMISSION_DENIED`, con `200` (no es un error del contrato).
 
 **Respuesta esperada — `200 OK`** (abreviada)
 

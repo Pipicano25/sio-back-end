@@ -86,7 +86,7 @@ def test_prices_and_currency_come_from_commercial_relationship(users, seed) -> N
 
 
 def test_inventory_multibranch_registered_zero_and_not_registered(users, seed) -> None:
-    """Consolidado, saldo 0 registrado, sin registro, equivalencias sin duplicar y mínimos para `empleado`."""
+    """Consolidado, saldo 0 registrado, sin registro, equivalencias sin duplicar y mínimos para el operario."""
     admin_dao, operario = users("admin.dao"), users("operario.dao")
     params = {"internal_code": f"P-0007-{seed['run']}"}  # Loratadina: PPAL 120, NORTE 0 registrado, SUR sin saldo
     (item,) = admin_dao.get(f"{PIQ}/companies/{seed['company']}/inventory-overviews", params=params).raise_for_status().json()["items"]
@@ -101,7 +101,7 @@ def test_inventory_multibranch_registered_zero_and_not_registered(users, seed) -
     assert (equivalence["whole_units"], equivalence["remainder_base_quantity"]) == (12, "0.0000")
 
     (seen,) = operario.get(f"{PIQ}/companies/{seed['company']}/inventory-overviews", params=params).raise_for_status().json()["items"]
-    assert all("minimum_state" in b for b in seen["stock"]["branches"])  # spec 026: `empleado` ve los mínimos
+    assert all("minimum_state" in b for b in seen["stock"]["branches"])  # spec 026: el operario ve los mínimos
 
 
 def test_branch_without_assignment_is_readable_a08(users, seed) -> None:
@@ -172,7 +172,7 @@ def test_image_url_without_token_200_then_304(users, seed) -> None:
 
 
 def test_empleado_reads_and_404_for_other_company(users, seed) -> None:
-    """Spec 026: `operario.dao` es del grupo `empleado` y tiene las cuatro consultas (ya no hay usuario de prueba sin
+    """Spec 026: `operario.dao` está en `Compras`, `Ventas` e `Inventario` y tiene las cuatro consultas (ya no hay usuario de prueba sin
     permisos de este servicio; el `403` lo cubren las pruebas de API con identidades sintéticas)."""
     for path in ("product-overviews", "inventory-overviews", "low-stock-products", "inventory-summary"):
         response = users("operario.dao").get(f"{PIQ}/companies/{seed['company']}/{path}")

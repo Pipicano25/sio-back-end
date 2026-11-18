@@ -4,7 +4,7 @@ Ejercicio 7 — Seguridad entre empresas y permisos · [Orden del ejercicio](ORD
 
 ---
 
-## 1. operario.dao (Empleado) intenta crear una empresa
+## 1. operario.dao (operario) intenta crear una empresa
 
 Paso `S-01` · usuario **`operario.dao`** · ítems de la FASE 10: 21
 

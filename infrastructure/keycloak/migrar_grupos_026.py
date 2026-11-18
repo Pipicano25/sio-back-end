@@ -1,4 +1,5 @@
-"""Migra un realm existente de los 7 grupos anteriores a `superadmin`, `admin` y `empleado` (spec 026).
+"""Lleva un realm existente a los grupos de la spec 026, versión del servidor OCI: `superadmin`, `admin`, `Compras`,
+`Ventas` e `Inventario`.
 
 `--import-realm` no modifica un realm que ya existe (VPS, entornos persistentes), así que este script aplica la
 plantilla con la API de administración de Keycloak. Solo usa la biblioteca estándar de Python.
@@ -6,11 +7,16 @@ plantilla con la API de administración de Keycloak. Solo usa la biblioteca est�
 Pasos (todos idempotentes; se puede repetir sin efectos dobles):
 
 1. `plan` (por defecto): muestra qué haría, sin cambiar nada.
-2. `aplicar`: crea los roles de perfil y los tres grupos con los roles **exactos** de la plantilla y mueve a cada
-   usuario de los grupos anteriores a su grupo nuevo. Si un usuario estaba en varios, queda en el de más alcance
-   (superadmin > admin > empleado). Los grupos anteriores **no** se tocan todavía: sirven de vuelta atrás.
-3. `retirar`: quita a los usuarios de los grupos anteriores y elimina esos grupos y sus roles de perfil. Hacerlo
-   solo después de comprobar los tokens (ver `MIGRACION-GRUPOS.md`).
+2. `aplicar`: crea los cinco grupos (o completa los que ya existen, como las áreas vacías del servidor OCI) con los
+   roles **exactos** de la plantilla y agrega a cada usuario de un grupo anterior a sus grupos nuevos. Un usuario
+   puede quedar en varios grupos (sus permisos se suman). Los grupos anteriores **no** se tocan todavía: sirven de
+   vuelta atrás.
+3. `retirar`: elimina los grupos anteriores (los siete de antes de la 026 y `empleado`) y los roles de perfil de
+   antes de la 026. El rol `empleado` se conserva en el catálogo, como en el servidor. Hacerlo solo después de
+   comprobar los tokens (ver `MIGRACION-GRUPOS.md`).
+
+Estados de partida admitidos: los siete grupos anteriores a la 026; `superadmin`/`admin`/`empleado`; y el servidor
+OCI (`superadmin`, `admin` y áreas vacías).
 
 Variables de entorno (nunca se escriben en el código):
 
@@ -37,15 +43,17 @@ from pathlib import Path
 
 TEMPLATE = Path(__file__).resolve().parent / "realm-template" / "sio-realm.template.json"
 API_CLIENT = "sio-api"
-NEW_GROUPS = ("superadmin", "admin", "empleado")  # de más a menos alcance
+NEW_GROUPS = ("superadmin", "admin", "Compras", "Ventas", "Inventario")
+AREAS = ("Compras", "Ventas", "Inventario")
 OLD_TO_NEW = {
-    "administradores": "superadmin",
-    "supervisores": "admin",
-    "compras": "empleado",
-    "ventas": "empleado",
-    "inventario": "empleado",
-    "reportes": "empleado",  # aclaración P2 de la spec 026: ganan escritura
-    "consulta": "empleado",
+    "administradores": ("superadmin",),
+    "supervisores": ("admin",),
+    "compras": ("Compras",),
+    "ventas": ("Ventas",),
+    "inventario": ("Inventario",),
+    "reportes": AREAS,  # aclaración de la spec 026: ganan escritura
+    "consulta": AREAS,
+    "empleado": AREAS,  # cierre anterior de la 026: el operario son las tres áreas
 }
 OLD_PROFILE_ROLES = ("administrador", "supervisor", "compras", "ventas", "inventario", "reportes", "consulta")
 
@@ -93,7 +101,7 @@ class Keycloak:
             first += 200
 
 
-def template_groups() -> dict[str, list[str]]:
+def template_groups() -> dict[str, list[tuple[str, str]]]:
     data = json.loads(TEMPLATE.read_text(encoding="utf-8"))
     groups = {group["name"]: group["clientRoles"][API_CLIENT] for group in data["groups"]}
     assert set(groups) == set(NEW_GROUPS), f"La plantilla no tiene los grupos de la spec 026: {sorted(groups)}"
@@ -103,17 +111,15 @@ def template_groups() -> dict[str, list[str]]:
 
 def apply(kc: Keycloak, dry: bool) -> None:
     cid = kc.client_uuid()
-    desired = template_groups()
     new_ids: dict[str, str | None] = {}
-    for name, roles in desired.items():
+    for name, roles in template_groups().items():
         for role, description in roles:
             if kc.call("GET", f"/clients/{cid}/roles/{urllib.parse.quote(role, safe='')}") is None:
-                if not role.startswith("perm:"):
-                    print(f"crear rol de perfil {role}")
-                    if not dry:
-                        kc.call("POST", f"/clients/{cid}/roles", {"name": role, "description": description})
-                else:
+                if role.startswith("perm:"):
                     raise SystemExit(f"El permiso {role} no existe en el realm: aplique antes los permisos de la plantilla.")
+                print(f"crear rol de perfil {role}")
+                if not dry:
+                    kc.call("POST", f"/clients/{cid}/roles", {"name": role, "description": description})
         group = kc.group(name)
         if group is None:
             print(f"crear grupo {name}")
@@ -136,42 +142,33 @@ def apply(kc: Keycloak, dry: bool) -> None:
                 kc.call("DELETE", f"/groups/{group['id']}/role-mappings/clients/{cid}",
                         [kc.call("GET", f"/clients/{cid}/roles/{urllib.parse.quote(r, safe='')}") for r in remove])
 
-    target: dict[str, tuple[str, str]] = {}  # user id → (username, grupo nuevo)
-    for old, new in OLD_TO_NEW.items():
+    target: dict[str, tuple[str, set[str]]] = {}  # user id → (username, grupos nuevos)
+    for old, news in OLD_TO_NEW.items():
         group = kc.group(old)
         if group is None:
             continue
         for member in kc.members(group["id"]):
-            previous = target.get(member["id"], (member["username"], new))[1]
-            best = min(previous, new, key=NEW_GROUPS.index)
-            target[member["id"]] = (member["username"], best)
-    for name in NEW_GROUPS:  # quien ya está en un grupo nuevo conserva el de más alcance
-        if new_ids.get(name):
-            for member in kc.members(new_ids[name]):
-                if member["id"] in target:
-                    username, chosen = target[member["id"]]
-                    target[member["id"]] = (username, min(chosen, name, key=NEW_GROUPS.index))
-    for user_id, (username, new) in sorted(target.items(), key=lambda item: item[1]):
+            target.setdefault(member["id"], (member["username"], set()))[1].update(news)
+    for user_id, (username, news) in sorted(target.items(), key=lambda item: item[1][0]):
         current = {g["name"] for g in kc.call("GET", f"/users/{user_id}/groups") or []}
-        extra = (current & set(NEW_GROUPS)) - {new}
-        if new not in current or extra:
-            print(f"usuario {username} → {new}" + (f" (sale de {', '.join(sorted(extra))})" if extra else ""))
+        missing = [name for name in NEW_GROUPS if name in news and name not in current]
+        if missing:
+            print(f"usuario {username} → {', '.join(missing)}")
             if not dry:
-                kc.call("PUT", f"/users/{user_id}/groups/{new_ids[new]}")
-                for name in extra:
-                    kc.call("DELETE", f"/users/{user_id}/groups/{new_ids[name]}")
+                for name in missing:
+                    kc.call("PUT", f"/users/{user_id}/groups/{new_ids[name]}")
 
 
 def retire(kc: Keycloak, dry: bool) -> None:
     cid = kc.client_uuid()
-    for old in OLD_TO_NEW:
+    for old, news in OLD_TO_NEW.items():
         group = kc.group(old)
         if group is None:
             continue
         orphans = [m["username"] for m in kc.members(group["id"])
-                   if not {g["name"] for g in kc.call("GET", f"/users/{m['id']}/groups") or []} & set(NEW_GROUPS)]
+                   if not set(news) <= {g["name"] for g in kc.call("GET", f"/users/{m['id']}/groups") or []}]
         if orphans:
-            raise SystemExit(f"{old}: {', '.join(orphans)} aún no tienen grupo nuevo. Ejecute primero `aplicar`.")
+            raise SystemExit(f"{old}: {', '.join(orphans)} aún no están en sus grupos nuevos. Ejecute primero `aplicar`.")
         print(f"eliminar grupo {old}")
         if not dry:
             kc.call("DELETE", f"/groups/{group['id']}")

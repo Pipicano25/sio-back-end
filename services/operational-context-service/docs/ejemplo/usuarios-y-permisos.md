@@ -11,7 +11,7 @@ Este documento explica qué usuarios de prueba trae el realm de Keycloak (`infra
 3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, `all` vale como comodín en cualquier parte:
    - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.
    - `perm:operational-context:all:delete` → solo `delete`, solo en Operational Context (lo tiene el grupo `admin`, junto con `:all:create`, `:all:read` y `:all:update`).
-   - `perm:operational-context:all:read` → solo `read`, solo en Operational Context (grupo `empleado`).
+   - `perm:operational-context:all:read` → solo `read`, solo en Operational Context (las tres áreas).
 4. Cada URL exige un permiso concreto (por ejemplo `perm:operational-context:companies:create`); registrar, inactivar y reactivar empresas exigen además `perm:operational-context:platform:administer`. Si falta alguno, el servicio responde `403 Forbidden` e indica cuál. Sin token, o con un token vencido, responde `401 Unauthorized`.
 5. El permiso se revisa **antes** que el cuerpo: un usuario sin permiso recibe `403` aunque el JSON esté mal.
 6. **Aislamiento por empresa (Fase B):** el permiso dice *qué* puede hacer el usuario; la membresía dice *dónde*. Un usuario sin `platform:administer` solo ve y opera las empresas donde tiene una membresía `ACTIVE`; el resto responde `404`, igual que un `id` inexistente (URL marcadas con 🔒).
@@ -24,7 +24,7 @@ Todos comparten la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD` (`in
 | --- | --- | --- | --- |
 | `admin.sio` | `superadmin` | `perm:all:all:all` | Todo, en todas las empresas (alcance de plataforma) |
 | `admin.dao` | `admin` | 49 permisos explícitos; en Operational Context: `perm:commercial-relationship:all:create`<br>`perm:commercial-relationship:all:delete`<br>`perm:commercial-relationship:all:read`<br>`perm:commercial-relationship:all:update`<br>`perm:geography:all:create`<br>`perm:geography:all:read`<br>`perm:geography:all:update`<br>`perm:operational-context:all:create`<br>`perm:operational-context:all:delete`<br>`perm:operational-context:all:read`<br>`perm:operational-context:all:update`<br>`perm:party-identity:all:create`<br>`perm:party-identity:all:read`<br>`perm:party-identity:all:update`<br>`perm:payment-reference:all:create`<br>`perm:payment-reference:all:read`<br>`perm:payment-reference:all:update`<br>`perm:product-catalog:all:create`<br>`perm:product-catalog:all:read`<br>`perm:product-catalog:all:update`<br>`perm:purchase:all:all`<br>`perm:sales:all:all` | En sus empresas: consultar, crear, modificar, inactivar y reactivar sucursales, usuarios y asignaciones, y modificar la empresa. **No** registrar, inactivar ni reactivar empresas |
-| `operario.dao` | `empleado` | 80 permisos explícitos; en Operational Context: `perm:geography:all:read`<br>`perm:operational-context:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:sales:all:create`<br>`perm:sales:all:delete`<br>`perm:sales:all:read`<br>`perm:sales:all:update` | Solo consultar, en sus empresas |
+| `operario.dao` | `Compras, Ventas, Inventario` | 80 permisos explícitos; en Operational Context: `perm:geography:all:read`<br>`perm:operational-context:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:sales:all:create`<br>`perm:sales:all:delete`<br>`perm:sales:all:read`<br>`perm:sales:all:update` | Solo consultar, en sus empresas |
 
 ## Cómo obtener el token de cada usuario
 
@@ -98,7 +98,7 @@ Atajo: `python services/get_token.py` (menú) obtiene el token de un usuario de 
 - `perm:operational-context:platform:lookup`: Consulta técnica entre servicios (Fase B, FR-045): leer por UUID sin membresía y comprobar el acceso de otro usuario. Es para identidades técnicas; ningún grupo de usuarios la tiene salvo `superadmin` (por `perm:all:all:all`).
 - `perm:operational-context:application_users:create`: Para registrar un usuario operativo el token debe poder leer `person_identities` en Party Identity (el servicio valida la persona con ese token); la cuenta de Keycloak la verifica el servicio con su propia identidad técnica.
 - `perm:operational-context:branches:delete`: Inactivar una sucursal exige `delete`; reactivarla exige `update`.
-- `perm:operational-context:companies:create`: Para registrar o cambiar la organización o la ubicación, el token del usuario debe poder además **leer** en Party Identity y Geography: el servicio valida esas referencias con el mismo token. Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.
+- `perm:operational-context:companies:create`: Para registrar o cambiar la organización o la ubicación, el token del usuario debe poder además **leer** en Party Identity y Geography: el servicio valida esas referencias con el mismo token. La tienen `superadmin`, `admin`, `Compras` y `Ventas` (`Inventario` no lee Party Identity).
 - `perm:operational-context:branches:read`: Las rutas de sucursales exigen solo permisos de `branches`, aunque la colección y el alta estén bajo `/api/v1/companies/{id}/branches`.
 - Las URL de `http://localhost:8000` son de **Geography** y las de `http://localhost:8002` de **Party Identity**: exigen permisos de esos servicios.
 

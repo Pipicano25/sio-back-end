@@ -114,7 +114,7 @@ EX3 = dict(
                     "POST",
                     f"{API}/organization-identities/<ORG_EJEMPLO>/reactivate",
                     body={"version": 2},
-                    why=["Reactivar exige `update`: por eso `admin.dao` (Admin) y el grupo `empleado` pueden reactivar aunque no puedan inactivar."],
+                    why=["Reactivar exige `update`: por eso `admin.dao` (Admin) y el operario (`Compras`, `Ventas` e `Inventario`) pueden reactivar aunque no puedan inactivar."],
                     show=ORG_SHOW,
                 ),
                 call(

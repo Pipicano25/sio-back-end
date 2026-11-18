@@ -2,7 +2,7 @@
 
 - Cada reporte exige su permiso `perm:business-reporting:<reporte>:read`, evaluado por `sio-auth`; el `403` nunca revela el permiso.
 - El servicio consulta Sales, Purchase, Inventory, Operational Context, Commercial Relationship y Product Catalog **con el token del usuario** (DR-07): el usuario necesita además el permiso de lectura de cada propietario. Si el propietario responde `403`, el reporte responde el mismo `403` genérico.
-- La evolución de existencias exige `perm:inventory:stock_evolution:read`, distinto del kardex y de los costos (DR-11). La tienen los tres grupos (`superadmin`, `admin` y `empleado`).
+- La evolución de existencias exige `perm:inventory:stock_evolution:read`, distinto del kardex y de los costos (DR-11). La tienen `superadmin`, `admin` e `Inventario`.
 - Sin costos ni márgenes: el margen bruto es de la fase 2 de la spec 023.
 
 ## Usuarios de prueba
@@ -11,7 +11,7 @@
 | --- | --- |
 | `admin.sio` | `superadmin` |
 | `admin.dao` | `admin` |
-| `operario.dao` | `empleado` |
+| `operario.dao` | `Compras, Ventas, Inventario` |
 
 ## Cómo obtener el token
 

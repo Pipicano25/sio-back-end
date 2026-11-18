@@ -33,7 +33,7 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>` 
 | `perm:audit:audit-events:read` | Consultas de una empresa | `superadmin` (`perm:all:all:all`), `admin` (`perm:audit:audit-events:read`) |
 | `perm:audit:platform-events:read` | Consultas de plataforma | Solo `superadmin` |
 
-El grupo `empleado` **no** tiene permisos de Audit en la plantilla: sus usuarios reciben `403` en todas las consultas.
+Los grupos de área (`Compras`, `Ventas`, `Inventario`) **no** tienen permisos de Audit en la plantilla: quien solo está en ellos recibe `403` en todas las consultas.
 
 **Restricción de las rutas de registro:** además del permiso, el token debe pertenecer a una cuenta de servicio de Keycloak. El código comprueba que el token tenga el claim `client_id` y que `preferred_username` sea exactamente `service-account-<client_id>`. Un token de usuario (`sio-web`) recibe `403 AUDIT.FORBIDDEN` aunque tuviera el permiso. El frontend **no debe** registrar eventos: los generan los propios microservicios.
 

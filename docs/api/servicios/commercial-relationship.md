@@ -33,7 +33,7 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 |---|---|---|---|
 | `company_products` | 3–10, resumen de empresas (25) | Todos los grupos | `superadmin`, `admin` (incluido `delete`) |
 | `company_product_purchase_taxes` (`update`) | Tasa de impuesto de compra (11, 12) | — | `superadmin` (`perm:all:all:all`), `admin` (`perm:commercial-relationship:all:update`) |
-| `company_customers` | 13–18 | Todos | `superadmin`, `admin`; `empleado` solo crea (`company_customers:create`) |
+| `company_customers` | 13–18 | Todos | `superadmin`, `admin`; `Ventas` lee y crea (`company_customers:create`); `Compras` solo lee |
 | `company_suppliers` | 19–24 | Todos | `superadmin`, `admin` (incluido `block`, que usa `delete`) |
 | `company_product_presentations` | 26–33 | Todos | `superadmin`, `admin` |
 | `supplier_products` | 34–39 | Todos | Ídem |
@@ -46,7 +46,7 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 | `automatic_price_applications` (`read`, `resolve`) | 72–74 | `superadmin`, `admin` | `resolve`: `superadmin`, `admin` (explícito) |
 | `platform:lookup` | Lecturas por UUID sin membresía | Cuentas técnicas | — |
 
-El grupo `empleado` lee los recursos de la empresa salvo políticas de ganancia, su cobertura y las actualizaciones automáticas de precio, y solo escribe al crear clientes.
+Los grupos de área leen los recursos de la empresa que necesita su área (salvo políticas de ganancia, su cobertura y las actualizaciones automáticas de precio); solo `Ventas` escribe, al crear clientes.
 
 ## Alcance de datos
 

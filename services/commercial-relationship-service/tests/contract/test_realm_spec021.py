@@ -4,14 +4,14 @@ Se evalúa con `sio-auth` (incluidos los comodines) sobre la plantilla versionad
 
 - Los permisos nuevos de políticas, tasas y actualizaciones automáticas solo los tienen
   `superadmin` (por `perm:all:all:all`) y `admin` (comodines por servicio más `resolve` explícito), con los
-  tres grupos de la spec 026.
-- `empleado` (antes `compras`, `ventas` e `inventario`) no tiene los comodines `perm:purchase:all:all` ni
+  cinco grupos de la spec 026.
+- El operario (suma de `Compras`, `Ventas` e `Inventario`) no tiene los comodines `perm:purchase:all:all` ni
   `perm:commercial-relationship:all:read`: conserva la lista explícita equivalente, sin ganar los permisos de
   la spec 021 (costos, porcentajes y el ajuste de tasa de línea).
 - `automatic_price_update_requests:submit` lo tiene solo la cuenta técnica de Purchase; el SuperAdmin lo
   cubre por su comodín total, pero la ruta exige además identidad técnica (DS-05).
 - `pricing_policy_coverage:read` (FR-021-35, 2026-10-16) lo tiene la cuenta técnica de Purchase; entre los grupos, solo
-  `superadmin` y `admin` por sus comodines de lectura (`empleado` no).
+  `superadmin` y `admin` por sus comodines de lectura (las áreas no).
 """
 
 from __future__ import annotations
@@ -26,6 +26,9 @@ from sio_auth.permissions import evaluate_permission
 REALM = Path(__file__).resolve().parents[4] / "infrastructure" / "keycloak" / "realm-template" / "sio-realm.template.json"
 DATA = json.loads(REALM.read_text(encoding="utf-8"))
 GROUPS = {group["name"]: group["clientRoles"]["sio-api"] for group in DATA["groups"]}
+
+# Operario = usuario en las tres áreas `Compras`, `Ventas` e `Inventario` (spec 026, versión del servidor OCI).
+GROUPS["operario"] = sorted({role for area in ("Compras", "Ventas", "Inventario") for role in GROUPS[area]})
 ACCOUNTS = {user["username"]: user.get("clientRoles", {}).get("sio-api", []) for user in DATA["users"]}
 ROLES = [role["name"] for role in DATA["roles"]["client"]["sio-api"]]
 
@@ -67,7 +70,7 @@ def test_new_roles_exist() -> None:
     [
         ("superadmin", True),
         ("admin", True),
-        ("empleado", False),
+        ("operario", False),
     ],
 )
 def test_sensitive_permissions_only_for_admins_and_supervisors(group: str, expected: bool, permission) -> None:
@@ -82,7 +85,7 @@ def test_submit_only_for_purchase_technical_account() -> None:
 
 
 def test_wildcards_replaced_by_explicit_equivalent() -> None:
-    roles = GROUPS["empleado"]
+    roles = GROUPS["operario"]
     assert "perm:commercial-relationship:all:read" not in roles
     assert "perm:purchase:all:all" not in roles
     for permission in concrete(f"perm:{CR}:", "read"):
@@ -91,13 +94,13 @@ def test_wildcards_replaced_by_explicit_equivalent() -> None:
 
 def test_employees_keep_every_previous_purchase_permission() -> None:
     for permission in concrete("perm:purchase:"):
-        assert evaluate_permission(GROUPS["empleado"], permission), permission
+        assert evaluate_permission(GROUPS["operario"], permission), permission
 
 
 def test_employees_keep_sales_permissions_without_line_tax_override() -> None:
-    assert evaluate_permission(GROUPS["empleado"], SioPermission("sales", "sales", "create"))
-    assert evaluate_permission(GROUPS["empleado"], SioPermission("purchase", "purchases", "read"))
-    assert not evaluate_permission(GROUPS["empleado"], SioPermission("purchase", "purchase_line_taxes", "override"))
+    assert evaluate_permission(GROUPS["operario"], SioPermission("sales", "sales", "create"))
+    assert evaluate_permission(GROUPS["operario"], SioPermission("purchase", "purchases", "read"))
+    assert not evaluate_permission(GROUPS["operario"], SioPermission("purchase", "purchase_line_taxes", "override"))
 
 
 def test_coverage_for_the_purchase_technical_account_without_percentages() -> None:

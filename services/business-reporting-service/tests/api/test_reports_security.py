@@ -17,7 +17,7 @@ REPORTS = ("top-selling-products", "sales-by-branch", "purchases", "stock-evolut
 MATRIX = {
     "admin.sio": (200, 200, 200, 200),
     "admin.dao": (200, 200, 200, 200),
-    # `operario.dao` (grupo `empleado`) tiene la unión de ventas, compras e inventario, sin el reporte de ventas por
+    # `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`) tiene la unión de ventas, compras e inventario, sin el reporte de ventas por
     # sucursal (es de `admin`).
     "operario.dao": (200, 403, 200, 200),
 }
@@ -46,7 +46,7 @@ def test_matrix_per_group_with_template_roles(as_user, seeded, username) -> None
 
 
 def test_empleado_reads_stock_evolution_with_its_own_permission() -> None:
-    """El grupo `empleado` lee la evolución con el permiso explícito (DR-11); que el kardex solo no la abre lo prueba
+    """El operario (`Compras`, `Ventas` e `Inventario`) lee la evolución con el permiso explícito (DR-11); que el kardex solo no la abre lo prueba
     `test_kardex_permission_alone_does_not_open_stock_evolution`."""
     roles = USER_ROLES["operario.dao"]
     assert "perm:inventory:stock_evolution:read" in roles

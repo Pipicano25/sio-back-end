@@ -33,7 +33,7 @@ POST /api/v1/companies/<EMPRESA>/advisor-assignments/change-primary
 
 **Por qué se hace así**
 
-- Exige `create` **y** `delete` de asesores: el grupo `admin` puede; el grupo `empleado`, no.
+- Exige `create` **y** `delete` de asesores: el grupo `admin` puede; el operario (`Compras`, `Ventas` e `Inventario`), no.
 - Cierra la asignación 1 (`valid_to` = `effective_at`) y crea la 2 en la misma transacción.
 
 **Respuesta esperada — `201 Created`** (abreviada)

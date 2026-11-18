@@ -80,7 +80,7 @@ COMMON_DATA = [
 
 P = f"/api/v1/companies/{COMPANY}"
 PROFITABILITY_NOTE = (
-    "`operario.dao` (grupo `empleado`) no tiene "
+    "`operario.dao` (grupos `Compras`, `Ventas` e `Inventario`) no tiene "
     "`perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni "
     "`has_unknown_cost`."
 )
@@ -473,7 +473,7 @@ EXERCISES = [
             create_draft("02-crear-la-venta.md", "Vender 3 unidades de arroz", draft(ln(ARROZ, "3")), "VENTA", ["3 × 1500 = 4500."]),
             confirm("03-confirmar.md", "Confirmar la venta", "VENTA", 1, "rentabilidad-0001",
                     ["Inventory descuenta 3 unidades a costo FIFO 1000.", PROFITABILITY_NOTE]),
-            consult("04-consultar-como-vendedor.md", "Consultar como empleado", "operario.dao", f"{P}/sales/<VENTA>",
+            consult("04-consultar-como-vendedor.md", "Consultar como operario", "operario.dao", f"{P}/sales/<VENTA>",
                     ["Sin costo ni margen en la respuesta (se omiten, no aparecen como nulos)."]),
             consult(
                 "05-consultar-como-supervisor.md",

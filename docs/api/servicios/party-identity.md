@@ -30,17 +30,17 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Recurso | Operaciones | Grupos con lectura (plantilla) | Grupos con escritura |
 |---|---|---|---|
-| `person_identities` | Personas (3–8) | Todos los grupos | `superadmin`; `admin` y `empleado` sin `delete` |
-| `organization_identities` | Organizaciones (9–14) | Todos | `superadmin`; `admin` y `empleado` sin `delete` |
+| `person_identities` | Personas (3–8) | Todos los grupos | `superadmin`; `admin`, `Compras` y `Ventas` sin `delete`; `Inventario` sin acceso |
+| `organization_identities` | Organizaciones (9–14) | Todos | `superadmin`; `admin`, `Compras` y `Ventas` sin `delete`; `Inventario` sin acceso |
 | `identification_type_rules` | Reglas (15–20) | Todos | `superadmin`; `admin` sin `delete` |
-| `person_contact_profiles` | Perfiles de personas (21–25) | Todos | `superadmin`; `admin` y `empleado` sin `delete` |
+| `person_contact_profiles` | Perfiles de personas (21–25) | Todos | `superadmin`; `admin`, `Compras` y `Ventas` sin `delete`; `Inventario` sin acceso |
 | `organization_contact_profiles` | Perfiles de organizaciones (26–30) | Ídem | Ídem |
 | `organization_contact_persons` | Personas de contacto (31–37) | Todos | Ídem |
 | `global_business_sectors` | Catálogo de sectores (38–43) | Todos | `superadmin`; `admin` sin `delete` |
 | `organization_business_sectors` | Sectores de una organización (44–48) | Todos | Ídem |
-| `organization_legal_representatives` | Representantes legales (49–54) | Todos (`empleado` solo `read`) | `superadmin`; `admin` sin `delete` |
+| `organization_legal_representatives` | Representantes legales (49–54) | `superadmin`, `admin`, `Compras` y `Ventas` (`Compras` y `Ventas` solo `read`) | `superadmin`; `admin` sin `delete` |
 
-Acciones: `read` (listar, consultar), `create`, `update` (modificar, reactivar, `set-primary`), `delete` (inactivar, cerrar). Inactivar o cerrar exige `delete`, que solo tiene `superadmin`; `admin` tiene `perm:party-identity:all:create|read|update` y `empleado` crea, lee y modifica personas, organizaciones, perfiles de contacto y personas de contacto.
+Acciones: `read` (listar, consultar), `create`, `update` (modificar, reactivar, `set-primary`), `delete` (inactivar, cerrar). Inactivar o cerrar exige `delete`, que solo tiene `superadmin`; `admin` tiene `perm:party-identity:all:create|read|update` y `Compras` y `Ventas` crean, leen y modifican personas, organizaciones, perfiles de contacto y personas de contacto.
 
 ## Alcance de datos
 

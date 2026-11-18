@@ -1,4 +1,4 @@
-# Paso 1. Productos como empleado
+# Paso 1. Productos como operario
 
 Ejercicio 6: Permisos y bloques visibles.
 
@@ -10,7 +10,7 @@ Ejecuta: `operario.dao`.
 
 ### Por qué
 
-- `operario.dao` (grupo `empleado`) tiene `perm:commercial-relationship:price_list_items:read`, `perm:inventory:balances:read` y `perm:inventory:product-policies:read`: ve `price`, existencias, `minimum_stock` y `minimum_state`.
+- `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`) tiene `perm:commercial-relationship:price_list_items:read`, `perm:inventory:balances:read` y `perm:inventory:product-policies:read`: ve `price`, existencias, `minimum_stock` y `minimum_state`.
 
 ## Permiso
 

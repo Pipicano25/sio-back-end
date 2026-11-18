@@ -10,7 +10,7 @@
 | --- | --- |
 | Empresa | LOGÍSTICA ACCESO FICTICIA S.A.S. (**ficticia**) |
 | Sucursales | `PRI-01` Principal y `SEC-01` Secundaria (**ficticias**) |
-| Usuario | `operario.dao` (grupo `empleado`: ventas, compras e inventario, sin rentabilidad) |
+| Usuario | `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`, sin rentabilidad) |
 
 ## Cómo se interpretan
 

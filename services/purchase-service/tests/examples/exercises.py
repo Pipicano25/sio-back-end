@@ -651,7 +651,7 @@ EXERCISES = [
         "purpose": (
             "Spec 021: el impuesto de cada línea ya no se escribe; Purchase lo calcula con la tasa de compra del producto "
             "en Commercial Relationship (`(subtotal − descuento) × tasa`). Un usuario del grupo `admin` puede ajustar la tasa "
-            "de una línea para que coincida con la factura del proveedor (permiso propio); un empleado no. Las tasas son "
+            "de una línea para que coincida con la factura del proveedor (permiso propio); un operario no. Las tasas son "
             "**ficticias**: 19 % (arroz) y 0 % (aceite) no representan tarifas reales."
         ),
         "data": COMMON_DATA,
@@ -686,14 +686,14 @@ EXERCISES = [
             },
             {
                 "file": "03-comprador-sin-permiso-de-ajuste.md",
-                "title": "Intentar ajustar la tasa como empleado",
+                "title": "Intentar ajustar la tasa como operario",
                 "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/details",
                 "body": {**ln(ARROZ, "1", "1000", tax_percentage="0"), "version": 2},
                 "expect": 403,
-                "why": ["El grupo `empleado` crea y edita compras, pero no ajusta tasas: `403` sin revelar el permiso exigido."],
+                "why": ["El operario (`Compras`, `Ventas` e `Inventario`) crea y edita compras, pero no ajusta tasas: `403` sin revelar el permiso exigido."],
             },
             {
                 "file": "04-tasa-fuera-de-rango.md",

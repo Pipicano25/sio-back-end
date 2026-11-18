@@ -29,12 +29,12 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Reporte | Permiso del reporte | Permiso del propietario | Grupos de la plantilla que tienen ambos |
 |---|---|---|---|
-| Productos más vendidos | `perm:business-reporting:top_selling_products:read` | `perm:sales:sales:read` (Sales) | `superadmin`, `admin`, `empleado` |
+| Productos más vendidos | `perm:business-reporting:top_selling_products:read` | `perm:sales:sales:read` (Sales) | `superadmin`, `admin`, `Ventas` |
 | Ventas por sucursal | `perm:business-reporting:sales_by_branch:read` | `perm:sales:sales:read` | `superadmin`, `admin` |
-| Compras | `perm:business-reporting:purchases:read` | `perm:purchase:purchases:read` (Purchase) | `superadmin`, `admin`, `empleado` |
-| Evolución de existencias | `perm:business-reporting:stock_evolution:read` | `perm:inventory:stock_evolution:read` (Inventory) | `superadmin`, `admin`, `empleado` |
+| Compras | `perm:business-reporting:purchases:read` | `perm:purchase:purchases:read` (Purchase) | `superadmin`, `admin`, `Compras` |
+| Evolución de existencias | `perm:business-reporting:stock_evolution:read` | `perm:inventory:stock_evolution:read` (Inventory) | `superadmin`, `admin`, `Inventario` |
 
-El grupo `empleado` no tiene el reporte de ventas por sucursal en la plantilla.
+Ningún grupo de área (`Compras`, `Ventas`, `Inventario`) tiene el reporte de ventas por sucursal en la plantilla.
 
 ## Alcance de datos
 

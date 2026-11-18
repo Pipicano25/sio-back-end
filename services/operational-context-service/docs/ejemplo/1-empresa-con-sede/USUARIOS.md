@@ -10,7 +10,7 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 - **`admin.dao`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `create`, `delete`, `read`, `update`; le falta `administer`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 04 responden `404` (aislamiento por empresa).
 - **`operario.dao`**: **no puede completar el ejercicio**. Se detiene en el paso 03 (*Registrar la empresa con su sede operativa principal*): sobre `operational-context` solo tiene `read`; le falta `create`. Con permiso de lectura pero **sin membresía** en la empresa, sus consultas de los pasos 04 responden `404` (aislamiento por empresa).
 
-**Para hacer el ejercicio completo use `admin.sio`** (tiene `platform:administer` por `perm:all:all:all`). Los demás usuarios solo operan en las empresas donde tienen membresía `ACTIVE`; `admin.dao` (grupo `admin`) puede crear, modificar e inactivar allí, pero no registrar, inactivar o reactivar empresas; los usuarios del grupo `empleado` solo consultan.
+**Para hacer el ejercicio completo use `admin.sio`** (tiene `platform:administer` por `perm:all:all:all`). Los demás usuarios solo operan en las empresas donde tienen membresía `ACTIVE`; `admin.dao` (grupo `admin`) puede crear, modificar e inactivar allí, pero no registrar, inactivar o reactivar empresas; los usuarios de las áreas (`Compras`, `Ventas` e `Inventario`) solo consultan.
 
 ## Permiso por URL
 
@@ -84,7 +84,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-El grupo `empleado` solo tiene `perm:operational-context:all:read` en este servicio: puede **leer**, pero la URL exige `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
+El operario (`Compras`, `Ventas` e `Inventario`) solo tiene `perm:operational-context:all:read` en este servicio: puede **leer**, pero la URL exige `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
 
 ### 3. `operario.dao` (Empleado) consulta
 

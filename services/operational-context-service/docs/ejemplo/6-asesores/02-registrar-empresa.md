@@ -26,7 +26,7 @@ POST /api/v1/companies
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
 - ❌ **No pueden (responde `403`):** `admin.dao` — sobre `operational-context` solo tiene `create`, `delete`, `read`, `update`; le falta `administer`; `operario.dao` — sobre `operational-context` solo tiene `read`; le falta `create`
-- ℹ️ Para registrar o cambiar la organización o la ubicación, el token del usuario debe poder además **leer** en Party Identity y Geography: el servicio valida esas referencias con el mismo token. Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.
+- ℹ️ Para registrar o cambiar la organización o la ubicación, el token del usuario debe poder además **leer** en Party Identity y Geography: el servicio valida esas referencias con el mismo token. La tienen `superadmin`, `admin`, `Compras` y `Ventas` (`Inventario` no lee Party Identity).
 - ℹ️ Alcance de plataforma (Fase B, DS-05): registrar, inactivar y reactivar empresas y ver todas las empresas sin ser miembro. Solo lo concede `perm:all:all:all` (grupo `superadmin`); los comodines de lectura, creación, modificación o eliminación **no** lo conceden.
 
 **Por qué se hace así**

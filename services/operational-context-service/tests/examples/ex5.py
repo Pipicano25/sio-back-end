@@ -26,7 +26,7 @@ EX5 = dict(
     data=[
         ("Empresa", "LOGÍSTICA ACCESO FICTICIA S.A.S. (**ficticia**)"),
         ("Sucursales", "`PRI-01` Principal y `SEC-01` Secundaria (**ficticias**)"),
-        ("Usuario", "`operario.dao` (grupo `empleado`: ventas, compras e inventario, sin rentabilidad)"),
+        ("Usuario", "`operario.dao` (grupos `Compras`, `Ventas` e `Inventario`, sin rentabilidad)"),
     ],
     interpretation=[
         ("Acceso efectivo", "Se calcula en cada consulta: membresía, empresa, sucursal y asignación `ACTIVE` y, si se "
@@ -97,7 +97,7 @@ EX5 = dict(
                 call("Acceso a la sucursal principal para crear compras", "GET",
                      f"{API}/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operario.dao"
                      "&permission=perm:purchase:purchases:create", also=LOOKUP,
-                     why=["`operario.dao` es miembro, tiene la sucursal asignada y su grupo (`empleado`) tiene `perm:purchase:all:all`: "
+                     why=["`operario.dao` es miembro, tiene la sucursal asignada y su grupo `Compras` tiene `perm:purchase:purchases:create`: "
                           "`allowed: true`.",
                           "El permiso se evalúa con los roles de `operario.dao` leídos de Keycloak, no con los del token "
                           "que consulta."],
@@ -105,7 +105,7 @@ EX5 = dict(
                 call("Acceso para ver la rentabilidad de ventas (denegado)", "GET",
                      f"{API}/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operario.dao"
                      "&permission=perm:sales:sales:read-profitability", also=LOOKUP,
-                     why=["El grupo `empleado` no tiene `perm:sales:sales:read-profitability`: `allowed: false`, `PERMISSION_DENIED`, "
+                     why=["El operario (`Compras`, `Ventas` e `Inventario`) no tiene `perm:sales:sales:read-profitability`: `allowed: false`, `PERMISSION_DENIED`, "
                           "con `200` (no es un error del contrato)."],
                      show=ACCESS_SHOW),
                 call("Acceso a la sucursal secundaria (denegado)", "GET",

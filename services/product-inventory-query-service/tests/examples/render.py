@@ -167,7 +167,7 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `operario.dao`, `operario.dao` e `operario.dao` (grupo `empleado`) consultan las cuatro rutas con "
+        "- Puede: `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`) consulta las cuatro rutas con "
         "precios, existencias y mínimos; `admin.dao` (grupo `admin`) y `admin.sio` (grupo `superadmin`) también.",
         "- No puede: un usuario sin los permisos de estas consultas recibe `403` (ningún usuario de prueba del realm "
         "está en ese caso desde la spec 026).",

@@ -1,22 +1,33 @@
-# Migración a los tres grupos (spec 026)
+# Migración a los grupos de la spec 026 (versión del servidor OCI)
 
-Pasa un realm que ya existe (VPS, entornos persistentes) de los 7 grupos anteriores a `superadmin`, `admin` y
-`empleado`. Un realm nuevo no la necesita: lo crea la plantilla (`realm-template/sio-realm.template.json`).
+Lleva un realm que ya existe a los cinco grupos `superadmin`, `admin`, `Compras`, `Ventas` e `Inventario`. Un realm
+nuevo no la necesita: lo crea la plantilla (`realm-template/sio-realm.template.json`).
 
 `--import-realm` no modifica un realm existente, por eso la migración se hace con la API de administración de
 Keycloak mediante `migrar_grupos_026.py` (solo biblioteca estándar de Python). Las membresías de Operational Context
 no cambian: dependen del `sub` del usuario, que no cambia.
 
+## Estados de partida
+
+| Estado | Dónde | Qué hace la migración |
+| --- | --- | --- |
+| Servidor OCI: `superadmin`, `admin` y áreas **vacías** | Servidor OCI | Carga en `Compras`, `Ventas` e `Inventario` los permisos de su área. Los usuarios no se mueven |
+| `superadmin`, `admin`, `empleado` (commit `236acbb`) | Entornos locales de la 026 | Crea las áreas, pone a los miembros de `empleado` en las tres y, al retirar, elimina `empleado` |
+| Siete grupos anteriores a la 026 | VPS | Crea los cinco grupos y pasa a cada usuario según la tabla siguiente |
+
 ## Correspondencia
 
-| Grupo anterior | Grupo nuevo | Nota |
+| Grupo anterior | Grupos nuevos | Nota |
 | --- | --- | --- |
 | `administradores` | `superadmin` | Igual que hoy (`perm:all:all:all`) |
 | `supervisores` | `admin` | Pierde `perm:all:all:read` sobre la auditoría de plataforma; gana `delete` en servicios de empresa |
-| `ventas`, `compras`, `inventario` | `empleado` | Gana lo de los otros dos y crear/modificar personas y organizaciones |
-| `reportes`, `consulta` | `empleado` | **Ganan escritura** (decisión del negocio, aclaración P2 de la spec) |
+| `compras` | `Compras` | Gana crear y modificar personas y organizaciones |
+| `ventas` | `Ventas` | Gana crear y modificar personas y organizaciones |
+| `inventario` | `Inventario` | |
+| `reportes`, `consulta`, `empleado` | `Compras`, `Ventas`, `Inventario` | `reportes` y `consulta` **ganan escritura** (decisión del negocio) |
 
-Si un usuario estaba en varios grupos, queda en el de más alcance (`superadmin` > `admin` > `empleado`).
+Un usuario puede quedar en varios grupos: sus permisos se suman. El script solo agrega grupos; nunca saca a nadie de
+un grupo nuevo.
 
 ## Requisitos
 
@@ -35,23 +46,23 @@ read -rs KC_ADMIN_PASSWORD && export KC_ADMIN_PASSWORD
 
 ## Pasos
 
-1. **Plan.** No cambia nada; muestra los roles de perfil y grupos que se crearían y a qué grupo pasa cada usuario.
+1. **Plan.** No cambia nada; muestra los grupos que se crearían o completarían y a qué grupos pasa cada usuario.
 
    ```bash
    python infrastructure/keycloak/migrar_grupos_026.py plan
    ```
 
-2. **Aplicar.** Crea los roles de perfil y los tres grupos con los roles exactos de la plantilla y agrega a cada
-   usuario a su grupo nuevo. Los grupos anteriores quedan intactos (vuelta atrás inmediata). Se puede repetir.
+2. **Aplicar.** Crea o completa los cinco grupos con los roles exactos de la plantilla y agrega a cada usuario de un
+   grupo anterior a sus grupos nuevos. Los grupos anteriores quedan intactos (vuelta atrás inmediata). Se puede
+   repetir.
 
    ```bash
    python infrastructure/keycloak/migrar_grupos_026.py aplicar
    ```
 
-   Mientras el usuario siga también en su grupo anterior, sus permisos son la suma de ambos.
+   En el servidor OCI este paso solo agrega los permisos a `Compras` (58), `Ventas` (46) e `Inventario` (20).
 
-3. **Comprobar.** Pida un token de un usuario de cada grupo nuevo y revise `resource_access.sio-api.roles`. Por
-   ejemplo, con un usuario de prueba (en un entorno de desarrollo; en un realm migrado use sus usuarios `*.test`):
+3. **Comprobar.** Pida un token de un usuario de cada grupo y revise `resource_access.sio-api.roles`:
 
    ```bash
    TOKEN=$(curl -s -X POST "$KC_URL/realms/$KC_REALM/protocol/openid-connect/token" \
@@ -59,37 +70,33 @@ read -rs KC_ADMIN_PASSWORD && export KC_ADMIN_PASSWORD
      -d username=operario.dao -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
      | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
    python -c "import sys, json, base64; p = sys.argv[1].split('.')[1]; p += '=' * (-len(p) % 4); \
-   print(sorted(json.loads(base64.urlsafe_b64decode(p))['resource_access']['sio-api']['roles']))" "$TOKEN"
+   print(len([r for r in json.loads(base64.urlsafe_b64decode(p))['resource_access']['sio-api']['roles'] if r.startswith('perm:')]))" "$TOKEN"
    ```
 
-   Mientras no se ejecute el paso 4, el token incluye todavía los roles del grupo anterior.
+   Un usuario en las tres áreas debe tener 80 permisos (los del antiguo `empleado`).
 
-4. **Retirar los grupos anteriores.** Saca a los usuarios de los grupos anteriores y elimina esos grupos y los roles
-   de perfil `administrador`, `supervisor`, `compras`, `ventas`, `inventario`, `reportes` y `consulta`. Se niega si
-   algún miembro aún no tiene grupo nuevo.
+4. **Retirar los grupos anteriores.** Elimina los siete grupos anteriores a la 026 y `empleado`, y los roles de perfil
+   `administrador`, `supervisor`, `compras`, `ventas`, `inventario`, `reportes` y `consulta`. El rol `empleado` se
+   conserva en el catálogo (como en el servidor OCI). Se niega si algún miembro aún no está en sus grupos nuevos.
 
    ```bash
    python infrastructure/keycloak/migrar_grupos_026.py plan-retirar   # sin cambios
    python infrastructure/keycloak/migrar_grupos_026.py retirar
    ```
 
-5. **Usuarios de prueba.** La plantilla vigente trae solo `admin.sio` (SuperAdmin), `admin.dao` (Admin) y
-   `operario.dao` (Empleado). Un entorno de desarrollo creado con una plantilla anterior conserva sus usuarios
-   genéricos (`admin.test`, `supervisor.test`, `ventas.test`, `compras.test`, `inventario.test`, `reportes.test`,
-   `consulta.test`): el paso 2 los pasa a su grupo nuevo, pero el script no crea ni renombra usuarios. Si los quiere
-   como en la plantilla, recree el realm (realm de desarrollo sin usuarios propios) o cree los tres en la consola y elimine los genéricos
-   (la plantilla no permite editar el nombre de usuario: `editUsernameAllowed: false`).
+5. **Usuarios.** El script no crea usuarios. La plantilla trae `admin.sio`, `admin.dao`, `operario.dao`, `alex`,
+   `manuel`, `pedro` y `tomas`; en un realm existente que no los tenga, créelos en la consola si los necesita.
 
 Los permisos nuevos aparecen en el siguiente token de cada usuario (a lo sumo 300 s después, o al renovar).
 
 ## Vuelta atrás
 
-- **Antes del paso 4:** quite a los usuarios de los grupos nuevos (consola: *Groups* → grupo → *Members* → *Leave*)
-  o elimine los tres grupos nuevos; los anteriores siguen intactos.
-- **Después del paso 4:** recree los grupos anteriores importando la plantilla del commit previo a la spec 026 en un
-  realm de prueba y copiando sus roles, o reasigne a mano. Por eso conviene esperar a comprobar el paso 3.
+- **Antes del paso 4:** quite a los usuarios de los grupos nuevos o vacíe sus roles; los anteriores siguen intactos.
+  En el servidor OCI, vaciar los roles de las áreas lo devuelve a su estado inicial.
+- **Después del paso 4:** recree los grupos anteriores importando la plantilla del commit previo en un realm de
+  prueba y copiando sus roles, o reasigne a mano. Por eso conviene esperar a comprobar el paso 3.
 
 ## Verificado
 
-Probado en la pila aislada `sio-it-*` partiendo de un realm con la plantilla anterior (ver
+Probado en la pila aislada `sio-it-*` desde los tres estados de partida (ver
 `specs/026-three-permission-groups/baseline/migracion.md`).

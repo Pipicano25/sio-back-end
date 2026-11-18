@@ -1813,6 +1813,7 @@
   },
   "groups": [
     {
+      "id": "753f037b-7d06-4309-9166-1c6a4bc4ef04",
       "name": "superadmin",
       "clientRoles": {
         "sio-api": [
@@ -1822,6 +1823,7 @@
       }
     },
     {
+      "id": "f08f068d-4001-468e-9246-8c6e47f5d630",
       "name": "admin",
       "clientRoles": {
         "sio-api": [
@@ -1879,12 +1881,76 @@
       }
     },
     {
-      "name": "empleado",
+      "id": "f3c2df7b-c966-4c33-b824-6795b4a09a84",
+      "name": "Compras",
       "clientRoles": {
         "sio-api": [
-          "empleado",
           "perm:business-reporting:purchases:read",
-          "perm:business-reporting:stock_evolution:read",
+          "perm:commercial-relationship:company_customers:read",
+          "perm:commercial-relationship:company_product_presentations:read",
+          "perm:commercial-relationship:company_products:read",
+          "perm:commercial-relationship:company_suppliers:read",
+          "perm:commercial-relationship:customer_credit_profiles:read",
+          "perm:commercial-relationship:customer_payment_conditions:read",
+          "perm:commercial-relationship:customer_segments:read",
+          "perm:commercial-relationship:price_list_items:read",
+          "perm:commercial-relationship:price_lists:read",
+          "perm:commercial-relationship:product_pricing_policies:read",
+          "perm:commercial-relationship:supplier_commercial_conditions:read",
+          "perm:commercial-relationship:supplier_evaluations:read",
+          "perm:commercial-relationship:supplier_payment_conditions:read",
+          "perm:commercial-relationship:supplier_products:read",
+          "perm:geography:all:read",
+          "perm:operational-context:all:read",
+          "perm:party-identity:global_business_sectors:read",
+          "perm:party-identity:identification_type_rules:read",
+          "perm:party-identity:organization_business_sectors:read",
+          "perm:party-identity:organization_contact_persons:create",
+          "perm:party-identity:organization_contact_persons:read",
+          "perm:party-identity:organization_contact_persons:update",
+          "perm:party-identity:organization_contact_profiles:create",
+          "perm:party-identity:organization_contact_profiles:read",
+          "perm:party-identity:organization_contact_profiles:update",
+          "perm:party-identity:organization_identities:create",
+          "perm:party-identity:organization_identities:read",
+          "perm:party-identity:organization_identities:update",
+          "perm:party-identity:organization_legal_representatives:read",
+          "perm:party-identity:person_contact_profiles:create",
+          "perm:party-identity:person_contact_profiles:read",
+          "perm:party-identity:person_contact_profiles:update",
+          "perm:party-identity:person_identities:create",
+          "perm:party-identity:person_identities:read",
+          "perm:party-identity:person_identities:update",
+          "perm:payment-reference:all:read",
+          "perm:product-catalog:all:read",
+          "perm:purchase:purchase_details:create",
+          "perm:purchase:purchase_details:delete",
+          "perm:purchase:purchase_details:read",
+          "perm:purchase:purchase_details:update",
+          "perm:purchase:purchase_lifecycle_events:create",
+          "perm:purchase:purchase_lifecycle_events:delete",
+          "perm:purchase:purchase_lifecycle_events:read",
+          "perm:purchase:purchase_lifecycle_events:update",
+          "perm:purchase:purchase_operations:create",
+          "perm:purchase:purchase_operations:delete",
+          "perm:purchase:purchase_operations:read",
+          "perm:purchase:purchase_operations:update",
+          "perm:purchase:purchase_sequences:create",
+          "perm:purchase:purchase_sequences:delete",
+          "perm:purchase:purchase_sequences:read",
+          "perm:purchase:purchase_sequences:update",
+          "perm:purchase:purchases:create",
+          "perm:purchase:purchases:delete",
+          "perm:purchase:purchases:read",
+          "perm:purchase:purchases:update"
+        ]
+      }
+    },
+    {
+      "id": "d0ef048f-0161-4512-b4b8-91bbe585921e",
+      "name": "Ventas",
+      "clientRoles": {
+        "sio-api": [
           "perm:business-reporting:top_selling_products:read",
           "perm:commercial-relationship:company_customers:create",
           "perm:commercial-relationship:company_customers:read",
@@ -1902,16 +1968,6 @@
           "perm:commercial-relationship:supplier_payment_conditions:read",
           "perm:commercial-relationship:supplier_products:read",
           "perm:geography:all:read",
-          "perm:inventory:adjustments:create",
-          "perm:inventory:adjustments:read",
-          "perm:inventory:balances:read",
-          "perm:inventory:company-policies:read",
-          "perm:inventory:counts:create",
-          "perm:inventory:counts:read",
-          "perm:inventory:movements:read",
-          "perm:inventory:product-policies:read",
-          "perm:inventory:stock_evolution:read",
-          "perm:inventory:valuation:read",
           "perm:operational-context:all:read",
           "perm:party-identity:global_business_sectors:read",
           "perm:party-identity:identification_type_rules:read",
@@ -1935,34 +1991,40 @@
           "perm:payment-reference:all:read",
           "perm:product-catalog:all:read",
           "perm:product-inventory-query:inventory_overviews:read",
-          "perm:product-inventory-query:inventory_summary:read",
-          "perm:product-inventory-query:low_stock_products:read",
           "perm:product-inventory-query:product_overviews:read",
           "perm:product-inventory-query:stock:read",
-          "perm:purchase:purchase_details:create",
-          "perm:purchase:purchase_details:delete",
-          "perm:purchase:purchase_details:read",
-          "perm:purchase:purchase_details:update",
-          "perm:purchase:purchase_lifecycle_events:create",
-          "perm:purchase:purchase_lifecycle_events:delete",
-          "perm:purchase:purchase_lifecycle_events:read",
-          "perm:purchase:purchase_lifecycle_events:update",
-          "perm:purchase:purchase_operations:create",
-          "perm:purchase:purchase_operations:delete",
-          "perm:purchase:purchase_operations:read",
-          "perm:purchase:purchase_operations:update",
-          "perm:purchase:purchase_sequences:create",
-          "perm:purchase:purchase_sequences:delete",
-          "perm:purchase:purchase_sequences:read",
-          "perm:purchase:purchase_sequences:update",
-          "perm:purchase:purchases:create",
-          "perm:purchase:purchases:delete",
-          "perm:purchase:purchases:read",
-          "perm:purchase:purchases:update",
           "perm:sales:all:create",
           "perm:sales:all:delete",
           "perm:sales:all:read",
           "perm:sales:all:update"
+        ]
+      }
+    },
+    {
+      "id": "bb1fd9e5-ef48-4c1d-926c-a112758075bb",
+      "name": "Inventario",
+      "clientRoles": {
+        "sio-api": [
+          "perm:business-reporting:stock_evolution:read",
+          "perm:commercial-relationship:company_products:read",
+          "perm:geography:all:read",
+          "perm:inventory:adjustments:create",
+          "perm:inventory:adjustments:read",
+          "perm:inventory:balances:read",
+          "perm:inventory:company-policies:read",
+          "perm:inventory:counts:create",
+          "perm:inventory:counts:read",
+          "perm:inventory:movements:read",
+          "perm:inventory:product-policies:read",
+          "perm:inventory:stock_evolution:read",
+          "perm:inventory:valuation:read",
+          "perm:operational-context:all:read",
+          "perm:product-catalog:all:read",
+          "perm:product-inventory-query:inventory_overviews:read",
+          "perm:product-inventory-query:inventory_summary:read",
+          "perm:product-inventory-query:low_stock_products:read",
+          "perm:product-inventory-query:product_overviews:read",
+          "perm:product-inventory-query:stock:read"
         ]
       }
     }
@@ -2083,7 +2145,125 @@
       "lastName": "DAO",
       "email": "operario.dao@sio.local",
       "groups": [
-        "/empleado"
+        "/Compras",
+        "/Ventas",
+        "/Inventario"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "66730e09-9adf-4a5a-ad8e-f452f7af19fc",
+      "username": "alex",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Alex",
+      "lastName": "Astudillo",
+      "email": "alex@gmail.com",
+      "groups": [
+        "/Compras",
+        "/Inventario",
+        "/Ventas",
+        "/admin",
+        "/superadmin"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "84a400d4-654f-4ebc-9d81-3dd4d1a567a5",
+      "username": "manuel",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Manuel",
+      "lastName": "Lagos",
+      "email": "mlagoscarvajal7@gmail.com",
+      "groups": [
+        "/Compras",
+        "/Inventario",
+        "/Ventas",
+        "/admin"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "9ddeeeba-7e34-41e4-a960-5b6ef10fff25",
+      "username": "pedro",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Pedro",
+      "lastName": "Manrique",
+      "email": "pedro@gmail.com",
+      "groups": [
+        "/Compras",
+        "/Inventario",
+        "/Ventas",
+        "/admin"
+      ],
+      "clientRoles": {
+        "account": [
+          "manage-account",
+          "manage-account-links",
+          "view-profile"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "b1dd207f-361b-492c-9466-37e892e29a5e",
+      "username": "tomas",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Tomas",
+      "lastName": "Manrique",
+      "email": "tomas@gmail.com",
+      "groups": [
+        "/Compras",
+        "/Inventario",
+        "/Ventas"
       ],
       "clientRoles": {
         "account": [

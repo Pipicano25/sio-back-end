@@ -19,6 +19,15 @@ REALM = REPO_ROOT / "infrastructure" / "keycloak" / "realm-template" / "sio-real
 _data = json.loads(REALM.read_text(encoding="utf-8"))
 _groups = {"/" + group["name"]: group for group in _data["groups"]}
 
+# Solo los usuarios de prueba aparecen en los ejemplos; los copiados del servidor OCI (alex, manuel, pedro, tomas)
+# quedan fuera (spec 026).
+EXAMPLE_USERS = ("admin.sio", "admin.dao", "operario.dao")
+
+
+def _user_roles(user):
+    """Roles de `sio-api` del usuario: suma de los de todos sus grupos, sin repetir (spec 026)."""
+    return list(dict.fromkeys(role for path in user["groups"] for role in _groups[path]["clientRoles"]["sio-api"]))
+
 REALM_ROLES = frozenset(role["name"] for role in _data["roles"]["client"]["sio-api"])
 
 USERS: list[dict] = []
@@ -31,8 +40,10 @@ for user in _data["users"]:
             "roles": user.get("clientRoles", {}).get("sio-api", []),
         }
         continue
-    group = user["groups"][0]
-    roles = _groups[group]["clientRoles"]["sio-api"]
+    if user["username"] not in EXAMPLE_USERS:
+        continue
+    roles = _user_roles(user)
+    group = ", ".join(path.lstrip("/") for path in user["groups"])
     USERS.append(
         dict(
             username=user["username"],

@@ -74,15 +74,15 @@ OPERATOR = "inventory-test-operator"
 PURCHASE_CLIENT = "purchase-service"
 SALES_CLIENT = "sales-service"
 
-# Roles de cada usuario de prueba: los de su grupo en la plantilla del realm (spec 026: `superadmin`, `admin` y
-# `empleado`). Se leen de la plantilla para que las pruebas sigan siempre al realm vigente.
+# Roles de cada usuario de prueba: los de su grupo en la plantilla del realm (spec 026: `superadmin`, `admin`, `Compras`,
+# `Ventas` e `Inventario`; se suman los de todos sus grupos). Se leen de la plantilla para que las pruebas sigan siempre al realm vigente.
 _REALM = json.loads(
     (PROJECT_ROOT.parents[1] / "infrastructure" / "keycloak" / "realm-template" / "sio-realm.template.json")
     .read_text(encoding="utf-8")
 )
 _GROUP_ROLES = {"/" + group["name"]: tuple(group["clientRoles"]["sio-api"]) for group in _REALM["groups"]}
 REALM_USER_ROLES: dict[str, tuple[str, ...]] = {
-    user["username"]: _GROUP_ROLES[user["groups"][0]]
+    user["username"]: tuple(dict.fromkeys(role for path in user["groups"] for role in _GROUP_ROLES[path]))
     for user in _REALM["users"]
     if "serviceAccountClientId" not in user
 }

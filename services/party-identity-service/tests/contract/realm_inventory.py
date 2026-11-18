@@ -43,8 +43,14 @@ def explicit_read_roles(realm: dict | None = None) -> list[str]:
     )
 
 
+OPERARIO_AREAS = ("Compras", "Ventas", "Inventario")
+
+
 def group_roles(group_name: str, realm: dict | None = None) -> list[str]:
+    """Roles de `sio-api` de un grupo. `operario` es la suma de las tres áreas (spec 026, versión del servidor OCI)."""
     realm = realm or load_realm()
+    if group_name == "operario":
+        return list(dict.fromkeys(role for area in OPERARIO_AREAS for role in group_roles(area, realm)))
     for group in realm["groups"]:
         if group["name"] == group_name:
             return list(group.get("clientRoles", {}).get("sio-api", []))
@@ -127,16 +133,17 @@ def declared_read_permissions() -> tuple[set[str], list[str]]:
     return resolved, sorted(dynamic)
 
 
-# Grupos de la instantánea (plantilla anterior a Q-C1). Desde la spec 026 el realm tiene solo `superadmin`, `admin` y
-# `empleado`; `PREVIOUS_TO_CURRENT` dice qué grupo nuevo hereda las lecturas de cada grupo de la instantánea.
+# Grupos de la instantánea (plantilla anterior a Q-C1). Desde la spec 026 el realm tiene `superadmin`, `admin` y las
+# áreas `Compras`, `Ventas` e `Inventario` (el operario es la suma de las tres); `PREVIOUS_TO_CURRENT` dice qué grupo
+# nuevo hereda las lecturas de cada grupo de la instantánea.
 SNAPSHOT_GROUPS = ("administradores", "supervisores", "compras", "ventas", "inventario", "reportes", "consulta")
-ALL_GROUPS = ("superadmin", "admin", "empleado")
+ALL_GROUPS = ("superadmin", "admin", "Compras", "Ventas", "Inventario")
 PREVIOUS_TO_CURRENT = {
     "administradores": "superadmin",
     "supervisores": "admin",
-    "compras": "empleado",
-    "ventas": "empleado",
-    "inventario": "empleado",
+    "compras": "operario",
+    "ventas": "operario",
+    "inventario": "operario",
 }
 
 

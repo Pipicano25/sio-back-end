@@ -10,7 +10,7 @@ Este documento explica qué usuarios de prueba trae el realm de Keycloak (`infra
 2. Los permisos vienen en el token, en `resource_access.sio-api.roles`. Keycloak se los asigna por el **grupo** al que pertenece el usuario (el usuario no tiene roles propios).
 3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, `all` vale como comodín en cualquier parte:
    - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.
-   - `perm:product-catalog:all:read` → solo `read`, solo en el catálogo (lo tienen los grupos `admin` y `empleado`; `admin` tiene además `:all:create` y `:all:update`, pero no `deactivate` ni `delete`).
+   - `perm:product-catalog:all:read` → solo `read`, solo en el catálogo (lo tienen los grupos `admin` y las tres áreas; `admin` tiene además `:all:create` y `:all:update`, pero no `deactivate` ni `delete`).
 4. Cada URL exige **un** permiso concreto (por ejemplo `perm:product-catalog:brands:create`). Si ninguno de los permisos del usuario lo cubre, el servicio responde `403 Forbidden` e indica cuál falta. Sin token, o con un token vencido, responde `401 Unauthorized`.
 5. El permiso se revisa **antes** que el cuerpo: un usuario sin permiso recibe `403` aunque el JSON esté mal.
 
@@ -22,7 +22,7 @@ Todos comparten la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD` (`in
 | --- | --- | --- | --- |
 | `admin.sio` | `superadmin` | `perm:all:all:all` | Todo, incluido inactivar |
 | `admin.dao` | `admin` | 49 permisos explícitos; en el catálogo: `perm:commercial-relationship:all:create`<br>`perm:commercial-relationship:all:delete`<br>`perm:commercial-relationship:all:read`<br>`perm:commercial-relationship:all:update`<br>`perm:geography:all:create`<br>`perm:geography:all:read`<br>`perm:geography:all:update`<br>`perm:operational-context:all:create`<br>`perm:operational-context:all:delete`<br>`perm:operational-context:all:read`<br>`perm:operational-context:all:update`<br>`perm:party-identity:all:create`<br>`perm:party-identity:all:read`<br>`perm:party-identity:all:update`<br>`perm:payment-reference:all:create`<br>`perm:payment-reference:all:read`<br>`perm:payment-reference:all:update`<br>`perm:product-catalog:all:create`<br>`perm:product-catalog:all:read`<br>`perm:product-catalog:all:update`<br>`perm:product-catalog:first-use:register-manual`<br>`perm:purchase:all:all`<br>`perm:sales:all:all` | Consultar, crear y modificar. **No** inactivar ni eliminar |
-| `operario.dao` | `empleado` | 80 permisos explícitos; en el catálogo: `perm:geography:all:read`<br>`perm:operational-context:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:sales:all:create`<br>`perm:sales:all:delete`<br>`perm:sales:all:read`<br>`perm:sales:all:update` | Solo consultar |
+| `operario.dao` | `Compras, Ventas, Inventario` | 80 permisos explícitos; en el catálogo: `perm:geography:all:read`<br>`perm:operational-context:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:sales:all:create`<br>`perm:sales:all:delete`<br>`perm:sales:all:read`<br>`perm:sales:all:update` | Solo consultar |
 
 ## Cómo obtener el token de cada usuario
 

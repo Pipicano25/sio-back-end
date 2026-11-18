@@ -154,7 +154,7 @@ EXERCISES = [
                   "producto tenga imagen (la «Caja x 12» del paso 2).",
                   "`image_url` es la URL directa que construye Product Catalog: se usa sin token en `<img src>`.",
                   "Sin `include_images`, las presentaciones no traen `images`.",
-                  "`operario.dao` (grupo `empleado`) ve precios, existencias y mínimos."],
+                  "`operario.dao` (grupos `Compras`, `Ventas` e `Inventario`) ve precios, existencias y mínimos."],
                  save={"CURSOR": "next_cursor"}),
             step("02-segunda-pagina.md", "Página siguiente con el cursor", "operario.dao",
                  f"{BASE}/product-overviews?search=Colgate&has_image=true&page_size=2&cursor=<CURSOR>", 200,
@@ -269,13 +269,13 @@ EXERCISES = [
         title="Permisos y bloques visibles",
         purpose=(
             "Cada bloque de la respuesta (precios, existencias y mínimos) depende de un permiso propio. Con los grupos "
-            "de la spec 026, `empleado` y `admin` tienen los tres; un usuario con permisos parciales vería menos "
+            "de la spec 026, `admin` y un usuario en las tres áreas (como `operario.dao`) tienen los tres; un usuario con permisos parciales vería menos "
             "bloques (lo verifican las pruebas automáticas del servicio con identidades sintéticas)."
         ),
         steps=[
-            step("01-empleado-ve-todos-los-bloques.md", "Productos como empleado", "operario.dao",
+            step("01-empleado-ve-todos-los-bloques.md", "Productos como operario", "operario.dao",
                  f"{BASE}/product-overviews?search=Loratadina", 200,
-                 ["`operario.dao` (grupo `empleado`) tiene `perm:commercial-relationship:price_list_items:read`, "
+                 ["`operario.dao` (grupos `Compras`, `Ventas` e `Inventario`) tiene `perm:commercial-relationship:price_list_items:read`, "
                   "`perm:inventory:balances:read` y `perm:inventory:product-policies:read`: ve `price`, existencias, "
                   "`minimum_stock` y `minimum_state`."]),
             step("02-admin-ve-todos-los-bloques.md", "Productos como Admin", "admin.dao",

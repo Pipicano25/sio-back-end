@@ -9,7 +9,7 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 - **Escribir** ventas y líneas, confirmar y anular exige además membresía `ACTIVE` en la empresa y asignación `ACTIVE` a la sucursal de la venta (Operational Context con el token del usuario). **No obvio**: tener `perm:sales:all:update` o `perm:all:all:all` no basta sin la asignación.
 - **Secuencias** exigen membresía (no asignación). **Leer** exige permiso y membresía.
 - Crear una venta con líneas exige además `perm:sales:sale_details:create`; anular exige `perm:sales:sales:delete` (lo tienen los tres grupos).
-- **Rentabilidad** (costo, `cost_known`, margen, porcentaje y `has_unknown_cost`): solo con `perm:sales:sales:read-profitability`, que no abre ninguna ruta por sí solo. **No obvio**: `perm:sales:all:read` no la incluye; el grupo `empleado` no la tiene (C-08); `admin` la tiene por `perm:sales:all:all` y `superadmin` por `perm:all:all:all`. Sin el permiso, los campos se omiten.
+- **Rentabilidad** (costo, `cost_known`, margen, porcentaje y `has_unknown_cost`): solo con `perm:sales:sales:read-profitability`, que no abre ninguna ruta por sí solo. **No obvio**: `perm:sales:all:read` no la incluye; el operario (`Compras`, `Ventas` e `Inventario`) no la tiene (C-08); `admin` la tiene por `perm:sales:all:all` y `superadmin` por `perm:all:all:all`. Sin el permiso, los campos se omiten.
 
 ## Usuarios de prueba
 
@@ -17,7 +17,7 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 | --- | --- | --- | --- | --- | --- | --- |
 | `admin.sio` | `superadmin` | Sí | Sí | Sí | Sí | Sí |
 | `admin.dao` | `admin` | Sí | Sí | Sí | Sí | Sí |
-| `operario.dao` | `empleado` | Sí | Sí | Sí | Sí | No |
+| `operario.dao` | `Compras, Ventas, Inventario` | Sí | Sí | Sí | Sí | No |
 
 Las escrituras requieren además la asignación a la sucursal.
 

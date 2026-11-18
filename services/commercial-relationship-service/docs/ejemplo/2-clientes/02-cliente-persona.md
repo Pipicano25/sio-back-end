@@ -28,7 +28,7 @@ POST /api/v1/companies/<EMPRESA>/company-customers
 **Permiso que exige la URL:** `perm:commercial-relationship:company_customers:create`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`), `operario.dao` (por `perm:commercial-relationship:company_customers:create`)
-- ℹ️ Para incorporar clientes el token del usuario debe poder además **leer** en Party Identity (personas, organizaciones y personas de contacto) y, para organizaciones, `perm:operational-context:companies:read` (comprobación de la propia empresa). Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.
+- ℹ️ Para incorporar clientes el token del usuario debe poder además **leer** en Party Identity (personas, organizaciones y personas de contacto) y, para organizaciones, `perm:operational-context:companies:read` (comprobación de la propia empresa). La tienen `superadmin`, `admin`, `Compras` y `Ventas` (`Inventario` no lee Party Identity).
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
@@ -73,7 +73,7 @@ POST /api/v1/companies/<EMPRESA>/company-customers
 **Permiso que exige la URL:** `perm:commercial-relationship:company_customers:create`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`), `operario.dao` (por `perm:commercial-relationship:company_customers:create`)
-- ℹ️ Para incorporar clientes el token del usuario debe poder además **leer** en Party Identity (personas, organizaciones y personas de contacto) y, para organizaciones, `perm:operational-context:companies:read` (comprobación de la propia empresa). Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.
+- ℹ️ Para incorporar clientes el token del usuario debe poder además **leer** en Party Identity (personas, organizaciones y personas de contacto) y, para organizaciones, `perm:operational-context:companies:read` (comprobación de la propia empresa). La tienen `superadmin`, `admin`, `Compras` y `Ventas` (`Inventario` no lee Party Identity).
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**

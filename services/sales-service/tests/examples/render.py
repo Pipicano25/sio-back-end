@@ -206,11 +206,11 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `operario.dao` (grupo `empleado`, "
+        "- Puede: `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`, "
         "`perm:sales:all:create|read|update|delete`) registran, confirman y anulan ventas de las sucursales "
         "asignadas, **sin** ver costo ni margen; `admin.dao` (grupo `admin`, `perm:sales:all:all`) también, y ve "
         "la rentabilidad; `admin.sio` (grupo `superadmin`) por comodín, con rentabilidad.",
-        "- No puede: ninguna cuenta de servicio escribe ventas (ni el propio `sales-service`); el grupo `empleado` no "
+        "- No puede: ninguna cuenta de servicio escribe ventas (ni el propio `sales-service`); el operario (`Compras`, `Ventas` e `Inventario`) no "
         "ve la rentabilidad; sin asignación a la sucursal, ni el comodín permite escribir.",
     ]
     return "\n".join(lines) + "\n"
@@ -249,7 +249,7 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "`perm:sales:sales:delete` (lo tienen los tres grupos).",
         "- **Rentabilidad** (costo, `cost_known`, margen, porcentaje y `has_unknown_cost`): solo con "
         "`perm:sales:sales:read-profitability`, que no abre ninguna ruta por sí solo. **No obvio**: "
-        "`perm:sales:all:read` no la incluye; el grupo `empleado` no la tiene (C-08); `admin` la tiene por "
+        "`perm:sales:all:read` no la incluye; el operario (`Compras`, `Ventas` e `Inventario`) no la tiene (C-08); `admin` la tiene por "
         "`perm:sales:all:all` y `superadmin` por `perm:all:all:all`. Sin el permiso, los campos se omiten.",
         "",
         "## Usuarios de prueba",

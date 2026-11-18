@@ -51,9 +51,9 @@ READ = "perm:audit:audit-events:read"
 PLATFORM_READ = "perm:audit:platform-events:read"
 EMITTER = "audit-test-emitter"
 
-# Roles de cada usuario de prueba: los de su grupo en la plantilla del realm (spec 026: `superadmin`, `admin` y
-# `empleado`), leídos de la plantilla. DS-18: `superadmin` tiene la auditoría por su comodín y `admin` solo la
-# lectura de empresa (`audit-events:read`); `empleado` no tiene permisos de auditoría.
+# Roles de cada usuario de prueba: los de su grupo en la plantilla del realm (spec 026: `superadmin`, `admin`, `Compras`,
+# `Ventas` e `Inventario`; se suman los de todos sus grupos), leídos de la plantilla. DS-18: `superadmin` tiene la auditoría por su comodín y `admin` solo la
+# lectura de empresa (`audit-events:read`); las áreas no tienen permisos de auditoría.
 _REALM = json.loads(
     (PROJECT_ROOT.parents[1] / "infrastructure" / "keycloak" / "realm-template" / "sio-realm.template.json")
     .read_text(encoding="utf-8")
@@ -61,7 +61,7 @@ _REALM = json.loads(
 _GROUP_ROLES = {"/" + group["name"]: tuple(group["clientRoles"]["sio-api"]) for group in _REALM["groups"]}
 USER_ROLES: dict[str, tuple[str, ...]] = {
     **{
-        user["username"]: _GROUP_ROLES[user["groups"][0]]
+        user["username"]: tuple(dict.fromkeys(role for path in user["groups"] for role in _GROUP_ROLES[path]))
         for user in _REALM["users"]
         if "serviceAccountClientId" not in user
     },

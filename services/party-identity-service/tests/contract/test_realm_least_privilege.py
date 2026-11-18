@@ -28,12 +28,12 @@ SECTORS = {
 }
 CONTACTS = SENSITIVE - {"perm:party-identity:organization_legal_representatives:read"}
 
-# Matriz objetivo de Q-C1 con los tres grupos de la spec 026: los tres leen contactos, representantes y sectores
-# (el Empleado registra y corrige personas y organizaciones; FR-010, FR-011).
+# Matriz objetivo de Q-C1 con los grupos de la spec 026: superadmin, admin y el operario (Compras + Ventas +
+# Inventario) leen contactos, representantes y sectores (el operario registra y corrige personas y organizaciones).
 EXPECTED = {
     "superadmin": SENSITIVE | SECTORS,
     "admin": SENSITIVE | SECTORS,
-    "empleado": SENSITIVE | SECTORS,
+    "operario": SENSITIVE | SECTORS,
 }
 SNAPSHOT = json.loads(inventory.SNAPSHOT.read_text(encoding="utf-8"))
 
@@ -66,7 +66,7 @@ def test_superadmin_keeps_the_global_wildcard(realm) -> None:
     assert inventory.group_roles("superadmin", realm) == ["superadmin", "perm:all:all:all"]
 
 
-@pytest.mark.parametrize("group", ["admin", "empleado"])
+@pytest.mark.parametrize("group", ["admin", "Compras", "Ventas", "Inventario"])
 def test_user_groups_do_not_use_global_read_wildcards(realm, group) -> None:
     roles = inventory.group_roles(group, realm)
 
@@ -74,7 +74,7 @@ def test_user_groups_do_not_use_global_read_wildcards(realm, group) -> None:
     assert "perm:all:all:all" not in roles
 
 
-@pytest.mark.parametrize("group", ["admin", "empleado"])
+@pytest.mark.parametrize("group", ["admin", "Compras", "Ventas", "Inventario"])
 def test_user_groups_never_delete_in_party_identity(realm, group) -> None:
     deletes = [name for name in inventory.realm_roles(realm) if name.startswith("perm:party-identity:")
                and name.endswith(":delete") and ":all:" not in name]

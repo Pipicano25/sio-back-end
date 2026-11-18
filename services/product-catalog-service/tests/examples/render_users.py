@@ -208,7 +208,7 @@ def render_users(ex, records):
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
         grants = ", ".join(f"`{g}`" for g in EMPLEADO["perms"] if g.startswith("perm:product-catalog:")) or "ninguno"
-        out += [f"El grupo `empleado` solo lee el catálogo ({grants}): puede **leer**, pero la "
+        out += [f"El operario (`Compras`, `Ventas` e `Inventario`) solo lee el catálogo ({grants}): puede **leer**, pero la "
                 f"URL exige `{p}`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
 
     n += 1
@@ -286,7 +286,7 @@ def render_general(exercises, all_records):
             "`all` vale como comodín en cualquier parte:",
             "   - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.",
             "   - `perm:product-catalog:all:read` → solo `read`, solo en el catálogo (lo tienen los grupos `admin` y "
-            "`empleado`; `admin` tiene además `:all:create` y `:all:update`, pero no `deactivate` ni `delete`).",
+            "las tres áreas; `admin` tiene además `:all:create` y `:all:update`, pero no `deactivate` ni `delete`).",
             "4. Cada URL exige **un** permiso concreto (por ejemplo `perm:product-catalog:brands:create`). "
             "Si ninguno de los permisos del usuario lo cubre, el servicio responde `403 Forbidden` e indica cuál falta. "
             "Sin token, o con un token vencido, responde `401 Unauthorized`.",

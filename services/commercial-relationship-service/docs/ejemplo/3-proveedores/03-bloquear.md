@@ -25,7 +25,7 @@ POST /api/v1/company-suppliers/<PROVEEDOR>/block
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:delete`)
 - ❌ **No pueden (responde `403`):** `operario.dao` — sobre `company_suppliers` solo tiene `read`; le falta `delete`
-- ℹ️ Inactivar **y bloquear** un proveedor exigen `delete` (DS-16); reactivar y desbloquear exigen `update`. El grupo `empleado` no puede bloquear.
+- ℹ️ Inactivar **y bloquear** un proveedor exigen `delete` (DS-16); reactivar y desbloquear exigen `update`. El operario (`Compras`, `Ventas` e `Inventario`) no puede bloquear.
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**

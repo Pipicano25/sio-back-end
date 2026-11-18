@@ -16,5 +16,5 @@
 
 ## Ejemplos
 
-- Puede: `operario.dao` (grupo `empleado`, `perm:sales:all:create|read|update|delete`) registran, confirman y anulan ventas de las sucursales asignadas, **sin** ver costo ni margen; `admin.dao` (grupo `admin`, `perm:sales:all:all`) también, y ve la rentabilidad; `admin.sio` (grupo `superadmin`) por comodín, con rentabilidad.
-- No puede: ninguna cuenta de servicio escribe ventas (ni el propio `sales-service`); el grupo `empleado` no ve la rentabilidad; sin asignación a la sucursal, ni el comodín permite escribir.
+- Puede: `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`, `perm:sales:all:create|read|update|delete`) registran, confirman y anulan ventas de las sucursales asignadas, **sin** ver costo ni margen; `admin.dao` (grupo `admin`, `perm:sales:all:all`) también, y ve la rentabilidad; `admin.sio` (grupo `superadmin`) por comodín, con rentabilidad.
+- No puede: ninguna cuenta de servicio escribe ventas (ni el propio `sales-service`); el operario (`Compras`, `Ventas` e `Inventario`) no ve la rentabilidad; sin asignación a la sucursal, ni el comodín permite escribir.

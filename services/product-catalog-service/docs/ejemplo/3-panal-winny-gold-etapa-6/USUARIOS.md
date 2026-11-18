@@ -117,7 +117,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-El grupo `empleado` solo lee el catálogo (`perm:product-catalog:all:read`): puede **leer**, pero la URL exige `perm:product-catalog:brands:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
+El operario (`Compras`, `Ventas` e `Inventario`) solo lee el catálogo (`perm:product-catalog:all:read`): puede **leer**, pero la URL exige `perm:product-catalog:brands:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
 
 ### 3. `operario.dao` (Empleado) consulta el resultado (permitido)
 

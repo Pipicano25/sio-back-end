@@ -25,7 +25,7 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `admin.sio` | `superadmin` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
 | `admin.dao` | `admin` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
-| `operario.dao` | `empleado` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| `operario.dao` | `Compras, Ventas, Inventario` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
 
 ## Cómo obtener los tokens
 

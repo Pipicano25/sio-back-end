@@ -21,7 +21,7 @@ Cabeceras: `Idempotency-Key: rentabilidad-0001`.
 ### Por qué
 
 - Inventory descuenta 3 unidades a costo FIFO 1000.
-- `operario.dao` (grupo `empleado`) no tiene `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
+- `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`) no tiene `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
 
 ## Permiso
 

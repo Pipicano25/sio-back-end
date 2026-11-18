@@ -4,7 +4,7 @@ Lo grabado con las lecturas por HTTP debe repetirse igual con las lecturas por c
 ``GET /company-summaries`` no hace **ninguna** solicitud a otros servicios y responde en menos de 1 s con
 ``page_size=100`` (SC-003).
 
-Mundo propio de cada ejecución (datos ficticios): ``operario.dao`` (grupo ``empleado``) es miembro activo de 101 empresas nuevas
+Mundo propio de cada ejecución (datos ficticios): ``operario.dao`` (grupos ``Compras``, ``Ventas`` e ``Inventario``) es miembro activo de 101 empresas nuevas
 (una con la membresía inactivada, que no debe aparecer, y otra con la empresa inactivada, que aparece con
 ``company_status=INACTIVE``); se observan ``page_size=100`` y la segunda página con ``page_size=60``. Al terminar se inactivan sus membresías para que la siguiente ejecución vea solo las suyas.
 

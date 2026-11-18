@@ -95,7 +95,7 @@ GET /api/v1/organization-identities/<ORG_INV>/legal-representatives?state=all
 **Permiso que exige la URL:** `perm:party-identity:organization_legal_representatives:read`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:organization_legal_representatives:read`)
-- ℹ️ Dato sensible: solo lo leen los grupos con necesidad explícita. Con los grupos de la spec 026 lo leen los tres (`superadmin`, `admin` y `empleado`); solo `superadmin` y `admin` lo crean o modifican.
+- ℹ️ Dato sensible: solo lo leen los grupos con necesidad explícita. Con los grupos de la spec 026 lo leen `superadmin`, `admin`, `Compras` y `Ventas`; solo `superadmin` y `admin` lo crean o modifican.
 
 **Por qué se hace así**
 

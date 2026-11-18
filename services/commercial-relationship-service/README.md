@@ -389,7 +389,7 @@ Roles de cliente `sio-api` (plantilla `infrastructure/keycloak/realm-template/si
 | `automatic_price_applications` (spec 021) | Listar, obtener | — | `resolve`: resolución administrativa | — |
 | `automatic_price_update_requests` (spec 021) | — | `submit`: solo la identidad técnica de Purchase | — | — |
 
-Los permisos de la spec 021 solo los tienen `superadmin` y `admin` (el grupo `empleado` lista sus permisos
+Los permisos de la spec 021 solo los tienen `superadmin` y `admin` (los grupos de área listan sus permisos
 explícitamente, sin comodines, para no recibirlos), salvo `automatic_price_update_requests:submit`, que es del
 cliente técnico `purchase-service`.
 

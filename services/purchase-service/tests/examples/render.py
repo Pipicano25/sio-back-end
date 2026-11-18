@@ -213,11 +213,11 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `operario.dao` (grupo `empleado`, permisos explícitos de "
+        "- Puede: `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`, permisos explícitos de "
         "`purchase`) registran, confirman y anulan compras de las sucursales asignadas; `admin.dao` (grupo "
         "`admin`, `perm:purchase:all:all`) también, y además ajusta la tasa de impuesto de una línea; `admin.sio` "
         "(grupo `superadmin`) por comodín.",
-        "- No puede: ninguna cuenta de servicio escribe compras (ni el propio `purchase-service`); el grupo `empleado` "
+        "- No puede: ninguna cuenta de servicio escribe compras (ni el propio `purchase-service`); el operario (`Compras`, `Ventas` e `Inventario`) "
         "no ajusta tasas de línea; sin asignación a la sucursal, ni el comodín permite escribir.",
     ]
     return "\n".join(lines) + "\n"
@@ -254,7 +254,7 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "- **Secuencias** exigen membresía (no asignación). **Leer** exige permiso y membresía.",
         "- Crear una compra con líneas exige además `perm:purchase:purchase_details:create`; anular exige "
         "`perm:purchase:purchases:delete` (lo tienen los tres grupos). Ajustar la tasa de una línea exige "
-        "`perm:purchase:purchase_line_taxes:override`, que el grupo `empleado` no tiene.",
+        "`perm:purchase:purchase_line_taxes:override`, que el operario (`Compras`, `Ventas` e `Inventario`) no tiene.",
         "",
         "## Usuarios de prueba",
         "",

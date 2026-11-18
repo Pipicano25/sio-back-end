@@ -30,7 +30,7 @@ NOTES = {
     "perm:operational-context:branches:delete": "Inactivar una sucursal exige `delete`; reactivarla exige `update`.",
     "perm:operational-context:companies:create": "Para registrar o cambiar la organización o la ubicación, el token "
     "del usuario debe poder además **leer** en Party Identity y Geography: el servicio valida esas referencias con el "
-    "mismo token. Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.",
+    "mismo token. La tienen `superadmin`, `admin`, `Compras` y `Ventas` (`Inventario` no lee Party Identity).",
     "perm:operational-context:branches:read": "Las rutas de sucursales exigen solo permisos de `branches`, aunque la "
     "colección y el alta estén bajo `/api/v1/companies/{id}/branches`.",
 }
@@ -213,7 +213,7 @@ def render_users(ex, records):
     out += ["", "**Para hacer el ejercicio completo use `admin.sio`** (tiene `platform:administer` por "
             "`perm:all:all:all`). Los demás usuarios solo operan en las empresas donde tienen membresía `ACTIVE`; "
             "`admin.dao` (grupo `admin`) puede crear, modificar e inactivar allí, pero no registrar, inactivar o "
-            "reactivar empresas; los usuarios del grupo `empleado` solo consultan.", ""]
+            "reactivar empresas; los usuarios de las áreas (`Compras`, `Ventas` e `Inventario`) solo consultan.", ""]
 
     out += ["## Permiso por URL", "",
             "✅ = el usuario tiene el permiso (o los permisos) de la llamada · ❌ = recibe `403 Forbidden`. "
@@ -253,7 +253,7 @@ def render_users(ex, records):
         out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += [f"El grupo `empleado` solo tiene `perm:operational-context:all:read` en este servicio: puede **leer**, "
+        out += [f"El operario (`Compras`, `Ventas` e `Inventario`) solo tiene `perm:operational-context:all:read` en este servicio: puede **leer**, "
                 f"pero la URL exige {permission_text(p)}. El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
 
     read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET")
@@ -320,7 +320,7 @@ def render_general(exercises, all_records):
             "   - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.",
             "   - `perm:operational-context:all:delete` → solo `delete`, solo en Operational Context (lo tiene el "
             "grupo `admin`, junto con `:all:create`, `:all:read` y `:all:update`).",
-            "   - `perm:operational-context:all:read` → solo `read`, solo en Operational Context (grupo `empleado`).",
+            "   - `perm:operational-context:all:read` → solo `read`, solo en Operational Context (las tres áreas).",
             "4. Cada URL exige un permiso concreto (por ejemplo `perm:operational-context:companies:create`); registrar, "
             "inactivar y reactivar empresas exigen además `perm:operational-context:platform:administer`. "
             "Si falta alguno, el servicio responde `403 Forbidden` e indica cuál. "

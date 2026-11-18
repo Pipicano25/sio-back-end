@@ -17,7 +17,7 @@ ENDPOINTS = ("product-overviews", "inventory-overviews", "low-stock-products", "
 MATRIX = {
     "admin.sio": (200, 200, 200, 200),
     "admin.dao": (200, 200, 200, 200),
-    "operario.dao": (200, 200, 200, 200),  # grupo `empleado`: las cuatro consultas
+    "operario.dao": (200, 200, 200, 200),  # grupos Compras, Ventas e Inventario: las cuatro consultas
 }
 
 

@@ -6,14 +6,22 @@ Cómo debe leer el frontend los permisos del usuario para mostrar u ocultar mód
 
 ## Grupos y perfiles
 
-Cada usuario pertenece a uno de tres grupos de Keycloak (spec 026). El grupo da los permisos; la membresía en
-Operational Context dice en qué empresas se aplican.
+Hay cinco grupos de Keycloak (spec 026): dos perfiles (`superadmin`, `admin`) y tres áreas (`Compras`, `Ventas`,
+`Inventario`). Un usuario puede estar en **varios** grupos y recibe la **suma** de sus permisos; un operario típico
+está en las tres áreas. El grupo da los permisos; la membresía en Operational Context dice en qué empresas se
+aplican.
 
-| Perfil | Quién | Qué puede |
+| Grupo | Quién | Qué puede |
 | --- | --- | --- |
 | `superadmin` | Dueño del software y quienes él indique | Todo, en todas las empresas sin ser miembro; crear empresas; eliminar y desactivar datos globales |
 | `admin` | Gerente, dueño o encargado de una empresa | Todo en sus empresas (incluida la rentabilidad y los usuarios de la empresa); crear y modificar datos globales, sin eliminarlos ni desactivarlos |
-| `empleado` | Quien vende, compra y lleva el inventario | Ventas, compras, ajustes y conteos en sus empresas; crear, consultar y modificar personas y organizaciones; consultar lo demás. Sin rentabilidad |
+| `Compras` | Personal de compras | Compras en sus empresas, proveedores y lo que necesita consultar; crear y modificar personas y organizaciones |
+| `Ventas` | Personal de ventas | Ventas en sus empresas (sin rentabilidad), crear clientes y lo que necesita consultar; crear y modificar personas y organizaciones |
+| `Inventario` | Personal de bodega | Ajustes, conteos y consultas de existencias en sus empresas |
+
+Las tres áreas juntas equivalen al antiguo grupo `empleado`. Los grupos del usuario llegan en el claim `groups` de
+`userinfo` (por ejemplo `["/Compras", "/Ventas", "/Inventario"]`); sirven para mostrar el perfil, no para decidir
+permisos.
 
 ## Dónde están los permisos
 
@@ -23,7 +31,7 @@ En el **Access Token** que emite Keycloak para el cliente `sio-web`, en un únic
 {
   "aud": ["sio-api", "..."],
   "resource_access": {
-    "sio-api": { "roles": ["empleado", "perm:inventory:balances:read", "perm:geography:all:read", "..."] }
+    "sio-api": { "roles": ["perm:inventory:balances:read", "perm:geography:all:read", "..."] }
   }
 }
 ```
@@ -31,8 +39,8 @@ En el **Access Token** que emite Keycloak para el cliente `sio-web`, en un únic
 - Son los client roles **efectivos** de `sio-api`: los de los grupos del usuario más los asignados directamente
   (los incluye el client scope estándar `roles`, mapper `client roles`). No hay otro claim con permisos; no usar
   `realm_access`, `groups` ni el ID Token.
-- Solo cuentan los roles con formato `perm:{servicio}:{recurso}:{accion}`. Los demás (`superadmin`, `admin`,
-  `empleado`) son el **perfil** del grupo: sirven para mostrar el rol del usuario, no para decidir permisos.
+- Solo cuentan los roles con formato `perm:{servicio}:{recurso}:{accion}`. Los demás (`superadmin`, `admin`)
+  son el **perfil** del grupo (las áreas no traen rol sin prefijo): sirven para mostrar el rol del usuario, no para decidir permisos.
   Un `perm:` mal formado (con más o menos de cuatro partes) se ignora.
 - El frontend lee el payload del Access Token (base64url) solo para la interfaz; no necesita verificar la firma,
   porque no toma decisiones de seguridad. La fuente del token es la respuesta de Keycloak, nunca un valor editable.
@@ -56,7 +64,7 @@ const puede = (roles: string[], s: string, r: string, a: string) => roles.some((
 | `perm:all:all:all` | Todo, en todas las empresas (grupo `superadmin`) |
 | `perm:sales:all:all` | Todo en Sales, incluida la rentabilidad (grupo `admin`) |
 | `perm:product-catalog:all:update` | Modificar cualquier recurso de Product Catalog, pero no `delete` ni `deactivate` (grupo `admin`) |
-| `perm:sales:sales:create` | Solo crear ventas (grupo `empleado`) |
+| `perm:sales:all:create` | Crear en cualquier recurso de Sales (grupo `Ventas`) |
 
 ## Módulos, menús y acciones
 
@@ -110,5 +118,5 @@ en cada operación; el frontend nunca envía una empresa que no esté en `me/ope
 
 - Guardar los permisos (ni los tokens) en `localStorage`; se derivan del Access Token vigente, en memoria.
 - Cachear la lista de permisos más allá de la vida del Access Token.
-- Decidir el acceso a datos por el perfil (`empleado`, `admin`) en lugar de por `perm:*`.
+- Decidir el acceso a datos por el perfil o el grupo (`admin`, `/Ventas`) en lugar de por `perm:*`.
 - Asumir que la ausencia de un botón protege una operación.

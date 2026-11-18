@@ -26,5 +26,5 @@
 
 ## Ejemplos
 
-- Puede: `admin.sio` (SuperAdmin), `admin.dao` (Admin) y el usuario del grupo `empleado` (`operario.dao`) consultan inventario de las empresas donde son miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.sio` y `admin.dao` configuran políticas.
-- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.sio`, que tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; el grupo `empleado` recibe `403` al configurar políticas.
+- Puede: `admin.sio` (SuperAdmin), `admin.dao` (Admin) y el usuario de las tres áreas (`operario.dao`) consultan inventario de las empresas donde son miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.sio` y `admin.dao` configuran políticas.
+- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.sio`, que tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; el operario (`Compras`, `Ventas` e `Inventario`) recibe `403` al configurar políticas.

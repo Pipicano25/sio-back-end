@@ -33,11 +33,11 @@ REALM = Path(__file__).resolve().parents[3] / "infrastructure" / "keycloak" / "r
 
 
 def _realm_user_roles() -> dict[str, tuple[str, ...]]:
-    """Roles de cada usuario de prueba según su grupo en la plantilla del realm (spec 026: superadmin, admin, empleado)."""
+    """Roles de cada usuario de prueba según su grupo en la plantilla del realm (spec 026: superadmin, admin, Compras, Ventas, Inventario; suma de sus grupos)."""
     data = json.loads(REALM.read_text(encoding="utf-8"))
     groups = {"/" + group["name"]: tuple(group["clientRoles"]["sio-api"]) for group in data["groups"]}
     return {
-        user["username"]: groups[user["groups"][0]]
+        user["username"]: tuple(dict.fromkeys(role for path in user["groups"] for role in groups[path]))
         for user in data["users"]
         if "serviceAccountClientId" not in user
     }

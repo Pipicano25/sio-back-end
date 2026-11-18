@@ -1,6 +1,6 @@
 # Ejercicio 8: Impuesto de compra por tasa
 
-Spec 021: el impuesto de cada línea ya no se escribe; Purchase lo calcula con la tasa de compra del producto en Commercial Relationship (`(subtotal − descuento) × tasa`). Un usuario del grupo `admin` puede ajustar la tasa de una línea para que coincida con la factura del proveedor (permiso propio); un empleado no. Las tasas son **ficticias**: 19 % (arroz) y 0 % (aceite) no representan tarifas reales.
+Spec 021: el impuesto de cada línea ya no se escribe; Purchase lo calcula con la tasa de compra del producto en Commercial Relationship (`(subtotal − descuento) × tasa`). Un usuario del grupo `admin` puede ajustar la tasa de una línea para que coincida con la factura del proveedor (permiso propio); un operario no. Las tasas son **ficticias**: 19 % (arroz) y 0 % (aceite) no representan tarifas reales.
 
 Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente: se ejecuta en una base nueva con el reloj fijo en el 5 de noviembre de 2026.
 

@@ -11,7 +11,7 @@ Este documento explica qué usuarios de prueba trae el realm de Keycloak (`infra
 3. Cada permiso tiene la forma `perm:{servicio}:{recurso}:{acción}`. En los permisos del usuario, `all` vale como comodín en cualquier parte:
    - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.
    - `perm:commercial-relationship:all:read` → solo `read`, solo en Commercial Relationship (el grupo `admin` lo tiene junto con `:all:create`, `:all:update` y `:all:delete`).
-   - El grupo `empleado` tiene lecturas explícitas de Commercial Relationship (sin políticas de ganancia ni actualizaciones automáticas, que exponen costos) y `company_customers:create`.
+   - Las áreas tienen lecturas explícitas de Commercial Relationship (sin políticas de ganancia ni actualizaciones automáticas, que exponen costos) y `company_customers:create`.
 4. Cada URL exige un permiso concreto (por ejemplo `perm:commercial-relationship:company_products:create`). Si falta, el servicio responde `403 Forbidden` e indica cuál. Sin token, o con un token vencido, responde `401 Unauthorized`.
 5. El permiso se revisa **antes** que todo lo demás: un usuario sin permiso recibe `403` aunque el JSON esté mal, y el servicio ni siquiera consulta Operational Context.
 6. **Aislamiento por empresa:** el permiso dice *qué* puede hacer el usuario; la membresía en Operational Context dice *dónde*. Sin membresía `ACTIVE` en la empresa, la URL responde `404`, igual que un `id` inexistente (URL con 🔒). **Ningún permiso de usuario exime de la membresía**, ni `perm:all:all:all` (DS-03).
@@ -25,7 +25,7 @@ Todos comparten la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD` (`in
 | --- | --- | --- | --- |
 | `admin.sio` | `superadmin` | `perm:all:all:all` | Todo, en las empresas donde es miembro |
 | `admin.dao` | `admin` | `perm:commercial-relationship:all:create`<br>`perm:commercial-relationship:all:delete`<br>`perm:commercial-relationship:all:read`<br>`perm:commercial-relationship:all:update`<br>`perm:commercial-relationship:automatic_price_applications:resolve` | Todo en las empresas donde es miembro (grupo `admin`): adoptar, incorporar, modificar, inactivar, bloquear, administrar políticas de ganancia y resolver actualizaciones automáticas |
-| `operario.dao` | `empleado` | `perm:commercial-relationship:company_customers:create`<br>`perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>`perm:commercial-relationship:company_products:read`<br>`perm:commercial-relationship:company_suppliers:read`<br>`perm:commercial-relationship:price_list_items:read`<br>`perm:commercial-relationship:price_lists:read` | Consultar (sin políticas de ganancia ni actualizaciones automáticas) e incorporar clientes |
+| `operario.dao` | `Compras, Ventas, Inventario` | `perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>`perm:commercial-relationship:company_products:read`<br>`perm:commercial-relationship:company_suppliers:read`<br>`perm:commercial-relationship:price_list_items:read`<br>`perm:commercial-relationship:price_lists:read`<br>`perm:commercial-relationship:company_customers:create` | Consultar (sin políticas de ganancia ni actualizaciones automáticas) e incorporar clientes |
 
 ## Cómo obtener el token de cada usuario
 
@@ -123,10 +123,10 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 ## Permisos que no son obvios
 
 - `perm:commercial-relationship:company_products:create`: Adoptar no exige permisos en Product Catalog al usuario: la elegibilidad y el registro de primer uso los hace el servicio con su propia identidad técnica (cliente `commercial-relationship-service`).
-- `perm:commercial-relationship:company_products:delete`: Inactivar exige `delete` aunque no borra nada; reactivar exige `update`. El grupo `empleado` no tiene `delete`.
-- `perm:commercial-relationship:company_customers:create`: Para incorporar clientes el token del usuario debe poder además **leer** en Party Identity (personas, organizaciones y personas de contacto) y, para organizaciones, `perm:operational-context:companies:read` (comprobación de la propia empresa). Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.
+- `perm:commercial-relationship:company_products:delete`: Inactivar exige `delete` aunque no borra nada; reactivar exige `update`. El operario (`Compras`, `Ventas` e `Inventario`) no tiene `delete`.
+- `perm:commercial-relationship:company_customers:create`: Para incorporar clientes el token del usuario debe poder además **leer** en Party Identity (personas, organizaciones y personas de contacto) y, para organizaciones, `perm:operational-context:companies:read` (comprobación de la propia empresa). La tienen `superadmin`, `admin`, `Compras` y `Ventas` (`Inventario` no lee Party Identity).
 - `perm:commercial-relationship:company_suppliers:create`: Igual que los clientes: el token debe poder leer organizaciones y personas de contacto en Party Identity y la empresa en Operational Context.
-- `perm:commercial-relationship:company_suppliers:delete`: Inactivar **y bloquear** un proveedor exigen `delete` (DS-16); reactivar y desbloquear exigen `update`. El grupo `empleado` no puede bloquear.
+- `perm:commercial-relationship:company_suppliers:delete`: Inactivar **y bloquear** un proveedor exigen `delete` (DS-16); reactivar y desbloquear exigen `update`. El operario (`Compras`, `Ventas` e `Inventario`) no puede bloquear.
 - Las URL de `http://localhost:8004` son de **Operational Context**, las de `http://localhost:8003` de **Product Catalog** y las de `http://localhost:8002` de **Party Identity**: exigen permisos de esos servicios.
 
 ## Qué usuario usar
@@ -135,5 +135,5 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 | --- | --- |
 | Hacer los ejercicios completos | `admin.sio` (con membresía en la empresa) |
 | Lo mismo como gerente de la empresa | `admin.dao` (grupo `admin`, con membresía) |
-| Verificar lo cargado | `operario.dao` (grupo `empleado`, con membresía) |
+| Verificar lo cargado | `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`, con membresía) |
 | Probar rechazos por falta de permiso | `operario.dao` en adoptar, modificar, inactivar o bloquear y en políticas de ganancia |

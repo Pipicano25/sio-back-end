@@ -85,7 +85,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-`operario.dao` sobre `party-identity` solo tiene `read`; le falta `create`: el grupo `empleado` crea, consulta y modifica personas, organizaciones y sus contactos, pero la URL exige `perm:party-identity:organization_legal_representatives:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
+`operario.dao` sobre `party-identity` solo tiene `read`; le falta `create`: el operario (`Compras`, `Ventas` e `Inventario`) crea, consulta y modifica personas, organizaciones y sus contactos, pero la URL exige `perm:party-identity:organization_legal_representatives:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
 
 ### 3. `operario.dao` (Empleado) consulta (permitido)
 
@@ -126,7 +126,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-`admin.dao` (grupo `admin`) tiene `perm:party-identity:all:read`, `:all:create` y `:all:update`, pero **no** `delete`. Inactivar o retirar queda para `admin.sio` (grupo `superadmin`). El grupo `empleado` tampoco puede.
+`admin.dao` (grupo `admin`) tiene `perm:party-identity:all:read`, `:all:create` y `:all:update`, pero **no** `delete`. Inactivar o retirar queda para `admin.sio` (grupo `superadmin`). Ninguna de las áreas (`Compras`, `Ventas` e `Inventario`) puede.
 
 ### 5. Sin token (rechazado)
 

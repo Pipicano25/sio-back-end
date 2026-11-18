@@ -81,10 +81,10 @@ def _perm(step_id: str, title: str, user: str, permission: str, service: str, me
 
 
 PERMISSIONS = [
-    # Los rechazos se observan entre grupos (superadmin, admin, empleado). Todos son POST que el servicio rechaza antes de leer el cuerpo: ningún caso cambia datos.
-    _perm("S-01", "operario.dao (Empleado) intenta crear una empresa", "operario.dao", "perm:operational-context:companies:create",
+    # Los rechazos se observan entre grupos (superadmin, admin y el operario de las tres áreas). Todos son POST que el servicio rechaza antes de leer el cuerpo: ningún caso cambia datos.
+    _perm("S-01", "operario.dao (operario) intenta crear una empresa", "operario.dao", "perm:operational-context:companies:create",
           "operational-context", "POST", "/companies", 403, {}),
-    _perm("S-02", "operario.dao (Empleado) intenta crear una categoría del catálogo global", "operario.dao",
+    _perm("S-02", "operario.dao (operario) intenta crear una categoría del catálogo global", "operario.dao",
           "perm:product-catalog:categories:create", "product-catalog", "POST", "/categories", 403, {}),
     _perm("S-03", "admin.dao (Admin) intenta crear una empresa", "admin.dao",
           "perm:operational-context:platform:administer", "operational-context", "POST", "/companies", 403, {}),

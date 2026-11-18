@@ -1,4 +1,4 @@
-# Paso 3. Intentar ajustar la tasa como empleado
+# Paso 3. Intentar ajustar la tasa como operario
 
 Ejercicio 8: Impuesto de compra por tasa.
 
@@ -23,7 +23,7 @@ Ejecuta: `operario.dao`.
 
 ### Por qué
 
-- El grupo `empleado` crea y edita compras, pero no ajusta tasas: `403` sin revelar el permiso exigido.
+- El operario (`Compras`, `Ventas` e `Inventario`) crea y edita compras, pero no ajusta tasas: `403` sin revelar el permiso exigido.
 
 ## Permiso
 

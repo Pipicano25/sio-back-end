@@ -49,19 +49,19 @@ REALM = PROJECT_ROOT.parents[1] / "infrastructure" / "keycloak" / "realm-templat
 
 
 def _realm_user_roles() -> dict[str, tuple[str, ...]]:
-    """Roles de cada usuario de prueba según su grupo en la plantilla del realm (spec 026: superadmin, admin, empleado)."""
+    """Roles de cada usuario de prueba según su grupo en la plantilla del realm (spec 026: superadmin, admin, Compras, Ventas, Inventario; suma de sus grupos)."""
     import json
 
     data = json.loads(REALM.read_text(encoding="utf-8"))
     groups = {"/" + group["name"]: tuple(group["clientRoles"]["sio-api"]) for group in data["groups"]}
     return {
-        user["username"]: groups[user["groups"][0]]
+        user["username"]: tuple(dict.fromkeys(role for path in user["groups"] for role in groups[path]))
         for user in data["users"]
         if "serviceAccountClientId" not in user
     }
 
 
-# Usuarios de prueba del realm (`admin.sio` superadmin; `admin.dao` admin; `operario.dao` empleado) más dos
+# Usuarios de prueba del realm (`admin.sio` superadmin; `admin.dao` admin; `operario.dao` Compras, Ventas e Inventario) más dos
 # identidades **sintéticas** que no existen en el realm, para cubrir casos que los tres grupos ya no tienen: un lector de compras sin escritura y un usuario sin permisos de Purchase.
 USER_ROLES: dict[str, tuple[str, ...]] = {
     **_realm_user_roles(),

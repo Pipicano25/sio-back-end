@@ -130,7 +130,7 @@ def test_product_filter_pagination_and_validation(as_user, world, history) -> No
 def test_reportes_user_has_the_new_permission() -> None:
     from tests.conftest import USER_ROLES
 
-    # Spec 026: el grupo `empleado` (antes `inventario`) conserva la evolución de existencias.
+    # Spec 026: el grupo `Inventario` conserva la evolución de existencias.
     assert STOCK_EVOLUTION_READ in USER_ROLES["operario.dao"]
     assert "perm:inventory:movements:read" not in USER_ROLES["solo-evolucion.test"]
 

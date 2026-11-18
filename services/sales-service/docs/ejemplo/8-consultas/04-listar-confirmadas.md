@@ -11,7 +11,7 @@ Ejecuta: `operario.dao`.
 ### Por qué
 
 - Filtros por estado, sucursal, cliente, fechas y número; orden estable.
-- `operario.dao` (grupo `empleado`) no tiene `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
+- `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`) no tiene `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
 
 ## Permiso
 

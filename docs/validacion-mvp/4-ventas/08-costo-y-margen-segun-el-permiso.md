@@ -4,7 +4,7 @@ Ejercicio 4 — Ventas con precio por presentación (lista indicada y predetermi
 
 ---
 
-## 1. Consultar la venta V2 como Empleado (sin costo ni margen)
+## 1. Consultar la venta V2 como operario (sin costo ni margen)
 
 Paso `V-06.vendedor` · usuario **`operario.dao`** · ítems de la FASE 10: 16
 

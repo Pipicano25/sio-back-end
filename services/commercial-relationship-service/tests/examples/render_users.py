@@ -19,15 +19,15 @@ NOTES = {
     "usuario: la elegibilidad y el registro de primer uso los hace el servicio con su propia identidad técnica "
     "(cliente `commercial-relationship-service`).",
     "perm:commercial-relationship:company_products:delete": "Inactivar exige `delete` aunque no borra nada; reactivar "
-    "exige `update`. El grupo `empleado` no tiene `delete`.",
+    "exige `update`. El operario (`Compras`, `Ventas` e `Inventario`) no tiene `delete`.",
     "perm:commercial-relationship:company_customers:create": "Para incorporar clientes el token del usuario debe "
     "poder además **leer** en Party Identity (personas, organizaciones y personas de contacto) y, para "
     "organizaciones, `perm:operational-context:companies:read` (comprobación de la propia empresa). "
-    "Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.",
+    "La tienen `superadmin`, `admin`, `Compras` y `Ventas` (`Inventario` no lee Party Identity).",
     "perm:commercial-relationship:company_suppliers:create": "Igual que los clientes: el token debe poder leer "
     "organizaciones y personas de contacto en Party Identity y la empresa en Operational Context.",
     "perm:commercial-relationship:company_suppliers:delete": "Inactivar **y bloquear** un proveedor exigen `delete` "
-    "(DS-16); reactivar y desbloquear exigen `update`. El grupo `empleado` no puede bloquear.",
+    "(DS-16); reactivar y desbloquear exigen `update`. El operario (`Compras`, `Ventas` e `Inventario`) no puede bloquear.",
 }
 
 
@@ -201,8 +201,8 @@ def render_users(ex, records):
     out += user_summary(rows)
     out += ["", "**Para hacer el ejercicio completo use `admin.sio`**, siempre que tenga membresía `ACTIVE` en la "
             "empresa: en Commercial Relationship ni siquiera `perm:all:all:all` exime de la membresía (DS-03). "
-            "`admin.dao` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios del grupo "
-            "`empleado` consultan e incorporan clientes, pero no adoptan, modifican, inactivan ni bloquean.", ""]
+            "`admin.dao` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios de las "
+            "áreas consultan e incorporan clientes, pero no adoptan, modifican, inactivan ni bloquean.", ""]
 
     out += ["## Permiso por URL", "",
             "✅ = el usuario tiene el permiso de la llamada · ❌ = recibe `403 Forbidden`. "
@@ -242,7 +242,7 @@ def render_users(ex, records):
         out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += [f"En Commercial Relationship el grupo `empleado` consulta e incorpora clientes, pero la URL exige "
+        out += [f"En Commercial Relationship el operario consulta e incorpora clientes, pero la URL exige "
                 f"{permission_text(p)}. El servicio no ejecuta nada: ni siquiera consulta Operational Context ni "
                 "valida el cuerpo.", ""]
 
@@ -269,7 +269,7 @@ def render_users(ex, records):
         out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += [f"El grupo `empleado` no tiene `delete` en Commercial Relationship. {action.capitalize()} queda para "
+        out += [f"El operario (`Compras`, `Ventas` e `Inventario`) no tiene `delete` en Commercial Relationship. {action.capitalize()} queda para "
                 "`admin.sio` (SuperAdmin) y `admin.dao` (Admin), siempre con membresía en la empresa.", ""]
 
     n += 1
@@ -305,7 +305,7 @@ def render_general(exercises, all_records):
             "   - `perm:all:all:all` → cualquier acción, en cualquier recurso, de cualquier servicio.",
             "   - `perm:commercial-relationship:all:read` → solo `read`, solo en Commercial Relationship (el grupo "
             "`admin` lo tiene junto con `:all:create`, `:all:update` y `:all:delete`).",
-            "   - El grupo `empleado` tiene lecturas explícitas de Commercial Relationship (sin políticas de ganancia ni "
+            "   - Las áreas tienen lecturas explícitas de Commercial Relationship (sin políticas de ganancia ni "
             "actualizaciones automáticas, que exponen costos) y `company_customers:create`.",
             "4. Cada URL exige un permiso concreto (por ejemplo `perm:commercial-relationship:company_products:create`). "
             "Si falta, el servicio responde `403 Forbidden` e indica cuál. Sin token, o con un token vencido, responde "
@@ -373,7 +373,7 @@ def render_general(exercises, all_records):
             "| Para… | Usuario |", "| --- | --- |",
             "| Hacer los ejercicios completos | `admin.sio` (con membresía en la empresa) |",
             "| Lo mismo como gerente de la empresa | `admin.dao` (grupo `admin`, con membresía) |",
-            "| Verificar lo cargado | `operario.dao` (grupo `empleado`, con membresía) |",
+            "| Verificar lo cargado | `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`, con membresía) |",
             "| Probar rechazos por falta de permiso | `operario.dao` en adoptar, modificar, inactivar o bloquear y en "
             "políticas de ganancia |", ""]
     return "\n".join(out)

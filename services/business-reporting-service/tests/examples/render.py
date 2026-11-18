@@ -88,7 +88,7 @@ def render_general(results: dict[int, list[dict]]) -> str:
              "Product Catalog **con el token del usuario** (DR-07): el usuario necesita además el permiso de lectura "
              "de cada propietario. Si el propietario responde `403`, el reporte responde el mismo `403` genérico.",
              "- La evolución de existencias exige `perm:inventory:stock_evolution:read`, distinto del kardex y de los "
-             "costos (DR-11). La tienen los tres grupos (`superadmin`, `admin` y `empleado`).",
+             "costos (DR-11). La tienen `superadmin`, `admin` e `Inventario`.",
              "- Sin costos ni márgenes: el margen bruto es de la fase 2 de la spec 023.", "",
              "## Usuarios de prueba", "", "| Usuario | Grupo |", "| --- | --- |"]
     lines += [f"| `{u['username']}` | `{u['group']}` |" for u in USERS]

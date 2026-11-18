@@ -332,7 +332,7 @@ Contenido decodificado del Access Token (ejemplo ilustrativo; identificadores no
 |---|---|---|
 | `sub` | string (UUID) | Identificador estable del usuario en Keycloak; es el `keycloak_user_id` que devuelve la API 5 |
 | `preferred_username`, `name`, `email` | string | Mostrar quién inició sesión |
-| `resource_access["sio-api"].roles` | array de string | Roles de perfil (`superadmin`, `admin`, `empleado`) y permisos `perm:{servicio}:{recurso}:{accion}`. Solo los que empiezan por `perm:` conceden acceso; admiten el comodín `all` en cualquier segmento (por ejemplo `perm:all:all:all`) |
+| `resource_access["sio-api"].roles` | array de string | Roles de perfil (`superadmin`, `admin`; los grupos de área `Compras`, `Ventas` e `Inventario` no traen rol de nombre) y permisos `perm:{servicio}:{recurso}:{accion}`. Solo los que empiezan por `perm:` conceden acceso; admiten el comodín `all` en cualquier segmento (por ejemplo `perm:all:all:all`) |
 | `aud` | array de string | Debe incluir `sio-api`; si no, todas las API responden `401` |
 | `exp` | integer (epoch segundos) | Vencimiento; sin tolerancia de reloj en las API |
 

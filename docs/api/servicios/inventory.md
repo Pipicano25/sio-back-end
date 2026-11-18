@@ -34,19 +34,19 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 |---|---|---|---|
 | `entries:create` | Aplicar y revertir entradas | **Solo cuentas de servicio** (Purchase). Un usuario humano recibe `403` | Ninguno (cuentas técnicas) |
 | `outputs:create` | Aplicar y revertir salidas | **Solo cuentas de servicio** (Sales) | Ninguno |
-| `balances:read` | Stock, saldo, lookup de saldos, conjuntos de productos, resumen | Usuarios con membresía | `superadmin`, `admin`, `empleado` |
-| `movements:read` | Kardex y operaciones | Usuarios con membresía | `superadmin`, `admin`, `empleado` |
-| `valuation:read` | Valoración, capas, consumos; `include_valuation` del resumen | Usuarios con membresía | `superadmin`, `admin`, `empleado` |
-| `adjustments:create` | Registrar ajuste | **Usuario humano asignado a la sucursal** | `superadmin`, `admin`, `empleado` |
-| `adjustments:read` | Listar y consultar ajustes | Membresía | `superadmin`, `admin`, `empleado` |
-| `counts:create` | Crear, iniciar, registrar, completar y cancelar conteos | **Usuario humano asignado a la sucursal** | `superadmin`, `admin`, `empleado` |
-| `counts:read` | Listar y consultar conteos | Membresía | `superadmin`, `admin`, `empleado` |
-| `company-policies:read` / `update` | Política de la empresa (leer / registrar y actualizar) | Membresía; escritura por usuario humano | Lectura: `superadmin`, `admin`, `empleado`. Escritura: `superadmin`, `admin` |
+| `balances:read` | Stock, saldo, lookup de saldos, conjuntos de productos, resumen | Usuarios con membresía | `superadmin`, `admin`, `Inventario` |
+| `movements:read` | Kardex y operaciones | Usuarios con membresía | `superadmin`, `admin`, `Inventario` |
+| `valuation:read` | Valoración, capas, consumos; `include_valuation` del resumen | Usuarios con membresía | `superadmin`, `admin`, `Inventario` |
+| `adjustments:create` | Registrar ajuste | **Usuario humano asignado a la sucursal** | `superadmin`, `admin`, `Inventario` |
+| `adjustments:read` | Listar y consultar ajustes | Membresía | `superadmin`, `admin`, `Inventario` |
+| `counts:create` | Crear, iniciar, registrar, completar y cancelar conteos | **Usuario humano asignado a la sucursal** | `superadmin`, `admin`, `Inventario` |
+| `counts:read` | Listar y consultar conteos | Membresía | `superadmin`, `admin`, `Inventario` |
+| `company-policies:read` / `update` | Política de la empresa (leer / registrar y actualizar) | Membresía; escritura por usuario humano | Lectura: `superadmin`, `admin`, `Inventario`. Escritura: `superadmin`, `admin` |
 | `product-policies:read` / `update` | Políticas de producto (leer, lookup / crear, actualizar, inactivar) | Ídem | Ídem |
-| `stock_evolution:read` | Evolución de existencias (sucursal y consolidada) | Membresía | `superadmin`, `admin`, `empleado` |
+| `stock_evolution:read` | Evolución de existencias (sucursal y consolidada) | Membresía | `superadmin`, `admin`, `Inventario` |
 | `platform:lookup` | Lecturas técnicas sin membresía | Cuentas de servicio | — |
 
-El grupo `empleado` no puede modificar políticas; ningún grupo de usuario salvo `superadmin` tiene `entries:create`, `outputs:create` ni `platform:lookup`, que son de cuentas de servicio.
+Ningún grupo de área puede modificar políticas; ningún grupo de usuario salvo `superadmin` tiene `entries:create`, `outputs:create` ni `platform:lookup`, que son de cuentas de servicio.
 
 ## Alcance de datos
 
@@ -2056,7 +2056,7 @@ Ejemplo de respuesta `200` (`ConsolidatedStockEvolutionPage`; valores ilustrativ
 | Respuesta | Causa | Qué hacer |
 |---|---|---|
 | `403 INVENTORY.FORBIDDEN` en entradas o salidas | Token de usuario en rutas de cuentas de servicio | No usarlas desde el frontend |
-| `403 INVENTORY.FORBIDDEN` en ajustes o conteos | Token de cuenta de servicio, o sin permiso | Usar un usuario humano de los grupos `admin` o `empleado` (o `superadmin`) asignado a la sucursal |
+| `403 INVENTORY.FORBIDDEN` en ajustes o conteos | Token de cuenta de servicio, o sin permiso | Usar un usuario humano de los grupos `admin` o `Inventario` (o `superadmin`) asignado a la sucursal |
 | `403 INVENTORY.BRANCH_ACCESS_DENIED` | El usuario no tiene asignada la sucursal | Asignarla en Operational Context |
 | `404 INVENTORY.NOT_FOUND` | Sin membresía, recurso de otra empresa o inexistente | Revisar `company_id` |
 | `409 INVENTORY.INSUFFICIENT_STOCK` (`shortages`) | Saldo insuficiente | Mostrar faltantes por producto |

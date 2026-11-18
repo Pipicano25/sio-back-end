@@ -8,7 +8,7 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 - **Todas** las rutas exigen un **usuario humano**: una cuenta de servicio recibe `403` aunque tenga el permiso por comodín (ni siquiera el cliente técnico `purchase-service`, que solo consulta dependencias y opera Inventory).
 - **Escribir** compras, líneas, hitos, confirmar y anular exige además membresía `ACTIVE` en la empresa y asignación `ACTIVE` a la sucursal de la compra (Operational Context con el token del usuario). **No obvio**: tener `perm:purchase:all:all` o `perm:all:all:all` no basta sin la asignación.
 - **Secuencias** exigen membresía (no asignación). **Leer** exige permiso y membresía.
-- Crear una compra con líneas exige además `perm:purchase:purchase_details:create`; anular exige `perm:purchase:purchases:delete` (lo tienen los tres grupos). Ajustar la tasa de una línea exige `perm:purchase:purchase_line_taxes:override`, que el grupo `empleado` no tiene.
+- Crear una compra con líneas exige además `perm:purchase:purchase_details:create`; anular exige `perm:purchase:purchases:delete` (lo tienen los tres grupos). Ajustar la tasa de una línea exige `perm:purchase:purchase_line_taxes:override`, que el operario (`Compras`, `Ventas` e `Inventario`) no tiene.
 
 ## Usuarios de prueba
 
@@ -16,7 +16,7 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 | --- | --- | --- | --- | --- | --- | --- |
 | `admin.sio` | `superadmin` | Sí | Sí | Sí | Sí | Sí |
 | `admin.dao` | `admin` | Sí | Sí | Sí | Sí | Sí |
-| `operario.dao` | `empleado` | Sí | Sí | Sí | Sí | Sí |
+| `operario.dao` | `Compras, Ventas, Inventario` | Sí | Sí | Sí | Sí | Sí |
 
 Las escrituras requieren además la asignación a la sucursal.
 

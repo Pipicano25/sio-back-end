@@ -1,6 +1,6 @@
 # Ejercicio 6: Permisos y bloques visibles
 
-Cada bloque de la respuesta (precios, existencias y mínimos) depende de un permiso propio. Con los grupos de la spec 026, `empleado` y `admin` tienen los tres; un usuario con permisos parciales vería menos bloques (lo verifican las pruebas automáticas del servicio con identidades sintéticas).
+Cada bloque de la respuesta (precios, existencias y mínimos) depende de un permiso propio. Con los grupos de la spec 026, `admin` y un usuario en las tres áreas (como `operario.dao`) tienen los tres; un usuario con permisos parciales vería menos bloques (lo verifican las pruebas automáticas del servicio con identidades sintéticas).
 
 Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente y solo consulta: no cambia ningún dato.
 

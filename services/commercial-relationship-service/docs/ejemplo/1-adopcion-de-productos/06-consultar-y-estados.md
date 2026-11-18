@@ -105,7 +105,7 @@ POST /api/v1/company-products/<CP_ACETAMINOFEN>/deactivate
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:delete`)
 - ❌ **No pueden (responde `403`):** `operario.dao` — sobre `company_products` solo tiene `read`; le falta `delete`
-- ℹ️ Inactivar exige `delete` aunque no borra nada; reactivar exige `update`. El grupo `empleado` no tiene `delete`.
+- ℹ️ Inactivar exige `delete` aunque no borra nada; reactivar exige `update`. El operario (`Compras`, `Ventas` e `Inventario`) no tiene `delete`.
 - 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**

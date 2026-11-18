@@ -22,7 +22,7 @@ NOTES = {
     "perm:party-identity:person_identities:delete": "Inactivar (`POST .../deactivate`) exige `delete`, aunque no elimina; "
     "reactivar (`POST .../reactivate`) exige `update`.",
     "perm:party-identity:organization_identities:delete": "Inactivar exige `delete`; reactivar exige `update`. Por eso "
-    "`admin.dao` (Admin) y los usuarios del grupo `empleado` pueden reactivar pero no inactivar.",
+    "`admin.dao` (Admin) y los usuarios de las áreas (`Compras`, `Ventas` e `Inventario`) pueden reactivar pero no inactivar.",
     "perm:party-identity:organization_contact_profiles:create": "Registrar una versión del perfil exige además que el "
     "usuario tenga una membresía `ACTIVE` en la empresa indicada (la comprueba Party Identity con su cliente técnico "
     "contra Operational Context). El usuario **no** necesita permisos de Operational Context; un administrador de "
@@ -35,7 +35,7 @@ NOTES = {
     "perm:party-identity:organization_contact_persons:update": "`:set-primary` y `:reactivate` exigen `update`; "
     "`is_primary` no se cambia con `PUT`.",
     "perm:party-identity:organization_legal_representatives:read": "Dato sensible: solo lo leen los grupos con "
-    "necesidad explícita. Con los grupos de la spec 026 lo leen los tres (`superadmin`, `admin` y `empleado`); solo "
+    "necesidad explícita. Con los grupos de la spec 026 lo leen `superadmin`, `admin`, `Compras` y `Ventas`; solo "
     "`superadmin` y `admin` lo crean o modifican.",
     "perm:party-identity:organization_legal_representatives:create": "`:set-primary` también exige `create`: crea el "
     "primer `PRIMARY` o sustituye el vigente cerrándolo.",
@@ -231,7 +231,7 @@ def render_users(ex, records):
         out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += [f"`operario.dao` {reason(empleado, p)}: el grupo `empleado` crea, consulta y modifica personas, "
+        out += [f"`operario.dao` {reason(empleado, p)}: el operario (`Compras`, `Ventas` e `Inventario`) crea, consulta y modifica personas, "
                 f"organizaciones y sus contactos, pero la URL exige `{p}`. "
                 "El servicio no ejecuta nada: ni siquiera valida el cuerpo.", ""]
 
@@ -259,8 +259,8 @@ def render_users(ex, records):
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
         out += ["`admin.dao` (grupo `admin`) tiene `perm:party-identity:all:read`, `:all:create` y `:all:update`, "
-                "pero **no** `delete`. Inactivar o retirar queda para `admin.sio` (grupo `superadmin`). El grupo "
-                "`empleado` tampoco puede.", ""]
+                "pero **no** `delete`. Inactivar o retirar queda para `admin.sio` (grupo `superadmin`). Ninguna "
+                "de las áreas (`Compras`, `Ventas` e `Inventario`) puede.", ""]
 
     n += 1
     out += [f"### {n}. Sin token (rechazado)", "",
@@ -296,8 +296,8 @@ def render_general(exercises, all_records):
             "   - `perm:party-identity:all:read` → solo `read`, solo en Party Identity (lo tiene el grupo `admin`, "
             "con `:all:create` y `:all:update`, sin `delete`).",
             "   - Mínimo privilegio (Q-C1): los perfiles de contacto, las personas de contacto y los representantes "
-            "legales exigen su **permiso específico**. El grupo `empleado` tiene permisos explícitos: crea, consulta y "
-            "modifica personas, organizaciones, perfiles de contacto y personas de contacto, y solo consulta "
+            "legales exigen su **permiso específico**. `Compras` y `Ventas` tienen permisos explícitos (`Inventario` no usa Party Identity): crean, consulta y "
+            "modifican personas, organizaciones, perfiles de contacto y personas de contacto, y solo consultan "
             "representantes legales, sectores y reglas. Ningún grupo salvo `superadmin` inactiva, retira ni cierra.",
             "4. Cada URL exige **un** permiso concreto (por ejemplo `perm:party-identity:person_identities:create`). "
             "Si ninguno de los permisos del usuario lo cubre, el servicio responde `403 Forbidden` e indica cuál falta. "
@@ -357,7 +357,7 @@ def render_general(exercises, all_records):
             "| Para… | Usuario |", "| --- | --- |",
             "| Hacer los ejercicios completos | `admin.sio` |",
             "| Crear y modificar sin poder inactivar ni retirar | `admin.dao` (Admin) |",
-            "| Registrar y corregir personas y organizaciones como empleado | `operario.dao` |",
+            "| Registrar y corregir personas y organizaciones como operario | `operario.dao` |",
             "| Probar rechazos por falta de permiso | `operario.dao` en reglas, sectores o representantes legales "
             "(crear o modificar) y en cualquier inactivación; `admin.dao` en cualquier inactivación |", ""]
     return "\n".join(out)

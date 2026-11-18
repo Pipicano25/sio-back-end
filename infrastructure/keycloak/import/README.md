@@ -40,7 +40,7 @@ realm de desarrollo para SIO con:
 
 Permisos de auditoría (feature 011): `perm:audit:audit-events:create`, `perm:audit:audit-events:read`
 y `perm:audit:platform-events:read` en `sio-api`. Desde la spec 026, `superadmin` los obtiene por `perm:all:all:all` y `admin` recibe
-explícitamente solo `perm:audit:audit-events:read`; `empleado` no tiene permisos de Audit. Consultar auditoría de una empresa exige además
+explícitamente solo `perm:audit:audit-events:read`; los grupos de área (`Compras`, `Ventas`, `Inventario`) no tienen permisos de Audit. Consultar auditoría de una empresa exige además
 `perm:operational-context:application_users:read` y membresía `ACTIVE`.
 - `${INVENTORY_SERVICE_CLIENT_SECRET}`: secreto del cliente técnico `inventory-service` (lectura
   técnica en Operational Context y Commercial Relationship con `platform:lookup`, y
@@ -57,7 +57,7 @@ explícitamente solo `perm:audit:audit-events:read`; `empleado` no tiene permiso
   `platform:lookup` en Operational Context y Commercial Relationship; `perm:inventory:entries:create`,
   `perm:inventory:movements:read` y `perm:inventory:platform:lookup` en Inventory; y
   `perm:audit:audit-events:create` para su `audit-outbox-worker`. Nunca escribe compras: las rutas de
-  purchase-service exigen usuarios humanos. Los grupos no cambian (`empleado` tiene el CRUD
+  purchase-service exigen usuarios humanos. Los grupos no cambian (`Compras` tiene el CRUD
   de compras y `admin` tiene `perm:purchase:all:all`). Solo en `.env`.
 - `${SALES_SERVICE_CLIENT_SECRET}`: secreto del cliente técnico `sales-service` (feature 015, R-02):
   lectura técnica en Operational Context (`companies`, `branches`, `application_users`), Commercial
@@ -94,14 +94,14 @@ Relationship y Product Catalog tienen `perm:audit:audit-events:create`, sin otro
 Usuarios y grupos no cambian. Cambiar esta configuración exige reconstruir Keycloak.
 
 Rentabilidad de ventas (feature 015, C-08): el rol `perm:sales:sales:read-profitability` permite ver costo y
-margen de las ventas y no abre ninguna ruta. El grupo `empleado` tiene `perm:sales:all:create`, `read`,
+margen de las ventas y no abre ninguna ruta. El grupo `Ventas` tiene `perm:sales:all:create`, `read`,
 `update` y `delete` explícitos (no `perm:sales:all:all`, que por comodín de acción incluiría la
 rentabilidad); `admin` la obtiene por `perm:sales:all:all` y `superadmin` por `perm:all:all:all`. Cambiar esta matriz exige reconstruir Keycloak.
 
 Permisos de inventario (feature 012): `perm:inventory:entries:create`, `perm:inventory:outputs:create`
 (solo cuentas de servicio: Purchase, Sales y el cliente de pruebas), `perm:inventory:balances:read`,
 `perm:inventory:movements:read` y `perm:inventory:platform:lookup` (lectura técnica sin membresía) en
-`sio-api`. Los grupos `admin` y `empleado` reciben `perm:inventory:balances:read` y
+`sio-api`. Los grupos `admin` e `Inventario` reciben `perm:inventory:balances:read` y
 `perm:inventory:movements:read` explícitos y `superadmin` por comodín. Ningún grupo salvo `superadmin`
 (por `perm:all:all:all`) tiene `entries:create`, `outputs:create` ni `platform:lookup`.
 
@@ -111,7 +111,7 @@ Permisos de inventario (feature 013): `perm:inventory:adjustments:create`,
 aunque tenga el permiso; ajustes y conteos exigen además asignación `ACTIVE` a la sucursal) y las
 lecturas `perm:inventory:adjustments:read`, `perm:inventory:counts:read`,
 `perm:inventory:company-policies:read`, `perm:inventory:product-policies:read` y
-`perm:inventory:valuation:read`. Los grupos `admin` y `empleado` reciben ajustes, conteos y las cinco lecturas;
+`perm:inventory:valuation:read`. Los grupos `admin` e `Inventario` reciben ajustes, conteos y las cinco lecturas;
 las políticas solo las configuran `superadmin` y `admin`.
 `inventory-test-operator` recibe las cinco lecturas.
 
@@ -171,11 +171,9 @@ Este cliente es el frontend React y usa PKCE para seguridad.
 
 - El mapper `sio-api-audience` agrega la audiencia `sio-api` al token de acceso.
 - Está configurado para incluir el claim en el access token y en el token de introspección.
-- `sio-groups-userinfo` agrega a `userinfo` el claim `groups` con la ruta del grupo del usuario (`/superadmin`,
-  `/admin` o `/empleado`).
-- `sio-api-roles-userinfo` agrega a `userinfo` el claim `sio_api_roles` con los roles de `sio-api` (el perfil del grupo
-  y sus permisos `perm:...`).
-- Estos dos solo escriben en `userinfo`: el access token no cambia y los servicios siguen leyendo los permisos de
+- `sio-groups-userinfo` agrega a `userinfo` el claim `groups` con las rutas de los grupos del usuario (por ejemplo
+  `["/admin"]` o `["/Compras", "/Ventas", "/Inventario"]`).
+- Solo escribe en `userinfo`: el access token no cambia y los servicios siguen leyendo los permisos de
   `resource_access["sio-api"].roles`.
 
 ### Roles del cliente
@@ -183,21 +181,27 @@ Este cliente es el frontend React y usa PKCE para seguridad.
 El archivo define roles del cliente `sio-api`:
 
 - roles de permiso `perm:{servicio}:{recurso}:{accion}`, los únicos que conceden acceso;
-- roles de perfil `superadmin`, `admin` y `empleado`, que solo identifican el perfil del usuario.
+- roles de perfil `superadmin` y `admin`, que solo identifican el perfil del usuario (el rol `empleado` sigue en el
+  catálogo sin grupo que lo asigne, igual que en el servidor OCI).
 
 La matriz completa de cada grupo está en `docs/api/guias/permisos.md`.
 
 ### Grupos
 
-Tres grupos predefinidos (spec 026). El grupo dice qué puede hacer el usuario; su membresía en
-Operational Context dice en qué empresas:
+Cinco grupos predefinidos (spec 026, igual al servidor OCI). Un usuario puede estar en varios y recibe la suma de sus
+permisos. El grupo dice qué puede hacer el usuario; su membresía en Operational Context dice en qué empresas:
 
 - `superadmin` → perfil `superadmin` y `perm:all:all:all`: todo, en todas las empresas.
 - `admin` → perfil `admin`: todo en sus empresas y crear y modificar datos globales, sin eliminarlos ni
   desactivarlos ni permisos de plataforma.
-- `empleado` → perfil `empleado`: ventas, compras, ajustes y conteos de inventario; crear, leer y
-  modificar personas, organizaciones y sus contactos en Party Identity; lecturas del resto. Sin
-  rentabilidad, sin escritura en Operational Context ni en datos globales.
+- `Compras` → compras, proveedores y lecturas que necesita; crear, leer y modificar personas, organizaciones y sus
+  contactos.
+- `Ventas` → ventas (sin rentabilidad), crear clientes y lecturas que necesita; crear, leer y modificar personas,
+  organizaciones y sus contactos.
+- `Inventario` → ajustes, conteos y lecturas de inventario.
+
+Las tres áreas no traen rol de nombre y juntas equivalen al antiguo grupo `empleado` (80 permisos). Ninguna tiene
+rentabilidad, escritura en Operational Context ni eliminación de datos globales.
 
 ### Usuarios de prueba
 
@@ -205,7 +209,13 @@ Se crean usuarios de prueba con los mismos permisos de grupo correspondientes:
 
 - `admin.sio` → grupo `/superadmin`
 - `admin.dao` → grupo `/admin`
-- `operario.dao` → grupo `/empleado`
+- `operario.dao` → grupos `/Compras`, `/Ventas` e `/Inventario`
+
+Además, los usuarios copiados del servidor OCI, con sus mismos `id`:
+
+- `alex` → `/superadmin`, `/admin`, `/Compras`, `/Ventas`, `/Inventario`
+- `manuel` y `pedro` → `/admin`, `/Compras`, `/Ventas`, `/Inventario`
+- `tomas` → `/Compras`, `/Ventas`, `/Inventario`
 
 Reemplazan a los usuarios genéricos anteriores (`admin.test`, `supervisor.test`, `ventas.test`, `compras.test`,
 `inventario.test`, `reportes.test` y `consulta.test`) y conservan los `id` de `admin.test`, `supervisor.test` y

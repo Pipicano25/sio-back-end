@@ -24,7 +24,7 @@ POST /api/v1/organization-identities/<ORG_EJEMPLO>/deactivate
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
 - ❌ **No pueden (responde `403`):** `admin.dao`, `operario.dao` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
-- ℹ️ Inactivar exige `delete`; reactivar exige `update`. Por eso `admin.dao` (Admin) y los usuarios del grupo `empleado` pueden reactivar pero no inactivar.
+- ℹ️ Inactivar exige `delete`; reactivar exige `update`. Por eso `admin.dao` (Admin) y los usuarios de las áreas (`Compras`, `Ventas` e `Inventario`) pueden reactivar pero no inactivar.
 
 **Por qué se hace así**
 
@@ -60,7 +60,7 @@ POST /api/v1/organization-identities/<ORG_EJEMPLO>/deactivate
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
 - ❌ **No pueden (responde `403`):** `admin.dao`, `operario.dao` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
-- ℹ️ Inactivar exige `delete`; reactivar exige `update`. Por eso `admin.dao` (Admin) y los usuarios del grupo `empleado` pueden reactivar pero no inactivar.
+- ℹ️ Inactivar exige `delete`; reactivar exige `update`. Por eso `admin.dao` (Admin) y los usuarios de las áreas (`Compras`, `Ventas` e `Inventario`) pueden reactivar pero no inactivar.
 
 **Por qué se hace así**
 
@@ -93,7 +93,7 @@ POST /api/v1/organization-identities/<ORG_EJEMPLO>/reactivate
 
 **Por qué se hace así**
 
-- Reactivar exige `update`: por eso `admin.dao` (Admin) y el grupo `empleado` pueden reactivar aunque no puedan inactivar.
+- Reactivar exige `update`: por eso `admin.dao` (Admin) y el operario (`Compras`, `Ventas` e `Inventario`) pueden reactivar aunque no puedan inactivar.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 

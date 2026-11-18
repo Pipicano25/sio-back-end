@@ -1,4 +1,4 @@
-# Paso 4. Consultar como empleado
+# Paso 4. Consultar como operario
 
 Ejercicio 6: Rentabilidad y costo desconocido.
 

@@ -4,7 +4,7 @@ Ejercicio 6 — Auditoría del recorrido · [Orden del ejercicio](ORDEN.md)
 
 ---
 
-## 1. Consultar la auditoría como Empleado (rechazado)
+## 1. Consultar la auditoría como operario (rechazado)
 
 Paso `U-02.vendedor` · usuario **`operario.dao`** · ítems de la FASE 10: 19
 

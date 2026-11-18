@@ -30,7 +30,7 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Recurso | Operaciones | Acciones usadas | Grupos con lectura (plantilla) | Grupos con escritura |
 |---|---|---|---|---|
-| `units-of-measure` | 3–9 | `read`, `create`, `update`, `deactivate` | Todos (`admin` y `empleado` vía `perm:product-catalog:all:read`) | `superadmin`; `admin` solo `create` y `update` |
+| `units-of-measure` | 3–9 | `read`, `create`, `update`, `deactivate` | Todos (`admin`, `Compras`, `Ventas` e `Inventario` vía `perm:product-catalog:all:read`) | `superadmin`; `admin` solo `create` y `update` |
 | `packaging-types` | 10–15 | ídem | Todos | ídem |
 | `brands` | 16–21 | ídem | Todos | ídem |
 | `categories` | 22–35 | `read`, `update` (crear, modificar, asociar atributos), `deactivate` | Todos | ídem |

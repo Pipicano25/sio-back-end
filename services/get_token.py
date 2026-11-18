@@ -61,6 +61,11 @@ ROLES = {
     "1": "admin.sio",
     "2": "admin.dao",
     "3": "operario.dao",
+    # Usuarios copiados del servidor OCI (spec 026); misma contraseña de prueba.
+    "4": "alex",
+    "5": "manuel",
+    "6": "pedro",
+    "7": "tomas",
 }
 # Atajos aceptados además del número y del usuario completo.
 ALIAS = {
@@ -68,7 +73,15 @@ ALIAS = {
     "admin": "admin.dao", "dao": "admin.dao",
     "empleado": "operario.dao", "operario": "operario.dao",
 }
-GRUPOS = {"admin.sio": "SuperAdmin", "admin.dao": "Admin", "operario.dao": "Empleado"}
+GRUPOS = {
+    "admin.sio": "superadmin",
+    "admin.dao": "admin",
+    "operario.dao": "Compras, Ventas e Inventario",
+    "alex": "superadmin, admin y las tres áreas",
+    "manuel": "admin y las tres áreas",
+    "pedro": "admin y las tres áreas",
+    "tomas": "Compras, Ventas e Inventario",
+}
 
 
 def mensaje(texto: str = "") -> None:

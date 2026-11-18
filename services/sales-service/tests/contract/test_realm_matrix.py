@@ -1,8 +1,8 @@
 """Matriz de grupos y cliente técnico en la plantilla del realm (C-08, DS-12; research.md R-02; T076).
 
-Se evalúa con `sio-auth` (incluidos los comodines) sobre la plantilla versionada. Con los tres
+Se evalúa con `sio-auth` (incluidos los comodines) sobre la plantilla versionada. Con los cinco
 grupos de la spec 026: `superadmin` (por `perm:all:all:all`) y `admin` (por `perm:sales:all:all`) ven
-la rentabilidad; `empleado` conserva el CRUD de sales sin ella; el cliente `sales-service` tiene
+la rentabilidad; `Ventas` (y el operario, suma de las tres áreas) conserva el CRUD de sales sin ella; el cliente `sales-service` tiene
 exactamente los roles de R-02 y nunca puede escribir ventas.
 """
 
@@ -18,6 +18,9 @@ from sio_auth.permissions import evaluate_permission
 REALM = Path(__file__).resolve().parents[4] / "infrastructure" / "keycloak" / "realm-template" / "sio-realm.template.json"
 DATA = json.loads(REALM.read_text(encoding="utf-8"))
 GROUPS = {group["name"]: group["clientRoles"]["sio-api"] for group in DATA["groups"]}
+
+# Operario = usuario en las tres áreas `Compras`, `Ventas` e `Inventario` (spec 026, versión del servidor OCI).
+GROUPS["operario"] = sorted({role for area in ("Compras", "Ventas", "Inventario") for role in GROUPS[area]})
 PROFITABILITY = SioPermission("sales", "sales", "read-profitability")
 
 SALES_CLIENT_ROLES = {
@@ -54,15 +57,16 @@ def test_profitability_role_exists() -> None:
     [
         ("superadmin", True),
         ("admin", True),
-        ("empleado", False),
+        ("operario", False),
+        ("Ventas", False),
     ],
 )
 def test_who_sees_profitability(group, expected) -> None:
     assert evaluate_permission(GROUPS[group], PROFITABILITY) is expected
 
 
-def test_empleado_keeps_full_sales_crud_without_wildcard() -> None:
-    roles = GROUPS["empleado"]
+def test_ventas_keeps_full_sales_crud_without_wildcard() -> None:
+    roles = GROUPS["Ventas"]
     assert "perm:sales:all:all" not in roles
     for resource in ("sales", "sale_details", "sale_sequences", "sale_operations"):
         for action in ("create", "read", "update", "delete"):
@@ -90,8 +94,17 @@ def test_sales_service_client_and_account() -> None:
 
 
 def test_test_users_and_who_sees_profitability() -> None:
-    """`admin.sio` (superadmin) y `admin.dao` (admin) ven la rentabilidad; `operario.dao` (empleado) no."""
+    """`admin.sio` (superadmin) y `admin.dao` (admin) ven la rentabilidad; `operario.dao` (las tres áreas) no."""
     users = {user["username"]: user["groups"] for user in DATA["users"] if user.get("groups")}
-    assert users == {"admin.sio": ["/superadmin"], "admin.dao": ["/admin"], "operario.dao": ["/empleado"]}
-    sees = {name: evaluate_permission(GROUPS[groups[0].strip("/")], PROFITABILITY) for name, groups in users.items()}
-    assert sees == {"admin.sio": True, "admin.dao": True, "operario.dao": False}
+    assert users["admin.sio"] == ["/superadmin"]
+    assert users["admin.dao"] == ["/admin"]
+    assert users["operario.dao"] == ["/Compras", "/Ventas", "/Inventario"]
+
+    def sees(groups: list[str]) -> bool:
+        roles = [role for path in groups for role in GROUPS[path.strip("/")]]
+        return evaluate_permission(roles, PROFITABILITY)
+
+    assert {name: sees(groups) for name, groups in users.items()} == {
+        "admin.sio": True, "admin.dao": True, "operario.dao": False,
+        "alex": True, "manuel": True, "pedro": True, "tomas": False,
+    }

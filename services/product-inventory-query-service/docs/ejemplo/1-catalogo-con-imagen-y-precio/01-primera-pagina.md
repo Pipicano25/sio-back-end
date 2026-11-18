@@ -15,7 +15,7 @@ Ejecuta: `operario.dao`.
 - La imagen es de cada presentación (spec 024): `presentations[].has_image`, `asset_id` e `image_url`. `has_image=true` como filtro significa «al menos una presentación con imagen principal»: una presentación sin imagen propia trae `has_image = false` aunque otra presentación del producto tenga imagen (la «Caja x 12» del paso 2).
 - `image_url` es la URL directa que construye Product Catalog: se usa sin token en `<img src>`.
 - Sin `include_images`, las presentaciones no traen `images`.
-- `operario.dao` (grupo `empleado`) ve precios, existencias y mínimos.
+- `operario.dao` (grupos `Compras`, `Ventas` e `Inventario`) ve precios, existencias y mínimos.
 
 ## Permiso
 

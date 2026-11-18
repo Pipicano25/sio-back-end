@@ -30,7 +30,7 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 | Recurso | Acciones y operaciones | Grupos de la plantilla con lectura | Grupos con escritura |
 |---|---|---|---|
-| `companies` | `read` (listar, consultar), `create` (+ `platform:administer`), `update` (modificar, reactivar + `platform:administer`), `delete` (inactivar + `platform:administer`) | Todos (`admin` y `empleado` vía `perm:operational-context:all:read`) | `superadmin` (único con `platform:administer`); `admin` puede `PUT` (no exige `platform:administer`) |
+| `companies` | `read` (listar, consultar), `create` (+ `platform:administer`), `update` (modificar, reactivar + `platform:administer`), `delete` (inactivar + `platform:administer`) | Todos (`admin`, `Compras`, `Ventas` e `Inventario` vía `perm:operational-context:all:read`) | `superadmin` (único con `platform:administer`); `admin` puede `PUT` (no exige `platform:administer`) |
 | `branches` | `read`, `create`, `update` (modificar, reactivar), `delete` (inactivar) | Todos | `superadmin`, `admin` |
 | `application_users` | `read` (listar, consultar, **`/me/operational-context`**, **`/operational-access`**), `create`, `update` (modificar, reactivar), `delete` (inactivar) | Todos | `superadmin`, `admin` |
 | `user_branches` | `read`, `create`, `update` (reactivar), `delete` (retirar) | Todos | `superadmin`, `admin` |
