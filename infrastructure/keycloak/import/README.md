@@ -171,6 +171,12 @@ Este cliente es el frontend React y usa PKCE para seguridad.
 
 - El mapper `sio-api-audience` agrega la audiencia `sio-api` al token de acceso.
 - Está configurado para incluir el claim en el access token y en el token de introspección.
+- `sio-groups-userinfo` agrega a `userinfo` el claim `groups` con la ruta del grupo del usuario (`/superadmin`,
+  `/admin` o `/empleado`).
+- `sio-api-roles-userinfo` agrega a `userinfo` el claim `sio_api_roles` con los roles de `sio-api` (el perfil del grupo
+  y sus permisos `perm:...`).
+- Estos dos solo escriben en `userinfo`: el access token no cambia y los servicios siguen leyendo los permisos de
+  `resource_access["sio-api"].roles`.
 
 ### Roles del cliente
 
