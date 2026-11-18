@@ -31,7 +31,7 @@ PUT /api/v1/person-identities/<PERSONA_ANA>
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:update`), `compras.test` (por `perm:party-identity:person_identities:update`), `ventas.test` (por `perm:party-identity:person_identities:update`), `inventario.test` (por `perm:party-identity:person_identities:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:update`), `operario.dao` (por `perm:party-identity:person_identities:update`)
 
 **Por qué se hace así**
 
@@ -77,7 +77,7 @@ PUT /api/v1/person-identities/<PERSONA_ANA>
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:update`), `compras.test` (por `perm:party-identity:person_identities:update`), `ventas.test` (por `perm:party-identity:person_identities:update`), `inventario.test` (por `perm:party-identity:person_identities:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:update`), `operario.dao` (por `perm:party-identity:person_identities:update`)
 
 **Por qué se hace así**
 

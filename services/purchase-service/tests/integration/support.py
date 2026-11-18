@@ -349,7 +349,7 @@ class RealWorld:
 
 
 def build_world(admin: httpx.Client) -> RealWorld:
-    """Empresa COP con sucursal, `compras.test` y `admin.test` asignados, proveedor, condiciones y productos.
+    """Empresa COP con sucursal, `operario.dao` y `admin.sio` asignados, proveedor, condiciones y productos.
 
     Spec 020: `condition` es de contado (la única admitida) y `credit_condition` (CREDIT 30) existe para
     comprobar su rechazo; `payment_method` es el método `CASH` activo de Payment Reference.
@@ -361,9 +361,9 @@ def build_world(admin: httpx.Client) -> RealWorld:
     company_id = company.json()["id"]
     assert company.json()["default_currency"] == "COP", company.json()
 
-    admin_user = _member(admin, company_id, "admin.test", _person(admin, colombia, "A"))
-    buyer = _member(admin, company_id, "compras.test", _person(admin, colombia, "C"))
-    _member(admin, company_id, "supervisor.test", _person(admin, colombia, "R"))
+    admin_user = _member(admin, company_id, "admin.sio", _person(admin, colombia, "A"))
+    buyer = _member(admin, company_id, "operario.dao", _person(admin, colombia, "C"))
+    _member(admin, company_id, "admin.dao", _person(admin, colombia, "R"))
 
     branch = admin.post(f"{OPERATIONAL_CONTEXT}/companies/{company_id}/branches", json={
         "code": f"PUR{RUN_ID}", "name": f"Bodega ficticia de validación COMPRAS {RUN_ID}",

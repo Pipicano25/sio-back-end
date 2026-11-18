@@ -31,7 +31,7 @@ def adjustment_body(world, product, kind="NEGATIVE", quantity="1", **extra):
 @pytest.fixture
 def data(operator, as_user, world):
     """Dos ajustes y un conteo completado en la empresa; un conteo en curso en otra sucursal."""
-    clerk = as_user("inventario.test")
+    clerk = as_user("operario.dao")
     a, b, _ = world.products
     assert operator.post(ENTRIES, json=operation_body(world, line(a, "10", unit_cost="5"), line(b, "10", unit_cost="7"))).status_code == 201
     first = clerk.post(f"{base(world.company)}/inventory-adjustments", json=adjustment_body(world, a)).json()
@@ -50,13 +50,13 @@ def data(operator, as_user, world):
 
 def test_get_adjustment_with_its_movement(as_user, world, data) -> None:
     """Historia 6 escenario 1."""
-    response = as_user("inventario.test").get(f"{base(world.company)}/inventory-adjustments/{data['first']['id']}")
+    response = as_user("operario.dao").get(f"{base(world.company)}/inventory-adjustments/{data['first']['id']}")
     assert response.status_code == 200
     assert response.json() == data["first"]
 
 
 def test_list_adjustments_with_filters_and_order(as_user, world, data) -> None:
-    client = as_user("inventario.test")
+    client = as_user("operario.dao")
     url = f"{base(world.company)}/inventory-adjustments"
     everything = client.get(url).json()
     assert everything["total_records"] == 3
@@ -75,7 +75,7 @@ def test_list_adjustments_with_filters_and_order(as_user, world, data) -> None:
 
 def test_get_completed_count_with_details_and_adjustments(as_user, world, data) -> None:
     """Historia 6 escenario 3."""
-    response = as_user("inventario.test").get(f"{base(world.company)}/inventory-counts/{data['count']['id']}")
+    response = as_user("operario.dao").get(f"{base(world.company)}/inventory-counts/{data['count']['id']}")
     assert response.status_code == 200
     count = response.json()
     assert count["status"] == "COMPLETED"
@@ -84,7 +84,7 @@ def test_get_completed_count_with_details_and_adjustments(as_user, world, data) 
 
 
 def test_list_counts(as_user, world, data) -> None:
-    client = as_user("inventario.test")
+    client = as_user("operario.dao")
     url = f"{base(world.company)}/inventory-counts"
     page = client.get(url, params={"branch_id": str(world.branch), "status": "COMPLETED"}).json()
     assert [item["id"] for item in page["items"]] == [data["count"]["id"]]
@@ -96,9 +96,9 @@ def test_other_company_and_permissions(as_user, as_token, service_token, world, 
     adjustment = data["first"]["id"]
     count = data["count"]["id"]
     other = base(world.other_company)
-    assert as_user("inventario.test").get(f"{other}/inventory-adjustments/{adjustment}").status_code == 404
-    assert as_user("inventario.test").get(f"{other}/inventory-counts/{count}").status_code == 404
-    assert as_user("inventario.test").get(f"{base(world.company)}/inventory-adjustments/{uuid4()}").status_code == 404
+    assert as_user("operario.dao").get(f"{other}/inventory-adjustments/{adjustment}").status_code == 404
+    assert as_user("operario.dao").get(f"{other}/inventory-counts/{count}").status_code == 404
+    assert as_user("operario.dao").get(f"{base(world.company)}/inventory-adjustments/{uuid4()}").status_code == 404
 
     for username in ("sin-permisos.test",):
         client = as_user(username)

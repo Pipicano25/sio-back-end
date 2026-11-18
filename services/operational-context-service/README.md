@@ -207,12 +207,12 @@ pytest -m integration                    # contra servicios reales (ver abajo)
 
 Exigen en ejecución este servicio, Party Identity (reglas `NIT` y `CC` de Colombia), Geography con los
 datos de Colombia y Keycloak con el realm renderizado (incluido el cliente técnico de la Fase B). La
-contraseña de `admin.test` se lee de `KEYCLOAK_TEST_USER_PASSWORD` o de `infrastructure/.env`. Si falta
+contraseña de `admin.sio` se lee de `KEYCLOAK_TEST_USER_PASSWORD` o de `infrastructure/.env`. Si falta
 algo, las pruebas se omiten con un mensaje.
 
 Cada ejecución crea datos **ficticios de validación** que permanecen en el entorno: una organización
 (`PRUEBA SIO OC <id>`), una empresa, una sucursal, una persona (`PRUEBA<id>`) y la membresía de
-`compras.test` en esa empresa. Para comprobar un `503`, detenga el contenedor del proveedor y repita
+`operario.dao` en esa empresa. Para comprobar un `503`, detenga el contenedor del proveedor y repita
 la operación.
 
 ## Auditoría (feature 016)
@@ -259,7 +259,7 @@ Regla de la Constitución 2.4.0 (Principio X), feature 009:
 - En Docker la base `sio-operational-context-db` tiene `healthcheck` y `restart: unless-stopped`, y la aplicación
   arranca cuando la base está sana (`infrastructure/services/operational-context-service.yaml`).
 
-Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.test` y
+Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.sio` y
 `KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
 
 ```bash

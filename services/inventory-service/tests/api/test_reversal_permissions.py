@@ -21,5 +21,5 @@ def test_each_consumer_reverses_only_its_type(operator, purchase, sales, world) 
 
 def test_humans_cannot_reverse(operator, as_token, make_token, world) -> None:
     entry = operator.post(ENTRIES, json=operation_body(world, line(world.products[0], "5"))).json()
-    human = as_token(make_token("perm:all:all:all", sub=user_sub("admin.test"), preferred_username="admin.test"))
+    human = as_token(make_token("perm:all:all:all", sub=user_sub("admin.sio"), preferred_username="admin.sio"))
     assert human.post(f"{ENTRIES}/{entry['id']}/reversal", json=reversal_body(world)).status_code == 403

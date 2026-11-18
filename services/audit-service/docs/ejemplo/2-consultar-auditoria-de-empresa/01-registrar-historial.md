@@ -17,7 +17,7 @@ Ejecuta: `audit-test-emitter` (cuenta de servicio).
       "event_id": "c33f0000-0000-4000-8000-000000000011",
       "company_id": "a11d0000-0000-4000-8000-000000000001",
       "keycloak_user_id": "13fb7acf-dac0-4fba-ae39-6759c77c3f97",
-      "username_snapshot": "admin.test",
+      "username_snapshot": "admin.sio",
       "action": "CREATE",
       "entity_type": "PriceListItem",
       "entity_id": "b22e0000-0000-4000-8000-000000000010",
@@ -31,7 +31,7 @@ Ejecuta: `audit-test-emitter` (cuenta de servicio).
       "event_id": "c33f0000-0000-4000-8000-000000000012",
       "company_id": "a11d0000-0000-4000-8000-000000000001",
       "keycloak_user_id": "13fb7acf-dac0-4fba-ae39-6759c77c3f97",
-      "username_snapshot": "admin.test",
+      "username_snapshot": "admin.sio",
       "action": "CHANGE_PRICE",
       "entity_type": "PriceListItem",
       "entity_id": "b22e0000-0000-4000-8000-000000000010",
@@ -48,7 +48,7 @@ Ejecuta: `audit-test-emitter` (cuenta de servicio).
       "event_id": "c33f0000-0000-4000-8000-000000000013",
       "company_id": "a11d0000-0000-4000-8000-000000000001",
       "keycloak_user_id": "13fb7acf-dac0-4fba-ae39-6759c77c3f97",
-      "username_snapshot": "admin.test",
+      "username_snapshot": "admin.sio",
       "action": "CHANGE_PRICE",
       "entity_type": "PriceListItem",
       "entity_id": "b22e0000-0000-4000-8000-000000000010",
@@ -78,11 +78,9 @@ Además exige que el token sea de una **cuenta de servicio**: un usuario humano 
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | No | `403` | tiene `perm:all:all:all` por comodín, pero no es una cuenta de servicio |
-| `supervisor.test` | No | `403` | no tiene `perm:audit:audit-events:create` y no es una cuenta de servicio |
-| `compras.test` | No | `403` | no tiene `perm:audit:audit-events:create` y no es una cuenta de servicio |
-| `ventas.test` | No | `403` | no tiene `perm:audit:audit-events:create` y no es una cuenta de servicio |
-| `inventario.test` | No | `403` | no tiene `perm:audit:audit-events:create` y no es una cuenta de servicio |
+| `admin.sio` | No | `403` | tiene `perm:all:all:all` por comodín, pero no es una cuenta de servicio |
+| `admin.dao` | No | `403` | no tiene `perm:audit:audit-events:create` y no es una cuenta de servicio |
+| `operario.dao` | No | `403` | no tiene `perm:audit:audit-events:create` y no es una cuenta de servicio |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

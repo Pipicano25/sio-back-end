@@ -9,12 +9,12 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
 | 1 | [01-entrada.md](01-entrada.md) | `POST /api/v1/inventory-entries` | `inventory-test-operator` (cuenta de servicio) | `201` |
-| 2 | [02-ajuste-negativo.md](02-ajuste-negativo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `inventario.test` | `201` |
-| 3 | [03-ajuste-positivo.md](03-ajuste-positivo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `inventario.test` | `201` |
-| 4 | [04-ajuste-positivo-sin-capas.md](04-ajuste-positivo-sin-capas.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `inventario.test` | `422` |
-| 5 | [05-ajuste-positivo-con-costo.md](05-ajuste-positivo-con-costo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `inventario.test` | `201` |
-| 6 | [06-sucursal-no-asignada.md](06-sucursal-no-asignada.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `inventario.test` | `403` |
-| 7 | [07-consultar-el-ajuste.md](07-consultar-el-ajuste.md) | `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments/<AJUSTE>` | `inventario.test` | `200` |
+| 2 | [02-ajuste-negativo.md](02-ajuste-negativo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `operario.dao` | `201` |
+| 3 | [03-ajuste-positivo.md](03-ajuste-positivo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `operario.dao` | `201` |
+| 4 | [04-ajuste-positivo-sin-capas.md](04-ajuste-positivo-sin-capas.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `operario.dao` | `422` |
+| 5 | [05-ajuste-positivo-con-costo.md](05-ajuste-positivo-con-costo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `operario.dao` | `201` |
+| 6 | [06-sucursal-no-asignada.md](06-sucursal-no-asignada.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `operario.dao` | `403` |
+| 7 | [07-consultar-el-ajuste.md](07-consultar-el-ajuste.md) | `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments/<AJUSTE>` | `operario.dao` | `200` |
 
 ## Por qué este orden
 

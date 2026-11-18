@@ -6,7 +6,7 @@ Ejercicio 4 — Ventas con precio por presentación (lista indicada y predetermi
 
 ## 1. Registrar la venta V1 en borrador
 
-Paso `V-01.V1` · usuario **`ventas.test`** · ítems de la FASE 10: 13
+Paso `V-01.V1` · usuario **`operario.dao`** · ítems de la FASE 10: 13
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
@@ -30,7 +30,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Permiso que exige la URL:** `perm:sales:sales:create` + `perm:sales:sale_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:create`)
 
 **Por qué se hace así**
 
@@ -44,7 +44,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 ## 2. Registrar la venta V2 en borrador
 
-Paso `V-01.V2` · usuario **`ventas.test`** · ítems de la FASE 10: 13
+Paso `V-01.V2` · usuario **`operario.dao`** · ítems de la FASE 10: 13
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
@@ -67,7 +67,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Permiso que exige la URL:** `perm:sales:sales:create` + `perm:sales:sale_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:create`)
 
 **Por qué se hace así**
 
@@ -81,7 +81,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 ## 3. Registrar la venta V3 en borrador
 
-Paso `V-01.V3` · usuario **`ventas.test`** · ítems de la FASE 10: 13
+Paso `V-01.V3` · usuario **`operario.dao`** · ítems de la FASE 10: 13
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
@@ -104,7 +104,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Permiso que exige la URL:** `perm:sales:sales:create` + `perm:sales:sale_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:create`)
 
 **Por qué se hace así**
 
@@ -118,7 +118,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 ## 4. Registrar la venta V4 en borrador
 
-Paso `V-01.V4` · usuario **`ventas.test`** · ítems de la FASE 10: 13
+Paso `V-01.V4` · usuario **`operario.dao`** · ítems de la FASE 10: 13
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
@@ -141,7 +141,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Permiso que exige la URL:** `perm:sales:sales:create` + `perm:sales:sale_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:create`)
 
 **Por qué se hace así**
 
@@ -155,7 +155,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 ## 5. Registrar la venta V5 en borrador
 
-Paso `V-01.V5` · usuario **`ventas.test`** · ítems de la FASE 10: 13
+Paso `V-01.V5` · usuario **`operario.dao`** · ítems de la FASE 10: 13
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
@@ -178,7 +178,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Permiso que exige la URL:** `perm:sales:sales:create` + `perm:sales:sale_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:create`)
 
 **Por qué se hace así**
 
@@ -192,7 +192,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 ## 6. Registrar la venta V6 en borrador
 
-Paso `V-01.V6` · usuario **`ventas.test`** · ítems de la FASE 10: 13
+Paso `V-01.V6` · usuario **`operario.dao`** · ítems de la FASE 10: 13
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
@@ -215,7 +215,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Permiso que exige la URL:** `perm:sales:sales:create` + `perm:sales:sale_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:create`)
 
 **Por qué se hace así**
 
@@ -229,7 +229,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 ## 7. Registrar la venta V7 en borrador
 
-Paso `V-01.V7` · usuario **`ventas.test`** · ítems de la FASE 10: 13
+Paso `V-01.V7` · usuario **`operario.dao`** · ítems de la FASE 10: 13
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
@@ -252,7 +252,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Permiso que exige la URL:** `perm:sales:sales:create` + `perm:sales:sale_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:create`)
 
 **Por qué se hace así**
 

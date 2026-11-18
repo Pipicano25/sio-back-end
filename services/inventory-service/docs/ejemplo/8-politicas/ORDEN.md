@@ -8,18 +8,18 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-politica-por-defecto.md](01-politica-por-defecto.md) | `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policy` | `admin.test` | `200` |
-| 2 | [02-registrar-politica.md](02-registrar-politica.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policy` | `admin.test` | `201` |
-| 3 | [03-cambiar-a-jit.md](03-cambiar-a-jit.md) | `PUT /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policy` | `admin.test` | `200` |
-| 4 | [04-otro-metodo-de-valoracion.md](04-otro-metodo-de-valoracion.md) | `PUT /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policy` | `admin.test` | `422` |
-| 5 | [05-politica-de-producto.md](05-politica-de-producto.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `admin.test` | `201` |
-| 6 | [06-politica-duplicada.md](06-politica-duplicada.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `admin.test` | `409` |
-| 7 | [07-inactivar.md](07-inactivar.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies/<POLITICA>/deactivate` | `admin.test` | `200` |
-| 8 | [08-consultar-politicas.md](08-consultar-politicas.md) | `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies?branch_id=d44b0000-0000-4000-8000-000000000001` | `inventario.test` | `200` |
-| 9 | [09-nueva-politica-del-arroz.md](09-nueva-politica-del-arroz.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `admin.test` | `201` |
-| 10 | [10-politicas-por-lote.md](10-politicas-por-lote.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/branches/d44b0000-0000-4000-8000-000000000001/inventory-policies/lookup` | `inventario.test` | `200` |
-| 11 | [11-pares-bajo-minimo.md](11-pares-bajo-minimo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-product-sets` | `inventario.test` | `200` |
-| 12 | [12-resumen.md](12-resumen.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-summary` | `inventario.test` | `200` |
+| 1 | [01-politica-por-defecto.md](01-politica-por-defecto.md) | `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policy` | `admin.sio` | `200` |
+| 2 | [02-registrar-politica.md](02-registrar-politica.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policy` | `admin.sio` | `201` |
+| 3 | [03-cambiar-a-jit.md](03-cambiar-a-jit.md) | `PUT /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policy` | `admin.sio` | `200` |
+| 4 | [04-otro-metodo-de-valoracion.md](04-otro-metodo-de-valoracion.md) | `PUT /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policy` | `admin.sio` | `422` |
+| 5 | [05-politica-de-producto.md](05-politica-de-producto.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `admin.sio` | `201` |
+| 6 | [06-politica-duplicada.md](06-politica-duplicada.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `admin.sio` | `409` |
+| 7 | [07-inactivar.md](07-inactivar.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies/<POLITICA>/deactivate` | `admin.sio` | `200` |
+| 8 | [08-consultar-politicas.md](08-consultar-politicas.md) | `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies?branch_id=d44b0000-0000-4000-8000-000000000001` | `operario.dao` | `200` |
+| 9 | [09-nueva-politica-del-arroz.md](09-nueva-politica-del-arroz.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies` | `admin.sio` | `201` |
+| 10 | [10-politicas-por-lote.md](10-politicas-por-lote.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/branches/d44b0000-0000-4000-8000-000000000001/inventory-policies/lookup` | `operario.dao` | `200` |
+| 11 | [11-pares-bajo-minimo.md](11-pares-bajo-minimo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-product-sets` | `operario.dao` | `200` |
+| 12 | [12-resumen.md](12-resumen.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-summary` | `operario.dao` | `200` |
 
 ## Por qué este orden
 

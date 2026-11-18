@@ -23,11 +23,9 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 
 | Usuario | Grupo | Productos | Inventario | Bajo stock | Resumen | Precios | Existencias | Mínimos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `admin.test` | `superadmin` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
-| `supervisor.test` | `admin` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
-| `compras.test` | `empleado` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
-| `ventas.test` | `empleado` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
-| `inventario.test` | `empleado` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| `admin.sio` | `superadmin` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| `admin.dao` | `admin` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| `operario.dao` | `empleado` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
 
 ## Cómo obtener los tokens
 
@@ -36,7 +34,7 @@ Usuarios (contraseña en la variable `KEYCLOAK_TEST_USER_PASSWORD`, nunca en est
 ```bash
 curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=ventas.test -d password="$KEYCLOAK_TEST_USER_PASSWORD"
+  -d username=operario.dao -d password="$KEYCLOAK_TEST_USER_PASSWORD"
 ```
 
 ## Matriz de URL

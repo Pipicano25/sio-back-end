@@ -10,7 +10,7 @@ def assignment(api, create_company, create_branch, fake_accounts, fake_persons):
     user = api.post(
         f"/api/v1/companies/{company['id']}/application-users",
         json={
-            "keycloak_user_id": fake_accounts.add("compras.test"),
+            "keycloak_user_id": fake_accounts.add("operario.dao"),
             "person_identity_id": str(fake_persons.add()),
             "display_name": "C",
         },
@@ -27,12 +27,12 @@ def test_deactivate_and_reactivate_manage_dates_and_author(api, api_as, assignme
     retired = api.post(f"{url}/deactivate", json={"version": 1}).json()
     assert retired["status"] == "INACTIVE" and retired["deactivated_at"] is not None
 
-    make_member(assignment["company"]["id"], "supervisor.test")
-    supervisor = api_as("perm:all:all:read", "perm:all:all:create", "perm:all:all:update", sub="supervisor.test")
+    make_member(assignment["company"]["id"], "admin.dao")
+    supervisor = api_as("perm:all:all:read", "perm:all:all:create", "perm:all:all:update", sub="admin.dao")
     back = supervisor.post(f"{url}/reactivate", json={"version": 2}).json()
 
     assert back["status"] == "ACTIVE" and back["deactivated_at"] is None
-    assert back["assigned_by"] == "supervisor.test"
+    assert back["assigned_by"] == "admin.dao"
     assert back["assigned_at"] > assignment["created"]["assigned_at"]
 
 

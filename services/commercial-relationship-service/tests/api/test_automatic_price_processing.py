@@ -33,7 +33,7 @@ D = Decimal
 
 @pytest.fixture
 def supervisor(as_user):
-    return as_user("supervisor.test")
+    return as_user("admin.dao")
 
 
 @pytest.fixture
@@ -201,7 +201,7 @@ def test_cp45_another_currency_is_skipped_without_conversion(supervisor, client,
 def test_inactive_presentation_is_skipped(supervisor, as_user, client, company, fake_catalog, test_engine) -> None:
     world = _with_manual_price(supervisor, client, company, fake_catalog)
     submit(client, world, request_body(world))
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     current = admin.get(f"/api/v1/company-product-presentations/{world.presentation}").json()
     deactivated = admin.post(f"/api/v1/company-product-presentations/{world.presentation}/deactivate",
                              json={"version": current["version"]})

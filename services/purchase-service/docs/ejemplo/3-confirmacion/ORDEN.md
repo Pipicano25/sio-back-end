@@ -8,13 +8,13 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchase-sequences` | `compras.test` | `201` |
-| 2 | [02-crear-el-borrador.md](02-crear-el-borrador.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `201` |
-| 3 | [03-confirmar.md](03-confirmar.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `compras.test` | `200` |
-| 4 | [04-recibir-con-inventory-caido.md](04-recibir-con-inventory-caido.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `compras.test` | `503` |
-| 5 | [05-reintentar-con-la-misma-clave.md](05-reintentar-con-la-misma-clave.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `compras.test` | `200` |
-| 6 | [06-repetir-la-recepcion.md](06-repetir-la-recepcion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `compras.test` | `200` |
-| 7 | [07-consultar-las-operaciones.md](07-consultar-las-operaciones.md) | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/operations` | `compras.test` | `200` |
+| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchase-sequences` | `operario.dao` | `201` |
+| 2 | [02-crear-el-borrador.md](02-crear-el-borrador.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `201` |
+| 3 | [03-confirmar.md](03-confirmar.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `operario.dao` | `200` |
+| 4 | [04-recibir-con-inventory-caido.md](04-recibir-con-inventory-caido.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `operario.dao` | `503` |
+| 5 | [05-reintentar-con-la-misma-clave.md](05-reintentar-con-la-misma-clave.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `operario.dao` | `200` |
+| 6 | [06-repetir-la-recepcion.md](06-repetir-la-recepcion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `operario.dao` | `200` |
+| 7 | [07-consultar-las-operaciones.md](07-consultar-las-operaciones.md) | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/operations` | `operario.dao` | `200` |
 
 ## Por qué este orden
 

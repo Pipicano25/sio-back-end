@@ -41,7 +41,7 @@ PARTY_IDENTITY = os.environ.get("PARTY_IDENTITY_INTEGRATION_BASE_URL", "http://l
 GEOGRAPHY = os.environ.get("GEOGRAPHY_SERVICE_BASE_URL", "http://localhost:8000").rstrip("/")
 TOKEN_URL = os.environ.get("KEYCLOAK_TOKEN_URL", "http://localhost:8081/realms/sio/protocol/openid-connect/token")
 RULES = f"{PARTY_IDENTITY}/api/v1/identification-type-rules"
-USERNAME = "admin.test"
+USERNAME = "admin.sio"
 RUN_ID = secrets.token_hex(4).upper()
 
 

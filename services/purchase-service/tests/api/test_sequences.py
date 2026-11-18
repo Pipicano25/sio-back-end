@@ -84,8 +84,8 @@ def test_permissions_and_membership(as_user, world, fakes) -> None:
 
     assert as_user("lector.sintetico").post(url(world), json=sequence_body()).status_code == 403
     assert as_user("lector.sintetico").get(url(world)).status_code == 200
-    fakes.oc.members.pop((user_sub("compras.test"), world.company))
-    assert as_user("compras.test").get(url(world)).status_code == 404
+    fakes.oc.members.pop((user_sub("operario.dao"), world.company))
+    assert as_user("operario.dao").get(url(world)).status_code == 404
 
 
 def test_changes_are_audited(buyer, world, test_engine) -> None:

@@ -10,7 +10,7 @@ READ = "perm:operational-context:application_users:read"
 @pytest.fixture
 def member(api, create_company, create_branch, fake_accounts, fake_persons):
     """Persona miembro de dos empresas, asignada a una sucursal de la primera."""
-    sub = fake_accounts.add("compras.test")
+    sub = fake_accounts.add("operario.dao")
     person = fake_persons.add()
     first, second = create_company(), create_company()
     branch = create_branch(first["id"])
@@ -140,8 +140,8 @@ def test_repeated_transitions_and_stale_version(api, member):
 
 
 def test_supervisor_cannot_deactivate(api_as, member, make_member):
-    make_member(member["first"]["id"], "supervisor.test")
-    supervisor = api_as(*SUPERVISOR, sub="supervisor.test")
+    make_member(member["first"]["id"], "admin.dao")
+    supervisor = api_as(*SUPERVISOR, sub="admin.dao")
 
     response = supervisor.post(
         f"/api/v1/application-users/{member['users'][0]['id']}/deactivate", json={"version": 1}

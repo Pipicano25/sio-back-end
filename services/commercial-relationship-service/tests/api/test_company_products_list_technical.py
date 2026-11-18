@@ -21,7 +21,7 @@ ADOPTED = {"status": "ACTIVE", "inventory_control_enabled": "true", "page_size":
 
 
 def seed(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     adopt(client, company, fake_catalog, internal_code="A1", inventory_control_enabled=True)
     adopt(client, company, fake_catalog, internal_code="A2", inventory_control_enabled=True)
     adopt(client, company, fake_catalog, internal_code="S1", inventory_control_enabled=False)
@@ -33,7 +33,7 @@ def seed(as_user, company, fake_catalog) -> None:
 def test_member_user_is_still_authorized(as_user, company, fake_catalog) -> None:
     """Caso 1: un usuario miembro con el permiso sigue leyendo el listado (sin cambios)."""
     seed(as_user, company, fake_catalog)
-    response = as_user("admin.test").get(URL.format(company=company), params=ADOPTED)
+    response = as_user("admin.sio").get(URL.format(company=company), params=ADOPTED)
     assert response.status_code == 200 and response.json()["total_records"] == 2
 
 
@@ -51,7 +51,7 @@ def test_technical_account_with_both_permissions_counts_adopted_products(as_user
     body = response.json()
     assert body["total_records"] == 2 and len(body["items"]) == 1
     assert set(body) == {"items", "page", "page_size", "total_records", "total_pages"}  # contrato sin cambios
-    member = as_user("admin.test").get(URL.format(company=company), params=ADOPTED).json()
+    member = as_user("admin.sio").get(URL.format(company=company), params=ADOPTED).json()
     assert body == member
 
 
@@ -69,7 +69,7 @@ def test_technical_account_without_read_permission_is_forbidden(as_token, servic
 
 def test_no_membership_no_technical_identity_and_anonymous(as_user, as_token, make_token, company, other_company) -> None:
     """Caso 5: usuario sin membresía `404`; un humano con `platform:lookup` no obtiene la exención; anónimo `401`."""
-    assert as_user("admin.test").get(URL.format(company=other_company)).status_code == 404
+    assert as_user("admin.sio").get(URL.format(company=other_company)).status_code == 404
     human_with_lookup = as_token(make_token(READ, LOOKUP, sub="humano-con-lookup", preferred_username="humano"))
     assert human_with_lookup.get(URL.format(company=company)).status_code == 404
     assert as_token(None).get(URL.format(company=company)).status_code == 401

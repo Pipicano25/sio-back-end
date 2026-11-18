@@ -25,8 +25,8 @@ POST /api/v1/attribute-definitions
 
 **Permiso que exige la URL:** `perm:product-catalog:attribute-definitions:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `product-catalog` solo tiene `read`; le falta `create`
 
 **Por qué se hace así**
 
@@ -60,8 +60,8 @@ POST /api/v1/attribute-definitions/<ATR_DUREZA_CERDAS>/options
 
 **Permiso que exige la URL:** `perm:product-catalog:attribute-definitions:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `product-catalog` solo tiene `read`; le falta `update`
 - ℹ️ Crear una **opción** modifica la definición del atributo: exige `update`, no `create`.
 
 **Por qué se hace así**
@@ -98,8 +98,8 @@ POST /api/v1/attribute-definitions/<ATR_DUREZA_CERDAS>/options
 
 **Permiso que exige la URL:** `perm:product-catalog:attribute-definitions:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `product-catalog` solo tiene `read`; le falta `update`
 - ℹ️ Crear una **opción** modifica la definición del atributo: exige `update`, no `create`.
 
 **Por qué se hace así**
@@ -135,8 +135,8 @@ POST /api/v1/attribute-definitions/<ATR_DUREZA_CERDAS>/options
 
 **Permiso que exige la URL:** `perm:product-catalog:attribute-definitions:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `product-catalog` solo tiene `read`; le falta `update`
 - ℹ️ Crear una **opción** modifica la definición del atributo: exige `update`, no `create`.
 
 **Por qué se hace así**
@@ -172,8 +172,8 @@ POST /api/v1/attribute-definitions/<ATR_DUREZA_CERDAS>/options
 
 **Permiso que exige la URL:** `perm:product-catalog:attribute-definitions:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `product-catalog` solo tiene `read`; le falta `update`
 - ℹ️ Crear una **opción** modifica la definición del atributo: exige `update`, no `create`.
 
 **Por qué se hace así**
@@ -210,8 +210,8 @@ POST /api/v1/attribute-definitions
 
 **Permiso que exige la URL:** `perm:product-catalog:attribute-definitions:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `product-catalog` solo tiene `read`; le falta `create`
 
 **Por qué se hace así**
 

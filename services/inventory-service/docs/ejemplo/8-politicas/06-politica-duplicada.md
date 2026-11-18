@@ -6,7 +6,7 @@ Ejercicio 8: Políticas de inventario.
 
 `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policies`
 
-Ejecuta: `admin.test`.
+Ejecuta: `admin.sio`.
 
 ### Solicitud
 
@@ -32,11 +32,9 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `409` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `—` | tiene `perm:inventory:product-policies:update`; no se repite (cambiaría el estado) |
-| `compras.test` | No | `403` | no tiene `perm:inventory:product-policies:update` |
-| `ventas.test` | No | `403` | no tiene `perm:inventory:product-policies:update` |
-| `inventario.test` | No | `403` | no tiene `perm:inventory:product-policies:update` |
+| `admin.sio` | Sí | `409` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `—` | tiene `perm:inventory:product-policies:update`; no se repite (cambiaría el estado) |
+| `operario.dao` | No | `403` | no tiene `perm:inventory:product-policies:update` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

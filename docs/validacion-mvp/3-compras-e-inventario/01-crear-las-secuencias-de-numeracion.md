@@ -6,7 +6,7 @@ Ejercicio 3 — Compras e inventario: secuencias, compras de contado, confirmaci
 
 ## 1. Crear la secuencia de numeración de compras
 
-Paso `C-13.compras` · usuario **`admin.test`** · ítems de la FASE 10: 10
+Paso `C-13.compras` · usuario **`admin.sio`** · ítems de la FASE 10: 10
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchase-sequences
@@ -25,7 +25,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchase-sequences
 
 **Permiso que exige la URL:** `perm:purchase:purchase_sequences:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchase_sequences:create`), `ventas.test` (por `perm:purchase:purchase_sequences:create`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchase_sequences:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchase_sequences:create`)
 
 **Por qué se hace así**
 
@@ -39,7 +39,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchase-sequences
 
 ## 2. Crear la secuencia de numeración de ventas
 
-Paso `C-13.ventas` · usuario **`admin.test`** · ítems de la FASE 10: 15
+Paso `C-13.ventas` · usuario **`admin.sio`** · ítems de la FASE 10: 15
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sale-sequences
@@ -58,7 +58,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sale-sequences
 
 **Permiso que exige la URL:** `perm:sales:sale_sequences:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:create`)
 
 **Respuesta esperada:** `201`
 

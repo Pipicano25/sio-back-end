@@ -25,12 +25,12 @@ from tests.api.helpers import code_of, create_price, price_update_body
 
 @pytest.fixture
 def supervisor(as_user):
-    return as_user("supervisor.test")
+    return as_user("admin.dao")
 
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 def _processed(supervisor, as_token, service_token, company, fake_catalog, test_engine):
@@ -79,7 +79,7 @@ def test_cp25_reactivating_the_list_does_not_revive_closed_prices(admin, supervi
 
 def test_cp67_price_responses_expose_origin_but_no_costs(supervisor, as_user, as_token, service_token, company, fake_catalog, test_engine) -> None:
     world, _, _ = _processed(supervisor, as_token, service_token, company, fake_catalog, test_engine)
-    seller = as_user("ventas.test")
+    seller = as_user("operario.dao")
     items = seller.get(f"/api/v1/companies/{company}/price-list-items",
                        params={"price_list_id": world.price_list["id"], "status": "ALL"}).json()["items"]
     automatic = next(item for item in items if item["origin"] == "AUTOMATIC")

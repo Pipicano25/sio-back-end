@@ -298,11 +298,9 @@ def test_roles_de_perfil_viejos_eliminados() -> None:
 @pytest.mark.parametrize(
     ("username", "group"),
     [
-        ("admin.test", "/superadmin"),
-        ("supervisor.test", "/admin"),
-        ("ventas.test", "/empleado"),
-        ("compras.test", "/empleado"),
-        ("inventario.test", "/empleado"),
+        ("admin.sio", "/superadmin"),
+        ("admin.dao", "/admin"),
+        ("operario.dao", "/empleado"),
     ],
 )
 def test_usuarios_de_prueba(username, group) -> None:
@@ -310,7 +308,7 @@ def test_usuarios_de_prueba(username, group) -> None:
 
 
 def test_usuarios_eliminados() -> None:
-    assert set(HUMANS) == {"admin.test", "supervisor.test", "ventas.test", "compras.test", "inventario.test"}
+    assert set(HUMANS) == {"admin.sio", "admin.dao", "operario.dao"}
 
 
 # --- Admin (Historia 1; FR-005 a FR-008) -----------------------------------------------------------

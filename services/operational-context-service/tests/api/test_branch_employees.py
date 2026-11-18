@@ -21,7 +21,7 @@ def company_with_staff(api, create_company, create_branch, fake_accounts, fake_p
     norte = create_branch(company["id"], code="NORTE", name="Sede Norte")
     sur = create_branch(company["id"], code="SUR", name="Sede Sur")
     users = []
-    for username, display_name in (("compras.test", "Ana Compras"), ("ventas.test", "Luis Ventas")):
+    for username, display_name in (("operario.dao", "Ana Compras"), ("operario.otra", "Luis Ventas")):
         response = api.post(
             f"/api/v1/companies/{company['id']}/application-users",
             json={
@@ -77,7 +77,7 @@ def test_lists_branches_with_their_employees(api, company_with_staff, fake_perso
     assert ana == {
         "application_user_id": user["id"],
         "display_name": "Ana Compras",
-        "reference_email": "compras.test@empresa-ficticia.co",
+        "reference_email": "operario.dao@empresa-ficticia.co",
         "keycloak_user_id": user["keycloak_user_id"],
         "person_identity_id": user["person_identity_id"],
         "identification_type": "CC",

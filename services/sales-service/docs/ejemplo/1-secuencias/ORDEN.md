@@ -8,9 +8,9 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `ventas.test` | `201` |
-| 2 | [02-consultar-las-secuencias.md](02-consultar-las-secuencias.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `ventas.test` | `200` |
-| 3 | [03-segunda-secuencia-activa.md](03-segunda-secuencia-activa.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `ventas.test` | `409` |
+| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `operario.dao` | `201` |
+| 2 | [02-consultar-las-secuencias.md](02-consultar-las-secuencias.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `operario.dao` | `200` |
+| 3 | [03-segunda-secuencia-activa.md](03-segunda-secuencia-activa.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `operario.dao` | `409` |
 
 ## Por qué este orden
 

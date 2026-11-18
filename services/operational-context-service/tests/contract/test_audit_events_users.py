@@ -35,7 +35,7 @@ def user(audited_api, company, fake_accounts, fake_persons, test_engine):
     response = audited_api.post(
         f"/api/v1/companies/{company['id']}/application-users",
         json={
-            "keycloak_user_id": fake_accounts.add("compras.test"),
+            "keycloak_user_id": fake_accounts.add("operario.dao"),
             "person_identity_id": str(fake_persons.add()),
             "display_name": "Compras Ficticio",
             "reference_email": REFERENCE_EMAIL,

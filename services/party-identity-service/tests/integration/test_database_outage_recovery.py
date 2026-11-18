@@ -3,7 +3,7 @@
 Se ejecuta solo con `pytest -m integration -o addopts=""` y exige el entorno integrado en marcha
 (`sio-party-identity-service` en `PARTY_IDENTITY_INTEGRATION_BASE_URL`, por defecto `http://localhost:8101`, y `sio-party-identity-db`), Docker disponible y la contraseña de los
 usuarios de prueba en `KEYCLOAK_TEST_USER_PASSWORD` o en `infrastructure/.env`. Solo hace lecturas con
-`admin.test`.
+`admin.sio`.
 
 Verifica, sin reiniciar la aplicación:
 
@@ -86,7 +86,7 @@ def client():
         httpx.get(f"{BASE}/health/ready", timeout=5).raise_for_status()
         token = httpx.post(TOKEN_URL, data={
             "grant_type": "password", "client_id": "sio-web", "scope": "openid",
-            "username": "admin.test", "password": password,
+            "username": "admin.sio", "password": password,
         }, timeout=10).raise_for_status().json()["access_token"]
     except (httpx.HTTPError, KeyError):
         pytest.skip("Entorno integrado del servicio o Keycloak no disponible.")

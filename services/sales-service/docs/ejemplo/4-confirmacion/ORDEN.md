@@ -8,14 +8,14 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `ventas.test` | `201` |
-| 2 | [02-crear-el-borrador.md](02-crear-el-borrador.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales` | `ventas.test` | `201` |
-| 3 | [03-confirmar-con-precio-cambiado.md](03-confirmar-con-precio-cambiado.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `ventas.test` | `409` |
-| 4 | [04-actualizar-la-linea.md](04-actualizar-la-linea.md) | `PUT /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details/<LINEA>` | `ventas.test` | `200` |
-| 5 | [05-confirmar-con-inventory-caido.md](05-confirmar-con-inventory-caido.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `ventas.test` | `503` |
-| 6 | [06-reintentar-con-la-misma-clave.md](06-reintentar-con-la-misma-clave.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `ventas.test` | `200` |
-| 7 | [07-repetir-la-confirmacion.md](07-repetir-la-confirmacion.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `ventas.test` | `200` |
-| 8 | [08-consultar-las-operaciones.md](08-consultar-las-operaciones.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/operations` | `ventas.test` | `200` |
+| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `operario.dao` | `201` |
+| 2 | [02-crear-el-borrador.md](02-crear-el-borrador.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales` | `operario.dao` | `201` |
+| 3 | [03-confirmar-con-precio-cambiado.md](03-confirmar-con-precio-cambiado.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `operario.dao` | `409` |
+| 4 | [04-actualizar-la-linea.md](04-actualizar-la-linea.md) | `PUT /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/details/<LINEA>` | `operario.dao` | `200` |
+| 5 | [05-confirmar-con-inventory-caido.md](05-confirmar-con-inventory-caido.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `operario.dao` | `503` |
+| 6 | [06-reintentar-con-la-misma-clave.md](06-reintentar-con-la-misma-clave.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `operario.dao` | `200` |
+| 7 | [07-repetir-la-confirmacion.md](07-repetir-la-confirmacion.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `operario.dao` | `200` |
+| 8 | [08-consultar-las-operaciones.md](08-consultar-las-operaciones.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/operations` | `operario.dao` | `200` |
 
 ## Por qué este orden
 

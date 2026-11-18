@@ -2,13 +2,13 @@
 
 [← Todos los ejercicios](../README.md)
 
-**Qué enseña:** Seleccionar **proveedores**, usar la **misma organización como cliente y proveedor**, **bloquear** con motivo (solo `admin.test`), ver la **transición inválida** de un proveedor bloqueado, **modificarlo sin desbloquearlo** y **desbloquearlo**.
+**Qué enseña:** Seleccionar **proveedores**, usar la **misma organización como cliente y proveedor**, **bloquear** con motivo (solo `admin.sio`), ver la **transición inválida** de un proveedor bloqueado, **modificarlo sin desbloquearlo** y **desbloquearlo**.
 
 **Datos:** **ficticios** — detalle y decisiones en [00-datos-ficticios.md](00-datos-ficticios.md).
 
 Antes de empezar revise los [requisitos comunes](../README.md#antes-de-empezar).
 
-**Usuarios:** ejecútelo con `admin.test`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
+**Usuarios:** ejecútelo con `admin.sio`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
 
 ## Orden de ejecución
 

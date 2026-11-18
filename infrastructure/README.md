@@ -147,8 +147,7 @@ El realm incluye:
 - Clientes técnicos con cuenta de servicio (`party-identity-service`, `operational-context-service`,
   `commercial-relationship-service`, `inventory-service`, `purchase-service`, `sales-service`, y los clientes de pruebas
   `audit-test-emitter` e `inventory-test-operator`) y sus roles
-- Usuarios de prueba (`admin.test`, `supervisor.test`, `compras.test`, `ventas.test`,
-  `reportes.test`, `consulta.test`, `inventario.test`) con `id` fijo
+- Usuarios de prueba `admin.sio` (SuperAdmin), `admin.dao` (Admin) y `operario.dao` (Empleado), con `id` fijo
 
 No contiene datos de empresas, sucursales ni usuarios productivos.
 
@@ -193,7 +192,7 @@ export KEYCLOAK_TEST_USER_PASSWORD="$(grep '^KEYCLOAK_TEST_USER_PASSWORD=' valid
 export KC_URL=http://localhost:18081 GEOGRAPHY_URL=http://127.0.0.1:18102
 
 # --- Común
-export KC_TOKEN_URL="$KC_URL/realms/sio/protocol/openid-connect/token" SIO_USER=consulta.test
+export KC_TOKEN_URL="$KC_URL/realms/sio/protocol/openid-connect/token" SIO_USER=operario.dao
 jwt_payload() { local p; p=$(cut -d. -f2 <<<"$1" | tr '_-' '/+'); while (( ${#p} % 4 )); do p+="="; done; base64 -d <<<"$p" | jq "${2:-.}"; }
 ```
 
@@ -222,7 +221,7 @@ export ACCESS_TOKEN=$(jq -r .access_token <<<"$RESP") REFRESH_TOKEN=$(jq -r .ref
 
 ```bash
 jwt_payload "$ACCESS_TOKEN" '{preferred_username, aud, exp, permisos: .resource_access["sio-api"].roles}'
-# {"preferred_username": "consulta.test", "aud": ["sio-api", "account"], "exp": 1792380564,
+# {"preferred_username": "operario.dao", "aud": ["sio-api", "account"], "exp": 1792380564,
 #  "permisos": ["consulta", "perm:geography:global_countries:read", "perm:operational-context:branches:read", ...]}
 ```
 
@@ -471,15 +470,11 @@ Pruebas del script (sin borrar nada): `bash infrastructure/scripts/tests/reset-b
 
 ### Usuarios de ejemplo
 
-| Usuario           |
-| ----------------- |
-| `admin.test`      |
-| `supervisor.test` |
-| `compras.test`    |
-| `ventas.test`     |
-| `inventario.test` |
-| `reportes.test`   |
-| `consulta.test`   |
+| Usuario | Grupo |
+| --- | --- |
+| `admin.sio` | `/superadmin` |
+| `admin.dao` | `/admin` |
+| `operario.dao` | `/empleado` |
 
 ## Notas adicionales
 

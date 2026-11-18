@@ -43,7 +43,7 @@ def get(clients, user: str, service: str, path: str, step_id: str, **params):
 
 def kardex(clients, world, product: str, step_id: str) -> list[dict]:
     body = get(
-        clients, "supervisor.test", "inventory",
+        clients, "admin.sio", "inventory",
         f"/companies/{world['empresa_a']}/branches/{world['sucursal_a1']}/kardex/{world[f'producto_empresa_{product}']}",
         step_id, page_size=100,
     )
@@ -52,7 +52,7 @@ def kardex(clients, world, product: str, step_id: str) -> list[dict]:
 
 def balance(clients, world, product: str, step_id: str) -> Decimal:
     body = get(
-        clients, "supervisor.test", "inventory",
+        clients, "admin.sio", "inventory",
         f"/companies/{world['empresa_a']}/branches/{world['sucursal_a1']}/balances/{world[f'producto_empresa_{product}']}",
         step_id,
     )
@@ -61,7 +61,7 @@ def balance(clients, world, product: str, step_id: str) -> Decimal:
 
 def open_layers(clients, world, product: str, step_id: str) -> list[tuple[Decimal, Decimal]]:
     body = get(
-        clients, "supervisor.test", "inventory",
+        clients, "admin.sio", "inventory",
         f"/companies/{world['empresa_a']}/branches/{world['sucursal_a1']}/valuation/{world[f'producto_empresa_{product}']}/layers",
         step_id, include_closed="true",
     )
@@ -77,7 +77,7 @@ def delta(movement: dict) -> Decimal:
 @pytest.mark.evidence("C-01", "C-03")
 def test_c03_companies_created_with_cop(world, clients, journal):
     for letter in ("a", "b"):
-        company = get(clients, "admin.test", "operational-context", f"/companies/{world[f'empresa_{letter}']}", f"C-03.{letter}")
+        company = get(clients, "admin.sio", "operational-context", f"/companies/{world[f'empresa_{letter}']}", f"C-03.{letter}")
         check(journal, f"C-03.{letter}", "moneda", "COP", company["default_currency"])
         check(journal, f"C-03.{letter}", "estado", "ACTIVE", company["status"])
         check(journal, f"C-03.{letter}", "organización", world[f"org_empresa_{letter}"], company["organization_identity_id"])
@@ -87,7 +87,7 @@ def test_c03_companies_created_with_cop(world, clients, journal):
 @pytest.mark.evidence("C-04")
 def test_c04_branches_created(world, clients, journal):
     for branch in ("a1", "b1"):
-        body = get(clients, "admin.test", "operational-context", f"/branches/{world[f'sucursal_{branch}']}", f"C-04.{branch}")
+        body = get(clients, "admin.sio", "operational-context", f"/branches/{world[f'sucursal_{branch}']}", f"C-04.{branch}")
         check(journal, f"C-04.{branch}", "estado", "ACTIVE", body["status"])
         check(journal, f"C-04.{branch}", "ciudad", world["ciudad"], body["city_id"])
 
@@ -112,10 +112,10 @@ def test_c05_c07_operational_users_and_access(world, journal):
 @pytest.mark.items(4)
 @pytest.mark.evidence("C-08")
 def test_c08_supplier_with_credit_condition(world, clients, journal):
-    supplier = get(clients, "admin.test", "commercial-relationship", f"/company-suppliers/{world['proveedor']}", "C-08.proveedor")
+    supplier = get(clients, "admin.sio", "commercial-relationship", f"/company-suppliers/{world['proveedor']}", "C-08.proveedor")
     check(journal, "C-08.proveedor", "estado", "ACTIVE", supplier["status"])
     condition = get(
-        clients, "admin.test", "commercial-relationship", f"/supplier-payment-conditions/{world['condicion_credito']}", "C-08.condicion"
+        clients, "admin.sio", "commercial-relationship", f"/supplier-payment-conditions/{world['condicion_credito']}", "C-08.condicion"
     )
     check(journal, "C-08.condicion", "tipo", world["tipo_credito"], condition["payment_condition_type_id"])
     check(journal, "C-08.condicion", "predeterminada", True, condition["is_default"])
@@ -124,7 +124,7 @@ def test_c08_supplier_with_credit_condition(world, clients, journal):
 @pytest.mark.items(5)
 @pytest.mark.evidence("C-09")
 def test_c09_person_customer(world, clients, journal):
-    customer = get(clients, "admin.test", "commercial-relationship", f"/company-customers/{world['cliente']}", "C-09.cliente")
+    customer = get(clients, "admin.sio", "commercial-relationship", f"/company-customers/{world['cliente']}", "C-09.cliente")
     check(journal, "C-09.cliente", "tipo", "PERSON", customer["customer_kind"])
     check(journal, "C-09.cliente", "persona", world["persona_cliente"], customer["person_identity_id"])
 
@@ -133,20 +133,20 @@ def test_c09_person_customer(world, clients, journal):
 @pytest.mark.evidence("C-10", "C-11")
 def test_c10_c11_products_adopted_with_presentation(world, clients, journal):
     for letter in ("a", "b"):
-        product = get(clients, "admin.test", "commercial-relationship", f"/company-products/{world[f'producto_empresa_{letter}']}", f"C-11.producto_{letter}")
+        product = get(clients, "admin.sio", "commercial-relationship", f"/company-products/{world[f'producto_empresa_{letter}']}", f"C-11.producto_{letter}")
         check(journal, f"C-11.producto_{letter}", "estado", "ACTIVE", product["status"])
         check(journal, f"C-11.producto_{letter}", "control de inventario", True, product["inventory_control_enabled"])
         check(journal, f"C-11.producto_{letter}", "sin precio ni costo (spec 019)", True,
               "sale_price" not in product and "reference_cost" not in product)
-        base = get(clients, "admin.test", "commercial-relationship",
+        base = get(clients, "admin.sio", "commercial-relationship",
                    f"/company-product-presentations/{world[f'presentacion_base_empresa_{letter}']}", f"C-11.base_{letter}")
         check(journal, f"C-11.base_{letter}", "presentación global", world[f"presentacion_base_{letter}"], base["global_product_presentation_id"])
-        global_product = get(clients, "admin.test", "product-catalog", f"/products/{world[f'producto_{letter}']}", f"C-10.producto_{letter}")
+        global_product = get(clients, "admin.sio", "product-catalog", f"/products/{world[f'producto_{letter}']}", f"C-10.producto_{letter}")
         assert global_product.get("first_used_at"), f"C-11.producto_{letter}: el producto global no registró su primer uso"
-    box = get(clients, "admin.test", "product-catalog", f"/presentations/{world['presentacion_caja_a']}", "C-10.caja_a")
+    box = get(clients, "admin.sio", "product-catalog", f"/presentations/{world['presentacion_caja_a']}", "C-10.caja_a")
     check(journal, "C-10.caja_a", "base_quantity", D("12"), dec(box["base_quantity"]))
     adopted = get(
-        clients, "admin.test", "commercial-relationship", f"/company-product-presentations/{world['presentacion_caja_empresa_a']}", "C-11.caja_a"
+        clients, "admin.sio", "commercial-relationship", f"/company-product-presentations/{world['presentacion_caja_empresa_a']}", "C-11.caja_a"
     )
     check(journal, "C-11.caja_a", "presentación global", world["presentacion_caja_a"], adopted["global_product_presentation_id"])
 
@@ -154,12 +154,12 @@ def test_c10_c11_products_adopted_with_presentation(world, clients, journal):
 @pytest.mark.items(8)
 @pytest.mark.evidence("C-11", "C-12", "C-13")
 def test_c12_price_lists_and_items(world, clients, journal):
-    general = get(clients, "admin.test", "commercial-relationship", f"/price-lists/{world['lista_general']}", "C-12.lista_general")
+    general = get(clients, "admin.sio", "commercial-relationship", f"/price-lists/{world['lista_general']}", "C-12.lista_general")
     check(journal, "C-12.lista_general", "predeterminada", True, general["is_default"])
-    mayorista = get(clients, "admin.test", "commercial-relationship", f"/price-lists/{world['lista_mayorista']}", "C-12.lista_mayorista")
+    mayorista = get(clients, "admin.sio", "commercial-relationship", f"/price-lists/{world['lista_mayorista']}", "C-12.lista_mayorista")
     check(journal, "C-12.lista_mayorista", "predeterminada", False, mayorista["is_default"])
     for item, price in (("item_general", "1500.00"), ("item_b", "7000.00"), ("item_mayorista", "16000.00")):
-        body = get(clients, "admin.test", "commercial-relationship", f"/price-list-items/{world[item]}", f"C-12.{item}")
+        body = get(clients, "admin.sio", "commercial-relationship", f"/price-list-items/{world[item]}", f"C-12.{item}")
         check(journal, f"C-12.{item}", "precio", price, body["unit_price"])
         check(journal, f"C-12.{item}", "moneda", "COP", body["currency_code"])
 
@@ -286,7 +286,7 @@ def test_v04_insufficient_stock_rejected(world, clients, journal):
     before = balance(clients, world, "a", "V-04.V4")
     rejected = run(world, "V-04.V4")
     check(journal, "V-04.V4", "código", "SALES.INSUFFICIENT_STOCK", rejected.body.get("code"))
-    current = get(clients, "ventas.test", "sales", f"/companies/{world['empresa_a']}/sales/{world['venta_4']}", "V-04.V4")
+    current = get(clients, "operario.dao", "sales", f"/companies/{world['empresa_a']}/sales/{world['venta_4']}", "V-04.V4")
     check(journal, "V-04.V4", "estado", "DRAFT", current["status"])
     check(journal, "V-04.V4", "sin número", None, current["number"])
     check(journal, "V-04.V4", "saldo sin cambios", before, balance(clients, world, "a", "V-04.V4"))
@@ -299,7 +299,7 @@ def test_v05_prices_changed_and_inactive_product(world, clients, journal):
     run(world, "V-05.cambio")
     rejected = run(world, "V-05.V5")
     check(journal, "V-05.V5", "código", "SALES.PRICES_CHANGED", rejected.body.get("code"))
-    current = get(clients, "ventas.test", "sales", f"/companies/{world['empresa_a']}/sales/{world['venta_5']}", "V-05.V5")
+    current = get(clients, "operario.dao", "sales", f"/companies/{world['empresa_a']}/sales/{world['venta_5']}", "V-05.V5")
     check(journal, "V-05.V5", "estado", "DRAFT", current["status"])
     check(journal, "V-05.V5", "sin número", None, current["number"])
     check(journal, "V-05.V5", "saldo sin cambios", before_a, balance(clients, world, "a", "V-05.V5"))
@@ -309,7 +309,7 @@ def test_v05_prices_changed_and_inactive_product(world, clients, journal):
     world.vars["venta_7_version"] = current_version(clients, world, "7")
     rejected = run(world, "V-05b.V7")
     check(journal, "V-05b.V7", "código", "SALES.REFERENCES_NOT_ELIGIBLE", rejected.body.get("code"))
-    v7 = get(clients, "ventas.test", "sales", f"/companies/{world['empresa_a']}/sales/{world['venta_7']}", "V-05b.V7")
+    v7 = get(clients, "operario.dao", "sales", f"/companies/{world['empresa_a']}/sales/{world['venta_7']}", "V-05b.V7")
     check(journal, "V-05b.V7", "estado", "DRAFT", v7["status"])
     check(journal, "V-05b.V7", "sin número", None, v7["number"])
     check(journal, "V-05b.V7", "saldo sin cambios", before_b, balance(clients, world, "b", "V-05b.V7"))
@@ -318,7 +318,7 @@ def test_v05_prices_changed_and_inactive_product(world, clients, journal):
 
 
 def current_version(clients, world, number: str) -> int:
-    body = get(clients, "ventas.test", "sales", f"/companies/{world['empresa_a']}/sales/{world[f'venta_{number}']}", f"V-version.V{number}")
+    body = get(clients, "operario.dao", "sales", f"/companies/{world['empresa_a']}/sales/{world[f'venta_{number}']}", f"V-version.V{number}")
     return body["version"]
 
 
@@ -327,8 +327,8 @@ def current_version(clients, world, number: str) -> int:
 def test_v06_v07_cost_margin_and_outputs(world, clients, journal):
     seller = run(world, "V-06.vendedor").body
     for field in PROFITABILITY_FIELDS:
-        assert field not in seller["lines"][0], f"V-06.vendedor: ventas.test recibe {field}"
-    assert "has_unknown_cost" not in seller, "V-06.vendedor: ventas.test recibe has_unknown_cost"
+        assert field not in seller["lines"][0], f"V-06.vendedor: operario.dao recibe {field}"
+    assert "has_unknown_cost" not in seller, "V-06.vendedor: operario.dao recibe has_unknown_cost"
     supervisor = run(world, "V-06.supervisor").body
     output = PLAN.output("V2")
     line = supervisor["lines"][0]
@@ -336,7 +336,7 @@ def test_v06_v07_cost_margin_and_outputs(world, clients, journal):
     check(journal, "V-06.supervisor", "margen V2", output.margin, dec(line["gross_margin_amount"]))
     check(journal, "V-06.supervisor", "margen % V2", output.margin_percent, dec(line["gross_margin_percentage"]).quantize(D("0.01")))
     for number in ("1", "3"):
-        body = get(clients, "supervisor.test", "sales", f"/companies/{world['empresa_a']}/sales/{world[f'venta_{number}']}", "V-06.supervisor")
+        body = get(clients, "admin.sio", "sales", f"/companies/{world['empresa_a']}/sales/{world[f'venta_{number}']}", "V-06.supervisor")
         planned = PLAN.output(f"V{number}")
         check(journal, "V-06.supervisor", f"costo V{number}", planned.cost, dec(body["lines"][0]["cost_total"]))
         check(journal, "V-06.supervisor", f"margen V{number}", planned.margin, dec(body["lines"][0]["gross_margin_amount"]))
@@ -408,11 +408,11 @@ def test_a01_cancellations_and_reversals(world, clients, journal, timer):
 def test_a02_cancel_consumed_purchase_rejected(world, clients, journal):
     before = balance(clients, world, "a", "A-02.P1")
     world.vars["compra_1_version"] = get(
-        clients, "compras.test", "purchase", f"/companies/{world['empresa_a']}/purchases/{world['compra_1']}", "A-02.P1"
+        clients, "operario.dao", "purchase", f"/companies/{world['empresa_a']}/purchases/{world['compra_1']}", "A-02.P1"
     )["version"]
     rejected = run(world, "A-02.P1")
     check(journal, "A-02.P1", "código", "PURCHASE.INVENTORY_ALREADY_CONSUMED", rejected.body.get("code"))
-    current = get(clients, "compras.test", "purchase", f"/companies/{world['empresa_a']}/purchases/{world['compra_1']}", "A-02.P1")
+    current = get(clients, "operario.dao", "purchase", f"/companies/{world['empresa_a']}/purchases/{world['compra_1']}", "A-02.P1")
     check(journal, "A-02.P1", "estado", "CONFIRMED", current["status"])
     check(journal, "A-02.P1", "saldo sin cambios", before, balance(clients, world, "a", "A-02.P1"))
 

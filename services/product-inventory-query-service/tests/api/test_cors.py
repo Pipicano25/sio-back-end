@@ -63,7 +63,7 @@ def cors_client(app: FastAPI) -> Generator[TestClient, None, None]:
 @pytest.fixture
 def authorized_get(world, user_token) -> tuple[str, str]:
     """Lectura que el usuario autorizado puede hacer sin datos previos: ruta y token."""
-    return f"{world.base}/inventory-summary", user_token("admin.test")
+    return f"{world.base}/inventory-summary", user_token("admin.sio")
 
 
 def test_cors_wraps_the_whole_stack(cors_client):

@@ -82,7 +82,7 @@ def test_purchase_stock_sale_balance_and_cancellation(admin, seller, supervisor,
     body = confirmed.json()
     assert body["status"] == "CONFIRMED" and body["number"].startswith("FV-")
     assert body["operation_date"] == body["due_date"] and body["payment_condition_code_snapshot"] == "CASH"
-    assert not any(name in body["lines"][0] for name in PROFITABILITY)  # ventas.test no ve rentabilidad
+    assert not any(name in body["lines"][0] for name in PROFITABILITY)  # operario.dao no ve rentabilidad
     assert balance(admin, world, world.product) == before_qty - 24
 
     # Kardex real: la salida con su origen.

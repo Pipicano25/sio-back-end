@@ -200,8 +200,8 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "## Ejemplos",
         "",
         "- Puede: ver la respuesta esperada de cada paso.",
-        "- No puede: `inventario.test` recibe `403` en todas las llamadas (no tiene permisos de "
-        "auditoría); en el registro, incluso `admin.test` recibe `403` porque no es una cuenta de servicio.",
+        "- No puede: `operario.dao` recibe `403` en todas las llamadas (no tiene permisos de "
+        "auditoría); en el registro, incluso `admin.sio` recibe `403` porque no es una cuenta de servicio.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -263,7 +263,7 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "```bash",
         "curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \\",
         "  -d grant_type=password -d client_id=sio-web -d scope=openid \\",
-        "  -d username=supervisor.test -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"",
+        "  -d username=admin.dao -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"",
         "```",
         "",
         "Cuenta de servicio de pruebas (secreto en `AUDIT_TEST_EMITTER_CLIENT_SECRET`):",

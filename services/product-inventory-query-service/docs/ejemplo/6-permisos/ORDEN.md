@@ -8,6 +8,6 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-empleado-ve-todos-los-bloques.md](01-empleado-ve-todos-los-bloques.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Loratadina` | `ventas.test` | `200` |
-| 2 | [02-admin-ve-todos-los-bloques.md](02-admin-ve-todos-los-bloques.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Loratadina` | `supervisor.test` | `200` |
-| 3 | [03-filtro-de-minimos.md](03-filtro-de-minimos.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/inventory-overviews?minimum_state=BELOW_MINIMUM` | `ventas.test` | `200` |
+| 1 | [01-empleado-ve-todos-los-bloques.md](01-empleado-ve-todos-los-bloques.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Loratadina` | `operario.dao` | `200` |
+| 2 | [02-admin-ve-todos-los-bloques.md](02-admin-ve-todos-los-bloques.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Loratadina` | `admin.dao` | `200` |
+| 3 | [03-filtro-de-minimos.md](03-filtro-de-minimos.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/inventory-overviews?minimum_state=BELOW_MINIMUM` | `operario.dao` | `200` |

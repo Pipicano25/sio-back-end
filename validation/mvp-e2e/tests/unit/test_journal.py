@@ -100,7 +100,7 @@ def test_created_ids_and_expected_audit_are_registered(tmp_path):
             entity_id="c-1",
             scope="COMPANY",
             company_id="c-1",
-            actor="admin.test",
+            actor="admin.sio",
         )
     )
     assert journal.ids("company") == ["c-1", "c-2"]

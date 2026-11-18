@@ -20,7 +20,7 @@ def test_two_simultaneous_suppliers_with_the_same_organization(app, user_token, 
         with TestClient(app, raise_server_exceptions=False) as client:
             barrier.wait()
             results.append(
-                ApiClient(client, user_token("admin.test")).post(
+                ApiClient(client, user_token("admin.sio")).post(
                     f"/api/v1/companies/{company}/company-suppliers",
                     json={"organization_identity_id": str(organization), "internal_code": code, "display_name": "P"},
                 )

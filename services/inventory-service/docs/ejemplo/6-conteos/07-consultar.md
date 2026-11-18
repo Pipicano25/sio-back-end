@@ -6,7 +6,7 @@ Ejercicio 6: Conteos físicos.
 
 `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-counts/<CONTEO>`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `operario.dao`.
 
 ### Por qué
 
@@ -20,11 +20,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa y tener `perm:operat
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:inventory:counts:read` |
-| `compras.test` | Sí | `200` | tiene `perm:inventory:counts:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:inventory:counts:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:inventory:counts:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:inventory:counts:read` |
+| `operario.dao` | Sí | `200` | tiene `perm:inventory:counts:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -50,9 +48,9 @@ Estado `200`.
   "company_id": "d44a0000-0000-4000-8000-000000000001",
   "branch_id": "d44b0000-0000-4000-8000-000000000001",
   "status": "COMPLETED",
-  "started_by_user_id": "d44c0000-0000-4000-8000-000000000105",
+  "started_by_user_id": "d44c0000-0000-4000-8000-000000000103",
   "started_at": "<asignado por Inventory>",
-  "completed_by_user_id": "d44c0000-0000-4000-8000-000000000105",
+  "completed_by_user_id": "d44c0000-0000-4000-8000-000000000103",
   "completed_at": "<asignado por Inventory>",
   "cancelled_by_user_id": null,
   "cancelled_at": null,
@@ -61,9 +59,9 @@ Estado `200`.
   "observations": "Conteo mensual ficticio",
   "version": 3,
   "created_at": "<asignado por Inventory>",
-  "created_by": "inventario.test",
+  "created_by": "operario.dao",
   "updated_at": "<asignado por Inventory>",
-  "updated_by": "inventario.test",
+  "updated_by": "operario.dao",
   "details": [
     {
       "id": "<asignado por Inventory>",
@@ -74,7 +72,7 @@ Estado `200`.
       "difference_quantity": "-2.0000",
       "unit_cost": null,
       "inventory_adjustment_id": "<asignado por Inventory>",
-      "counted_by_user_id": "d44c0000-0000-4000-8000-000000000105",
+      "counted_by_user_id": "d44c0000-0000-4000-8000-000000000103",
       "counted_at": "<asignado por Inventory>"
     },
     {
@@ -86,7 +84,7 @@ Estado `200`.
       "difference_quantity": "0.5000",
       "unit_cost": null,
       "inventory_adjustment_id": "<asignado por Inventory>",
-      "counted_by_user_id": "d44c0000-0000-4000-8000-000000000105",
+      "counted_by_user_id": "d44c0000-0000-4000-8000-000000000103",
       "counted_at": "<asignado por Inventory>"
     }
   ],
@@ -106,9 +104,9 @@ Estado `200`.
       "unit_cost": "2500.5000",
       "adjustment_value": "5001.00",
       "inventory_count_id": "<CONTEO>",
-      "application_user_id": "d44c0000-0000-4000-8000-000000000105",
+      "application_user_id": "d44c0000-0000-4000-8000-000000000103",
       "created_at": "<asignado por Inventory>",
-      "created_by": "inventario.test",
+      "created_by": "operario.dao",
       "movement": {
         "id": "<asignado por Inventory>",
         "line_index": 0,
@@ -140,9 +138,9 @@ Estado `200`.
       "unit_cost": "9800.0000",
       "adjustment_value": "4900.00",
       "inventory_count_id": "<CONTEO>",
-      "application_user_id": "d44c0000-0000-4000-8000-000000000105",
+      "application_user_id": "d44c0000-0000-4000-8000-000000000103",
       "created_at": "<asignado por Inventory>",
-      "created_by": "inventario.test",
+      "created_by": "operario.dao",
       "movement": {
         "id": "<asignado por Inventory>",
         "line_index": 1,

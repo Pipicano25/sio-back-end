@@ -7,9 +7,9 @@ sin escribir nada.
 
 Datos (todos ficticios: crema dental, jarabe y analgésicos; ningún NIT, razón social ni dato de DAO):
 
-- empresa A con 3 sucursales (PPAL, NORTE, SUR) y los 5 usuarios de prueba como miembros (spec 026); `inventario.test`
-  asignado solo a PPAL (A-08) y `admin.test` a las tres;
-- empresa B, de la que solo `admin.test` y `ventas.test` son miembros (cursores de otra empresa);
+- empresa A con 3 sucursales (PPAL, NORTE, SUR) y los 3 usuarios de prueba como miembros; `admin.dao`
+  asignado solo a PPAL (A-08) y `admin.sio` a las tres;
+- empresa B, de la que solo `admin.sio` y `operario.dao` son miembros (cursores de otra empresa);
 - productos globales con marca, categoría, presentaciones e imagen principal (PNG real en el almacenamiento), y
   productos globales que la empresa no adopta;
 - productos adoptados con y sin precio en la lista predeterminada, una segunda lista, un servicio sin control de
@@ -60,7 +60,7 @@ URLS = {
     "product_inventory_query": "http://127.0.0.1:18112/api/v1",
     "object_storage": "http://127.0.0.1:18902",
 }
-USERS = ("admin.test", "supervisor.test", "compras.test", "ventas.test", "inventario.test")
+USERS = ("admin.sio", "admin.dao", "operario.dao")
 
 
 def guard():
@@ -202,14 +202,14 @@ def build() -> dict:
     storage = boto3.client("s3", endpoint_url=URLS["object_storage"], region_name="us-east-1",
                            aws_access_key_id=env["SIO_IT_WRITER_STORAGE_ACCESS_KEY"],
                            aws_secret_access_key=env["SIO_IT_WRITER_STORAGE_SECRET_KEY"])
-    admin = user(env, "admin.test")
+    admin = user(env, "admin.sio")
     operator = service(env, "inventory-test-operator", "INVENTORY_TEST_OPERATOR_CLIENT_SECRET")
     pc, cr, oc, inv = (URLS[k] for k in ("product_catalog", "commercial_relationship", "operational_context", "inventory"))
 
     colombia = ok(admin.get(f"{URLS['geography']}/global-countries", params={"iso3_code": "COL"}))["items"][0]["id"]
     company_a, company_b = company(admin, colombia, "A"), company(admin, colombia, "B")
     members = {name: member(admin, colombia, company_a, name) for name in USERS}
-    for name in ("admin.test", "ventas.test"):
+    for name in ("admin.sio", "operario.dao"):
         member(admin, colombia, company_b, name)
 
     branches = {}
@@ -217,7 +217,7 @@ def build() -> dict:
         branches[code] = ok(admin.post(f"{oc}/companies/{company_a}/branches", json={
             "code": f"{code}{RUN}", "name": f"Sucursal ficticia {code} {RUN}"}))["id"]
     branch_b = ok(admin.post(f"{oc}/companies/{company_b}/branches", json={"code": f"B{RUN}", "name": f"Sucursal B {RUN}"}))["id"]
-    for name, codes in (("admin.test", ("PPAL", "NORTE", "SUR")), ("inventario.test", ("PPAL",))):
+    for name, codes in (("admin.sio", ("PPAL", "NORTE", "SUR")), ("admin.dao", ("PPAL",))):
         for code in codes:
             ok(admin.post(f"{oc}/application-users/{members[name]}/user-branches", json={"branch_id": branches[code]}))
 
@@ -314,7 +314,7 @@ def build() -> dict:
         origin = "PURCHASE" if kind == "entries" else "SALE"
         ok(operator.post(f"{inv}/inventory-{kind}", json={
             "operation_key": str(uuid4()), "company_id": company_a, "branch_id": branches[branch], "origin_type": origin,
-            "origin_id": str(uuid4()), "application_user_id": members["admin.test"], "correlation_id": str(uuid4()),
+            "origin_id": str(uuid4()), "application_user_id": members["admin.sio"], "correlation_id": str(uuid4()),
             "lines": [{"origin_detail_id": str(uuid4()), "company_product_id": product, "quantity": quantity,
                        **({"unit_cost": "1000"} if kind == "entries" else {})} for product, quantity in lines]}))
 

@@ -20,7 +20,7 @@ def test_two_keys_same_sale_only_one_applies(test_client, user_token, world, fak
         response = test_client.post(
             f"{base(world)}/sales/{draft['id']}/confirmation",
             json={"version": draft["version"]},
-            headers={"Authorization": f"Bearer {user_token('ventas.test')}", "Idempotency-Key": new_key()},
+            headers={"Authorization": f"Bearer {user_token('operario.dao')}", "Idempotency-Key": new_key()},
         )
         with lock:
             responses.append(response)
@@ -52,7 +52,7 @@ def test_same_key_concurrently_applies_once(test_client, user_token, world, fake
             test_client.post(
                 f"{base(world)}/sales/{draft['id']}/confirmation",
                 json={"version": draft["version"]},
-                headers={"Authorization": f"Bearer {user_token('ventas.test')}", "Idempotency-Key": key},
+                headers={"Authorization": f"Bearer {user_token('operario.dao')}", "Idempotency-Key": key},
             )
         )
 
@@ -82,7 +82,7 @@ def test_twenty_sales_of_the_last_unit_confirm_exactly_one(test_client, user_tok
         response = test_client.post(
             f"{base(world)}/sales/{draft['id']}/confirmation",
             json={"version": draft["version"]},
-            headers={"Authorization": f"Bearer {user_token('ventas.test')}", "Idempotency-Key": new_key()},
+            headers={"Authorization": f"Bearer {user_token('operario.dao')}", "Idempotency-Key": new_key()},
         )
         with lock:
             responses.append(response)

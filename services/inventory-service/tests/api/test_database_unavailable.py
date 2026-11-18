@@ -50,7 +50,7 @@ def test_every_database_route_returns_503_and_recovers(app, operator, as_user, w
     created = operator.post("/api/v1/inventory-entries", json=operation_body(world, line(product, "10")))
     assert created.status_code == 201, created.text
     operation_id = created.json()["id"]
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     base = f"/api/v1/companies/{world.company}"
 
     calls = [

@@ -8,12 +8,12 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-borrador-con-impuesto-calculado.md](01-borrador-con-impuesto-calculado.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `201` |
-| 2 | [02-ajustar-la-tasa-de-una-linea.md](02-ajustar-la-tasa-de-una-linea.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `supervisor.test` | `201` |
-| 3 | [03-comprador-sin-permiso-de-ajuste.md](03-comprador-sin-permiso-de-ajuste.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `compras.test` | `403` |
-| 4 | [04-tasa-fuera-de-rango.md](04-tasa-fuera-de-rango.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `supervisor.test` | `422` |
-| 5 | [05-presentacion-repetida.md](05-presentacion-repetida.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `compras.test` | `409` |
-| 6 | [06-confirmar-sin-politica-de-ganancia.md](06-confirmar-sin-politica-de-ganancia.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `compras.test` | `409` |
+| 1 | [01-borrador-con-impuesto-calculado.md](01-borrador-con-impuesto-calculado.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `201` |
+| 2 | [02-ajustar-la-tasa-de-una-linea.md](02-ajustar-la-tasa-de-una-linea.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `admin.dao` | `201` |
+| 3 | [03-comprador-sin-permiso-de-ajuste.md](03-comprador-sin-permiso-de-ajuste.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `operario.dao` | `403` |
+| 4 | [04-tasa-fuera-de-rango.md](04-tasa-fuera-de-rango.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `admin.dao` | `422` |
+| 5 | [05-presentacion-repetida.md](05-presentacion-repetida.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `operario.dao` | `409` |
+| 6 | [06-confirmar-sin-politica-de-ganancia.md](06-confirmar-sin-politica-de-ganancia.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `operario.dao` | `409` |
 
 ## Por qué este orden
 

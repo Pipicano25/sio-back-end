@@ -8,7 +8,7 @@ EX3 = dict(
     focus=(
         "Inactivar una empresa **sin eliminarla ni modificar sus sucursales**, ver cómo la sucursal informa el estado "
         "de su empresa, el rechazo al crear sucursales bajo una empresa inactiva, la reactivación y la transición "
-        "repetida; quién puede cada acción (inactivar y reactivar empresas exige además `platform:administer`: solo `admin.test`)."
+        "repetida; quién puede cada acción (inactivar y reactivar empresas exige además `platform:administer`: solo `admin.sio`)."
     ),
     data=[
         ("Organización", "SERVICIOS EJEMPLO FICTICIOS S.A.S. (**ficticia**)"),
@@ -63,7 +63,7 @@ EX3 = dict(
             "Reactivar la empresa y comprobar la transición repetida.",
             [
                 call("Reactivar la empresa", "POST", f"{API}/companies/<EMPRESA>/reactivate", also=PLATFORM, body={"version": 2},
-                     why=["Exige el permiso `update` y, desde la Fase B, `platform:administer`: solo `admin.test` puede reactivar empresas."],
+                     why=["Exige el permiso `update` y, desde la Fase B, `platform:administer`: solo `admin.sio` puede reactivar empresas."],
                      show=["status", "version"]),
                 call("Intentar reactivarla otra vez (rechazado)", "POST", f"{API}/companies/<EMPRESA>/reactivate", also=PLATFORM,
                      body={"version": 3},

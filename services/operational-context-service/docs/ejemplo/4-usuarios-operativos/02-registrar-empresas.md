@@ -18,7 +18,7 @@ GET http://localhost:8002/api/v1/organization-identities?search=900
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `inventario.test` (por `perm:party-identity:organization_identities:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:organization_identities:read`)
 
 **Por qué se hace así**
 
@@ -57,7 +57,7 @@ GET http://localhost:8002/api/v1/organization-identities?search=900
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_identities:read`), `ventas.test` (por `perm:party-identity:organization_identities:read`), `inventario.test` (por `perm:party-identity:organization_identities:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:organization_identities:read`)
 
 **Por qué se hace así**
 
@@ -100,14 +100,14 @@ POST /api/v1/companies
 
 **Permisos que exige la URL (todos):** `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `delete`, `read`, `update`; le falta `administer`; `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao` — sobre `operational-context` solo tiene `create`, `delete`, `read`, `update`; le falta `administer`; `operario.dao` — sobre `operational-context` solo tiene `read`; le falta `create`
 - ℹ️ Para registrar o cambiar la organización o la ubicación, el token del usuario debe poder además **leer** en Party Identity y Geography: el servicio valida esas referencias con el mismo token. Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.
 - ℹ️ Alcance de plataforma (Fase B, DS-05): registrar, inactivar y reactivar empresas y ver todas las empresas sin ser miembro. Solo lo concede `perm:all:all:all` (grupo `superadmin`); los comodines de lectura, creación, modificación o eliminación **no** lo conceden.
 
 **Por qué se hace así**
 
-- Registrar empresas exige `platform:administer` (Fase B): solo `admin.test`.
+- Registrar empresas exige `platform:administer` (Fase B): solo `admin.sio`.
 
 **Respuesta esperada — `201 Created`** (abreviada)
 
@@ -134,8 +134,8 @@ POST /api/v1/companies
 
 **Permisos que exige la URL (todos):** `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `operational-context` solo tiene `create`, `delete`, `read`, `update`; le falta `administer`; `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao` — sobre `operational-context` solo tiene `create`, `delete`, `read`, `update`; le falta `administer`; `operario.dao` — sobre `operational-context` solo tiene `read`; le falta `create`
 - ℹ️ Para registrar o cambiar la organización o la ubicación, el token del usuario debe poder además **leer** en Party Identity y Geography: el servicio valida esas referencias con el mismo token. Los tres grupos (`superadmin`, `admin` y `empleado`) tienen esa lectura.
 - ℹ️ Alcance de plataforma (Fase B, DS-05): registrar, inactivar y reactivar empresas y ver todas las empresas sin ser miembro. Solo lo concede `perm:all:all:all` (grupo `superadmin`); los comodines de lectura, creación, modificación o eliminación **no** lo conceden.
 

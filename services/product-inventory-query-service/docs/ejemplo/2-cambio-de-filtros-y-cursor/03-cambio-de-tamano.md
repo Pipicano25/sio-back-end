@@ -6,7 +6,7 @@ Ejercicio 2: Cambio de filtros y cursor.
 
 `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=3&cursor=<CURSOR>`
 
-Ejecuta: `ventas.test`.
+Ejecuta: `operario.dao`.
 
 ### Por qué
 
@@ -20,11 +20,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
-| `compras.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
+| `operario.dao` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

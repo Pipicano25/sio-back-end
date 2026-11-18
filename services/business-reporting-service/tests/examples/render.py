@@ -95,7 +95,7 @@ def render_general(results: dict[int, list[dict]]) -> str:
     lines += ["", "## Cómo obtener el token", "", "```bash",
               "curl -s -X POST \"$KEYCLOAK_TOKEN_URL\" \\",
               "  -d grant_type=password -d client_id=sio-web \\",
-              "  -d username=supervisor.test -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"", "```", "",
+              "  -d username=admin.dao -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"", "```", "",
               "## Matriz de las URL", "", "| Ejercicio | Paso | URL | Permiso | "
               + " | ".join(f"`{u['username']}`" for u in USERS) + " |",
               "| --- | --- | --- | --- | " + " | ".join("---" for _ in USERS) + " |"]

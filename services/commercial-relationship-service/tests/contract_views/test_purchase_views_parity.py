@@ -96,9 +96,9 @@ def _view_rows(connection, view: str, ids: list[str]) -> dict[str, dict[str, Any
 
 @pytest.fixture
 def admin(as_user, fake_oc, other_company):
-    """`admin.test`, miembro de las dos empresas para poder preparar datos en ambas."""
-    fake_oc.add_member(user_sub("admin.test"), other_company)
-    return as_user("admin.test")
+    """`admin.sio`, miembro de las dos empresas para poder preparar datos en ambas."""
+    fake_oc.add_member(user_sub("admin.sio"), other_company)
+    return as_user("admin.sio")
 
 
 @pytest.fixture

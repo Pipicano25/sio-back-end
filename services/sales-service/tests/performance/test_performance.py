@@ -58,7 +58,7 @@ def test_fifty_concurrent_confirmations(test_client, user_token, world, fakes, m
     numbers: list[str] = []
     errors: list[str] = []
     lock = threading.Lock()
-    token = user_token("ventas.test")
+    token = user_token("operario.dao")
 
     def run(draft) -> None:
         barrier.wait(30)
@@ -103,7 +103,7 @@ def seed_sales(engine, world, count: int, application_user) -> None:
 
 
 def test_queries_with_ten_thousand_sales(seller, world, fakes, test_engine) -> None:
-    seed_sales(test_engine, world, 10_000, fakes.oc.members[(user_sub("ventas.test"), world.company)])
+    seed_sales(test_engine, world, 10_000, fakes.oc.members[(user_sub("operario.dao"), world.company)])
     draft = seller.post(f"{base(world)}/sales", json=sale_body(world, line(world.product))).json()
     calls = [
         lambda: seller.get(f"{base(world)}/sales"),

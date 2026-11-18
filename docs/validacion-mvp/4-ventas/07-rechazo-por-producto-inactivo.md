@@ -6,7 +6,7 @@ Ejercicio 4 — Ventas con precio por presentación (lista indicada y predetermi
 
 ## 1. Inactivar el producto B de la empresa A
 
-Paso `V-05b.inactivar` · usuario **`admin.test`** · ítems de la FASE 10: 15
+Paso `V-05b.inactivar` · usuario **`admin.sio`** · ítems de la FASE 10: 15
 
 ```http
 POST http://127.0.0.1:8106/api/v1/company-products/<PRODUCTO_EMPRESA_B>/deactivate
@@ -20,7 +20,7 @@ POST http://127.0.0.1:8106/api/v1/company-products/<PRODUCTO_EMPRESA_B>/deactiva
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_products:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:delete`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:delete`)
 
 **Respuesta esperada:** `200`
 
@@ -30,7 +30,7 @@ POST http://127.0.0.1:8106/api/v1/company-products/<PRODUCTO_EMPRESA_B>/deactiva
 
 ## 2. Confirmar la venta V7 con el producto inactivo (rechazada)
 
-Paso `V-05b.V7` · usuario **`ventas.test`** · ítems de la FASE 10: 15
+Paso `V-05b.V7` · usuario **`operario.dao`** · ítems de la FASE 10: 15
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_7>/confirmation
@@ -46,13 +46,13 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:update`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:update`)
 
 **Respuesta esperada:** `409`
 
 ## 3. Reactivar el producto B de la empresa A
 
-Paso `V-05b.reactivar` · usuario **`admin.test`** · ítems de la FASE 10: 15
+Paso `V-05b.reactivar` · usuario **`admin.sio`** · ítems de la FASE 10: 15
 
 ```http
 POST http://127.0.0.1:8106/api/v1/company-products/<PRODUCTO_EMPRESA_B>/reactivate
@@ -66,7 +66,7 @@ POST http://127.0.0.1:8106/api/v1/company-products/<PRODUCTO_EMPRESA_B>/reactiva
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:update`)
 
 **Respuesta esperada:** `200`
 

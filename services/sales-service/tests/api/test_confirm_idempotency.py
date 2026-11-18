@@ -47,7 +47,7 @@ def test_key_conflicts(seller, as_user, world, make_sequence, make_draft, confir
     assert "number" not in other_sale.text
     other_type = cancel(first, key, version=2)
     assert other_type.status_code == 409 and other_type.json()["code"] == "SALES.IDEMPOTENCY_KEY_CONFLICT"
-    other_identity = confirm(first, key, client=as_user("admin.test"))
+    other_identity = confirm(first, key, client=as_user("admin.sio"))
     assert other_identity.status_code == 409 and other_identity.json()["code"] == "SALES.IDEMPOTENCY_KEY_CONFLICT"
 
 

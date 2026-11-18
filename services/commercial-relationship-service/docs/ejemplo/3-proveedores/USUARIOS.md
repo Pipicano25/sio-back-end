@@ -6,44 +6,42 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 
 ## Resumen por usuario
 
-- **`admin.test`**: puede ejecutar **todo el ejercicio** (con membresía en la empresa).
-- **`supervisor.test`**: puede ejecutar **todo el ejercicio** (con membresía en la empresa).
-- **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Seleccionar el laboratorio como proveedor*): sobre `company_suppliers` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
-- **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Seleccionar el laboratorio como proveedor*): sobre `company_suppliers` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
-- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Seleccionar el laboratorio como proveedor*): sobre `company_suppliers` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
+- **`admin.sio`**: puede ejecutar **todo el ejercicio** (con membresía en la empresa).
+- **`admin.dao`**: puede ejecutar **todo el ejercicio** (con membresía en la empresa).
+- **`operario.dao`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Seleccionar el laboratorio como proveedor*): sobre `company_suppliers` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 04.
 
-**Para hacer el ejercicio completo use `admin.test`**, siempre que tenga membresía `ACTIVE` en la empresa: en Commercial Relationship ni siquiera `perm:all:all:all` exime de la membresía (DS-03). `supervisor.test` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios del grupo `empleado` consultan e incorporan clientes, pero no adoptan, modifican, inactivan ni bloquean.
+**Para hacer el ejercicio completo use `admin.sio`**, siempre que tenga membresía `ACTIVE` en la empresa: en Commercial Relationship ni siquiera `perm:all:all:all` exime de la membresía (DS-03). `admin.dao` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios del grupo `empleado` consultan e incorporan clientes, pero no adoptan, modifican, inactivan ni bloquean.
 
 ## Permiso por URL
 
 ✅ = el usuario tiene el permiso de la llamada · ❌ = recibe `403 Forbidden`. Tener el permiso no basta en las URL con 🔒: sin membresía en la empresa el usuario recibe `404`.
 
-| Paso | Llamada | Método y URL | Permiso requerido | admin | supervisor | compras | ventas | inventario |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| [01](01-consultar-organizaciones.md) | 1. Consultar la empresa DISTRIBUIDORA PROVEEDORES FICTICIA S.A.S. en Operational Context | `GET http://localhost:8004/api/v1/me/operational-context` | `perm:operational-context:application_users:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [01](01-consultar-organizaciones.md) | 2. Consultar la organización LABORATORIO EJEMPLO FICTICIO S.A.S. en Party Identity | `GET http://localhost:8002/api/v1/organization-identities` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [01](01-consultar-organizaciones.md) | 3. Consultar la organización IMPORTADORA EJEMPLO FICTICIA S.A.S. en Party Identity | `GET http://localhost:8002/api/v1/organization-identities` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [02](02-seleccionar-proveedores.md) | 1. Seleccionar el laboratorio como proveedor | `POST /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [02](02-seleccionar-proveedores.md) | 2. Registrar la importadora como cliente | `POST /api/v1/companies/{id}/company-customers` 🔒 | `perm:commercial-relationship:company_customers:create` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [02](02-seleccionar-proveedores.md) | 3. Seleccionar la importadora también como proveedor | `POST /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [02](02-seleccionar-proveedores.md) | 4. Seleccionar otra vez el laboratorio (rechazado) | `POST /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [03](03-bloquear.md) | 1. Bloquear el laboratorio | `POST /api/v1/company-suppliers/{id}/block` 🔒 | `perm:commercial-relationship:company_suppliers:delete` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [03](03-bloquear.md) | 2. Reactivar el proveedor bloqueado (rechazado) | `POST /api/v1/company-suppliers/{id}/reactivate` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [03](03-bloquear.md) | 3. Corregir el nombre visible sin desbloquear | `PUT /api/v1/company-suppliers/{id}` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [04](04-desbloquear-y-consultar.md) | 1. Desbloquear el laboratorio | `POST /api/v1/company-suppliers/{id}/unblock` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [04](04-desbloquear-y-consultar.md) | 2. Inactivar la importadora como proveedor | `POST /api/v1/company-suppliers/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_suppliers:delete` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [04](04-desbloquear-y-consultar.md) | 3. Listar todos los proveedores | `GET /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Paso | Llamada | Método y URL | Permiso requerido | admin.sio | admin.dao | operario.dao |
+| --- | --- | --- | --- | --- | --- | --- |
+| [01](01-consultar-organizaciones.md) | 1. Consultar la empresa DISTRIBUIDORA PROVEEDORES FICTICIA S.A.S. en Operational Context | `GET http://localhost:8004/api/v1/me/operational-context` | `perm:operational-context:application_users:read` | ✅ | ✅ | ✅ |
+| [01](01-consultar-organizaciones.md) | 2. Consultar la organización LABORATORIO EJEMPLO FICTICIO S.A.S. en Party Identity | `GET http://localhost:8002/api/v1/organization-identities` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ |
+| [01](01-consultar-organizaciones.md) | 3. Consultar la organización IMPORTADORA EJEMPLO FICTICIA S.A.S. en Party Identity | `GET http://localhost:8002/api/v1/organization-identities` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ |
+| [02](02-seleccionar-proveedores.md) | 1. Seleccionar el laboratorio como proveedor | `POST /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:create` | ✅ | ✅ | ❌ |
+| [02](02-seleccionar-proveedores.md) | 2. Registrar la importadora como cliente | `POST /api/v1/companies/{id}/company-customers` 🔒 | `perm:commercial-relationship:company_customers:create` | ✅ | ✅ | ✅ |
+| [02](02-seleccionar-proveedores.md) | 3. Seleccionar la importadora también como proveedor | `POST /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:create` | ✅ | ✅ | ❌ |
+| [02](02-seleccionar-proveedores.md) | 4. Seleccionar otra vez el laboratorio (rechazado) | `POST /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:create` | ✅ | ✅ | ❌ |
+| [03](03-bloquear.md) | 1. Bloquear el laboratorio | `POST /api/v1/company-suppliers/{id}/block` 🔒 | `perm:commercial-relationship:company_suppliers:delete` | ✅ | ✅ | ❌ |
+| [03](03-bloquear.md) | 2. Reactivar el proveedor bloqueado (rechazado) | `POST /api/v1/company-suppliers/{id}/reactivate` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ |
+| [03](03-bloquear.md) | 3. Corregir el nombre visible sin desbloquear | `PUT /api/v1/company-suppliers/{id}` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ |
+| [04](04-desbloquear-y-consultar.md) | 1. Desbloquear el laboratorio | `POST /api/v1/company-suppliers/{id}/unblock` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ |
+| [04](04-desbloquear-y-consultar.md) | 2. Inactivar la importadora como proveedor | `POST /api/v1/company-suppliers/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_suppliers:delete` | ✅ | ✅ | ❌ |
+| [04](04-desbloquear-y-consultar.md) | 3. Listar todos los proveedores | `GET /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:read` | ✅ | ✅ | ✅ |
 
 ## Ejemplos de uso con los usuarios
 
 La contraseña de todos los usuarios de prueba es la variable `KEYCLOAK_TEST_USER_PASSWORD` de `infrastructure/.env`. Cárguela en la terminal antes de pedir tokens.
 
-### 1. Ejecutar el ejercicio con `admin.test`
+### 1. Ejecutar el ejercicio con `admin.sio`
 
 ```bash
 TOKEN_ADMIN=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=admin.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
+  -d username=admin.sio -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
   | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 ```
 
@@ -56,14 +54,14 @@ curl -s -X POST "http://localhost:8005/api/v1/companies/<EMPRESA>/company-suppli
   -d '{"organization_identity_id": "<ORG_PROVEEDOR>", "internal_code": "PRV-0001", "display_name": "Laboratorio (ficticio)"}'
 ```
 
-Responde `201 Created` si `admin.test` es miembro de la empresa: `perm:all:all:all` cubre `perm:commercial-relationship:company_suppliers:create`. Reemplace las variables `<…>` por los `id` guardados.
+Responde `201 Created` si `admin.sio` es miembro de la empresa: `perm:all:all:all` cubre `perm:commercial-relationship:company_suppliers:create`. Reemplace las variables `<…>` por los `id` guardados.
 
-### 2. `ventas.test` (Empleado) intenta escribir (rechazado)
+### 2. `operario.dao` (Empleado) intenta escribir (rechazado)
 
 ```bash
 TOKEN_EMPLEADO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=ventas.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
+  -d username=operario.dao -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
   | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 ```
 
@@ -92,16 +90,16 @@ Respuesta `403 Forbidden`:
 
 En Commercial Relationship el grupo `empleado` consulta e incorpora clientes, pero la URL exige `perm:commercial-relationship:company_suppliers:create`. El servicio no ejecuta nada: ni siquiera consulta Operational Context ni valida el cuerpo.
 
-### 3. `ventas.test` (Empleado) consulta
+### 3. `operario.dao` (Empleado) consulta
 
 ```bash
 curl -s -X GET "http://localhost:8005/api/v1/companies/<EMPRESA>/company-suppliers?status=ALL" \
   -H "Authorization: Bearer $TOKEN_EMPLEADO"
 ```
 
-Responde `200 OK` con la misma información que ve `admin.test` en el paso 04: `perm:commercial-relationship:company_suppliers:read` cubre `perm:commercial-relationship:company_suppliers:read` y `ventas.test` es miembro de la empresa. Sin membresía respondería `404`.
+Responde `200 OK` con la misma información que ve `admin.sio` en el paso 04: `perm:commercial-relationship:company_suppliers:read` cubre `perm:commercial-relationship:company_suppliers:read` y `operario.dao` es miembro de la empresa. Sin membresía respondería `404`.
 
-### 4. `ventas.test` (Empleado) intenta bloquear (rechazado)
+### 4. `operario.dao` (Empleado) intenta bloquear (rechazado)
 
 ```bash
 curl -s -X POST "http://localhost:8005/api/v1/company-suppliers/<PROVEEDOR>/block" \
@@ -124,7 +122,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-El grupo `empleado` no tiene `delete` en Commercial Relationship. Bloquear queda para `admin.test` (SuperAdmin) y `supervisor.test` (Admin), siempre con membresía en la empresa.
+El grupo `empleado` no tiene `delete` en Commercial Relationship. Bloquear queda para `admin.sio` (SuperAdmin) y `admin.dao` (Admin), siempre con membresía en la empresa.
 
 ### 5. Sin token (rechazado)
 

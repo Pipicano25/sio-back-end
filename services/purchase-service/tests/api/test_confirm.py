@@ -40,7 +40,7 @@ def test_confirm_operation_is_local_and_succeeded(world, fakes, make_sequence, m
     [operation] = fetch(test_engine, "SELECT * FROM purchase_operations")
     assert operation["operation_type"] == "CONFIRM" and operation["status"] == "SUCCEEDED"
     assert operation["idempotency_key"] == key and operation["inventory_operation_id"] is None
-    assert operation["created_by"] == user_sub("compras.test") and operation["completed_at"] is not None
+    assert operation["created_by"] == user_sub("operario.dao") and operation["completed_at"] is not None
     assert fakes.inventory.entries() == []
 
 
@@ -128,7 +128,7 @@ def test_exhausted_sequence_rejects_without_consuming_or_compensating(world, fak
 def test_inactive_operator_is_409(as_user, world, fakes, make_sequence, make_draft, confirm) -> None:
     make_sequence()
     draft = make_draft()
-    user = fakes.oc.members[(user_sub("compras.test"), world.company)]
+    user = fakes.oc.members[(user_sub("operario.dao"), world.company)]
     fakes.oc.users[user] = replace(fakes.oc.users[user], status="INACTIVE")
     response = confirm(draft)
     assert response.status_code == 409
@@ -138,7 +138,7 @@ def test_inactive_operator_is_409(as_user, world, fakes, make_sequence, make_dra
 def test_confirmation_requires_branch_assignment(as_user, world, fakes, make_sequence, make_draft, confirm) -> None:
     make_sequence()
     draft = make_draft()
-    fakes.oc.assignments.discard((user_sub("compras.test"), world.branch))
+    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
     response = confirm(draft)
     assert response.status_code == 403 and response.json()["code"] == "PURCHASE.BRANCH_ACCESS_DENIED"
 

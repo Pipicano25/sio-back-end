@@ -80,7 +80,7 @@ COMMON_DATA = [
 
 P = f"/api/v1/companies/{COMPANY}"
 PROFITABILITY_NOTE = (
-    "`ventas.test`, `compras.test` e `inventario.test` (grupo `empleado`) no tienen "
+    "`operario.dao` (grupo `empleado`) no tiene "
     "`perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni "
     "`has_unknown_cost`."
 )
@@ -107,7 +107,7 @@ SEQUENCE = {"series_code": "PRINCIPAL", "prefix": "FV", "separator": "-", "initi
 CREATE_SEQUENCE = {
     "file": "01-crear-la-secuencia.md",
     "title": "Crear la secuencia mensual de la empresa",
-    "actor": "ventas.test",
+    "actor": "operario.dao",
     "kind": ACCION,
     "method": "POST",
     "path": f"{P}/sale-sequences",
@@ -125,7 +125,7 @@ def create_draft(file: str, title: str, body: dict, variable: str, why: list[str
     step = {
         "file": file,
         "title": title,
-        "actor": "ventas.test",
+        "actor": "operario.dao",
         "kind": ACCION,
         "method": "POST",
         "path": f"{P}/sales",
@@ -144,7 +144,7 @@ def confirm(file: str, title: str, variable: str, version: int, idempotency: str
     step = {
         "file": file,
         "title": title,
-        "actor": "ventas.test",
+        "actor": "operario.dao",
         "kind": ACCION,
         "method": "POST",
         "path": f"{P}/sales/<{variable}>/confirmation",
@@ -179,14 +179,14 @@ EXERCISES = [
             consult(
                 "02-consultar-las-secuencias.md",
                 "Consultar las secuencias de la empresa",
-                "ventas.test",
+                "operario.dao",
                 f"{P}/sale-sequences",
                 ["Los contadores por período aparecen cuando se confirma la primera venta del período."],
             ),
             {
                 "file": "03-segunda-secuencia-activa.md",
                 "title": "Intentar una segunda secuencia activa",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/sale-sequences",
@@ -228,7 +228,7 @@ EXERCISES = [
             {
                 "file": "02-agregar-una-linea.md",
                 "title": "Agregar una caja con el precio de la lista predeterminada",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/sales/<VENTA>/details",
@@ -242,7 +242,7 @@ EXERCISES = [
             {
                 "file": "03-precio-manual.md",
                 "title": "Intentar un precio manual",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/sales/<VENTA>/details",
@@ -253,7 +253,7 @@ EXERCISES = [
             {
                 "file": "03a-impuesto-adicional.md",
                 "title": "Intentar sumar un impuesto sobre el precio",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/sales/<VENTA>/details",
@@ -268,7 +268,7 @@ EXERCISES = [
             {
                 "file": "04-lista-inexistente.md",
                 "title": "Pedir una lista de precios inexistente",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/sales/<VENTA>/details",
@@ -279,7 +279,7 @@ EXERCISES = [
             {
                 "file": "05-lista-sin-precio.md",
                 "title": "Pedir una lista sin precio para el producto",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/sales/<VENTA>/details",
@@ -290,7 +290,7 @@ EXERCISES = [
             {
                 "file": "06-producto-sin-control-de-inventario.md",
                 "title": "Agregar un producto sin control de inventario",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/sales/<VENTA>/details",
@@ -301,7 +301,7 @@ EXERCISES = [
             {
                 "file": "07-version-vieja.md",
                 "title": "Agregar una línea con una versión vieja",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/sales/<VENTA>/details",
@@ -312,7 +312,7 @@ EXERCISES = [
             consult(
                 "08-consultar-el-borrador.md",
                 "Consultar el borrador",
-                "ventas.test",
+                "operario.dao",
                 f"{P}/sales/<VENTA>",
                 ["Las lecturas exigen permiso y membresía; no exigen asignación a la sucursal.", PROFITABILITY_NOTE],
             ),
@@ -339,7 +339,7 @@ EXERCISES = [
             consult(
                 "02-consultar-la-disponibilidad.md",
                 "Consultar la disponibilidad",
-                "ventas.test",
+                "operario.dao",
                 f"{P}/sales/<VENTA>/availability",
                 [
                     "El arroz requiere 26 y hay 20 en la sucursal: `is_available = false`; el aceite alcanza.",
@@ -384,7 +384,7 @@ EXERCISES = [
             {
                 "file": "04-actualizar-la-linea.md",
                 "title": "Actualizar la línea con el precio vigente",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "PUT",
                 "path": f"{P}/sales/<VENTA>/details/<LINEA>",
@@ -428,7 +428,7 @@ EXERCISES = [
             consult(
                 "08-consultar-las-operaciones.md",
                 "Consultar las operaciones de la venta",
-                "ventas.test",
+                "operario.dao",
                 f"{P}/sales/<VENTA>/operations",
                 ["La primera clave quedó sin operación (el rechazo fue previo); la segunda, `SUCCEEDED`."],
             ),
@@ -473,15 +473,15 @@ EXERCISES = [
             create_draft("02-crear-la-venta.md", "Vender 3 unidades de arroz", draft(ln(ARROZ, "3")), "VENTA", ["3 × 1500 = 4500."]),
             confirm("03-confirmar.md", "Confirmar la venta", "VENTA", 1, "rentabilidad-0001",
                     ["Inventory descuenta 3 unidades a costo FIFO 1000.", PROFITABILITY_NOTE]),
-            consult("04-consultar-como-vendedor.md", "Consultar como empleado", "ventas.test", f"{P}/sales/<VENTA>",
+            consult("04-consultar-como-vendedor.md", "Consultar como empleado", "operario.dao", f"{P}/sales/<VENTA>",
                     ["Sin costo ni margen en la respuesta (se omiten, no aparecen como nulos)."]),
             consult(
                 "05-consultar-como-supervisor.md",
                 "Consultar como Admin",
-                "supervisor.test",
+                "admin.dao",
                 f"{P}/sales/<VENTA>",
                 [
-                    "`supervisor.test` (grupo `admin`) tiene la rentabilidad por `perm:sales:all:all`: costo 1000.0000 por unidad base, "
+                    "`admin.dao` (grupo `admin`) tiene la rentabilidad por `perm:sales:all:all`: costo 1000.0000 por unidad base, "
                     "costo total 3000.00, margen 1500.00 (33.3333 %).",
                 ],
             ),
@@ -490,7 +490,7 @@ EXERCISES = [
                          before=["unknown_cost:10"]),
             confirm("07-confirmar.md", "Confirmar la venta", "APERTURA", 1, "rentabilidad-0002",
                     ["Se confirma: `cost_known = false`, márgenes nulos y `has_unknown_cost = true` (C-03)."]),
-            consult("08-consultar-como-supervisor.md", "Consultar como Admin", "supervisor.test", f"{P}/sales/<APERTURA>",
+            consult("08-consultar-como-supervisor.md", "Consultar como Admin", "admin.dao", f"{P}/sales/<APERTURA>",
                     ["El margen no se inventa: queda nulo cuando el costo no es conocido."]),
         ],
     },
@@ -509,7 +509,7 @@ EXERCISES = [
             {
                 "file": "03-anular-el-borrador.md",
                 "title": "Anular el borrador",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/sales/<BORRADOR>/cancellation",
@@ -523,7 +523,7 @@ EXERCISES = [
             {
                 "file": "06-anular-la-venta-confirmada.md",
                 "title": "Anular la venta confirmada",
-                "actor": "ventas.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/sales/<VENTA>/cancellation",
@@ -550,14 +550,14 @@ EXERCISES = [
             consult(
                 "04-listar-confirmadas.md",
                 "Listar las ventas confirmadas",
-                "compras.test",
+                "operario.dao",
                 f"{P}/sales?status=CONFIRMED&number=FV-202611-000001",
                 ["Filtros por estado, sucursal, cliente, fechas y número; orden estable.", PROFITABILITY_NOTE],
             ),
             consult(
                 "05-otra-empresa.md",
                 "Consultar una venta desde otra empresa",
-                "compras.test",
+                "operario.dao",
                 f"/api/v1/companies/{OTHER_COMPANY}/sales/<VENTA>",
                 ["Sin membresía en esa empresa: `404`, igual que un recurso inexistente."],
                 expect=404,

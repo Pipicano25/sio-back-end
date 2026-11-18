@@ -28,7 +28,7 @@ def _iso(moment: datetime) -> str:
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 def _lifecycle(admin, url: str, update_body: dict) -> None:

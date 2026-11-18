@@ -14,7 +14,7 @@ documentación se actualicen.
 No existe una fuente del sistema anterior para empresas, sucursales, usuarios ni asesores. **Todos
 los datos son ficticios**: organizaciones, personas, direcciones, correos, teléfonos y nombres de
 sucursal son inventados y no corresponden a empresas ni personas reales. Las cuentas de Keycloak son
-los usuarios de prueba del realm (`supervisor.test`, `compras.test`, …).
+los usuarios de prueba del realm (`admin.sio`, `admin.dao` y `operario.dao`).
 
 La empresa **no guarda** NIT, razón social ni nombre comercial: esos datos legales pertenecen a
 **Party Identity Service** y la empresa solo guarda el `id` de su organización. En un entorno real
@@ -65,7 +65,7 @@ RUES); nunca se inventan.
 ## Aislamiento por empresa (Fase B)
 
 El permiso de Keycloak dice **qué** puede hacer un usuario; la **membresía** dice **en qué
-empresas**. Salvo `admin.test` (alcance de plataforma por `perm:all:all:all`), los usuarios solo ven
+empresas**. Salvo `admin.sio` (alcance de plataforma por `perm:all:all:all`), los usuarios solo ven
 y operan las empresas donde tienen una membresía `ACTIVE`: fuera de ellas, las URL marcadas con 🔒
 responden `404`, igual que un `id` inexistente. Por eso, en los ejercicios 1 a 3, los usuarios de
 lectura reciben `404` al consultar empresas de las que no son miembros.

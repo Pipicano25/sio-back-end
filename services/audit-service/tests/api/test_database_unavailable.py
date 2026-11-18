@@ -49,7 +49,7 @@ def _assert_controlled_503(response) -> None:
 def reader(as_token, make_token, company):
     from tests.conftest import user_sub
 
-    return as_token(make_token(READ, PLATFORM_READ, sub=user_sub("admin.test"), preferred_username="admin.test"))
+    return as_token(make_token(READ, PLATFORM_READ, sub=user_sub("admin.sio"), preferred_username="admin.sio"))
 
 
 def test_every_database_route_returns_503_and_recovers(app, emitter, reader, company, as_token) -> None:

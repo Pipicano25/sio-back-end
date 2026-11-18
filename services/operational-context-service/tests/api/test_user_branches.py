@@ -11,7 +11,7 @@ def setup(api, create_company, create_branch, fake_accounts, fake_persons):
     branch = create_branch(company["id"], code="S-1")
     second = create_branch(company["id"], code="S-2")
     foreign_branch = create_branch(other["id"], code="X-1")
-    sub = fake_accounts.add("compras.test")
+    sub = fake_accounts.add("operario.dao")
     user = api.post(
         f"/api/v1/companies/{company['id']}/application-users",
         json={"keycloak_user_id": sub, "person_identity_id": str(fake_persons.add()), "display_name": "C"},
@@ -131,10 +131,10 @@ def test_member_of_another_company_does_not_see_assignments(api, api_as, setup, 
 
 
 def test_company_member_can_assign_in_own_company(api_as, setup, make_member):
-    make_member(setup["company"]["id"], "supervisor.test")
-    supervisor = api_as("perm:all:all:read", "perm:all:all:create", "perm:all:all:update", sub="supervisor.test")
+    make_member(setup["company"]["id"], "admin.dao")
+    supervisor = api_as("perm:all:all:read", "perm:all:all:create", "perm:all:all:update", sub="admin.dao")
 
     response = _assign(supervisor, setup["user"]["id"], setup["branch"]["id"])
 
     assert response.status_code == 201
-    assert response.json()["assigned_by"] == "supervisor.test"
+    assert response.json()["assigned_by"] == "admin.dao"

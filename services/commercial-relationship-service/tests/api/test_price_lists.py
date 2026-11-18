@@ -11,7 +11,7 @@ URL = "/api/v1/companies/{company}/price-lists"
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 def test_scenario_1_creates_default_list(admin, company):
@@ -82,9 +82,9 @@ def test_list_filters(admin, company):
 
 def test_permissions(as_user, admin, company):
     created = create_price_list(admin, company)
-    assert as_user("supervisor.test").get(f"/api/v1/price-lists/{created['id']}").status_code == 200
-    assert as_user("ventas.test").post(URL.format(company=company), json={}).status_code == 403
-    assert as_user("ventas.test").post(
+    assert as_user("admin.dao").get(f"/api/v1/price-lists/{created['id']}").status_code == 200
+    assert as_user("operario.dao").post(URL.format(company=company), json={}).status_code == 403
+    assert as_user("operario.dao").post(
         f"/api/v1/price-lists/{created['id']}/deactivate", json={"version": 1}
     ).status_code == 403
     assert as_user("sin-permisos.test").get(URL.format(company=company)).status_code == 403

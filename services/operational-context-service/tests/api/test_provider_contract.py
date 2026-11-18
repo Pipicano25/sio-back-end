@@ -162,7 +162,7 @@ def test_application_user_by_uuid_for_technical_consumer(api, api_as, create_com
     user = api.post(
         f"/api/v1/companies/{company['id']}/application-users",
         json={
-            "keycloak_user_id": fake_accounts.add("compras.test"),
+            "keycloak_user_id": fake_accounts.add("operario.dao"),
             "person_identity_id": str(fake_persons.add()),
             "display_name": "Compras",
         },

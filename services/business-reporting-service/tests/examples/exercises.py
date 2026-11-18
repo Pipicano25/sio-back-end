@@ -122,14 +122,14 @@ EXERCISES = [
     ], order=["Primero el ranking predeterminado (por cantidad) y después por importe con el desglose por "
               "presentación: son independientes."], steps=[
         step("01-ranking-por-cantidad.md", "Ranking por cantidad en unidad base", f"{BASE}/top-selling-products?{PERIOD}",
-             actor="supervisor.test", requires=[SALES_READ, CR_PRODUCTS, PC_PRODUCTS, *OC], why=[
+             actor="admin.dao", requires=[SALES_READ, CR_PRODUCTS, PC_PRODUCTS, *OC], why=[
                  "Sin `rank_by`: se ordena por cantidad vendida en la unidad base de cada producto (DR-04).",
                  "Solo ventas `CONFIRMED` por `operation_date`; las anuladas no cuentan (DR-01).",
                  "`mixed_base_units = true`: el jarabe (ml) y las tabletas no son comparables entre sí; nunca se "
                  "suman cantidades de productos distintos."]),
         step("02-ranking-por-importe.md", "Ranking por importe con presentaciones",
              f"{BASE}/top-selling-products?{PERIOD}&rank_by=amount&include_presentations=true&limit=2",
-             actor="ventas.test", requires=[SALES_READ, CR_PRODUCTS, PC_PRODUCTS, *OC], why=[
+             actor="operario.dao", requires=[SALES_READ, CR_PRODUCTS, PC_PRODUCTS, *OC], why=[
                  "`rank_by=amount` ordena por importe dentro de la moneda.",
                  "`include_presentations=true` muestra cómo se agrupan las presentaciones en la unidad base con el "
                  "factor guardado en cada venta (Caja x 10 → 10 tabletas)."]),
@@ -138,7 +138,7 @@ EXERCISES = [
         "Principal 80 ventas por 820 750 COP y Norte 40 por 351 750 COP.",
     ], order=["Un solo paso."], steps=[
         step("01-comparar-sucursales.md", "Comparar las sucursales de la empresa", f"{BASE}/sales-by-branch?{PERIOD}",
-             actor="supervisor.test", requires=[SALES_READ, *OC], why=[
+             actor="admin.dao", requires=[SALES_READ, *OC], why=[
                  "Sin `branch_id`: todas las sucursales activas; las que no venden aparecen con cero.",
                  "`share_percentage` es la participación sobre el total de la empresa en la misma moneda."]),
     ]),
@@ -147,12 +147,12 @@ EXERCISES = [
     ], order=["Primero todas las compras con sus totales; después solo las pendientes: los totales no cambian "
               "porque son del período completo."], steps=[
         step("01-compras-y-totales.md", "Compras con sus totales por categoría", f"{BASE}/purchases?{PERIOD}",
-             actor="compras.test", requires=[PURCHASES_READ, *OC], why=[
+             actor="operario.dao", requires=[PURCHASES_READ, *OC], why=[
                  "`effective_total` = recibidas + pendientes; la anulada se informa y no suma (DR-03).",
                  "La pendiente no es mercancía recibida: tiene su propio total.",
                  "`received_at` es informativa; el período es por `operation_date` (DR-02)."]),
         step("02-solo-pendientes.md", "Solo las pendientes de recepción",
-             f"{BASE}/purchases?{PERIOD}&category=PENDING_RECEIPT", actor="supervisor.test",
+             f"{BASE}/purchases?{PERIOD}&category=PENDING_RECEIPT", actor="admin.dao",
              requires=[PURCHASES_READ, *OC], why=["El filtro de categoría cambia las filas, no los totales."]),
     ]),
     dict(number=4, folder="4-evolucion-de-existencias", title="Evolución de existencias de una sucursal", data=[
@@ -161,14 +161,14 @@ EXERCISES = [
     ], order=["Pasos independientes: primero la sucursal principal (su UUID va en la ruta) y después la empresa "
               "consolidada."], steps=[
         step("01-sucursal-principal.md", "Evolución en la sucursal principal", f"{BRANCH_BASE}/stock-evolution?{PERIOD}",
-             actor="supervisor.test", requires=[STOCK_EVOLUTION_READ, CR_PRODUCTS, PC_PRODUCTS, *OC], why=[
+             actor="admin.dao", requires=[STOCK_EVOLUTION_READ, CR_PRODUCTS, PC_PRODUCTS, *OC], why=[
                  "Cantidades en la unidad base de cada producto; **sin costos**: `stock_evolution:read` no abre el "
                  "kardex (DR-11).",
                  "`final = inicial + entradas − salidas − reversos de entrada + reversos de salida + ajustes "
                  "positivos − ajustes negativos`; el servicio lo verifica en cada fila.",
                  "Los días se cuentan en la zona horaria de la sucursal (`criteria.from` y `criteria.to`)."]),
             step("02-consolidada-de-la-empresa.md", "Evolución consolidada de la empresa", f"{BASE}/stock-evolution?{PERIOD}",
-             actor="supervisor.test", requires=[STOCK_EVOLUTION_READ, CR_PRODUCTS, PC_PRODUCTS, *OC], why=[
+             actor="admin.dao", requires=[STOCK_EVOLUTION_READ, CR_PRODUCTS, PC_PRODUCTS, *OC], why=[
                  "Ruta de empresa: Inventory suma **por producto** las sucursales (INV-R1C, una consulta por página); "
                  "nunca suma productos distintos.",
                  "El acetaminofén aparece con `branch_count = 2` (Principal y Norte); el jarabe, con 1.",
@@ -178,13 +178,13 @@ EXERCISES = [
         "Mismos datos que los ejercicios 1 a 3; la sucursal Norte (`" + NORTE + "`).",
     ], order=["Pasos independientes: las rutas `/branches/{branch_id}/reports/…` consultan solo esa sucursal."], steps=[
         step("01-ventas-de-la-sucursal.md", "Ventas de la sucursal Norte",
-             f"/api/v1/companies/{COMPANY}/branches/{NORTE}/reports/sales-by-branch?{PERIOD}", actor="supervisor.test",
+             f"/api/v1/companies/{COMPANY}/branches/{NORTE}/reports/sales-by-branch?{PERIOD}", actor="admin.dao",
              requires=[SALES_READ, *OC], why=[
                  "Solo la sucursal de la ruta, también si no vendió (fila en cero).",
                  "Sin `share_percentage`: con una sola sucursal no hay comparación; la participación está en la ruta "
                  "de la empresa (sobre las sucursales de la respuesta)."]),
         step("02-compras-de-la-sucursal.md", "Compras de la sucursal Norte",
-             f"/api/v1/companies/{COMPANY}/branches/{NORTE}/reports/purchases?{PERIOD}", actor="compras.test",
+             f"/api/v1/companies/{COMPANY}/branches/{NORTE}/reports/purchases?{PERIOD}", actor="operario.dao",
              requires=[PURCHASES_READ, *OC], why=[
                  "Mismo resultado que la ruta de la empresa con `branch_id` de Norte; `totals` es de esa sucursal.",
                  "`branch_id` por consulta no se admite en esta ruta (`422`)."]),
@@ -193,7 +193,7 @@ EXERCISES = [
         "Mismos datos que el ejercicio 3.",
     ], order=["Un solo paso."], steps=[
         step("01-compras-en-csv.md", "Compras del período en CSV", f"{BASE}/purchases?{PERIOD}&format=csv",
-             actor="compras.test", requires=[PURCHASES_READ, *OC], kind="csv", why=[
+             actor="operario.dao", requires=[PURCHASES_READ, *OC], kind="csv", why=[
                  "`format=csv`: mismos filtros, permisos y datos que el JSON, en UTF-8 con BOM.",
                  "Las filas `TOTAL …` van al final; la última fila `TOTAL FILAS` solo aparece si el archivo está "
                  "completo.",

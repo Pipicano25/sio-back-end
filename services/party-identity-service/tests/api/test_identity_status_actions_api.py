@@ -97,7 +97,7 @@ def test_stale_version_is_409(api, resource) -> None:
 
 @pytest.mark.parametrize("resource", RESOURCES)
 def test_deactivate_requires_delete_and_reactivate_requires_update(api, api_as, resource) -> None:
-    """Como `supervisor.test` (Admin) o un empleado: con `update` reactiva, sin `delete` no inactiva."""
+    """Como `admin.dao` (Admin) o un empleado: con `update` reactiva, sin `delete` no inactiva."""
     created = _create(api, resource)
     perm = RESOURCES[resource]["perm"]
     updater = api_as(f"perm:party-identity:{perm}:update", f"perm:party-identity:{perm}:read")

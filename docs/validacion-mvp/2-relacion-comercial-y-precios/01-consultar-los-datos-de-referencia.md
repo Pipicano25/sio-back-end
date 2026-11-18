@@ -6,7 +6,7 @@ Ejercicio 2 — Relación comercial y precios: proveedor, cliente, productos, ad
 
 ## 1. Consultar la unidad de medida UND en Product Catalog
 
-Paso `C-00.5` · usuario **`admin.test`** · ítems de la FASE 10: 6
+Paso `C-00.5` · usuario **`admin.sio`** · ítems de la FASE 10: 6
 
 ```http
 GET http://127.0.0.1:8103/api/v1/units-of-measure?status=ACTIVE&page_size=100
@@ -14,7 +14,7 @@ GET http://127.0.0.1:8103/api/v1/units-of-measure?status=ACTIVE&page_size=100
 
 **Permiso que exige la URL:** `perm:product-catalog:units-of-measure:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `supervisor.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:read`), `operario.dao` (por `perm:product-catalog:all:read`)
 
 **Respuesta esperada:** `200`
 
@@ -22,7 +22,7 @@ GET http://127.0.0.1:8103/api/v1/units-of-measure?status=ACTIVE&page_size=100
 
 ## 2. Consultar el tipo de condición de pago CREDIT en Payment Reference
 
-Paso `C-00.6` · usuario **`admin.test`** · ítems de la FASE 10: 4
+Paso `C-00.6` · usuario **`admin.sio`** · ítems de la FASE 10: 4
 
 ```http
 GET http://127.0.0.1:8105/global-payment-condition-types?page_size=100
@@ -30,7 +30,7 @@ GET http://127.0.0.1:8105/global-payment-condition-types?page_size=100
 
 **Permiso que exige la URL:** `perm:payment-reference:global_payment_condition_types:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `supervisor.test` (por `perm:payment-reference:all:read`), `inventario.test` (por `perm:payment-reference:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:payment-reference:all:read`), `operario.dao` (por `perm:payment-reference:all:read`)
 
 **Respuesta esperada:** `200`
 
@@ -38,7 +38,7 @@ GET http://127.0.0.1:8105/global-payment-condition-types?page_size=100
 
 ## 3. Consultar el método de pago Efectivo en Payment Reference
 
-Paso `C-00.7` · usuario **`admin.test`** · ítems de la FASE 10: 4
+Paso `C-00.7` · usuario **`admin.sio`** · ítems de la FASE 10: 4
 
 ```http
 GET http://127.0.0.1:8105/global-payment-methods?page_size=100
@@ -46,7 +46,7 @@ GET http://127.0.0.1:8105/global-payment-methods?page_size=100
 
 **Permiso que exige la URL:** `perm:payment-reference:global_payment_methods:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:payment-reference:all:read`), `ventas.test` (por `perm:payment-reference:all:read`), `supervisor.test` (por `perm:payment-reference:all:read`), `inventario.test` (por `perm:payment-reference:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:payment-reference:all:read`), `operario.dao` (por `perm:payment-reference:all:read`)
 
 **Por qué se hace así**
 

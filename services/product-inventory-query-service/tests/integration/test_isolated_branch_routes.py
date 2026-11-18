@@ -15,12 +15,9 @@ pytestmark = pytest.mark.integration
 
 ENDPOINTS = ("product-overviews", "inventory-overviews", "low-stock-products", "inventory-summary")
 MATRIX = {
-    "admin.test": (200, 200, 200, 200),
-    "supervisor.test": (200, 200, 200, 200),
-    # Spec 026: ventas.test, inventario.test y compras.test son del grupo `empleado`, con las cuatro consultas.
-    "ventas.test": (200, 200, 200, 200),
-    "inventario.test": (200, 200, 200, 200),
-    "compras.test": (200, 200, 200, 200),
+    "admin.sio": (200, 200, 200, 200),
+    "admin.dao": (200, 200, 200, 200),
+    "operario.dao": (200, 200, 200, 200),  # grupo `empleado`: las cuatro consultas
 }
 
 
@@ -49,7 +46,7 @@ def test_matrix_per_group(users, seed, username) -> None:
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
 def test_same_result_as_branch_id_in_the_query(users, seed, endpoint) -> None:
-    client = users("supervisor.test")
+    client = users("admin.dao")
     branch = seed["branches"]["NORTE"]
     by_path = client.get(branch_url(seed["company"], branch, endpoint)).raise_for_status().json()
     by_query = client.get(f"{PIQ}/companies/{seed['company']}/{endpoint}",
@@ -61,7 +58,7 @@ def test_same_result_as_branch_id_in_the_query(users, seed, endpoint) -> None:
 @pytest.mark.parametrize("endpoint", ("inventory-overviews", "low-stock-products"))
 def test_only_the_branch_in_the_path(users, seed, endpoint) -> None:
     branch = seed["branches"]["SUR"]
-    items, _ = walk(users("supervisor.test"), f"/companies/{seed['company']}/branches/{branch}/{endpoint}",
+    items, _ = walk(users("admin.dao"), f"/companies/{seed['company']}/branches/{branch}/{endpoint}",
                     [("page_size", "20")])
     for item in items:
         rows = item["stock"]["branches"] if endpoint == "inventory-overviews" else [item]
@@ -70,30 +67,30 @@ def test_only_the_branch_in_the_path(users, seed, endpoint) -> None:
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
 def test_branch_of_another_company_and_other_company(users, seed, endpoint) -> None:
-    client = users("supervisor.test")
+    client = users("admin.dao")
     assert client.get(branch_url(seed["company"], seed["branch_b"], endpoint)).status_code == 404
-    # inventario.test no es miembro de la empresa B
-    assert users("inventario.test").get(branch_url(seed["other_company"], seed["branch_b"], endpoint)).status_code == 404
+    # admin.dao no es miembro de la empresa B
+    assert users("admin.dao").get(branch_url(seed["other_company"], seed["branch_b"], endpoint)).status_code == 404
 
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
 def test_query_scope_is_rejected_and_anonymous_is_401(users, seed, endpoint) -> None:
     url = branch_url(seed["company"], seed["branches"]["PPAL"], endpoint)
-    assert users("supervisor.test").get(url, params={"scope": "COMPANY"}).status_code == 422
+    assert users("admin.dao").get(url, params={"scope": "COMPANY"}).status_code == 422
     with anonymous_client() as client:
         assert client.get(url).status_code == 401
 
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
 def test_branch_id_is_required_and_must_be_a_uuid(users, seed, endpoint) -> None:
-    client = users("supervisor.test")
+    client = users("admin.dao")
     assert client.get(f"{PIQ}/companies/{seed['company']}/branches/no-es-uuid/{endpoint}").status_code == 422
     assert client.get(f"{PIQ}/companies/{seed['company']}/branches//{endpoint}").status_code == 404  # sin sucursal
     assert client.get(f"{PIQ}/companies/no-es-uuid/branches/{seed['branches']['PPAL']}/{endpoint}").status_code == 422
 
 
 def test_cursor_of_another_branch_restarts_and_a_tampered_cursor_is_422(users, seed) -> None:
-    client = users("supervisor.test")
+    client = users("admin.dao")
     company, branches = seed["company"], seed["branches"]
     first = client.get(branch_url(company, branches["PPAL"], "product-overviews"),
                        params={"page_size": "2"}).raise_for_status().json()
@@ -108,7 +105,7 @@ def test_cursor_of_another_branch_restarts_and_a_tampered_cursor_is_422(users, s
 
 
 def test_cursor_of_another_company_is_422(users, seed) -> None:
-    client = users("ventas.test")  # miembro de las dos empresas de la semilla
+    client = users("operario.dao")  # miembro de las dos empresas de la semilla
     other = client.get(f"{PIQ}/companies/{seed['other_company']}/branches/{seed['branch_b']}/product-overviews",
                        params={"page_size": "1"}).raise_for_status().json()
     if not other["next_cursor"]:

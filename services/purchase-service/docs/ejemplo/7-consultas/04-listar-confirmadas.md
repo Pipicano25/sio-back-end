@@ -6,7 +6,7 @@ Ejercicio 7: Consultas.
 
 `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases?status=CONFIRMED&number=CP-202611-000001`
 
-Ejecuta: `supervisor.test`.
+Ejecuta: `admin.dao`.
 
 ### Por qué
 
@@ -20,11 +20,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (Operational Context
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:purchase:all:all` |
-| `compras.test` | Sí | `200` | tiene `perm:purchase:purchases:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:purchase:purchases:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:purchase:purchases:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:purchase:all:all` |
+| `operario.dao` | Sí | `200` | tiene `perm:purchase:purchases:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -86,8 +84,8 @@ Estado `200`.
       "version": 2,
       "created_at": "<asignado por el servicio>",
       "updated_at": "<asignado por el servicio>",
-      "created_by": "compras.test",
-      "updated_by": "compras.test",
+      "created_by": "operario.dao",
+      "updated_by": "operario.dao",
       "lines": null
     }
   ],

@@ -24,7 +24,7 @@ URL = "/api/v1/companies/{company}/company-product-presentations"
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def test_scenario_1_adopts_with_defaults_and_registers_first_use(admin, company,
     assert body["is_purchasable"] and body["is_sellable"]
     assert not body["is_default_purchase"] and not body["is_default_sale"]
     assert body["company_id"] == str(company) and body["sku"] == "CJ12-001"
-    assert body["created_by"] == body["updated_by"] == user_sub("admin.test")
+    assert body["created_by"] == body["updated_by"] == user_sub("admin.sio")
     assert (fake_catalog.presentation_first_use_calls[-1][1]) == presentation
     assert "name" not in body and "base_quantity" not in body  # sin datos de la presentación global
 
@@ -151,7 +151,7 @@ def test_scenario_8_default_purchase_swaps_atomically(admin, company, fake_catal
     previous = admin.get(f"/api/v1/company-product-presentations/{first['id']}").json()
     assert previous["is_default_purchase"] is False
     assert previous["version"] == first["version"] + 1
-    assert previous["updated_by"] == user_sub("admin.test")
+    assert previous["updated_by"] == user_sub("admin.sio")
 
     third = adopt_presentation(admin, company, fake_catalog, product, is_default_purchase=True)
     assert admin.get(f"/api/v1/company-product-presentations/{second['id']}").json()["is_default_purchase"] is False
@@ -234,7 +234,7 @@ def test_list_filters_search_and_default_status(admin, company, fake_catalog, pr
     ).json()["total_records"] == 1
 
 
-@pytest.mark.parametrize("username", ["ventas.test", "compras.test", "inventario.test"])
+@pytest.mark.parametrize("username", ["operario.dao"])
 def test_readers_can_read_but_not_write(as_user, admin, company, fake_catalog, product, username):
     created = adopt_presentation(admin, company, fake_catalog, product)
     client = as_user(username)
@@ -246,7 +246,7 @@ def test_readers_can_read_but_not_write(as_user, admin, company, fake_catalog, p
 
 def test_employee_cannot_deactivate(as_user, admin, company, fake_catalog, product):
     created = adopt_presentation(admin, company, fake_catalog, product)
-    response = as_user("ventas.test").post(
+    response = as_user("operario.dao").post(
         f"/api/v1/company-product-presentations/{created['id']}/deactivate", json={"version": 1}
     )
     assert response.status_code == 403

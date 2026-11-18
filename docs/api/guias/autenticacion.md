@@ -385,10 +385,10 @@ Payload decodificado de un Access Token de `sio-web` (**ejemplo ilustrativo**; l
   },
   "email_verified": true,
   "name": "Nombre Apellido",
-  "preferred_username": "ventas.test",
+  "preferred_username": "operario.dao",
   "given_name": "Nombre",
   "family_name": "Apellido",
-  "email": "ventas.test@ejemplo.test"
+  "email": "operario.dao@ejemplo.test"
 }
 ```
 

@@ -2,13 +2,13 @@
 
 [← Todos los ejercicios](../README.md)
 
-**Qué enseña:** Registrar una organización con NIT, los rechazos por **formato** (regla `NIT`) y por **país inexistente**, y el ciclo **inactivar → reactivar**, incluido el rechazo de una transición repetida y quién puede hacer cada acción (`supervisor.test`, del grupo `admin`, reactiva pero no inactiva).
+**Qué enseña:** Registrar una organización con NIT, los rechazos por **formato** (regla `NIT`) y por **país inexistente**, y el ciclo **inactivar → reactivar**, incluido el rechazo de una transición repetida y quién puede hacer cada acción (`admin.dao`, del grupo `admin`, reactiva pero no inactiva).
 
 **Datos:** **ficticios** — detalle y decisiones en [00-datos-ficticios.md](00-datos-ficticios.md).
 
 Antes de empezar revise los [requisitos comunes](../README.md#antes-de-empezar).
 
-**Usuarios:** ejecútelo con `admin.test`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
+**Usuarios:** ejecútelo con `admin.sio`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
 
 ## Orden de ejecución
 

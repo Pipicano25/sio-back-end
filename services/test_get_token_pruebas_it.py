@@ -28,7 +28,7 @@ def jwt(**claims) -> str:
     return f"cabecera.{carga}.firma"
 
 
-TOKEN_IT = jwt(iss=it.ISSUER, preferred_username="inventario.test")
+TOKEN_IT = jwt(iss=it.ISSUER, preferred_username="operario.dao")
 
 
 class Respuesta(io.BytesIO):
@@ -86,12 +86,13 @@ class ConfiguracionFija(unittest.TestCase):
 class Usuarios(unittest.TestCase):
     def test_predeterminado_es_inventario(self):
         self.assertIsNone(it.elegir_usuario(it.argumentos([])))  # sin usuario: menú o el predeterminado
-        self.assertEqual(it.USUARIO_PREDETERMINADO, "inventario.test")
+        self.assertEqual(it.USUARIO_PREDETERMINADO, "operario.dao")
 
     def test_posicional_y_opcion(self):
-        self.assertEqual(it.elegir_usuario(it.argumentos(["ventas.test"])), "ventas.test")
-        self.assertEqual(it.elegir_usuario(it.argumentos(["--user", "supervisor.test"])), "supervisor.test")
-        self.assertEqual(it.elegir_usuario(it.argumentos(["admin"])), "admin.test")
+        self.assertEqual(it.elegir_usuario(it.argumentos(["operario.dao"])), "operario.dao")
+        self.assertEqual(it.elegir_usuario(it.argumentos(["--user", "admin.dao"])), "admin.dao")
+        self.assertEqual(it.elegir_usuario(it.argumentos(["superadmin"])), "admin.sio")
+        self.assertEqual(it.elegir_usuario(it.argumentos(["admin"])), "admin.dao")
 
     def test_usuario_invalido(self):
         with self.assertRaises(it.ErrorToken):
@@ -99,7 +100,7 @@ class Usuarios(unittest.TestCase):
 
     def test_usuario_duplicado_distinto(self):
         with self.assertRaises(it.ErrorToken):
-            it.elegir_usuario(it.argumentos(["ventas.test", "--user", "admin.test"]))
+            it.elegir_usuario(it.argumentos(["operario.dao", "--user", "admin.sio"]))
 
 
 class Contrasena(unittest.TestCase):
@@ -128,7 +129,7 @@ class Contrasena(unittest.TestCase):
 class Solicitud(unittest.TestCase):
     def test_peticion_correcta(self):
         abrir = abrir_con({"access_token": TOKEN_IT, "expires_in": 300})
-        respuesta = it.solicitar_token("inventario.test", SECRETO, abrir=abrir)
+        respuesta = it.solicitar_token("operario.dao", SECRETO, abrir=abrir)
         self.assertEqual(respuesta["access_token"], TOKEN_IT)
         [(peticion, timeout)] = abrir.peticiones
         self.assertEqual(peticion.full_url, it.TOKEN_URL)
@@ -140,13 +141,13 @@ class Solicitud(unittest.TestCase):
 
     def test_contrasena_incorrecta(self):
         with self.assertRaises(it.ErrorToken) as error:
-            it.solicitar_token("ventas.test", SECRETO, abrir=abrir_con_error(401, {"error": "invalid_grant"}))
+            it.solicitar_token("operario.dao", SECRETO, abrir=abrir_con_error(401, {"error": "invalid_grant"}))
         self.assertIn("rechazó las credenciales", str(error.exception))
         self.assertNotIn(SECRETO, str(error.exception))
 
     def test_respuesta_http_incorrecta(self):
         with self.assertRaises(it.ErrorToken) as error:
-            it.solicitar_token("ventas.test", SECRETO, abrir=abrir_con_error(503, {}))
+            it.solicitar_token("operario.dao", SECRETO, abrir=abrir_con_error(503, {}))
         self.assertIn("HTTP 503", str(error.exception))
 
     def test_keycloak_no_disponible(self):
@@ -154,7 +155,7 @@ class Solicitud(unittest.TestCase):
             raise urllib.error.URLError(ConnectionRefusedError(111, "Connection refused"))
 
         with self.assertRaises(it.ErrorToken) as error:
-            it.solicitar_token("ventas.test", SECRETO, abrir=abrir)
+            it.solicitar_token("operario.dao", SECRETO, abrir=abrir)
         self.assertIn("no disponible", str(error.exception))
 
     def test_error_de_conexion(self):
@@ -162,13 +163,13 @@ class Solicitud(unittest.TestCase):
             raise TimeoutError
 
         with self.assertRaises(it.ErrorToken) as error:
-            it.solicitar_token("ventas.test", SECRETO, abrir=abrir)
+            it.solicitar_token("operario.dao", SECRETO, abrir=abrir)
         self.assertIn("Error de conexión", str(error.exception))
 
     def test_respuesta_no_json_o_sin_token(self):
         for cuerpo in (b"<html>", {"token_type": "Bearer"}):
             with self.assertRaises(it.ErrorToken):
-                it.solicitar_token("ventas.test", SECRETO, abrir=abrir_con(cuerpo))
+                it.solicitar_token("operario.dao", SECRETO, abrir=abrir_con(cuerpo))
 
     def test_redireccion_es_error(self):
         manejador = it._SinRedirecciones()
@@ -222,7 +223,7 @@ class Main(unittest.TestCase):
         codigo, salida, errores = self.ejecutar([])
         self.assertEqual(codigo, 0)
         self.assertEqual(salida.strip(), TOKEN_IT)
-        self.assertIn("inventario.test", errores)
+        self.assertIn("operario.dao", errores)
         self.assertIn("sio-it", errores)
         self.assertIn("300 s", errores)
         self.assertIn(it.SWAGGER_URL, errores)
@@ -230,7 +231,7 @@ class Main(unittest.TestCase):
 
     def test_copy_no_imprime_el_token(self):
         copiado = mock.Mock(return_value="xclip")
-        codigo, salida, errores = self.ejecutar(["ventas.test", "--copy"], copiar=copiado)
+        codigo, salida, errores = self.ejecutar(["operario.dao", "--copy"], copiar=copiado)
         self.assertEqual(codigo, 0)
         self.assertEqual(salida, "")
         self.assertNotIn(TOKEN_IT, errores)
@@ -243,7 +244,7 @@ class Main(unittest.TestCase):
 
     def test_error_devuelve_1_sin_secretos(self):
         falla = mock.Mock(side_effect=it.ErrorToken("Keycloak respondió HTTP 503."))
-        codigo, salida, errores = self.ejecutar(["ventas.test"], solicitar_token=falla)
+        codigo, salida, errores = self.ejecutar(["operario.dao"], solicitar_token=falla)
         self.assertEqual(codigo, 1)
         self.assertEqual(salida, "")
         self.assertIn("HTTP 503", errores)
@@ -262,8 +263,8 @@ class Menu(unittest.TestCase):
         parche.start()
         self.addCleanup(parche.stop)
 
-    def test_muestra_el_encabezado_y_los_siete_usuarios(self):
-        self.assertEqual(it.menu(iter(["5"]).__next__), "inventario.test")
+    def test_muestra_el_encabezado_y_los_tres_usuarios(self):
+        self.assertEqual(it.menu(iter(["3"]).__next__), "operario.dao")
         texto = self.errores.getvalue()
         self.assertIn("SIO - AMBIENTE DE INTEGRACIÓN", texto)
         self.assertIn("Selecciona el usuario:", texto)
@@ -272,11 +273,12 @@ class Menu(unittest.TestCase):
         self.assertIn("Opción:", texto)
 
     def test_seleccion_por_numero_y_por_nombre(self):
-        self.assertEqual(it.menu(iter(["1"]).__next__), "admin.test")
-        self.assertEqual(it.menu(iter(["ventas"]).__next__), "ventas.test")
+        self.assertEqual(it.menu(iter(["1"]).__next__), "admin.sio")
+        self.assertEqual(it.menu(iter(["empleado"]).__next__), "operario.dao")
+        self.assertEqual(it.menu(iter(["admin.dao"]).__next__), "admin.dao")
 
     def test_opcion_invalida_vuelve_a_preguntar(self):
-        self.assertEqual(it.menu(iter(["9", "abc", "4"]).__next__), "ventas.test")
+        self.assertEqual(it.menu(iter(["9", "abc", "3"]).__next__), "operario.dao")
         self.assertEqual(self.errores.getvalue().count("Opción no válida"), 2)
 
     def test_salir(self):
@@ -351,14 +353,14 @@ class Empresas(unittest.TestCase):
         self.assertEqual(it.empresas_del_usuario(TOKEN_IT, abrir), [])
         errores = io.StringIO()
         with mock.patch("sys.stderr", errores):
-            it.mostrar_empresas("compras.test", TOKEN_IT, abrir)
+            it.mostrar_empresas("operario.dao", TOKEN_IT, abrir)
         self.assertIn("no tiene membresías ACTIVE", errores.getvalue())
 
     def test_membresias_no_legibles_no_se_confirman(self):
         abrir = respuestas_pila({"/me/operational-context": 503})
         errores = io.StringIO()
         with mock.patch("sys.stderr", errores):
-            it.mostrar_empresas("ventas.test", TOKEN_IT, abrir)
+            it.mostrar_empresas("operario.dao", TOKEN_IT, abrir)
         self.assertIn("NO confirmadas", errores.getvalue())
         self.assertIn("HTTP 503", errores.getvalue())
         self.assertNotIn(TOKEN_IT, errores.getvalue())
@@ -389,7 +391,7 @@ class Interactivo(unittest.TestCase):
 
     def test_menu_obtiene_copia_y_no_imprime(self):
         copiado = mock.Mock(return_value="wl-copy")
-        codigo, salida, errores = self.ejecutar([], terminal=(True, True), entradas=["4"], copiar=copiado)
+        codigo, salida, errores = self.ejecutar([], terminal=(True, True), entradas=["3"], copiar=copiado)
         self.assertEqual((codigo, salida), (0, ""))
         copiado.assert_called_once_with(TOKEN_IT)
         self.assertIn("SIO - AMBIENTE DE INTEGRACIÓN", errores)
@@ -402,9 +404,9 @@ class Interactivo(unittest.TestCase):
 
     def test_menu_sin_portapapeles_explica_como_obtenerlo(self):
         falla = mock.Mock(side_effect=it.ErrorToken("sin portapapeles"))
-        codigo, salida, errores = self.ejecutar([], terminal=(True, True), entradas=["4"], copiar=falla)
+        codigo, salida, errores = self.ejecutar([], terminal=(True, True), entradas=["3"], copiar=falla)
         self.assertEqual((codigo, salida), (0, ""))
-        self.assertIn("TOKEN=$(python services/get_token_pruebas_it.py ventas.test)", errores)
+        self.assertIn("TOKEN=$(python services/get_token_pruebas_it.py operario.dao)", errores)
         self.assertNotIn(TOKEN_IT, errores)
 
     def test_menu_con_salida_capturada_entrega_el_token_en_stdout(self):
@@ -425,14 +427,14 @@ class Interactivo(unittest.TestCase):
         self.empresas.assert_not_called()
 
     def test_comandos_existentes_no_muestran_menu(self):
-        for argv in (["ventas.test"], ["--user", "ventas.test"]):
+        for argv in (["operario.dao"], ["--user", "operario.dao"]):
             codigo, salida, errores = self.ejecutar(argv, terminal=(True, True))
             self.assertEqual((codigo, salida.strip()), (0, TOKEN_IT))
             self.assertNotIn("Selecciona el usuario", errores)
             self.empresas.assert_not_called()
 
     def test_opcion_empresas_en_modo_no_interactivo(self):
-        codigo, salida, _ = self.ejecutar(["ventas.test", "--empresas"])
+        codigo, salida, _ = self.ejecutar(["operario.dao", "--empresas"])
         self.assertEqual((codigo, salida.strip()), (0, TOKEN_IT))
         self.empresas.assert_called_once()
 

@@ -10,9 +10,9 @@ from inventory_service.api.identity import has_platform_lookup, service_account_
 @pytest.mark.parametrize(
     ("claims", "expected"),
     [
-        ({"preferred_username": "admin.test"}, None),
+        ({"preferred_username": "admin.sio"}, None),
         ({"preferred_username": "service-account-inventory-test-operator"}, None),
-        ({"client_id": "sio-web", "preferred_username": "admin.test"}, None),
+        ({"client_id": "sio-web", "preferred_username": "admin.sio"}, None),
         ({"client_id": "inventory", "preferred_username": "service-account-inventory-test-operator"}, None),
         ({"client_id": "inventory-test-operator", "preferred_username": "service-account-inventory-test-operatorX"}, None),
         ({"client_id": "", "preferred_username": "service-account-"}, None),

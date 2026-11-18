@@ -2,11 +2,9 @@
 
 | Usuario | Paso 1 | Paso 2 | Paso 3 |
 | --- | --- | --- | --- |
-| `admin.test` | `200` | `200` | `404` |
-| `supervisor.test` | `200` | `200` | `404` |
-| `compras.test` | `200` | `200` | `404` |
-| `ventas.test` | `200` | `200` | `404` |
-| `inventario.test` | `200` | `200` | `404` |
+| `admin.sio` | `200` | `200` | `404` |
+| `admin.dao` | `200` | `200` | `404` |
+| `operario.dao` | `200` | `200` | `404` |
 
 ## Permiso por URL
 
@@ -18,5 +16,5 @@
 
 ## Ejemplos
 
-- Puede: `ventas.test`, `compras.test` e `inventario.test` (grupo `empleado`) consultan las cuatro rutas con precios, existencias y mínimos; `supervisor.test` (grupo `admin`) y `admin.test` (grupo `superadmin`) también.
+- Puede: `operario.dao`, `operario.dao` e `operario.dao` (grupo `empleado`) consultan las cuatro rutas con precios, existencias y mínimos; `admin.dao` (grupo `admin`) y `admin.sio` (grupo `superadmin`) también.
 - No puede: un usuario sin los permisos de estas consultas recibe `403` (ningún usuario de prueba del realm está en ese caso desde la spec 026).

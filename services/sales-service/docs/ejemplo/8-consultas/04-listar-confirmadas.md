@@ -6,12 +6,12 @@ Ejercicio 8: Consultas.
 
 `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales?status=CONFIRMED&number=FV-202611-000001`
 
-Ejecuta: `compras.test`.
+Ejecuta: `operario.dao`.
 
 ### Por qué
 
 - Filtros por estado, sucursal, cliente, fechas y número; orden estable.
-- `ventas.test`, `compras.test` e `inventario.test` (grupo `empleado`) no tienen `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
+- `operario.dao` (grupo `empleado`) no tiene `perm:sales:sales:read-profitability`: en sus respuestas no aparecen costo, `cost_known`, margen ni `has_unknown_cost`.
 
 ## Permiso
 
@@ -21,11 +21,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (Operational Context
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:sales:all:all` |
-| `compras.test` | Sí | `200` | tiene `perm:sales:all:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:sales:all:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:sales:all:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:sales:all:all` |
+| `operario.dao` | Sí | `200` | tiene `perm:sales:all:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -74,7 +72,7 @@ Estado `200`.
       "tax_total": "0.00",
       "total": "9000.00",
       "inventory_operation_id": "<asignado por el servicio>",
-      "created_by_user_id": "d15f1000-0000-4000-8000-000000000004",
+      "created_by_user_id": "d15f1000-0000-4000-8000-000000000003",
       "cancelled_by_user_id": null,
       "cancelled_at": null,
       "cancellation_reason": null,
@@ -82,8 +80,8 @@ Estado `200`.
       "version": 3,
       "created_at": "<asignado por el servicio>",
       "updated_at": "<asignado por el servicio>",
-      "created_by": "ventas.test",
-      "updated_by": "ventas.test",
+      "created_by": "operario.dao",
+      "updated_by": "operario.dao",
       "lines": null
     }
   ],

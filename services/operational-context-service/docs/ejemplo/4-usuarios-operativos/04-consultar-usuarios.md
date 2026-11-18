@@ -16,12 +16,12 @@ GET /api/v1/companies/<EMPRESA_A>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:read`), `operario.dao` (por `perm:operational-context:all:read`)
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
 
-- Solo los miembros de la empresa A (o el administrador de plataforma) la ven: `supervisor.test` y `compras.test` responden `200`; los demás, `404`.
+- Solo los miembros de la empresa A (o el administrador de plataforma) la ven: `admin.sio` (plataforma), `admin.dao` y `operario.dao` responden `200`; un usuario sin membresía, `404`.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 
@@ -29,11 +29,11 @@ GET /api/v1/companies/<EMPRESA_A>/application-users
 {
   "items": [
     {
-      "keycloak_user_id": "supervisor.test",
+      "keycloak_user_id": "admin.dao",
       "display_name": "Supervisora (ficticia)"
     },
     {
-      "keycloak_user_id": "compras.test",
+      "keycloak_user_id": "operario.dao",
       "display_name": "Comprador (ficticio)"
     }
   ],
@@ -49,7 +49,7 @@ GET /api/v1/application-users/<USR_SUPERVISORA>
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:read`), `operario.dao` (por `perm:operational-context:all:read`)
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
@@ -62,7 +62,7 @@ GET /api/v1/application-users/<USR_SUPERVISORA>
 {
   "id": "<USR_SUPERVISORA>",
   "company_id": "<EMPRESA_A>",
-  "keycloak_user_id": "supervisor.test",
+  "keycloak_user_id": "admin.dao",
   "person_identity_id": "<PERSONA_SUPERVISORA>",
   "display_name": "Supervisora (ficticia)",
   "status": "ACTIVE",

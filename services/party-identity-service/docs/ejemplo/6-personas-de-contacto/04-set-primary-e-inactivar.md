@@ -22,7 +22,7 @@ POST /api/v1/organization-contact-persons/<CONTACTO_CARTERA>:set-primary
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:update`), `compras.test` (por `perm:party-identity:organization_contact_persons:update`), `ventas.test` (por `perm:party-identity:organization_contact_persons:update`), `inventario.test` (por `perm:party-identity:organization_contact_persons:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:update`), `operario.dao` (por `perm:party-identity:organization_contact_persons:update`)
 - ℹ️ `:set-primary` y `:reactivate` exigen `update`; `is_primary` no se cambia con `PUT`.
 
 **Por qué se hace así**
@@ -52,7 +52,7 @@ GET /api/v1/organization-contact-persons/<CONTACTO_COMERCIAL>
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_contact_persons:read`), `ventas.test` (por `perm:party-identity:organization_contact_persons:read`), `inventario.test` (por `perm:party-identity:organization_contact_persons:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:organization_contact_persons:read`)
 
 **Por qué se hace así**
 
@@ -87,8 +87,8 @@ POST /api/v1/organization-contact-persons/<CONTACTO_CARTERA>:deactivate
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao`, `operario.dao` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
 
 **Por qué se hace así**
 
@@ -117,7 +117,7 @@ GET /api/v1/organization-identities/<ORG_LAB>/contact-persons
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_contact_persons:read`), `ventas.test` (por `perm:party-identity:organization_contact_persons:read`), `inventario.test` (por `perm:party-identity:organization_contact_persons:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:organization_contact_persons:read`)
 
 **Por qué se hace así**
 

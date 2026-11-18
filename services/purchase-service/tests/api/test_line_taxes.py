@@ -115,9 +115,9 @@ def test_cp61_override_requires_permission_and_is_audited(as_user, make_draft, w
     from tests.conftest import purchase_body
 
     body = purchase_body(world, _line(world, tax_percentage="5"))
-    assert as_user("compras.test").post(f"{base(world)}/purchases", json=body).status_code == 403
+    assert as_user("operario.dao").post(f"{base(world)}/purchases", json=body).status_code == 403
 
-    supervisor = as_user("supervisor.test")
+    supervisor = as_user("admin.dao")
     response = supervisor.post(f"{base(world)}/purchases", json=body)
     assert response.status_code == 201, response.text
     [detail] = response.json()["lines"]
@@ -132,7 +132,7 @@ def test_cp61_override_requires_permission_and_is_audited(as_user, make_draft, w
 
 def test_cp61_override_on_an_existing_line(as_user, make_draft, world, fakes) -> None:
     draft = make_draft(_line(world))
-    supervisor = as_user("supervisor.test")
+    supervisor = as_user("admin.dao")
     detail = draft["lines"][0]
     url = f"{base(world)}/purchases/{draft['id']}/details/{detail['id']}"
     updated = supervisor.put(url, json={**_line(world, tax_percentage="0"), "version": draft["version"]})
@@ -146,7 +146,7 @@ def test_cp61_override_on_an_existing_line(as_user, make_draft, world, fakes) ->
 def test_cp62_override_out_of_range(as_user, world, value) -> None:
     from tests.conftest import purchase_body
 
-    response = as_user("supervisor.test").post(
+    response = as_user("admin.dao").post(
         f"{base(world)}/purchases", json=purchase_body(world, _line(world, tax_percentage=value))
     )
     assert response.status_code == 422, response.text

@@ -3,11 +3,9 @@
 | Usuario | Paso 1 | Paso 2 | Paso 3 | Paso 4 | Paso 5 | Paso 6 | Paso 7 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `inventory-test-operator` | `201` | `201` | `409` | `201` | `409` | `404` | `201` |
-| `admin.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `supervisor.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `compras.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `ventas.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
-| `inventario.test` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `admin.sio` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `admin.dao` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
+| `operario.dao` | `403` | `403` | `403` | `403` | `403` | `403` | `403` |
 
 ## Permiso por URL
 
@@ -23,5 +21,5 @@
 
 ## Ejemplos
 
-- Puede: `admin.test` (SuperAdmin), `supervisor.test` (Admin) y los usuarios del grupo `empleado` (`inventario.test`, `compras.test`, `ventas.test`) consultan inventario de las empresas donde son miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.test` y `supervisor.test` configuran políticas.
-- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.test`, que tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; el grupo `empleado` recibe `403` al configurar políticas.
+- Puede: `admin.sio` (SuperAdmin), `admin.dao` (Admin) y el usuario del grupo `empleado` (`operario.dao`) consultan inventario de las empresas donde son miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.sio` y `admin.dao` configuran políticas.
+- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.sio`, que tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; el grupo `empleado` recibe `403` al configurar políticas.

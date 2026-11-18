@@ -45,7 +45,7 @@ UPDATE_BODY = {
 
 @pytest.fixture
 def rows(as_user, company, fake_catalog, fake_party, fake_payment):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog)
     provider = supplier(client, company, fake_party)
     price_list = create_price_list(client, company)
@@ -71,7 +71,7 @@ VERSIONED = [route for route in PHASE_B_ROUTES if route.write and route.target i
 
 @pytest.mark.parametrize("route", VERSIONED, ids=route_id)
 def test_stale_version_is_409_without_changes(as_user, rows, route):
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     row = rows[route.target]
     url = route.path.format(**{PARAM[route.target]: row["id"]})
     if route.path.endswith("/reactivate"):
@@ -91,7 +91,7 @@ def test_stale_version_is_409_without_changes(as_user, rows, route):
     ["company-product-presentations", "supplier-products", "supplier-payment-conditions", "price-lists", "price-list-items"],
 )
 def test_server_controlled_fields_rejected_on_create(as_user, company, path, field):
-    response = as_user("admin.test").post(f"/api/v1/companies/{company}/{path}", json={field: "x"})
+    response = as_user("admin.sio").post(f"/api/v1/companies/{company}/{path}", json={field: "x"})
     assert response.status_code == 422
     assert any(error["field"] == field for error in response.json()["errors"]), response.json()
 
@@ -102,12 +102,12 @@ def test_audit_created_by_immutable_and_updated_by_real(as_user, rows, target):
     base = next(route.path for route in PHASE_B_ROUTES if route.target == target and route.method == "PUT")
     url = base.format(**{PARAM[target]: row["id"]})
 
-    response = as_user("supervisor.test").post(url + "/reactivate", json={"version": row["version"]})
+    response = as_user("admin.dao").post(url + "/reactivate", json={"version": row["version"]})
     assert response.status_code == 409  # ya activo: transición inválida, sin cambios
 
-    deactivated = as_user("admin.test").post(url + "/deactivate", json={"version": row["version"]}).json()
-    reactivated = as_user("supervisor.test").post(url + "/reactivate", json={"version": deactivated["version"]})
+    deactivated = as_user("admin.sio").post(url + "/deactivate", json={"version": row["version"]}).json()
+    reactivated = as_user("admin.dao").post(url + "/reactivate", json={"version": deactivated["version"]})
     assert reactivated.status_code == 200, reactivated.text
     body = reactivated.json()
-    assert body["created_by"] == user_sub("admin.test")
-    assert body["updated_by"] == user_sub("supervisor.test")
+    assert body["created_by"] == user_sub("admin.sio")
+    assert body["updated_by"] == user_sub("admin.dao")

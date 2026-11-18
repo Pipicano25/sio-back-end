@@ -26,8 +26,8 @@ POST /api/v1/organization-identities/<ORG_INV>/legal-representatives
 
 **Permiso que exige la URL:** `perm:party-identity:organization_legal_representatives:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `party-identity` solo tiene `read`; le falta `create`
 - ℹ️ `:set-primary` también exige `create`: crea el primer `PRIMARY` o sustituye el vigente cerrándolo.
 
 **Por qué se hace así**
@@ -65,8 +65,8 @@ POST /api/v1/organization-legal-representatives/<REP_JORGE_SUPLENTE>:close
 
 **Permiso que exige la URL:** `perm:party-identity:organization_legal_representatives:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `delete`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `operario.dao` — sobre `party-identity` solo tiene `read`; le falta `delete`
 
 **Por qué se hace así**
 
@@ -94,7 +94,7 @@ GET /api/v1/organization-identities/<ORG_INV>/legal-representatives?state=all
 
 **Permiso que exige la URL:** `perm:party-identity:organization_legal_representatives:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_legal_representatives:read`), `ventas.test` (por `perm:party-identity:organization_legal_representatives:read`), `inventario.test` (por `perm:party-identity:organization_legal_representatives:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:organization_legal_representatives:read`)
 - ℹ️ Dato sensible: solo lo leen los grupos con necesidad explícita. Con los grupos de la spec 026 lo leen los tres (`superadmin`, `admin` y `empleado`); solo `superadmin` y `admin` lo crean o modifican.
 
 **Por qué se hace así**

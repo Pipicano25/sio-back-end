@@ -28,7 +28,7 @@ ADDITIVE_FIELDS = {"internal_code", "sku", "reference_code"}
 
 
 def test_batch_lookup_adds_codes_without_changing_previous_fields(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog)
     presentation = adopt_presentation(
         client, company, fake_catalog, product, internal_code="PI-1", sku="SKU-1", reference_code="REF-1", is_default_sale=True
@@ -45,7 +45,7 @@ def test_batch_lookup_adds_codes_without_changing_previous_fields(as_user, compa
 
 def test_not_found_items_keep_their_shape(as_user) -> None:
     missing = str(uuid4())
-    item = as_user("admin.test").post(URL, json={"ids": [missing]}).json()["items"][0]
+    item = as_user("admin.sio").post(URL, json={"ids": [missing]}).json()["items"][0]
     assert item["found"] is False
     assert item["id"] == missing
     assert all(item[name] is None for name in ADDITIVE_FIELDS)

@@ -127,7 +127,7 @@ def test_exercise_runs_and_matches_documentation(api, test_client, make_token, i
 
     for record in records:
         if "access" in record:
-            assert record["access"]["admin.test"], "admin.test debe poder ejecutar todo el ejercicio."
+            assert record["access"]["admin.sio"], "admin.sio debe poder ejecutar todo el ejercicio."
 
     _check_documents(render_exercise(exercise, ctx, records))
 

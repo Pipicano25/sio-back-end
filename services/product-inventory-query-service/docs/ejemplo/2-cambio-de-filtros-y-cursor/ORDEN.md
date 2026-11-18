@@ -8,11 +8,11 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-primera-pagina.md](01-primera-pagina.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=2` | `ventas.test` | `200` |
-| 2 | [02-cambio-de-busqueda.md](02-cambio-de-busqueda.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Abrilar&page_size=2&cursor=<CURSOR>` | `ventas.test` | `200` |
-| 3 | [03-cambio-de-tamano.md](03-cambio-de-tamano.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=3&cursor=<CURSOR>` | `ventas.test` | `200` |
-| 4 | [04-cambio-de-orden.md](04-cambio-de-orden.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=2&sort=internal_code:desc&cursor=<CURSOR>` | `ventas.test` | `200` |
-| 5 | [05-cursor-alterado.md](05-cursor-alterado.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=2&cursor=v1.eyJ9.firma-alterada` | `ventas.test` | `422` |
+| 1 | [01-primera-pagina.md](01-primera-pagina.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=2` | `operario.dao` | `200` |
+| 2 | [02-cambio-de-busqueda.md](02-cambio-de-busqueda.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Abrilar&page_size=2&cursor=<CURSOR>` | `operario.dao` | `200` |
+| 3 | [03-cambio-de-tamano.md](03-cambio-de-tamano.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=3&cursor=<CURSOR>` | `operario.dao` | `200` |
+| 4 | [04-cambio-de-orden.md](04-cambio-de-orden.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=2&sort=internal_code:desc&cursor=<CURSOR>` | `operario.dao` | `200` |
+| 5 | [05-cursor-alterado.md](05-cursor-alterado.md) | `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&page_size=2&cursor=v1.eyJ9.firma-alterada` | `operario.dao` | `422` |
 
 ## Por qué este orden
 

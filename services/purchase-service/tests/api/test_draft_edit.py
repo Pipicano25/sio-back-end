@@ -77,7 +77,7 @@ def test_changing_branch_requires_both_assignments(buyer, as_user, world, make_d
     response = buyer.put(url(world, draft), json=header(world, draft, branch_id=world.branch_b))
     assert response.status_code == 403
     assert response.json()["code"] == "PURCHASE.BRANCH_ACCESS_DENIED"
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     assert admin.put(url(world, draft), json=header(world, draft, branch_id=world.branch_b)).status_code == 200
 
 

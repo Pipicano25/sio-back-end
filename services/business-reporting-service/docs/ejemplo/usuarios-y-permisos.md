@@ -9,31 +9,29 @@
 
 | Usuario | Grupo |
 | --- | --- |
-| `admin.test` | `superadmin` |
-| `supervisor.test` | `admin` |
-| `compras.test` | `empleado` |
-| `ventas.test` | `empleado` |
-| `inventario.test` | `empleado` |
+| `admin.sio` | `superadmin` |
+| `admin.dao` | `admin` |
+| `operario.dao` | `empleado` |
 
 ## Cómo obtener el token
 
 ```bash
 curl -s -X POST "$KEYCLOAK_TOKEN_URL" \
   -d grant_type=password -d client_id=sio-web \
-  -d username=supervisor.test -d password="$KEYCLOAK_TEST_USER_PASSWORD"
+  -d username=admin.dao -d password="$KEYCLOAK_TEST_USER_PASSWORD"
 ```
 
 ## Matriz de las URL
 
-| Ejercicio | Paso | URL | Permiso | `admin.test` | `supervisor.test` | `compras.test` | `ventas.test` | `inventario.test` |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/top-selling-products?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:top_selling_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 1 | 2 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/top-selling-products?date_from=2026-10-01&date_to=2026-10-15&rank_by=amount&include_presentations=true&limit=2` | `perm:business-reporting:top_selling_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 2 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/sales-by-branch?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:sales_by_branch:read` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 3 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/purchases?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:purchases:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 3 | 2 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/purchases?date_from=2026-10-01&date_to=2026-10-15&category=PENDING_RECEIPT` | `perm:business-reporting:purchases:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 4 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/branches/d23b0000-0000-4000-8000-000000000001/reports/stock-evolution?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:stock_evolution:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 4 | 2 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/stock-evolution?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:stock_evolution:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 5 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/purchases?date_from=2026-10-01&date_to=2026-10-15&format=csv` | `perm:business-reporting:purchases:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 6 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/branches/d23b0000-0000-4000-8000-000000000002/reports/sales-by-branch?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:sales_by_branch:read` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 6 | 2 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/branches/d23b0000-0000-4000-8000-000000000002/reports/purchases?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:purchases:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Ejercicio | Paso | URL | Permiso | `admin.sio` | `admin.dao` | `operario.dao` |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/top-selling-products?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:top_selling_products:read` | ✅ | ✅ | ✅ |
+| 1 | 2 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/top-selling-products?date_from=2026-10-01&date_to=2026-10-15&rank_by=amount&include_presentations=true&limit=2` | `perm:business-reporting:top_selling_products:read` | ✅ | ✅ | ✅ |
+| 2 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/sales-by-branch?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:sales_by_branch:read` | ✅ | ✅ | ❌ |
+| 3 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/purchases?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:purchases:read` | ✅ | ✅ | ✅ |
+| 3 | 2 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/purchases?date_from=2026-10-01&date_to=2026-10-15&category=PENDING_RECEIPT` | `perm:business-reporting:purchases:read` | ✅ | ✅ | ✅ |
+| 4 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/branches/d23b0000-0000-4000-8000-000000000001/reports/stock-evolution?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:stock_evolution:read` | ✅ | ✅ | ✅ |
+| 4 | 2 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/stock-evolution?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:stock_evolution:read` | ✅ | ✅ | ✅ |
+| 5 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/reports/purchases?date_from=2026-10-01&date_to=2026-10-15&format=csv` | `perm:business-reporting:purchases:read` | ✅ | ✅ | ✅ |
+| 6 | 1 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/branches/d23b0000-0000-4000-8000-000000000002/reports/sales-by-branch?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:sales_by_branch:read` | ✅ | ✅ | ❌ |
+| 6 | 2 | `GET /api/v1/companies/d23a0000-0000-4000-8000-000000000001/branches/d23b0000-0000-4000-8000-000000000002/reports/purchases?date_from=2026-10-01&date_to=2026-10-15` | `perm:business-reporting:purchases:read` | ✅ | ✅ | ✅ |

@@ -72,9 +72,9 @@ def _view_rows(connection, view: str, ids: list[str]) -> dict[str, dict[str, Any
 
 @pytest.fixture
 def admin(as_user, fake_oc, other_company):
-    """`admin.test`, miembro de las dos empresas para poder preparar datos en ambas."""
-    fake_oc.add_member(user_sub("admin.test"), other_company)
-    return as_user("admin.test")
+    """`admin.sio`, miembro de las dos empresas para poder preparar datos en ambas."""
+    fake_oc.add_member(user_sub("admin.sio"), other_company)
+    return as_user("admin.sio")
 
 
 @pytest.fixture
@@ -202,7 +202,7 @@ def test_company_customers_match_get_and_identity_search(
         assert views[inactive_person["id"]]["status"] == "INACTIVE"
 
         # Búsqueda por identidad con el token del vendedor, exactamente como `customer_registry.find` de Sales.
-        seller = as_user("ventas.test")
+        seller = as_user("operario.dao")
         searches = (
             ("PERSON", "person_identity_id",
              [person["person_identity_id"], inactive_person["person_identity_id"], foreign["person_identity_id"],

@@ -6,7 +6,7 @@ Ejercicio 1 — Configuración de la empresa: organizaciones, personas, empresas
 
 ## 1. Registrar la organización empresa a
 
-Paso `C-01.empresa_a` · usuario **`admin.test`** · ítems de la FASE 10: 1
+Paso `C-01.empresa_a` · usuario **`admin.sio`** · ítems de la FASE 10: 1
 
 ```http
 POST http://127.0.0.1:8101/api/v1/organization-identities
@@ -23,7 +23,7 @@ POST http://127.0.0.1:8101/api/v1/organization-identities
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:organization_identities:create`), `ventas.test` (por `perm:party-identity:organization_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:organization_identities:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:organization_identities:create`)
 
 **Por qué se hace así**
 
@@ -37,7 +37,7 @@ POST http://127.0.0.1:8101/api/v1/organization-identities
 
 ## 2. Registrar la organización empresa b
 
-Paso `C-01.empresa_b` · usuario **`admin.test`** · ítems de la FASE 10: 1
+Paso `C-01.empresa_b` · usuario **`admin.sio`** · ítems de la FASE 10: 1
 
 ```http
 POST http://127.0.0.1:8101/api/v1/organization-identities
@@ -54,7 +54,7 @@ POST http://127.0.0.1:8101/api/v1/organization-identities
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:organization_identities:create`), `ventas.test` (por `perm:party-identity:organization_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:organization_identities:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:organization_identities:create`)
 
 **Por qué se hace así**
 
@@ -68,7 +68,7 @@ POST http://127.0.0.1:8101/api/v1/organization-identities
 
 ## 3. Registrar la organización proveedor
 
-Paso `C-01.proveedor` · usuario **`admin.test`** · ítems de la FASE 10: 1, 4
+Paso `C-01.proveedor` · usuario **`admin.sio`** · ítems de la FASE 10: 1, 4
 
 ```http
 POST http://127.0.0.1:8101/api/v1/organization-identities
@@ -85,7 +85,7 @@ POST http://127.0.0.1:8101/api/v1/organization-identities
 
 **Permiso que exige la URL:** `perm:party-identity:organization_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:organization_identities:create`), `ventas.test` (por `perm:party-identity:organization_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:organization_identities:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:organization_identities:create`)
 
 **Por qué se hace así**
 

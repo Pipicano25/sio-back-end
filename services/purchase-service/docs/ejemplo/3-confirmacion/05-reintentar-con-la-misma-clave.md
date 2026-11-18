@@ -6,7 +6,7 @@ Ejercicio 3: Confirmación y recepción idempotente.
 
 `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt`
 
-Ejecuta: `compras.test`.
+Ejecuta: `operario.dao`.
 
 Cabeceras: `Idempotency-Key: recibir-compra-0001`.
 
@@ -34,11 +34,9 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:purchase:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `200` | tiene `perm:purchase:purchases:update` y asignación a la sucursal |
-| `ventas.test` | Sí | `—` | tiene `perm:purchase:purchases:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `inventario.test` | Sí | `—` | tiene `perm:purchase:purchases:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `admin.sio` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `admin.dao` | Sí | `—` | tiene `perm:purchase:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `operario.dao` | Sí | `200` | tiene `perm:purchase:purchases:update` y asignación a la sucursal |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -98,8 +96,8 @@ Estado `200`.
   "version": 3,
   "created_at": "<asignado por el servicio>",
   "updated_at": "<asignado por el servicio>",
-  "created_by": "compras.test",
-  "updated_by": "compras.test",
+  "created_by": "operario.dao",
+  "updated_by": "operario.dao",
   "lines": [
     {
       "id": "<asignado por el servicio>",
@@ -128,8 +126,8 @@ Estado `200`.
       "inventory_unit_cost": "10000.0000",
       "created_at": "<asignado por el servicio>",
       "updated_at": "<asignado por el servicio>",
-      "created_by": "compras.test",
-      "updated_by": "compras.test"
+      "created_by": "operario.dao",
+      "updated_by": "operario.dao"
     }
   ]
 }

@@ -22,8 +22,8 @@ POST /api/v1/person-identities/<PERSONA_ANA>/deactivate
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao`, `operario.dao` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
 - ℹ️ Inactivar (`POST .../deactivate`) exige `delete`, aunque no elimina; reactivar (`POST .../reactivate`) exige `update`.
 
 **Por qué se hace así**
@@ -50,7 +50,7 @@ GET /api/v1/person-identities
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:person_identities:read`), `ventas.test` (por `perm:party-identity:person_identities:read`), `inventario.test` (por `perm:party-identity:person_identities:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:person_identities:read`)
 
 **Por qué se hace así**
 
@@ -72,7 +72,7 @@ GET /api/v1/person-identities?status=INACTIVE
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:person_identities:read`), `ventas.test` (por `perm:party-identity:person_identities:read`), `inventario.test` (por `perm:party-identity:person_identities:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:person_identities:read`)
 
 **Por qué se hace así**
 

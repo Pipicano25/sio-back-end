@@ -8,7 +8,7 @@
 
 Antes de empezar revise los [requisitos comunes](../README.md#antes-de-empezar).
 
-**Usuarios:** ejecútelo con `admin.test`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
+**Usuarios:** ejecútelo con `admin.sio`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
 
 ## Orden de ejecución
 

@@ -296,7 +296,7 @@ Regla de la Constitución 2.4.0 (Principio X), feature 009:
 - En Docker la base `sio-party-identity-db` tiene `healthcheck` y `restart: unless-stopped`, y la aplicación
   arranca cuando la base está sana (`infrastructure/services/party-identity-service.yaml`).
 
-Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.test` y
+Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.sio` y
 `KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
 
 ```bash
@@ -401,9 +401,9 @@ no concede leerlos.
 
 | Usuario de prueba | En Party Identity |
 | --- | --- |
-| `admin.test` (`superadmin`) | Todo |
-| `supervisor.test` (`admin`) | Todo menos `delete` (no inactiva ni cierra) |
-| `ventas.test`, `compras.test`, `inventario.test` (`empleado`) | Crear, leer y modificar personas, organizaciones, perfiles de contacto y personas de contacto; leer reglas, sectores y representantes legales; nunca `delete` |
+| `admin.sio` (`superadmin`) | Todo |
+| `admin.dao` (`admin`) | Todo menos `delete` (no inactiva ni cierra) |
+| `operario.dao` (`empleado`) | Crear, leer y modificar personas, organizaciones, perfiles de contacto y personas de contacto; leer reglas, sectores y representantes legales; nunca `delete` |
 
 Para **confirmar** un perfil además se necesita membresía `ACTIVE` en la empresa (sin permisos de
 Operational Context). Detalle y ejemplos en

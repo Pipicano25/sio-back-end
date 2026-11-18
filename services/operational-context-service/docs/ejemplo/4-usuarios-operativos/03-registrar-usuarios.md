@@ -10,7 +10,7 @@ Ejercicio 4 — Usuarios operativos de una empresa · [← Paso anterior](02-reg
 
 ---
 
-## 1. Registrar a supervisor.test por nombre de usuario
+## 1. Registrar a admin.dao por nombre de usuario
 
 ```http
 POST /api/v1/companies/<EMPRESA_A>/application-users
@@ -18,7 +18,7 @@ POST /api/v1/companies/<EMPRESA_A>/application-users
 
 ```json
 {
-  "username": "supervisor.test",
+  "username": "admin.dao",
   "person_identity_id": "<PERSONA_SUPERVISORA>",
   "display_name": "Supervisora (ficticia)",
   "reference_email": "supervisora@ficticia.co"
@@ -27,14 +27,14 @@ POST /api/v1/companies/<EMPRESA_A>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `operational-context` solo tiene `read`; le falta `create`
 - ℹ️ Para registrar un usuario operativo el token debe poder leer `person_identities` en Party Identity (el servicio valida la persona con ese token); la cuenta de Keycloak la verifica el servicio con su propia identidad técnica.
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
 
-- El servicio busca la cuenta `supervisor.test` en Keycloak (solo lectura, con su propia identidad técnica) y guarda su `sub`; el `username` no se guarda.
+- El servicio busca la cuenta `admin.dao` en Keycloak (solo lectura, con su propia identidad técnica) y guarda su `sub`; el `username` no se guarda.
 - La persona se valida en Party Identity con el token de quien registra.
 
 **Respuesta esperada — `201 Created`** (abreviada)
@@ -43,7 +43,7 @@ POST /api/v1/companies/<EMPRESA_A>/application-users
 {
   "id": "<USR_SUPERVISORA>",
   "company_id": "<EMPRESA_A>",
-  "keycloak_user_id": "supervisor.test",
+  "keycloak_user_id": "admin.dao",
   "person_identity_id": "<PERSONA_SUPERVISORA>",
   "display_name": "Supervisora (ficticia)",
   "status": "ACTIVE",
@@ -61,7 +61,7 @@ POST /api/v1/companies/<EMPRESA_A>/application-users
 
 ```json
 {
-  "username": "supervisor.test",
+  "username": "admin.dao",
   "person_identity_id": "<PERSONA_SUPERVISORA>",
   "display_name": "Duplicada"
 }
@@ -69,8 +69,8 @@ POST /api/v1/companies/<EMPRESA_A>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `operational-context` solo tiene `read`; le falta `create`
 - ℹ️ Para registrar un usuario operativo el token debe poder leer `person_identities` en Party Identity (el servicio valida la persona con ese token); la cuenta de Keycloak la verifica el servicio con su propia identidad técnica.
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
@@ -111,8 +111,8 @@ POST /api/v1/companies/<EMPRESA_A>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `operational-context` solo tiene `read`; le falta `create`
 - ℹ️ Para registrar un usuario operativo el token debe poder leer `person_identities` en Party Identity (el servicio valida la persona con ese token); la cuenta de Keycloak la verifica el servicio con su propia identidad técnica.
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
@@ -130,7 +130,7 @@ POST /api/v1/companies/<EMPRESA_A>/application-users
 }
 ```
 
-## 4. Registrar a compras.test
+## 4. Registrar a operario.dao
 
 ```http
 POST /api/v1/companies/<EMPRESA_A>/application-users
@@ -138,7 +138,7 @@ POST /api/v1/companies/<EMPRESA_A>/application-users
 
 ```json
 {
-  "username": "compras.test",
+  "username": "operario.dao",
   "person_identity_id": "<PERSONA_COMPRADOR>",
   "display_name": "Comprador (ficticio)"
 }
@@ -146,8 +146,8 @@ POST /api/v1/companies/<EMPRESA_A>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `operational-context` solo tiene `read`; le falta `create`
 - ℹ️ Para registrar un usuario operativo el token debe poder leer `person_identities` en Party Identity (el servicio valida la persona con ese token); la cuenta de Keycloak la verifica el servicio con su propia identidad técnica.
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
@@ -161,7 +161,7 @@ POST /api/v1/companies/<EMPRESA_A>/application-users
 {
   "id": "<USR_COMPRADOR_A>",
   "company_id": "<EMPRESA_A>",
-  "keycloak_user_id": "compras.test",
+  "keycloak_user_id": "operario.dao",
   "person_identity_id": "<PERSONA_COMPRADOR>",
   "display_name": "Comprador (ficticio)",
   "status": "ACTIVE",

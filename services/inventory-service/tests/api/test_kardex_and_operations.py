@@ -17,7 +17,7 @@ def test_kardex_in_order_with_chained_balances(operator, as_user, world) -> None
     output = operator.post(OUTPUTS, json=operation_body(world, line(product, "3"), origin_type="SALE")).json()
     operator.post(f"{OUTPUTS}/{output['id']}/reversal", json=reversal_body(world))
 
-    response = as_user("inventario.test").get(
+    response = as_user("operario.dao").get(
         f"/api/v1/companies/{world.company}/branches/{world.branch}/kardex/{product}"
     )
 
@@ -41,7 +41,7 @@ def test_kardex_filters(operator, as_user, world) -> None:
     entry = operator.post(ENTRIES, json=operation_body(world, line(product, "10"))).json()
     operator.post(OUTPUTS, json=operation_body(world, line(product, "3"), origin_type="SALE"))
     url = f"/api/v1/companies/{world.company}/branches/{world.branch}/kardex/{product}"
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
 
     assert [i["movement_type"] for i in reader.get(url, params={"movement_type": "SALE_OUTPUT"}).json()["items"]] == ["SALE_OUTPUT"]
     assert len(reader.get(url, params={"origin_type": "PURCHASE", "origin_id": entry["origin_id"]}).json()["items"]) == 1
@@ -56,7 +56,7 @@ def test_kardex_filters(operator, as_user, world) -> None:
 
 
 def test_empty_kardex_is_an_empty_page(as_user, world) -> None:
-    response = as_user("inventario.test").get(
+    response = as_user("operario.dao").get(
         f"/api/v1/companies/{world.company}/branches/{world.branch}/kardex/{uuid4()}"
     )
     assert response.status_code == 200
@@ -68,7 +68,7 @@ def test_operation_by_id_and_by_key(operator, as_user, world) -> None:
     body = operation_body(world, line(product, "2"))
     entry = operator.post(ENTRIES, json=body).json()
     reversal = operator.post(f"{ENTRIES}/{entry['id']}/reversal", json=reversal_body(world)).json()
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     base = f"/api/v1/companies/{world.company}/inventory-operations"
 
     by_id = reader.get(f"{base}/{entry['id']}")
@@ -84,8 +84,8 @@ def test_operation_by_id_and_by_key(operator, as_user, world) -> None:
 
 def test_operation_of_another_company_is_404(operator, as_user, world, fake_oc) -> None:
     entry = operator.post(ENTRIES, json=operation_body(world, line(world.products[0], "2"))).json()
-    fake_oc.add_member("sub-inventario.test", world.other_company)
-    reader = as_user("inventario.test")
+    fake_oc.add_member("sub-operario.dao", world.other_company)
+    reader = as_user("operario.dao")
     assert reader.get(f"/api/v1/companies/{world.other_company}/inventory-operations/{entry['id']}").status_code == 404
     assert reader.get(f"/api/v1/companies/{world.company}/inventory-operations/{uuid4()}").status_code == 404
     assert reader.get(f"/api/v1/companies/{world.company}/inventory-operations/by-key/{uuid4()}").status_code == 404

@@ -6,7 +6,7 @@ Ejercicio 6: Conteos físicos.
 
 `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-counts/<CONTEO_2>/cancel`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `operario.dao`.
 
 ### Solicitud
 
@@ -29,11 +29,9 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `—` | tiene `perm:all:all:all`; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
-| `ventas.test` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
-| `inventario.test` | Sí | `200` | tiene `perm:inventory:counts:create` |
+| `admin.sio` | Sí | `—` | tiene `perm:all:all:all`; no se repite (cambiaría el estado) |
+| `admin.dao` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
+| `operario.dao` | Sí | `200` | tiene `perm:inventory:counts:create` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -59,20 +57,20 @@ Estado `200`.
   "company_id": "d44a0000-0000-4000-8000-000000000001",
   "branch_id": "d44b0000-0000-4000-8000-000000000001",
   "status": "CANCELLED",
-  "started_by_user_id": "d44c0000-0000-4000-8000-000000000105",
+  "started_by_user_id": "d44c0000-0000-4000-8000-000000000103",
   "started_at": "<asignado por Inventory>",
   "completed_by_user_id": null,
   "completed_at": null,
-  "cancelled_by_user_id": "d44c0000-0000-4000-8000-000000000105",
+  "cancelled_by_user_id": "d44c0000-0000-4000-8000-000000000103",
   "cancelled_at": "<asignado por Inventory>",
   "cancel_reason": "Conteo repetido por la venta intermedia",
   "operation_id": null,
   "observations": null,
   "version": 3,
   "created_at": "<asignado por Inventory>",
-  "created_by": "inventario.test",
+  "created_by": "operario.dao",
   "updated_at": "<asignado por Inventory>",
-  "updated_by": "inventario.test",
+  "updated_by": "operario.dao",
   "details": [
     {
       "id": "<asignado por Inventory>",
@@ -83,7 +81,7 @@ Estado `200`.
       "difference_quantity": "-8.0000",
       "unit_cost": null,
       "inventory_adjustment_id": null,
-      "counted_by_user_id": "d44c0000-0000-4000-8000-000000000105",
+      "counted_by_user_id": "d44c0000-0000-4000-8000-000000000103",
       "counted_at": "<asignado por Inventory>"
     }
   ],

@@ -15,7 +15,7 @@ def test_cancel_draft_is_local(world, fakes, make_draft, cancel, test_engine) ->
     body = response.json()
     assert body["status"] == "CANCELLED" and body["number"] is None and body["inventory_operation_id"] is None
     assert body["cancellation_reason"] == "Pedido duplicado"
-    assert body["cancelled_by_user_id"] == str(fakes.oc.members[(user_sub("compras.test"), world.company)])
+    assert body["cancelled_by_user_id"] == str(fakes.oc.members[(user_sub("operario.dao"), world.company)])
     [operation] = fetch(test_engine, "SELECT * FROM purchase_operations")
     assert (operation["operation_type"], operation["status"], operation["inventory_operation_id"]) == ("CANCEL", "SUCCEEDED", None)
 
@@ -107,7 +107,7 @@ def test_cancellation_does_not_revalidate_references(world, fakes, make_sequence
 
 def test_cancellation_requires_assignment_and_delete_permission(as_user, world, fakes, make_draft, cancel, make_token, as_token) -> None:
     draft = make_draft()
-    fakes.oc.assignments.discard((user_sub("compras.test"), world.branch))
+    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
     assert cancel(draft).status_code == 403
     sub = "sub-sin-delete"
     fakes.oc.add_member(sub, world.company, branches=(world.branch,))

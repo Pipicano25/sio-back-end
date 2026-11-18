@@ -137,12 +137,12 @@ def test_database_failure_after_inventory_is_completed_by_retry(app, world, fake
 
 
 def test_compensation_uses_the_confirming_user_not_the_creator(as_user, world, fakes, make_sequence, make_draft, confirm, test_engine) -> None:
-    """D-07: el reverso compensatorio usa al usuario que inició la confirmación (aquí admin.test, no el creador)."""
+    """D-07: el reverso compensatorio usa al usuario que inició la confirmación (aquí admin.sio, no el creador)."""
     from tests.conftest import user_sub
 
     make_sequence(maximum_number=1)
-    first, second = make_draft(), make_draft()  # creadas por ventas.test
-    admin = as_user("admin.test")
+    first, second = make_draft(), make_draft()  # creadas por operario.dao
+    admin = as_user("admin.sio")
     key = new_key()
     fakes.inventory.availability.down = True
     assert confirm(second, key, client=admin).status_code == 503
@@ -164,8 +164,8 @@ def test_compensation_uses_the_confirming_user_not_the_creator(as_user, world, f
     assert confirm(second, key, client=admin).status_code == 503  # compensación pendiente
     assert confirm(second, key, client=admin).status_code == 409  # reintento: compensación aplicada
 
-    confirmer = str(fakes.oc.members[(user_sub("admin.test"), world.company)])
-    creator = str(fakes.oc.members[(user_sub("ventas.test"), world.company)])
+    confirmer = str(fakes.oc.members[(user_sub("admin.sio"), world.company)])
+    creator = str(fakes.oc.members[(user_sub("operario.dao"), world.company)])
     assert confirmer != creator
     assert [payload["application_user_id"] for payload in attempts] == [confirmer, confirmer]
     assert attempts[0] == attempts[1]  # misma solicitud en todo reintento (huella de Inventory)
@@ -182,7 +182,7 @@ def test_operation_columns_and_error_details(world, fakes, make_sequence, make_d
     confirmed = confirm(make_draft()).json()
     cancel(confirmed, reason="Motivo original")
     rows = fetch(test_engine, "SELECT operation_type, application_user_id, reason, error_details FROM sale_operations ORDER BY started_at")
-    buyer_user = fakes.oc.members[(user_sub("ventas.test"), world.company)]
+    buyer_user = fakes.oc.members[(user_sub("operario.dao"), world.company)]
     assert [(row["operation_type"], row["application_user_id"], row["reason"], row["error_details"]) for row in rows] == [
         ("CONFIRM", buyer_user, None, None),
         ("CANCEL", buyer_user, "Motivo original", None),

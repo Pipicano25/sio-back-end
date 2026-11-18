@@ -32,7 +32,7 @@ EX4 = dict(
         "idéntica no crea versión, **reemplazarlo** (se cierra la versión anterior y se crea otra), consultar el "
         "**historial**, los rechazos por **geografía incoherente**, por **usuario sin membresía** y por "
         "**dependencia caída**, y **cerrar** el perfil sin reemplazo (y el `409` al repetirlo). Muestra además que "
-        "los usuarios del grupo `empleado` (por ejemplo `compras.test`) leen el contacto."
+        "los usuarios del grupo `empleado` (por ejemplo `operario.dao`) leen el contacto."
     ),
     data=[
         ("Organización", "DISTRIBUIDORA CONTACTO FICTICIA S.A.S. — NIT `900000004-4` (**ficticios**)"),

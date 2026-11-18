@@ -40,13 +40,13 @@ TWO = (("UND", "Unidad", "1"), ("CJ12", "Caja x 12", "12"))
 def test_image_fields_are_per_presentation_and_images_are_omitted_by_default(world, as_user, endpoint) -> None:
     """Caso 24: sin `include_images`, cada presentación trae su principal y no trae `images`."""
     item = world.product("Crema", presentations=TWO, has_image=True)
-    found = by_code(items(world, as_user("supervisor.test"), endpoint=endpoint)[0])
+    found = by_code(items(world, as_user("admin.dao"), endpoint=endpoint)[0])
     unit, box = found["UND"], found["CJ12"]
     info = world.fakes.pc.presentation_rows[item.global_presentations[0]]
     assert (unit["has_image"], unit["asset_id"], unit["image_url"]) == (True, str(info.image_asset_id), info.image_url)
     assert (box["has_image"], box["asset_id"], box["image_url"]) == (False, None, None)
     assert "images" not in unit and "images" not in box
-    product = items(world, as_user("supervisor.test"), endpoint=endpoint)[0]
+    product = items(world, as_user("admin.dao"), endpoint=endpoint)[0]
     assert not {"has_image", "asset_id", "image_url"} & set(product)
 
 
@@ -57,7 +57,7 @@ def test_include_images_adds_all_active_images_with_the_primary_first(world, as_
     secondary = world.fakes.pc.add_image(item.global_presentations[0], primary=False)
     primary = world.fakes.pc.presentation_rows[item.global_presentations[0]]
 
-    found = by_code(items(world, as_user("supervisor.test"), "include_images=true", endpoint)[0])
+    found = by_code(items(world, as_user("admin.dao"), "include_images=true", endpoint)[0])
 
     assert found["UND"]["images"] == [
         {"asset_id": str(primary.image_asset_id), "image_url": primary.image_url, "is_primary": True},

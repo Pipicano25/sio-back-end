@@ -9,7 +9,7 @@ Mundo propio de cada ejecución (datos ficticios):
 
 | Dato | Valor |
 |---|---|
-| Empresa C | activa, COP; admin.test asignado a B1 |
+| Empresa C | activa, COP; admin.sio asignado a B1 |
 | Proveedor | organización ficticia; condición de contado vigente desde 2026-01-01 y otra vencida (enero de 2026) |
 | Productos | P1..P20 adoptados con presentación base, IVA de compra 19 % y cubiertos por una política del 30 % |
 | Sin política | P1 y P2 tienen además una caja x12 adoptada sin política (caso "2 líneas sin política") |
@@ -44,10 +44,10 @@ LATENCY_SAMPLES = 20
 
 @pytest.fixture(scope="module")
 def world(seed, users, run_id):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     colombia = expect(admin.get(f"{URLS['geography']}/global-countries", params={"iso3_code": "COL"}))["items"][0]["id"]
     company = seed.company(admin, colombia, f"US2{run_id}")
-    admin_member = seed.member(admin, colombia, company, "admin.test")
+    admin_member = seed.member(admin, colombia, company, "admin.sio")
     branch = expect(admin.post(f"{OC}/companies/{company}/branches", json={
         "code": f"C1{run_id}", "name": f"Bodega ficticia US2 {run_id}"}))["id"]
     expect(admin.post(f"{OC}/application-users/{admin_member}/user-branches", json={"branch_id": branch}))
@@ -170,7 +170,7 @@ def _case(world, response):
 
 
 def test_success_and_receipt(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     draft = expect(_draft(admin, world), 201)
     confirmed, requests = _observe(lambda: _confirm(admin, world, draft))
     book.check("exito", _case(world, confirmed), requests=requests)
@@ -183,7 +183,7 @@ def test_success_and_receipt(world, users, book, reads):
 
 
 def test_two_lines_without_policy(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     draft = expect(_draft(admin, world, lines=world["products"][2:] + world["uncovered"]), 201)
     response, requests = _observe(lambda: _confirm(admin, world, draft))
     book.check("dos_lineas_sin_politica", _case(world, response), requests=requests)
@@ -191,7 +191,7 @@ def test_two_lines_without_policy(world, users, book, reads):
 
 
 def test_blocked_supplier(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     draft = expect(_draft(admin, world), 201)
     current = expect(admin.get(f"{CR}/company-suppliers/{world['supplier']}"))
     expect(admin.post(f"{CR}/company-suppliers/{world['supplier']}/block", json={
@@ -207,7 +207,7 @@ def test_blocked_supplier(world, users, book, reads):
 
 def test_expired_payment_condition(world, users, book, reads):
     """La vigencia se valida al registrar el borrador (la confirmación repite la misma validación)."""
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe(lambda: _draft(admin, world, condition="expired"))
     book.check("condicion_vencida", _case(world, response), requests=requests)
     _check_contract(reads, "condicion_vencida", requests)
@@ -219,7 +219,7 @@ def test_confirmation_latency(world, users, reads):
     import statistics
     from pathlib import Path
 
-    admin = users("admin.test")
+    admin = users("admin.sio")
     samples = []
     for index in range(LATENCY_SAMPLES + 3):
         draft = expect(_draft(admin, world), 201)
@@ -247,7 +247,7 @@ PURCHASE_OWNERS = ("operational-context", "product-catalog", "commercial-relatio
 def test_caida_del_propietario(world, users, outage_book, owner):
     """T079: con la base del propietario caída, la confirmación (o la recepción, si es Inventory) responde el 503 de
     hoy, a tiempo y sin efectos; al volver la base, la misma compra avanza."""
-    admin = users("admin.test")
+    admin = users("admin.sio")
     purchase = expect(_draft(admin, world), 201)
     step = _confirm
     if owner == "inventory":

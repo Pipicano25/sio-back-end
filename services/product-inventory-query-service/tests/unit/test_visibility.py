@@ -23,8 +23,8 @@ def claims(*roles: str) -> TokenClaims:
 @pytest.mark.parametrize(
     ("user", "expected"),
     [
-        ("admin.test", {Block.PRICES, Block.STOCK, Block.MINIMUMS}),
-        ("supervisor.test", {Block.PRICES, Block.STOCK, Block.MINIMUMS}),
+        ("admin.sio", {Block.PRICES, Block.STOCK, Block.MINIMUMS}),
+        ("admin.dao", {Block.PRICES, Block.STOCK, Block.MINIMUMS}),
         ("vendedor.sintetico", {Block.PRICES, Block.STOCK}),
         ("bodeguero.sintetico", {Block.STOCK, Block.MINIMUMS}),
         ("sin-acceso.sintetico", set()),

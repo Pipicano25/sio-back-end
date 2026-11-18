@@ -167,8 +167,8 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `ventas.test`, `compras.test` e `inventario.test` (grupo `empleado`) consultan las cuatro rutas con "
-        "precios, existencias y mínimos; `supervisor.test` (grupo `admin`) y `admin.test` (grupo `superadmin`) también.",
+        "- Puede: `operario.dao`, `operario.dao` e `operario.dao` (grupo `empleado`) consultan las cuatro rutas con "
+        "precios, existencias y mínimos; `admin.dao` (grupo `admin`) y `admin.sio` (grupo `superadmin`) también.",
         "- No puede: un usuario sin los permisos de estas consultas recibe `403` (ningún usuario de prueba del realm "
         "está en ese caso desde la spec 026).",
     ]
@@ -240,7 +240,7 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "```bash",
         "curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \\",
         "  -d grant_type=password -d client_id=sio-web -d scope=openid \\",
-        "  -d username=ventas.test -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"",
+        "  -d username=operario.dao -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"",
         "```",
         "",
         "## Matriz de URL",

@@ -18,12 +18,12 @@ URL = "/api/v1/pricing-policies/{id}"
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 @pytest.fixture
 def supervisor(as_user):
-    return as_user("supervisor.test")
+    return as_user("admin.dao")
 
 
 @pytest.fixture

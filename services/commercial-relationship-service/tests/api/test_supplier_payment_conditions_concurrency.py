@@ -9,13 +9,13 @@ URL = "/api/v1/companies/{company}/supplier-payment-conditions"
 
 
 def test_two_simultaneous_defaults_same_currency_leave_one(app, user_token, as_user, company, fake_party, fake_payment):
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     provider = supplier(admin, company, fake_party)
     rows = [create_condition(admin, company, provider, fake_payment) for _ in range(2)]
 
     results = race(
         app,
-        user_token("admin.test"),
+        user_token("admin.sio"),
         [("PUT", f"/api/v1/supplier-payment-conditions/{row['id']}", condition_update_body(row, is_default=True)) for row in rows],
     )
 
@@ -25,7 +25,7 @@ def test_two_simultaneous_defaults_same_currency_leave_one(app, user_token, as_u
 
 
 def test_defaults_in_different_currencies_coexist(app, user_token, as_user, company, fake_party, fake_payment):
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     provider = supplier(admin, company, fake_party)
     rows = [
         create_condition(admin, company, provider, fake_payment, currency_code=currency) for currency in ("COP", "USD")
@@ -33,7 +33,7 @@ def test_defaults_in_different_currencies_coexist(app, user_token, as_user, comp
 
     results = race(
         app,
-        user_token("admin.test"),
+        user_token("admin.sio"),
         [("PUT", f"/api/v1/supplier-payment-conditions/{row['id']}", condition_update_body(row, is_default=True)) for row in rows],
     )
 

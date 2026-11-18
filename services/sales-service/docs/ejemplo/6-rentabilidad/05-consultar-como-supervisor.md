@@ -6,11 +6,11 @@ Ejercicio 6: Rentabilidad y costo desconocido.
 
 `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>`
 
-Ejecuta: `supervisor.test`.
+Ejecuta: `admin.dao`.
 
 ### Por qué
 
-- `supervisor.test` (grupo `admin`) tiene la rentabilidad por `perm:sales:all:all`: costo 1000.0000 por unidad base, costo total 3000.00, margen 1500.00 (33.3333 %).
+- `admin.dao` (grupo `admin`) tiene la rentabilidad por `perm:sales:all:all`: costo 1000.0000 por unidad base, costo total 3000.00, margen 1500.00 (33.3333 %).
 
 ## Permiso
 
@@ -20,11 +20,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (Operational Context
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:sales:all:all` |
-| `compras.test` | Sí | `200` | tiene `perm:sales:all:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:sales:all:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:sales:all:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:sales:all:all` |
+| `operario.dao` | Sí | `200` | tiene `perm:sales:all:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -72,7 +70,7 @@ Estado `200`.
   "total": "4500.00",
   "has_unknown_cost": false,
   "inventory_operation_id": "<asignado por el servicio>",
-  "created_by_user_id": "d15f1000-0000-4000-8000-000000000004",
+  "created_by_user_id": "d15f1000-0000-4000-8000-000000000003",
   "cancelled_by_user_id": null,
   "cancelled_at": null,
   "cancellation_reason": null,
@@ -80,8 +78,8 @@ Estado `200`.
   "version": 3,
   "created_at": "<asignado por el servicio>",
   "updated_at": "<asignado por el servicio>",
-  "created_by": "ventas.test",
-  "updated_by": "ventas.test",
+  "created_by": "operario.dao",
+  "updated_by": "operario.dao",
   "lines": [
     {
       "id": "<asignado por el servicio>",
@@ -113,8 +111,8 @@ Estado `200`.
       "gross_margin_percentage": "33.3333",
       "created_at": "<asignado por el servicio>",
       "updated_at": "<asignado por el servicio>",
-      "created_by": "ventas.test",
-      "updated_by": "ventas.test"
+      "created_by": "operario.dao",
+      "updated_by": "operario.dao"
     }
   ]
 }

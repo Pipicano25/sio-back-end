@@ -23,9 +23,9 @@ POST /api/v1/companies/<EMPRESA>/automatic-price-applications/<FALLIDA>/resoluti
 
 **Permiso que exige la URL:** `perm:commercial-relationship:automatic_price_applications:resolve`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:automatic_price_applications:resolve`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `automatic_price_applications` de `commercial-relationship`
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:automatic_price_applications:resolve`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — no tiene ningún permiso sobre `automatic_price_applications` de `commercial-relationship`
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 
@@ -46,7 +46,7 @@ POST /api/v1/companies/<EMPRESA>/automatic-price-applications/<FALLIDA>/resoluti
   "new_price": null,
   "attempts": 1,
   "last_error_code": "RuntimeError",
-  "resolved_by": "admin.test",
+  "resolved_by": "admin.sio",
   "resolution_reason": "Se revisó la compra: el costo de la segunda recepción no debe cambiar el precio (ficticio).",
   "version": 3
 }
@@ -67,9 +67,9 @@ POST /api/v1/companies/<EMPRESA>/automatic-price-applications/<FALLIDA>/resoluti
 
 **Permiso que exige la URL:** `perm:commercial-relationship:automatic_price_applications:resolve`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:automatic_price_applications:resolve`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `automatic_price_applications` de `commercial-relationship`
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:automatic_price_applications:resolve`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — no tiene ningún permiso sobre `automatic_price_applications` de `commercial-relationship`
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 
@@ -93,8 +93,8 @@ GET /api/v1/companies/<EMPRESA>/price-list-items?price_list_id=<LISTA>
 
 **Permiso que exige la URL:** `perm:commercial-relationship:price_list_items:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:read`), `compras.test` (por `perm:commercial-relationship:price_list_items:read`), `ventas.test` (por `perm:commercial-relationship:price_list_items:read`), `inventario.test` (por `perm:commercial-relationship:price_list_items:read`)
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:read`), `operario.dao` (por `perm:commercial-relationship:price_list_items:read`)
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 

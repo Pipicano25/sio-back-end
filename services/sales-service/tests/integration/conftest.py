@@ -17,19 +17,19 @@ from tests.integration.support import (
 @pytest.fixture(scope="session")
 def admin():
     require_services()
-    with user_client("admin.test") as client:
+    with user_client("admin.sio") as client:
         yield client
 
 
 @pytest.fixture(scope="session")
 def seller():
-    with user_client("ventas.test") as client:
+    with user_client("operario.dao") as client:
         yield client
 
 
 @pytest.fixture(scope="session")
 def supervisor():
-    with user_client("supervisor.test") as client:
+    with user_client("admin.dao") as client:
         yield client
 
 

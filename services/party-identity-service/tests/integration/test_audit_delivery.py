@@ -1,7 +1,7 @@
 """Entrega real de la auditoría de Party Identity (feature 016; SC-007; DS-06; RC-04; T053).
 
 Exige el entorno integrado con `party-identity-audit-outbox-worker` y Audit en ejecución. Eventos de
-plataforma: se consultan con `platform-entity-history` (`admin.test` tiene `perm:all:all:all`).
+plataforma: se consultan con `platform-entity-history` (`admin.sio` tiene `perm:all:all:all`).
 Datos ficticios de validación con un número que cumple la regla vigente.
 """
 
@@ -45,7 +45,7 @@ def client():
         pytest.skip("Defina KEYCLOAK_TEST_USER_PASSWORD (o infrastructure/.env).")
     with httpx.Client(timeout=15) as http:
         token = http.post(TOKEN_URL, data={"grant_type": "password", "client_id": "sio-web", "scope": "openid",
-                                           "username": "admin.test", "password": password}).json()["access_token"]
+                                           "username": "admin.sio", "password": password}).json()["access_token"]
         http.headers["Authorization"] = f"Bearer {token}"
         yield http
 

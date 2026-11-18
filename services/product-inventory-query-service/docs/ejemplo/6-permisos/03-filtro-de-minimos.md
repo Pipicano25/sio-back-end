@@ -6,7 +6,7 @@ Ejercicio 6: Permisos y bloques visibles.
 
 `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/inventory-overviews?minimum_state=BELOW_MINIMUM`
 
-Ejecuta: `ventas.test`.
+Ejecuta: `operario.dao`.
 
 ### Por qué
 
@@ -22,11 +22,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all`, `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read`, `perm:inventory:product-policies:read` |
-| `compras.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read`, `perm:inventory:product-policies:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read`, `perm:inventory:product-policies:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read`, `perm:inventory:product-policies:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all`, `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read`, `perm:inventory:product-policies:read` |
+| `operario.dao` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read`, `perm:inventory:product-policies:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

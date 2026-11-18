@@ -75,7 +75,7 @@ def client_id() -> Iterator[str]:
 def _login(client_id: str) -> dict:
     return httpx.post(f"{OIDC}/token", timeout=30, data={
         "grant_type": "password", "client_id": client_id, "scope": "openid",
-        "username": "ventas.test", "password": _secret("KEYCLOAK_TEST_USER_PASSWORD")}).raise_for_status().json()
+        "username": "operario.dao", "password": _secret("KEYCLOAK_TEST_USER_PASSWORD")}).raise_for_status().json()
 
 
 def _refresh(client_id: str, refresh_token: str) -> httpx.Response:

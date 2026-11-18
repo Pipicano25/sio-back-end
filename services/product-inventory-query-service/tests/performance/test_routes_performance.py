@@ -71,7 +71,7 @@ def test_routes(users, profile) -> None:
     if not path.is_file():
         pytest.skip(f"Siembre el perfil {profile} con validation/isolated-stack/synthetic.py")
     data = json.loads(path.read_text(encoding="utf-8"))
-    client = users("supervisor.test")
+    client = users("admin.dao")
     results, failures = [], []
     for name, endpoint, params, threshold in cases(data):
         url = f"{PIQ}/companies/{data['company']}/{endpoint}"

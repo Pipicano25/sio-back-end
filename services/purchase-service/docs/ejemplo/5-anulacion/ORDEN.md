@@ -8,20 +8,20 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchase-sequences` | `compras.test` | `201` |
-| 2 | [02-borrador-a-anular.md](02-borrador-a-anular.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `201` |
-| 3 | [03-anular-el-borrador.md](03-anular-el-borrador.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<BORRADOR>/cancellation` | `compras.test` | `200` |
-| 4 | [04-compra-sin-recibir.md](04-compra-sin-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `201` |
-| 5 | [05-confirmar-sin-recibir.md](05-confirmar-sin-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<PENDIENTE>/confirmation` | `compras.test` | `200` |
-| 6 | [06-anular-sin-recibir.md](06-anular-sin-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<PENDIENTE>/cancellation` | `compras.test` | `200` |
-| 7 | [07-compra-a-anular.md](07-compra-a-anular.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `201` |
-| 8 | [08-confirmar.md](08-confirmar.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `compras.test` | `200` |
-| 9 | [09-recibir.md](09-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `compras.test` | `200` |
-| 10 | [10-anular-la-compra-recibida.md](10-anular-la-compra-recibida.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/cancellation` | `compras.test` | `200` |
-| 11 | [11-compra-vendida.md](11-compra-vendida.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `201` |
-| 12 | [12-confirmar-la-otra.md](12-confirmar-la-otra.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/confirmation` | `compras.test` | `200` |
-| 13 | [13-recibir-la-otra.md](13-recibir-la-otra.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/receipt` | `compras.test` | `200` |
-| 14 | [14-anular-con-inventario-consumido.md](14-anular-con-inventario-consumido.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/cancellation` | `compras.test` | `409` |
+| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchase-sequences` | `operario.dao` | `201` |
+| 2 | [02-borrador-a-anular.md](02-borrador-a-anular.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `201` |
+| 3 | [03-anular-el-borrador.md](03-anular-el-borrador.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<BORRADOR>/cancellation` | `operario.dao` | `200` |
+| 4 | [04-compra-sin-recibir.md](04-compra-sin-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `201` |
+| 5 | [05-confirmar-sin-recibir.md](05-confirmar-sin-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<PENDIENTE>/confirmation` | `operario.dao` | `200` |
+| 6 | [06-anular-sin-recibir.md](06-anular-sin-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<PENDIENTE>/cancellation` | `operario.dao` | `200` |
+| 7 | [07-compra-a-anular.md](07-compra-a-anular.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `201` |
+| 8 | [08-confirmar.md](08-confirmar.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `operario.dao` | `200` |
+| 9 | [09-recibir.md](09-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `operario.dao` | `200` |
+| 10 | [10-anular-la-compra-recibida.md](10-anular-la-compra-recibida.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/cancellation` | `operario.dao` | `200` |
+| 11 | [11-compra-vendida.md](11-compra-vendida.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `201` |
+| 12 | [12-confirmar-la-otra.md](12-confirmar-la-otra.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/confirmation` | `operario.dao` | `200` |
+| 13 | [13-recibir-la-otra.md](13-recibir-la-otra.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/receipt` | `operario.dao` | `200` |
+| 14 | [14-anular-con-inventario-consumido.md](14-anular-con-inventario-consumido.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<VENDIDA>/cancellation` | `operario.dao` | `409` |
 
 ## Por qué este orden
 

@@ -4,9 +4,9 @@ Ejercicio 1 — Configuración de la empresa: organizaciones, personas, empresas
 
 ---
 
-## 1. Registrar a admin.test como usuario operativo de la empresa A
+## 1. Registrar a admin.sio como usuario operativo de la empresa A
 
-Paso `C-05.admin` · usuario **`admin.test`** · ítems de la FASE 10: 3
+Paso `C-05.admin` · usuario **`admin.sio`** · ítems de la FASE 10: 3
 
 ```http
 POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
@@ -14,15 +14,15 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
 
 ```json
 {
-  "username": "admin.test",
+  "username": "admin.sio",
   "person_identity_id": "<PERSONA_ADMIN>",
-  "display_name": "admin.test MVP <RUN_ID> (dato ficticio)"
+  "display_name": "admin.sio MVP <RUN_ID> (dato ficticio)"
 }
 ```
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:create`)
 
 **Por qué se hace así**
 
@@ -34,39 +34,9 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
 
 **Auditoría que deja:** `CREATE_APPLICATION_USER` (operational-context)
 
-## 2. Registrar a compras.test como usuario operativo de la empresa A
+## 2. Registrar a operario.dao como usuario operativo de la empresa A
 
-Paso `C-05.compras` · usuario **`admin.test`** · ítems de la FASE 10: 3
-
-```http
-POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
-```
-
-```json
-{
-  "username": "compras.test",
-  "person_identity_id": "<PERSONA_COMPRAS>",
-  "display_name": "compras.test MVP <RUN_ID> (dato ficticio)"
-}
-```
-
-**Permiso que exige la URL:** `perm:operational-context:application_users:create`
-
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
-
-**Por qué se hace así**
-
-- "Crear usuario" registra el usuario operativo de una cuenta existente de Keycloak (C-01 de la Spec).
-
-**Respuesta esperada:** `201`
-
-**Guardar:** `id` → `<USUARIO_COMPRAS>`
-
-**Auditoría que deja:** `CREATE_APPLICATION_USER` (operational-context)
-
-## 3. Registrar a ventas.test como usuario operativo de la empresa A
-
-Paso `C-05.ventas` · usuario **`admin.test`** · ítems de la FASE 10: 3
+Paso `C-05.operario` · usuario **`admin.sio`** · ítems de la FASE 10: 3
 
 ```http
 POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
@@ -74,15 +44,15 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
 
 ```json
 {
-  "username": "ventas.test",
-  "person_identity_id": "<PERSONA_VENTAS>",
-  "display_name": "ventas.test MVP <RUN_ID> (dato ficticio)"
+  "username": "operario.dao",
+  "person_identity_id": "<PERSONA_OPERARIO>",
+  "display_name": "operario.dao MVP <RUN_ID> (dato ficticio)"
 }
 ```
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:create`)
 
 **Por qué se hace así**
 
@@ -90,43 +60,13 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
 
 **Respuesta esperada:** `201`
 
-**Guardar:** `id` → `<USUARIO_VENTAS>`
+**Guardar:** `id` → `<USUARIO_OPERARIO>`
 
 **Auditoría que deja:** `CREATE_APPLICATION_USER` (operational-context)
 
-## 4. Registrar a supervisor.test como usuario operativo de la empresa A
+## 3. Registrar a admin.dao como usuario operativo de la empresa B
 
-Paso `C-05.supervisor` · usuario **`admin.test`** · ítems de la FASE 10: 3
-
-```http
-POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_A>/application-users
-```
-
-```json
-{
-  "username": "supervisor.test",
-  "person_identity_id": "<PERSONA_SUPERVISOR>",
-  "display_name": "supervisor.test MVP <RUN_ID> (dato ficticio)"
-}
-```
-
-**Permiso que exige la URL:** `perm:operational-context:application_users:create`
-
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
-
-**Por qué se hace así**
-
-- "Crear usuario" registra el usuario operativo de una cuenta existente de Keycloak (C-01 de la Spec).
-
-**Respuesta esperada:** `201`
-
-**Guardar:** `id` → `<USUARIO_SUPERVISOR>`
-
-**Auditoría que deja:** `CREATE_APPLICATION_USER` (operational-context)
-
-## 5. Registrar a inventario.test como usuario operativo de la empresa B
-
-Paso `C-05.inventario` · usuario **`admin.test`** · ítems de la FASE 10: 3
+Paso `C-05.admin_dao` · usuario **`admin.sio`** · ítems de la FASE 10: 3
 
 ```http
 POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_B>/application-users
@@ -134,15 +74,15 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_B>/application-users
 
 ```json
 {
-  "username": "inventario.test",
-  "person_identity_id": "<PERSONA_INVENTARIO>",
-  "display_name": "inventario.test MVP <RUN_ID> (dato ficticio)"
+  "username": "admin.dao",
+  "person_identity_id": "<PERSONA_ADMIN_DAO>",
+  "display_name": "admin.dao MVP <RUN_ID> (dato ficticio)"
 }
 ```
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:create`)
 
 **Por qué se hace así**
 
@@ -150,6 +90,6 @@ POST http://127.0.0.1:8104/api/v1/companies/<EMPRESA_B>/application-users
 
 **Respuesta esperada:** `201`
 
-**Guardar:** `id` → `<USUARIO_INVENTARIO>`
+**Guardar:** `id` → `<USUARIO_ADMIN_DAO>`
 
 **Auditoría que deja:** `CREATE_APPLICATION_USER` (operational-context)

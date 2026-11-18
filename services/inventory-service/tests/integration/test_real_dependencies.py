@@ -68,7 +68,7 @@ def test_product_without_inventory_control_is_rejected(operator, real_world) -> 
     assert response.json()["errors"][0]["code"] == "INVENTORY_CONTROL_DISABLED"
 
 
-@pytest.mark.parametrize("username", ["admin.test", "supervisor.test"])
+@pytest.mark.parametrize("username", ["admin.sio", "admin.dao"])
 def test_real_humans_cannot_apply(real_world, username) -> None:
     with user_client(username) as client:
         response = client.post(f"{INVENTORY}/inventory-entries", json=operation(real_world, (real_world.products[0], "1")))
@@ -79,12 +79,12 @@ def test_real_humans_cannot_apply(real_world, username) -> None:
 def test_real_users_reading_with_membership_and_permissions(operator, real_world) -> None:
     operator.post(f"{INVENTORY}/inventory-entries", json=operation(real_world, (real_world.products[1], "2")))
     base = f"{INVENTORY}/companies/{real_world.company}/branches/{real_world.branch}"
-    with user_client("inventario.test") as inventario:
-        assert inventario.get(f"{base}/balances").status_code == 200
-        assert inventario.get(f"{base}/kardex/{real_world.products[1]}").json()["items"]
-    with user_client("compras.test") as compras:
-        assert compras.get(f"{base}/balances").status_code == 403
-    with user_client("admin.test") as admin:
+    with user_client("operario.dao") as empleado:
+        assert empleado.get(f"{base}/balances").status_code == 200
+        assert empleado.get(f"{base}/kardex/{real_world.products[1]}").json()["items"]
+    with user_client("admin.dao") as no_member:  # tiene el permiso, pero no es miembro de esta empresa
+        assert no_member.get(f"{base}/balances").status_code == 404
+    with user_client("admin.sio") as admin:
         foreign = f"{INVENTORY}/companies/{real_world.foreign_company}/branches/{real_world.branch}/balances"
         assert admin.get(foreign).status_code == 404
 

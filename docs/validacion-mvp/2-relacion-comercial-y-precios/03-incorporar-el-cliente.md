@@ -6,7 +6,7 @@ Ejercicio 2 — Relación comercial y precios: proveedor, cliente, productos, ad
 
 ## 1. Incorporar el cliente persona de la empresa A
 
-Paso `C-09.cliente` · usuario **`admin.test`** · ítems de la FASE 10: 5
+Paso `C-09.cliente` · usuario **`admin.sio`** · ítems de la FASE 10: 5
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-customers
@@ -23,7 +23,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-customers
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_customers:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:commercial-relationship:company_customers:create`), `ventas.test` (por `perm:commercial-relationship:company_customers:create`), `supervisor.test` (por `perm:commercial-relationship:all:create`), `inventario.test` (por `perm:commercial-relationship:company_customers:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`), `operario.dao` (por `perm:commercial-relationship:company_customers:create`)
 
 **Respuesta esperada:** `201`
 

@@ -6,7 +6,7 @@ Ejercicio 6: Conteos físicos.
 
 `PUT /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-counts/<CONTEO_2>/details/d44d0000-0000-4000-8000-000000000001`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `operario.dao`.
 
 ### Solicitud
 
@@ -28,11 +28,9 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `—` | tiene `perm:all:all:all`; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
-| `ventas.test` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
-| `inventario.test` | Sí | `200` | tiene `perm:inventory:counts:create` |
+| `admin.sio` | Sí | `—` | tiene `perm:all:all:all`; no se repite (cambiaría el estado) |
+| `admin.dao` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
+| `operario.dao` | Sí | `200` | tiene `perm:inventory:counts:create` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -62,7 +60,7 @@ Estado `200`.
   "difference_quantity": "-8.0000",
   "unit_cost": null,
   "inventory_adjustment_id": null,
-  "counted_by_user_id": "d44c0000-0000-4000-8000-000000000105",
+  "counted_by_user_id": "d44c0000-0000-4000-8000-000000000103",
   "counted_at": "<asignado por Inventory>"
 }
 ```

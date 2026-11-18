@@ -36,7 +36,7 @@ REASON = "Recepción revisada manualmente (ficticio)"
 
 @pytest.fixture
 def supervisor(as_user):
-    return as_user("supervisor.test")
+    return as_user("admin.dao")
 
 
 @pytest.fixture
@@ -109,7 +109,7 @@ def test_cp54_resolved_frees_the_next_ones_and_is_not_retried(supervisor, client
                                json={"version": current["version"], "reason": REASON})
     assert resolved.status_code == 200, resolved.text
     assert resolved.json()["status"] == "RESOLVED" and resolved.json()["resolution_reason"] == REASON
-    assert resolved.json()["resolved_by"] == "sub-supervisor.test" and resolved.json()["new_price_item_id"] is None
+    assert resolved.json()["resolved_by"] == "sub-admin.dao" and resolved.json()["new_price_item_id"] is None
     [event] = [event for event in outbox() if event["action"] == "RESOLVE_AUTOMATIC_PRICE"]
     assert event["entity_type"] == "AutomaticPriceApplication" and event["reason"] == REASON
 
@@ -143,7 +143,7 @@ def test_resolution_validates_version_and_reason(supervisor, client, company, fa
     assert supervisor.post(url, json={"version": row["version"], "reason": REASON}).status_code == 200  # desde PENDING
 
 
-@pytest.mark.parametrize("username", ["ventas.test", "compras.test", "inventario.test"])
+@pytest.mark.parametrize("username", ["operario.dao"])
 def test_cp67_only_admins_and_supervisors(as_user, supervisor, client, company, fake_catalog, test_engine, username) -> None:
     _processed_world(supervisor, client, company, fake_catalog, test_engine)
     [row] = applications(test_engine)
@@ -156,7 +156,7 @@ def test_cp67_only_admins_and_supervisors(as_user, supervisor, client, company, 
     ):
         assert response.status_code == 403, (username, response.text)
         assert "automatic_price_applications" not in response.text and "perm:" not in response.text
-    assert as_user("admin.test").get(base).status_code == 200
+    assert as_user("admin.sio").get(base).status_code == 200
 
 
 def test_cpt15_technical_identity_is_forbidden(as_token, service_token, supervisor, client, company, fake_catalog, test_engine) -> None:

@@ -13,7 +13,7 @@ URL = "/api/v1/companies/{company}/supplier-payment-conditions"
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 @pytest.fixture
@@ -126,7 +126,7 @@ def test_readers_and_permissions(as_user, admin, company, provider, fake_payment
     created = create_condition(admin, company, provider, fake_payment)
     url = f"/api/v1/supplier-payment-conditions/{created['id']}"
 
-    assert as_user("supervisor.test").get(url).status_code == 200
-    assert as_user("ventas.test").put(url, json=condition_update_body(created)).status_code == 403
-    assert as_user("ventas.test").post(url + "/deactivate", json={"version": 1}).status_code == 403
+    assert as_user("admin.dao").get(url).status_code == 200
+    assert as_user("operario.dao").put(url, json=condition_update_body(created)).status_code == 403
+    assert as_user("operario.dao").post(url + "/deactivate", json={"version": 1}).status_code == 403
     assert as_user("sin-permisos.test").get(URL.format(company=company)).status_code == 403

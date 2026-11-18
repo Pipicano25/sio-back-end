@@ -29,8 +29,8 @@ def test_full_timeline_with_intervals(buyer, world, fakes, make_sequence, make_d
     received = record(buyer, world, confirmed, "RECEIVED", 22, notes="Recibido conforme")
     assert received.status_code == 201
     event = received.json()
-    assert event["recorded_by_user_id"] == str(fakes.oc.members[(user_sub("compras.test"), world.company)])
-    assert event["created_by"] == user_sub("compras.test") and event["notes"] == "Recibido conforme"
+    assert event["recorded_by_user_id"] == str(fakes.oc.members[(user_sub("operario.dao"), world.company)])
+    assert event["created_by"] == user_sub("operario.dao") and event["notes"] == "Recibido conforme"
     assert record(buyer, world, confirmed, "AVAILABLE_FOR_SALE", 20).status_code == 201
 
     timeline = buyer.get(f"{base(world)}/purchases/{draft['id']}/lifecycle-events").json()
@@ -97,7 +97,7 @@ def test_permissions_and_assignment(as_user, buyer, world, fakes, make_draft) ->
     draft = make_draft()
     assert record(as_user("lector.sintetico"), world, draft, "ORDERED", 1).status_code == 403
     assert as_user("lector.sintetico").get(f"{base(world)}/purchases/{draft['id']}/lifecycle-events").status_code == 200
-    fakes.oc.assignments.discard((user_sub("compras.test"), world.branch))
+    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
     assert record(buyer, world, draft, "ORDERED", 1).status_code == 403
 
 

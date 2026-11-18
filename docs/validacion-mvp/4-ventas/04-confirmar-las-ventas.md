@@ -6,7 +6,7 @@ Ejercicio 4 — Ventas con precio por presentación (lista indicada y predetermi
 
 ## 1. Confirmar la venta V1
 
-Paso `V-03.V1` · usuario **`ventas.test`** · ítems de la FASE 10: 15
+Paso `V-03.V1` · usuario **`operario.dao`** · ítems de la FASE 10: 15
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_1>/confirmation
@@ -22,7 +22,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:update`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:update`)
 
 **Respuesta esperada:** `200`
 
@@ -32,7 +32,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 ## 2. Confirmar la venta V2
 
-Paso `V-03.V2` · usuario **`ventas.test`** · ítems de la FASE 10: 15
+Paso `V-03.V2` · usuario **`operario.dao`** · ítems de la FASE 10: 15
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_2>/confirmation
@@ -48,7 +48,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:update`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:update`)
 
 **Respuesta esperada:** `200`
 
@@ -58,7 +58,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 ## 3. Confirmar la venta V3
 
-Paso `V-03.V3` · usuario **`ventas.test`** · ítems de la FASE 10: 15
+Paso `V-03.V3` · usuario **`operario.dao`** · ítems de la FASE 10: 15
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_3>/confirmation
@@ -74,7 +74,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:update`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:update`)
 
 **Respuesta esperada:** `200`
 

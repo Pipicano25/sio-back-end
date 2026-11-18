@@ -6,7 +6,7 @@ Ejercicio 1 — Configuración de la empresa: organizaciones, personas, empresas
 
 ## 1. Registrar la persona cliente
 
-Paso `C-02.cliente` · usuario **`admin.test`** · ítems de la FASE 10: 5
+Paso `C-02.cliente` · usuario **`admin.sio`** · ítems de la FASE 10: 5
 
 ```http
 POST http://127.0.0.1:8101/api/v1/person-identities
@@ -25,7 +25,7 @@ POST http://127.0.0.1:8101/api/v1/person-identities
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:person_identities:create`), `ventas.test` (por `perm:party-identity:person_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:person_identities:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:person_identities:create`)
 
 **Por qué se hace así**
 
@@ -39,7 +39,7 @@ POST http://127.0.0.1:8101/api/v1/person-identities
 
 ## 2. Registrar la persona admin
 
-Paso `C-02.admin` · usuario **`admin.test`** · ítems de la FASE 10: 3
+Paso `C-02.admin` · usuario **`admin.sio`** · ítems de la FASE 10: 3
 
 ```http
 POST http://127.0.0.1:8101/api/v1/person-identities
@@ -58,7 +58,7 @@ POST http://127.0.0.1:8101/api/v1/person-identities
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:person_identities:create`), `ventas.test` (por `perm:party-identity:person_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:person_identities:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:person_identities:create`)
 
 **Por qué se hace así**
 
@@ -70,9 +70,9 @@ POST http://127.0.0.1:8101/api/v1/person-identities
 
 **Auditoría que deja:** `CREATE_PERSON_IDENTITY` (party-identity)
 
-## 3. Registrar la persona compras
+## 3. Registrar la persona operario
 
-Paso `C-02.compras` · usuario **`admin.test`** · ítems de la FASE 10: 3
+Paso `C-02.operario` · usuario **`admin.sio`** · ítems de la FASE 10: 3
 
 ```http
 POST http://127.0.0.1:8101/api/v1/person-identities
@@ -82,8 +82,8 @@ POST http://127.0.0.1:8101/api/v1/person-identities
 {
   "identification_country_id": "<PAIS_CO>",
   "identification_type": "CC",
-  "identification_number": "<CC_COMPRAS>",
-  "first_name": "COMPRASMVP<RUN_ID>",
+  "identification_number": "<CC_OPERARIO>",
+  "first_name": "OPERARIOMVP<RUN_ID>",
   "last_name": "DATO FICTICIO DE VALIDACION",
   "birth_date": "1990-01-01"
 }
@@ -91,7 +91,7 @@ POST http://127.0.0.1:8101/api/v1/person-identities
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:person_identities:create`), `ventas.test` (por `perm:party-identity:person_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:person_identities:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:person_identities:create`)
 
 **Por qué se hace así**
 
@@ -99,46 +99,13 @@ POST http://127.0.0.1:8101/api/v1/person-identities
 
 **Respuesta esperada:** `201`
 
-**Guardar:** `id` → `<PERSONA_COMPRAS>`
+**Guardar:** `id` → `<PERSONA_OPERARIO>`
 
 **Auditoría que deja:** `CREATE_PERSON_IDENTITY` (party-identity)
 
-## 4. Registrar la persona ventas
+## 4. Registrar la persona admin_dao
 
-Paso `C-02.ventas` · usuario **`admin.test`** · ítems de la FASE 10: 3
-
-```http
-POST http://127.0.0.1:8101/api/v1/person-identities
-```
-
-```json
-{
-  "identification_country_id": "<PAIS_CO>",
-  "identification_type": "CC",
-  "identification_number": "<CC_VENTAS>",
-  "first_name": "VENTASMVP<RUN_ID>",
-  "last_name": "DATO FICTICIO DE VALIDACION",
-  "birth_date": "1990-01-01"
-}
-```
-
-**Permiso que exige la URL:** `perm:party-identity:person_identities:create`
-
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:person_identities:create`), `ventas.test` (por `perm:party-identity:person_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:person_identities:create`)
-
-**Por qué se hace así**
-
-- Cada usuario operativo y el cliente persona se vinculan a una persona de Party Identity.
-
-**Respuesta esperada:** `201`
-
-**Guardar:** `id` → `<PERSONA_VENTAS>`
-
-**Auditoría que deja:** `CREATE_PERSON_IDENTITY` (party-identity)
-
-## 5. Registrar la persona supervisor
-
-Paso `C-02.supervisor` · usuario **`admin.test`** · ítems de la FASE 10: 3
+Paso `C-02.admin_dao` · usuario **`admin.sio`** · ítems de la FASE 10: 3
 
 ```http
 POST http://127.0.0.1:8101/api/v1/person-identities
@@ -148,8 +115,8 @@ POST http://127.0.0.1:8101/api/v1/person-identities
 {
   "identification_country_id": "<PAIS_CO>",
   "identification_type": "CC",
-  "identification_number": "<CC_SUPERVISOR>",
-  "first_name": "SUPERVISORMVP<RUN_ID>",
+  "identification_number": "<CC_ADMIN_DAO>",
+  "first_name": "ADMIN_DAOMVP<RUN_ID>",
   "last_name": "DATO FICTICIO DE VALIDACION",
   "birth_date": "1990-01-01"
 }
@@ -157,7 +124,7 @@ POST http://127.0.0.1:8101/api/v1/person-identities
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:person_identities:create`), `ventas.test` (por `perm:party-identity:person_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:person_identities:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:person_identities:create`)
 
 **Por qué se hace así**
 
@@ -165,39 +132,6 @@ POST http://127.0.0.1:8101/api/v1/person-identities
 
 **Respuesta esperada:** `201`
 
-**Guardar:** `id` → `<PERSONA_SUPERVISOR>`
-
-**Auditoría que deja:** `CREATE_PERSON_IDENTITY` (party-identity)
-
-## 6. Registrar la persona inventario
-
-Paso `C-02.inventario` · usuario **`admin.test`** · ítems de la FASE 10: 3
-
-```http
-POST http://127.0.0.1:8101/api/v1/person-identities
-```
-
-```json
-{
-  "identification_country_id": "<PAIS_CO>",
-  "identification_type": "CC",
-  "identification_number": "<CC_INVENTARIO>",
-  "first_name": "INVENTARIOMVP<RUN_ID>",
-  "last_name": "DATO FICTICIO DE VALIDACION",
-  "birth_date": "1990-01-01"
-}
-```
-
-**Permiso que exige la URL:** `perm:party-identity:person_identities:create`
-
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:party-identity:person_identities:create`), `ventas.test` (por `perm:party-identity:person_identities:create`), `supervisor.test` (por `perm:party-identity:all:create`), `inventario.test` (por `perm:party-identity:person_identities:create`)
-
-**Por qué se hace así**
-
-- Cada usuario operativo y el cliente persona se vinculan a una persona de Party Identity.
-
-**Respuesta esperada:** `201`
-
-**Guardar:** `id` → `<PERSONA_INVENTARIO>`
+**Guardar:** `id` → `<PERSONA_ADMIN_DAO>`
 
 **Auditoría que deja:** `CREATE_PERSON_IDENTITY` (party-identity)

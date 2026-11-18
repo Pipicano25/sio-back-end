@@ -17,9 +17,9 @@ def _list(client, company, **params):
 
 
 def test_only_company_products_and_active_by_default(as_user, company, fake_catalog, fake_oc):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     other = uuid4()
-    fake_oc.add_member(user_sub("admin.test"), other)
+    fake_oc.add_member(user_sub("admin.sio"), other)
 
     a = adopt(client, company, fake_catalog, internal_code="A", display_name="Bravo")
     b = adopt(client, company, fake_catalog, internal_code="B", display_name="Alfa")
@@ -36,7 +36,7 @@ def test_only_company_products_and_active_by_default(as_user, company, fake_cata
 
 
 def test_filters(as_user, company, fake_catalog):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     sellable = adopt(client, company, fake_catalog, internal_code="S", is_purchasable=False)
     purchasable = adopt(client, company, fake_catalog, internal_code="P", is_sellable=False)
     untracked = adopt(client, company, fake_catalog, internal_code="U", inventory_control_enabled=False)
@@ -50,7 +50,7 @@ def test_filters(as_user, company, fake_catalog):
 
 
 def test_search_is_partial_case_insensitive_and_escaped(as_user, company, fake_catalog):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     a = adopt(client, company, fake_catalog, internal_code="000045", display_name="Acetaminofén", reference_code="RF-1")
     b = adopt(client, company, fake_catalog, internal_code="022348", display_name="Leche NAN 100%")
 
@@ -63,7 +63,7 @@ def test_search_is_partial_case_insensitive_and_escaped(as_user, company, fake_c
 
 
 def test_pagination(as_user, company, fake_catalog):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     for index in range(5):
         adopt(client, company, fake_catalog, internal_code=f"P{index}", display_name=f"Producto {index}")
 
@@ -77,6 +77,6 @@ def test_pagination(as_user, company, fake_catalog):
 
 
 def test_inactive_company_still_readable(as_user, company, fake_catalog, fake_oc):
-    adopt(as_user("admin.test"), company, fake_catalog)
+    adopt(as_user("admin.sio"), company, fake_catalog)
     fake_oc.inactive_companies.add(company)
-    assert _list(as_user("supervisor.test"), company)["total_records"] == 1
+    assert _list(as_user("admin.dao"), company)["total_records"] == 1

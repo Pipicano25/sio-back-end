@@ -75,8 +75,8 @@ def test_failure_without_reason_is_valid() -> None:
 
 
 def test_texts_are_trimmed_and_limited() -> None:
-    prepared = prepare_event(make_event(username_snapshot="  admin.test  ", reason="  motivo "))
-    assert prepared.username_snapshot == "admin.test"
+    prepared = prepare_event(make_event(username_snapshot="  admin.sio  ", reason="  motivo "))
+    assert prepared.username_snapshot == "admin.sio"
     assert prepared.reason == "motivo"
 
     with pytest.raises(InvalidAuditEventError) as blank:

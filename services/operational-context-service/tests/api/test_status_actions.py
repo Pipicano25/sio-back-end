@@ -79,8 +79,8 @@ def test_supervisor_member_cannot_deactivate_but_can_reactivate_branch(
 ):
     company = create_company()
     branch = create_branch(company["id"])
-    make_member(company["id"], "supervisor.test")
-    supervisor = api_as(*SUPERVISOR, sub="supervisor.test")
+    make_member(company["id"], "admin.dao")
+    supervisor = api_as(*SUPERVISOR, sub="admin.dao")
     url = f"/api/v1/branches/{branch['id']}"
 
     assert supervisor.post(f"{url}/deactivate", json={"version": 1}).status_code == 403
@@ -89,10 +89,10 @@ def test_supervisor_member_cannot_deactivate_but_can_reactivate_branch(
 
 
 def test_company_status_actions_require_platform_scope(api_as, api, create_company, make_member):
-    """FR-043 (Fase B): ni siendo miembro, `supervisor.test` inactiva ni reactiva empresas."""
+    """FR-043 (Fase B): ni siendo miembro, `admin.dao` inactiva ni reactiva empresas."""
     company = create_company()
-    make_member(company["id"], "supervisor.test")
-    supervisor = api_as(*SUPERVISOR, sub="supervisor.test")
+    make_member(company["id"], "admin.dao")
+    supervisor = api_as(*SUPERVISOR, sub="admin.dao")
     url = f"/api/v1/companies/{company['id']}"
 
     assert supervisor.post(f"{url}/deactivate", json={"version": 1}).status_code == 403

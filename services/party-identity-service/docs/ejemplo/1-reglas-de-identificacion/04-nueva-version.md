@@ -27,8 +27,8 @@ POST /api/v1/identification-type-rules/<REGLA_PA>/versions
 
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `party-identity` solo tiene `read`; le falta `create`
 - ℹ️ Crear una **nueva versión** de una regla (`POST .../versions`) también exige `create`: el resultado es una regla nueva.
 
 **Por qué se hace así**
@@ -64,7 +64,7 @@ GET /api/v1/identification-type-rules/<REGLA_PA>
 
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:identification_type_rules:read`), `ventas.test` (por `perm:party-identity:identification_type_rules:read`), `inventario.test` (por `perm:party-identity:identification_type_rules:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:identification_type_rules:read`)
 
 **Por qué se hace así**
 

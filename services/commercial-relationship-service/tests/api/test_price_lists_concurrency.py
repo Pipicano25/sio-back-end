@@ -11,12 +11,12 @@ TOMORROW = (datetime.now(UTC) + timedelta(days=1)).isoformat()
 
 
 def test_two_simultaneous_default_lists_leave_one(app, user_token, as_user, company):
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     rows = [create_price_list(admin, company, code=f"L{index}") for index in range(2)]
 
     results = race(
         app,
-        user_token("admin.test"),
+        user_token("admin.sio"),
         [("PUT", f"/api/v1/price-lists/{row['id']}", price_list_update_body(row, is_default=True)) for row in rows],
     )
 
@@ -26,14 +26,14 @@ def test_two_simultaneous_default_lists_leave_one(app, user_token, as_user, comp
 
 
 def test_two_simultaneous_overlapping_prices(app, user_token, as_user, company, fake_catalog):
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     product = adopt(admin, company, fake_catalog)
     presentation = adopt_presentation(admin, company, fake_catalog, product)  # spec 019
     price_list = create_price_list(admin, company)
     body = {"price_list_id": price_list["id"], "company_product_id": product["id"], "unit_price": "1",
             "company_product_presentation_id": presentation["id"]}
 
-    results = race(app, user_token("admin.test"), [("POST", f"/api/v1/companies/{company}/price-list-items", body)] * 2)
+    results = race(app, user_token("admin.sio"), [("POST", f"/api/v1/companies/{company}/price-list-items", body)] * 2)
 
     assert sorted(response.status_code for response in results) == [201, 409], [r.text for r in results]
     conflict = next(response for response in results if response.status_code == 409)
@@ -41,7 +41,7 @@ def test_two_simultaneous_overlapping_prices(app, user_token, as_user, company, 
 
 
 def test_two_simultaneous_change_price_on_same_price(app, user_token, as_user, company, fake_catalog):
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     product = adopt(admin, company, fake_catalog)
     price_list = create_price_list(admin, company)
     current = create_price(admin, company, price_list, product, fake_catalog)
@@ -49,7 +49,7 @@ def test_two_simultaneous_change_price_on_same_price(app, user_token, as_user, c
 
     results = race(
         app,
-        user_token("admin.test"),
+        user_token("admin.sio"),
         [("POST", url, {"unit_price": price, "effective_from": TOMORROW, "version": 1}) for price in ("16000", "17000")],
     )
 

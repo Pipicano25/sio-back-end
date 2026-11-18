@@ -6,7 +6,7 @@ Ejercicio 4 — Ventas con precio por presentación (lista indicada y predetermi
 
 ## 1. Consultar la disponibilidad de la venta V2
 
-Paso `V-02.V2` · usuario **`ventas.test`** · ítems de la FASE 10: 14
+Paso `V-02.V2` · usuario **`operario.dao`** · ítems de la FASE 10: 14
 
 ```http
 GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_2>/availability
@@ -14,13 +14,13 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_2>/availabil
 
 **Permiso que exige la URL:** `perm:sales:sales:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:read`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:read`)
 
 **Respuesta esperada:** `200` — `all_available` = `true`
 
 ## 2. Consultar la disponibilidad de la venta V4
 
-Paso `V-02.V4` · usuario **`ventas.test`** · ítems de la FASE 10: 14
+Paso `V-02.V4` · usuario **`operario.dao`** · ítems de la FASE 10: 14
 
 ```http
 GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_4>/availability
@@ -28,6 +28,6 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_4>/availabil
 
 **Permiso que exige la URL:** `perm:sales:sales:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:read`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:read`)
 
 **Respuesta esperada:** `200` — `all_available` = `false`

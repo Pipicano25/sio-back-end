@@ -104,7 +104,7 @@ SEQUENCE = {"series_code": "PRINCIPAL", "prefix": "CP", "separator": "-", "initi
 CREATE_SEQUENCE = {
     "file": "01-crear-la-secuencia.md",
     "title": "Crear la secuencia mensual de la empresa",
-    "actor": "compras.test",
+    "actor": "operario.dao",
     "kind": ACCION,
     "method": "POST",
     "path": f"{P}/purchase-sequences",
@@ -122,7 +122,7 @@ def create_draft(file: str, title: str, body: dict, variable: str, why: list[str
     step = {
         "file": file,
         "title": title,
-        "actor": "compras.test",
+        "actor": "operario.dao",
         "kind": ACCION,
         "method": "POST",
         "path": f"{P}/purchases",
@@ -140,7 +140,7 @@ def receive(file: str, title: str, variable: str, version, idempotency: str, why
     step = {
         "file": file,
         "title": title,
-        "actor": "compras.test",
+        "actor": "operario.dao",
         "kind": ACCION,
         "method": "POST",
         "path": f"{P}/purchases/<{variable}>/receipt",
@@ -160,7 +160,7 @@ def confirm(file: str, title: str, variable: str, version: int, idempotency: str
     step = {
         "file": file,
         "title": title,
-        "actor": "compras.test",
+        "actor": "operario.dao",
         "kind": ACCION,
         "method": "POST",
         "path": f"{P}/purchases/<{variable}>/confirmation",
@@ -191,7 +191,7 @@ EXERCISES = [
             {
                 "file": "02-consultar-las-secuencias.md",
                 "title": "Consultar las secuencias de la empresa",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{P}/purchase-sequences",
@@ -201,7 +201,7 @@ EXERCISES = [
             {
                 "file": "03-segunda-secuencia-activa.md",
                 "title": "Intentar una segunda secuencia activa",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchase-sequences",
@@ -243,7 +243,7 @@ EXERCISES = [
             {
                 "file": "02-agregar-una-linea.md",
                 "title": "Agregar una línea",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/details",
@@ -254,7 +254,7 @@ EXERCISES = [
             {
                 "file": "03-version-vieja.md",
                 "title": "Agregar otra línea con una versión vieja",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/details",
@@ -265,7 +265,7 @@ EXERCISES = [
             {
                 "file": "04-producto-sin-control-de-inventario.md",
                 "title": "Agregar un producto sin control de inventario",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/details",
@@ -314,7 +314,7 @@ EXERCISES = [
             {
                 "file": "06-consultar-el-borrador.md",
                 "title": "Consultar el borrador",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{P}/purchases/<COMPRA>",
@@ -394,7 +394,7 @@ EXERCISES = [
             {
                 "file": "07-consultar-las-operaciones.md",
                 "title": "Consultar las operaciones de la compra",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{P}/purchases/<COMPRA>/operations",
@@ -446,7 +446,7 @@ EXERCISES = [
             {
                 "file": "03-anular-el-borrador.md",
                 "title": "Anular el borrador",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<BORRADOR>/cancellation",
@@ -460,7 +460,7 @@ EXERCISES = [
             {
                 "file": "06-anular-sin-recibir.md",
                 "title": "Anular la compra confirmada sin recibir",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<PENDIENTE>/cancellation",
@@ -486,7 +486,7 @@ EXERCISES = [
             {
                 "file": "10-anular-la-compra-recibida.md",
                 "title": "Anular la compra recibida",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/cancellation",
@@ -512,7 +512,7 @@ EXERCISES = [
             {
                 "file": "14-anular-con-inventario-consumido.md",
                 "title": "Anular cuando sus unidades ya se vendieron",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<VENDIDA>/cancellation",
@@ -543,7 +543,7 @@ EXERCISES = [
                 {
                     "file": file,
                     "title": title,
-                    "actor": "compras.test",
+                    "actor": "operario.dao",
                     "kind": ACCION,
                     "method": "POST",
                     "path": f"{P}/purchases/<COMPRA>/lifecycle-events",
@@ -562,7 +562,7 @@ EXERCISES = [
             {
                 "file": "07a-hito-sin-recepcion.md",
                 "title": "Registrar el hito de recepción antes de recibir",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/lifecycle-events",
@@ -581,7 +581,7 @@ EXERCISES = [
             {
                 "file": "08-recepcion.md",
                 "title": "Registrar la recepción",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/lifecycle-events",
@@ -592,7 +592,7 @@ EXERCISES = [
             {
                 "file": "09-disponible.md",
                 "title": "Registrar la disponibilidad para la venta",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/lifecycle-events",
@@ -603,7 +603,7 @@ EXERCISES = [
             {
                 "file": "10-linea-de-tiempo.md",
                 "title": "Consultar la línea de tiempo",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{P}/purchases/<COMPRA>/lifecycle-events",
@@ -625,7 +625,7 @@ EXERCISES = [
             {
                 "file": "04-listar-confirmadas.md",
                 "title": "Listar las compras confirmadas",
-                "actor": "supervisor.test",
+                "actor": "admin.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{P}/purchases?status=CONFIRMED&number=CP-202611-000001",
@@ -635,7 +635,7 @@ EXERCISES = [
             {
                 "file": "05-otra-empresa.md",
                 "title": "Consultar una compra desde otra empresa",
-                "actor": "supervisor.test",
+                "actor": "admin.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/companies/{OTHER_COMPANY}/purchases/<COMPRA>",
@@ -671,7 +671,7 @@ EXERCISES = [
             {
                 "file": "02-ajustar-la-tasa-de-una-linea.md",
                 "title": "Agregar una línea con la tasa de la factura (Admin)",
-                "actor": "supervisor.test",
+                "actor": "admin.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/details",
@@ -687,7 +687,7 @@ EXERCISES = [
             {
                 "file": "03-comprador-sin-permiso-de-ajuste.md",
                 "title": "Intentar ajustar la tasa como empleado",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/details",
@@ -698,7 +698,7 @@ EXERCISES = [
             {
                 "file": "04-tasa-fuera-de-rango.md",
                 "title": "Ajustar una tasa fuera de rango",
-                "actor": "supervisor.test",
+                "actor": "admin.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/details",
@@ -709,7 +709,7 @@ EXERCISES = [
             {
                 "file": "05-presentacion-repetida.md",
                 "title": "Agregar otra línea con la misma presentación",
-                "actor": "compras.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{P}/purchases/<COMPRA>/details",

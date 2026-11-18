@@ -11,7 +11,7 @@ from tests.api.helpers import at, company_events, register
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 def url(company) -> str:
@@ -110,7 +110,7 @@ def test_invalid_parameters(admin, company, params) -> None:
 
 def test_get_by_id_and_fields(admin, emitter, company) -> None:
     event = register(
-        emitter, company_id=str(company), new_values={"api_key": "x", "name": "n"}, username_snapshot="admin.test"
+        emitter, company_id=str(company), new_values={"api_key": "x", "name": "n"}, username_snapshot="admin.sio"
     )
 
     response = admin.get(f"{url(company)}/{event['id']}")
@@ -127,7 +127,7 @@ def test_event_of_other_company_or_unknown_is_404(admin, emitter, company, fake_
     from tests.conftest import user_sub
 
     other = uuid4()
-    fake_oc.add_member(user_sub("admin.test"), other)
+    fake_oc.add_member(user_sub("admin.sio"), other)
     foreign = register(emitter, company_id=str(other))
 
     for audit_id in (foreign["id"], str(uuid4())):

@@ -42,7 +42,7 @@ def client():
         pytest.skip("Defina KEYCLOAK_TEST_USER_PASSWORD (o infrastructure/.env).")
     with httpx.Client(timeout=15) as http:
         token = http.post(TOKEN_URL, data={"grant_type": "password", "client_id": "sio-web", "scope": "openid",
-                                           "username": "admin.test", "password": password}).json()["access_token"]
+                                           "username": "admin.sio", "password": password}).json()["access_token"]
         http.headers["Authorization"] = f"Bearer {token}"
         yield http
 

@@ -81,10 +81,10 @@ def client():
         try:
             token = http.post(TOKEN_URL, data={
                 "grant_type": "password", "client_id": "sio-web", "scope": "openid",
-                "username": "admin.test", "password": password,
+                "username": "admin.sio", "password": password,
             }).raise_for_status().json()["access_token"]
         except (httpx.HTTPError, KeyError):
-            pytest.skip("No fue posible obtener el token de admin.test en Keycloak.")
+            pytest.skip("No fue posible obtener el token de admin.sio en Keycloak.")
 
         http.headers["Authorization"] = f"Bearer {token}"
         yield http

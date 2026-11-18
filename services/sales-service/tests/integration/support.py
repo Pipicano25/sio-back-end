@@ -377,10 +377,9 @@ def build_world(admin: httpx.Client) -> RealWorld:
     company_id = company.json()["id"]
     assert company.json()["default_currency"] == "COP", company.json()
 
-    admin_user = _member(admin, company_id, "admin.test", _person(admin, colombia, "A")[0])
-    seller = _member(admin, company_id, "ventas.test", _person(admin, colombia, "V")[0])
-    supervisor = _member(admin, company_id, "supervisor.test", _person(admin, colombia, "S")[0])
-    _member(admin, company_id, "compras.test", _person(admin, colombia, "R")[0])
+    admin_user = _member(admin, company_id, "admin.sio", _person(admin, colombia, "A")[0])
+    seller = _member(admin, company_id, "operario.dao", _person(admin, colombia, "V")[0])
+    supervisor = _member(admin, company_id, "admin.dao", _person(admin, colombia, "S")[0])
 
     branch = admin.post(f"{OPERATIONAL_CONTEXT}/companies/{company_id}/branches", json={
         "code": f"SAL{RUN_ID}", "name": f"Almacén ficticio de validación VENTAS {RUN_ID}",

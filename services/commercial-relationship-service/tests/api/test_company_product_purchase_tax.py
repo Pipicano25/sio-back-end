@@ -19,7 +19,7 @@ TAX_PERMISSION = "perm:commercial-relationship:company_product_purchase_taxes:up
 
 @pytest.fixture
 def supervisor(as_user):
-    return as_user("supervisor.test")
+    return as_user("admin.dao")
 
 
 def test_new_product_has_tax_not_configured(supervisor, company, fake_catalog) -> None:
@@ -98,13 +98,13 @@ def test_batch_limits_and_ownership(supervisor, as_user, company, other_company,
     repeated = supervisor.post(BATCH.format(company=company), json={"items": [item, item]})
     assert repeated.status_code == 422
 
-    admin = as_user("admin.test")
-    fake_oc.add_member(user_sub("admin.test"), other_company)
+    admin = as_user("admin.sio")
+    fake_oc.add_member(user_sub("admin.sio"), other_company)
     response = admin.post(BATCH.format(company=other_company), json={"items": [item]})  # producto de otra empresa
     assert response.status_code == 422 and code_of(response) == "COMPANY_PRODUCT_NOT_FOUND"
 
 
-@pytest.mark.parametrize("username", ["compras.test", "ventas.test", "inventario.test"])
+@pytest.mark.parametrize("username", ["operario.dao"])
 def test_only_admins_and_supervisors_configure_the_tax(as_user, supervisor, company, fake_catalog, username) -> None:
     product = adopt(supervisor, company, fake_catalog)
     client = as_user(username)

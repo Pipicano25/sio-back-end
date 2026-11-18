@@ -20,7 +20,7 @@ def test_company_history_in_chronological_order(as_user, emitter, company, fake_
     register(emitter, company_id=str(company), entity_id=entity, entity_type="PriceList", occurred_at=at(5))
 
     url = f"/api/v1/companies/{company}/entity-history/PriceListItem/{entity}"
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     body = admin.get(url).json()
 
     assert [item["id"] for item in body["items"]] == [created["id"], update["id"], failure["id"], change["id"]]
@@ -38,11 +38,11 @@ def test_company_history_in_chronological_order(as_user, emitter, company, fake_
 
 def test_empty_or_foreign_entity_returns_empty_page(as_user, emitter, company, fake_oc) -> None:
     other = uuid4()
-    fake_oc.add_member(user_sub("admin.test"), other)
+    fake_oc.add_member(user_sub("admin.sio"), other)
     entity = str(uuid4())
     register(emitter, company_id=str(other), entity_id=entity)
 
-    response = as_user("admin.test").get(f"/api/v1/companies/{company}/entity-history/PriceListItem/{entity}")
+    response = as_user("admin.sio").get(f"/api/v1/companies/{company}/entity-history/PriceListItem/{entity}")
 
     assert response.status_code == 200
     assert response.json()["items"] == [] and response.json()["total_records"] == 0
@@ -53,7 +53,7 @@ def test_platform_history_is_separate(as_user, emitter, company) -> None:
     platform = register(emitter, company_id=None, entity_type="GlobalProduct", entity_id=entity)
     register(emitter, company_id=str(company), entity_type="GlobalProduct", entity_id=entity)
 
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     items = admin.get(f"/api/v1/platform-entity-history/GlobalProduct/{entity}").json()["items"]
     assert [item["id"] for item in items] == [platform["id"]]
 
@@ -62,5 +62,5 @@ def test_platform_history_is_separate(as_user, emitter, company) -> None:
 
 
 def test_invalid_entity_type_in_path(as_user, company) -> None:
-    response = as_user("admin.test").get(f"/api/v1/companies/{company}/entity-history/price_list/{uuid4()}")
+    response = as_user("admin.sio").get(f"/api/v1/companies/{company}/entity-history/price_list/{uuid4()}")
     assert response.status_code == 422

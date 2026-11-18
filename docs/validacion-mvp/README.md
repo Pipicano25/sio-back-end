@@ -35,7 +35,7 @@ tasa de compra de los productos es 0 % (spec 021) y las ventas no llevan impuest
 
 | Ejercicio | Llamadas |
 | --- | --- |
-| [1 — Configuración de la empresa: organizaciones, personas, empresas, sucursales y usuarios operativos](1-configuracion/ORDEN.md) | 31 |
+| [1 — Configuración de la empresa: organizaciones, personas, empresas, sucursales y usuarios operativos](1-configuracion/ORDEN.md) | 23 |
 | [2 — Relación comercial y precios: proveedor, cliente, productos, adopción, presentaciones y listas](2-relacion-comercial-y-precios/ORDEN.md) | 27 |
 | [3 — Compras e inventario: secuencias, compras de contado, confirmación, recepción física (entradas), saldos, kardex y capas](3-compras-e-inventario/ORDEN.md) | 19 |
 | [4 — Ventas con precio por presentación (lista indicada y predeterminada), rechazos, costo FIFO y margen](4-ventas/ORDEN.md) | 31 |

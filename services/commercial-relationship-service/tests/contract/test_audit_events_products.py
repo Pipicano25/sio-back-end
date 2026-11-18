@@ -11,14 +11,14 @@ TECHNICAL = {"id", "version", "created_at", "created_by", "updated_at", "updated
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 def check(event: dict, action: str, entity_type: str, entity_id: str, company) -> None:
     assert event["action"] == action and event["entity_type"] == entity_type
     assert event["entity_id"] == entity_id and event["company_id"] == str(company)
     assert event["result"] == "SUCCESS" and event["branch_id"] is None
-    assert event["username_snapshot"] == "admin.test"
+    assert event["username_snapshot"] == "admin.sio"
     assert event["redacted_paths"] == []
 
 

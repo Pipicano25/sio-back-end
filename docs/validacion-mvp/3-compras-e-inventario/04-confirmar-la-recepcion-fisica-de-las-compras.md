@@ -6,7 +6,7 @@ Ejercicio 3 — Compras e inventario: secuencias, compras de contado, confirmaci
 
 ## 1. Confirmar la recepción física completa de la compra P1
 
-Paso `P-02R.P1` · usuario **`compras.test`** · ítems de la FASE 10: 10, 11
+Paso `P-02R.P1` · usuario **`operario.dao`** · ítems de la FASE 10: 10, 11
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases/<COMPRA_1>/receipt
@@ -23,7 +23,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:update`), `ventas.test` (por `perm:purchase:purchases:update`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchases:update`)
 
 **Por qué se hace así**
 
@@ -37,7 +37,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 ## 2. Confirmar la recepción física completa de la compra P2
 
-Paso `P-02R.P2` · usuario **`compras.test`** · ítems de la FASE 10: 10, 11
+Paso `P-02R.P2` · usuario **`operario.dao`** · ítems de la FASE 10: 10, 11
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases/<COMPRA_2>/receipt
@@ -54,7 +54,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:update`), `ventas.test` (por `perm:purchase:purchases:update`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchases:update`)
 
 **Por qué se hace así**
 
@@ -68,7 +68,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 ## 3. Confirmar la recepción física completa de la compra P3
 
-Paso `P-02R.P3` · usuario **`compras.test`** · ítems de la FASE 10: 10, 11
+Paso `P-02R.P3` · usuario **`operario.dao`** · ítems de la FASE 10: 10, 11
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases/<COMPRA_3>/receipt
@@ -85,7 +85,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:update`), `ventas.test` (por `perm:purchase:purchases:update`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchases:update`)
 
 **Por qué se hace así**
 

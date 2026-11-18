@@ -23,11 +23,9 @@ from .run_context import RunContext
 
 RENEW_BEFORE_SECONDS = 60.0
 TEST_USERS = (
-    "admin.test",
-    "compras.test",
-    "ventas.test",
-    "supervisor.test",
-    "inventario.test",
+    "admin.sio",
+    "admin.dao",
+    "operario.dao",
 )
 WEB_CLIENT = "sio-web"
 DEFAULT_TIMEOUT = 30.0

@@ -18,7 +18,7 @@ def test_one_item_per_requested_product_with_active_policy_or_null(as_user, worl
     insert_policy(test_engine, world.company, world.branch, p2, "3", active=False)
     insert_policy(test_engine, world.company, world.other_branch, p3, "7")
 
-    response = as_user("inventario.test").post(url(world), json={"company_product_ids": [str(p1), str(p2), str(p3), str(p1)]})
+    response = as_user("operario.dao").post(url(world), json={"company_product_ids": [str(p1), str(p2), str(p3), str(p1)]})
 
     assert response.status_code == 200, response.text
     items = response.json()["items"]
@@ -31,7 +31,7 @@ def test_one_item_per_requested_product_with_active_policy_or_null(as_user, worl
 def test_other_company_data_is_never_returned(as_user, world, test_engine) -> None:
     """Las filas se filtran por la empresa de la ruta: una sucursal o un producto ajenos no aportan datos."""
     insert_policy(test_engine, world.other_company, world.other_company_branch, world.other_company_product, "9")
-    response = as_user("inventario.test").post(
+    response = as_user("operario.dao").post(
         url(world, world.other_company_branch), json={"company_product_ids": [str(world.other_company_product)]}
     )
     assert response.status_code == 200
@@ -39,7 +39,7 @@ def test_other_company_data_is_never_returned(as_user, world, test_engine) -> No
 
 
 def test_limits_permissions_and_technical_lookup(as_user, as_token, service_token, world) -> None:
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     assert reader.post(url(world), json={"company_product_ids": [str(uuid4()) for _ in range(101)]}).status_code == 422
     assert reader.post(url(world), json={"company_product_ids": []}).status_code == 422
     assert reader.post(url(world), json={"company_product_ids": [str(uuid4())], "x": 1}).status_code == 422

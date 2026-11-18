@@ -28,10 +28,10 @@ def _put(client, customer, **overrides):
 
 
 def test_person_customer_stores_only_uuid(as_user, company, fake_party):
-    customer = person_customer(as_user("supervisor.test"), company, fake_party)
+    customer = person_customer(as_user("admin.dao"), company, fake_party)
     assert customer["customer_kind"] == "PERSON" and customer["status"] == "ACTIVE"
     assert customer["organization_identity_id"] is None
-    assert customer["created_by"] == user_sub("supervisor.test")
+    assert customer["created_by"] == user_sub("admin.dao")
     assert not {"first_name", "last_name", "email", "identification_number"} & set(customer)
 
 
@@ -40,7 +40,7 @@ def test_organization_customer_with_contact(as_user, company, fake_party):
     fake_party.organizations[organization] = "ACTIVE"
     fake_party.add_contact(contact, organization)
     response = _post(
-        as_user("admin.test"),
+        as_user("admin.sio"),
         company,
         {
             "customer_kind": "ORGANIZATION",
@@ -66,7 +66,7 @@ def test_invalid_contact(as_user, company, fake_party, variant):
         fake_party.add_contact(contact, organization, is_active=False)
 
     response = _post(
-        as_user("admin.test"),
+        as_user("admin.sio"),
         company,
         {"customer_kind": "ORGANIZATION", "organization_identity_id": str(organization),
          "internal_code": "X", "display_name": "Y", "preferred_contact_person_id": str(contact)},
@@ -79,7 +79,7 @@ def test_contact_not_allowed_for_person(as_user, company, fake_party):
     person = uuid4()
     fake_party.persons[person] = "ACTIVE"
     response = _post(
-        as_user("admin.test"),
+        as_user("admin.sio"),
         company,
         {"customer_kind": "PERSON", "person_identity_id": str(person), "internal_code": "X",
          "display_name": "Y", "preferred_contact_person_id": str(uuid4())},
@@ -101,13 +101,13 @@ def test_identity_mismatch(as_user, company, body):
     for key in ("person_identity_id", "organization_identity_id"):
         if key in payload:
             payload[key] = str(uuid4())
-    response = _post(as_user("admin.test"), company, payload)
+    response = _post(as_user("admin.sio"), company, payload)
     assert response.status_code == 422
     assert code_of(response) == "CUSTOMER_IDENTITY_MISMATCH"
 
 
 def test_identity_not_found_and_inactive(as_user, company, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     missing = _post(client, company, {"customer_kind": "PERSON", "person_identity_id": str(uuid4()),
                                       "internal_code": "A", "display_name": "B"})
     assert code_of(missing) == "PERSON_IDENTITY_NOT_FOUND"
@@ -127,7 +127,7 @@ def test_identity_not_found_and_inactive(as_user, company, fake_party):
 
 
 def test_duplicate_customer_in_any_state_and_duplicate_code(as_user, company, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     customer = person_customer(client, company, fake_party, internal_code="CLI-1")
     client.post(f"/api/v1/company-customers/{customer['id']}/deactivate", json={"version": 1})
 
@@ -145,7 +145,7 @@ def test_duplicate_customer_in_any_state_and_duplicate_code(as_user, company, fa
 def test_self_relationship(as_user, company, fake_oc, fake_party):
     organization = fake_oc.organizations[company]
     fake_party.organizations[organization] = "ACTIVE"
-    response = _post(as_user("admin.test"), company, {"customer_kind": "ORGANIZATION",
+    response = _post(as_user("admin.sio"), company, {"customer_kind": "ORGANIZATION",
                                                       "organization_identity_id": str(organization),
                                                       "internal_code": "YO", "display_name": "Yo mismo"})
     assert response.status_code == 422
@@ -154,12 +154,12 @@ def test_self_relationship(as_user, company, fake_oc, fake_party):
 
 
 def test_person_does_not_query_company(as_user, company, fake_oc, fake_party):
-    person_customer(as_user("admin.test"), company, fake_party)
+    person_customer(as_user("admin.sio"), company, fake_party)
     assert fake_oc.company_calls == []
 
 
 def test_provider_failures(as_user, company, fake_oc, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     organization = uuid4()
     fake_party.organizations[organization] = "ACTIVE"
     body = {"customer_kind": "ORGANIZATION", "organization_identity_id": str(organization),
@@ -184,7 +184,7 @@ def test_provider_failures(as_user, company, fake_oc, fake_party):
 
 
 def test_update_and_immutables(as_user, company, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     customer = organization_customer(client, company, fake_party)
     organization = customer["organization_identity_id"]
     contact = fake_party.add_contact(uuid4(), UUID(organization))
@@ -206,24 +206,24 @@ def test_update_and_immutables(as_user, company, fake_party):
 
 
 def test_status_actions(as_user, company, fake_party):
-    customer = person_customer(as_user("admin.test"), company, fake_party)
+    customer = person_customer(as_user("admin.sio"), company, fake_party)
 
-    assert as_user("ventas.test").post(f"/api/v1/company-customers/{customer['id']}/deactivate",
+    assert as_user("operario.dao").post(f"/api/v1/company-customers/{customer['id']}/deactivate",
                                        json={"version": 1}).status_code == 403
-    inactive = as_user("admin.test").post(f"/api/v1/company-customers/{customer['id']}/deactivate", json={"version": 1})
+    inactive = as_user("admin.sio").post(f"/api/v1/company-customers/{customer['id']}/deactivate", json={"version": 1})
     assert inactive.status_code == 200 and inactive.json()["status"] == "INACTIVE"
 
     fake_party.persons[UUID(customer["person_identity_id"])] = "INACTIVE"
-    rejected = as_user("supervisor.test").post(f"/api/v1/company-customers/{customer['id']}/reactivate", json={"version": 2})
+    rejected = as_user("admin.dao").post(f"/api/v1/company-customers/{customer['id']}/reactivate", json={"version": 2})
     assert code_of(rejected) == "PERSON_IDENTITY_INACTIVE"
 
     fake_party.persons[UUID(customer["person_identity_id"])] = "ACTIVE"
-    reactivated = as_user("supervisor.test").post(f"/api/v1/company-customers/{customer['id']}/reactivate", json={"version": 2})
+    reactivated = as_user("admin.dao").post(f"/api/v1/company-customers/{customer['id']}/reactivate", json={"version": 2})
     assert reactivated.status_code == 200 and reactivated.json()["status"] == "ACTIVE"
 
 
 def test_reactivation_keeps_inactive_contact(as_user, company, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     organization, contact = uuid4(), uuid4()
     fake_party.organizations[organization] = "ACTIVE"
     fake_party.add_contact(contact, organization)
@@ -239,7 +239,7 @@ def test_reactivation_keeps_inactive_contact(as_user, company, fake_party):
 
 
 def test_list_filters_and_search(as_user, company, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     person = person_customer(client, company, fake_party, internal_code="P-1", display_name="Ana Ficticia")
     org = organization_customer(client, company, fake_party, internal_code="O-1", display_name="Bodega Ficticia")
 
@@ -256,7 +256,7 @@ def test_list_filters_and_search(as_user, company, fake_party):
 
 def test_put_on_inactive_customer_and_code_reuse(as_user, company, fake_party):
     """DS-17: PUT sobre INACTIVE no reactiva; flujo de reutilización del código."""
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     a = person_customer(client, company, fake_party, internal_code="CLI-100")
     inactive = client.post(f"/api/v1/company-customers/{a['id']}/deactivate", json={"version": 1}).json()
 
@@ -277,6 +277,6 @@ def test_put_on_inactive_customer_and_code_reuse(as_user, company, fake_party):
 
 
 def test_put_with_inactive_company(as_user, company, fake_party, fake_oc):
-    customer = person_customer(as_user("admin.test"), company, fake_party)
+    customer = person_customer(as_user("admin.sio"), company, fake_party)
     fake_oc.inactive_companies.add(company)
-    assert code_of(_put(as_user("admin.test"), customer, display_name="x")) == "COMPANY_INACTIVE"
+    assert code_of(_put(as_user("admin.sio"), customer, display_name="x")) == "COMPANY_INACTIVE"

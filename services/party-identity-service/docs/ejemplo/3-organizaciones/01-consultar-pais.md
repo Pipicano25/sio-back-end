@@ -18,7 +18,7 @@ GET http://localhost:8000/global-countries?iso3_code=COL
 
 **Permiso que exige la URL:** `perm:geography:global_countries:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:geography:all:read`), `compras.test` (por `perm:geography:all:read`), `ventas.test` (por `perm:geography:all:read`), `inventario.test` (por `perm:geography:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:geography:all:read`), `operario.dao` (por `perm:geography:all:read`)
 
 **Por qué se hace así**
 

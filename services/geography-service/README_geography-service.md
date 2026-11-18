@@ -70,7 +70,7 @@ perm:geography:all:all
 perm:all:all:all
 ```
 
-Los grupos de Keycloak no se hardcodean en el microservicio. Si, por ejemplo, solo `admin.test` y `supervisor.test` deben eliminar países, esa asignación se hace en Keycloak otorgando a esos grupos `perm:geography:global_countries:delete` o un wildcard equivalente.
+Los grupos de Keycloak no se hardcodean en el microservicio. Si, por ejemplo, solo `admin.sio` y `admin.dao` deben eliminar países, esa asignación se hace en Keycloak otorgando a esos grupos `perm:geography:global_countries:delete` o un wildcard equivalente.
 
 ## Variables de entorno
 

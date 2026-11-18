@@ -2,7 +2,7 @@
 
 Aislamiento (`contracts/e2e-scenarios.md` §3, research R-11): cada lectura o escritura la hace un usuario
 **con** el permiso y **sin** membresía en la empresa consultada, para que el rechazo se deba al
-aislamiento: `inventario.test` (grupo `empleado`, solo en B) sobre A y `admin.test` (solo en A) sobre
+aislamiento: `admin.dao` (grupo `admin`, solo en B) sobre A y `admin.sio` (solo en A) sobre
 la auditoría de B. Códigos de §3 (completados en T042): `404` en todos los servicios.
 
 Permisos (§4): S-01..S-07. Ningún caso cambia datos.
@@ -23,35 +23,35 @@ def _iso(step_id: str, title: str, user: str, permission: str, service: str, met
 
 
 ISOLATION = [
-    _iso("I-01.empresa", "inventario.test consulta la empresa A", "inventario.test", "perm:operational-context:companies:read",
+    _iso("I-01.empresa", "admin.dao consulta la empresa A", "admin.dao", "perm:operational-context:companies:read",
          "operational-context", "GET", "/companies/{empresa_a}"),
-    _iso("I-01.sucursales", "inventario.test consulta las sucursales de A", "inventario.test", "perm:operational-context:branches:read",
+    _iso("I-01.sucursales", "admin.dao consulta las sucursales de A", "admin.dao", "perm:operational-context:branches:read",
          "operational-context", "GET", "/companies/{empresa_a}/branches"),
-    _iso("I-01.usuarios", "inventario.test consulta los usuarios operativos de A", "inventario.test", "perm:operational-context:application_users:read",
+    _iso("I-01.usuarios", "admin.dao consulta los usuarios operativos de A", "admin.dao", "perm:operational-context:application_users:read",
          "operational-context", "GET", "/companies/{empresa_a}/application-users"),
-    _iso("I-02.clientes", "inventario.test consulta los clientes de A", "inventario.test", "perm:commercial-relationship:company_customers:read",
+    _iso("I-02.clientes", "admin.dao consulta los clientes de A", "admin.dao", "perm:commercial-relationship:company_customers:read",
          "commercial-relationship", "GET", "/companies/{empresa_a}/company-customers"),
-    _iso("I-02.proveedores", "inventario.test consulta los proveedores de A", "inventario.test", "perm:commercial-relationship:company_suppliers:read",
+    _iso("I-02.proveedores", "admin.dao consulta los proveedores de A", "admin.dao", "perm:commercial-relationship:company_suppliers:read",
          "commercial-relationship", "GET", "/companies/{empresa_a}/company-suppliers"),
-    _iso("I-02.productos", "inventario.test consulta los productos de A", "inventario.test", "perm:commercial-relationship:company_products:read",
+    _iso("I-02.productos", "admin.dao consulta los productos de A", "admin.dao", "perm:commercial-relationship:company_products:read",
          "commercial-relationship", "GET", "/companies/{empresa_a}/company-products"),
-    _iso("I-02.listas", "inventario.test consulta las listas de precios de A", "inventario.test", "perm:commercial-relationship:price_lists:read",
+    _iso("I-02.listas", "admin.dao consulta las listas de precios de A", "admin.dao", "perm:commercial-relationship:price_lists:read",
          "commercial-relationship", "GET", "/companies/{empresa_a}/price-lists"),
-    _iso("I-03.compras", "inventario.test consulta las compras de A", "inventario.test", "perm:purchase:purchases:read",
+    _iso("I-03.compras", "admin.dao consulta las compras de A", "admin.dao", "perm:purchase:purchases:read",
          "purchase", "GET", "/companies/{empresa_a}/purchases"),
-    _iso("I-03.compra", "inventario.test consulta la compra P1", "inventario.test", "perm:purchase:purchases:read",
+    _iso("I-03.compra", "admin.dao consulta la compra P1", "admin.dao", "perm:purchase:purchases:read",
          "purchase", "GET", "/companies/{empresa_a}/purchases/{compra_1}"),
-    _iso("I-04.ventas", "inventario.test consulta las ventas de A", "inventario.test", "perm:sales:sales:read",
+    _iso("I-04.ventas", "admin.dao consulta las ventas de A", "admin.dao", "perm:sales:sales:read",
          "sales", "GET", "/companies/{empresa_a}/sales"),
-    _iso("I-04.venta", "inventario.test consulta la venta V2", "inventario.test", "perm:sales:sales:read",
+    _iso("I-04.venta", "admin.dao consulta la venta V2", "admin.dao", "perm:sales:sales:read",
          "sales", "GET", "/companies/{empresa_a}/sales/{venta_2}"),
-    _iso("I-05.saldos", "inventario.test consulta los saldos de A1", "inventario.test", "perm:inventory:balances:read",
+    _iso("I-05.saldos", "admin.dao consulta los saldos de A1", "admin.dao", "perm:inventory:balances:read",
          "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/balances"),
-    _iso("I-05.kardex", "inventario.test consulta el kardex del producto A en A1", "inventario.test", "perm:inventory:movements:read",
+    _iso("I-05.kardex", "admin.dao consulta el kardex del producto A en A1", "admin.dao", "perm:inventory:movements:read",
          "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/kardex/{producto_empresa_a}"),
-    _iso("I-05.valoracion", "inventario.test consulta la valoración de A1", "inventario.test", "perm:inventory:valuation:read",
+    _iso("I-05.valoracion", "admin.dao consulta la valoración de A1", "admin.dao", "perm:inventory:valuation:read",
          "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/valuation"),
-    _iso("I-05.ajuste", "inventario.test intenta un ajuste en A1", "inventario.test", "perm:inventory:adjustments:create",
+    _iso("I-05.ajuste", "admin.dao intenta un ajuste en A1", "admin.dao", "perm:inventory:adjustments:create",
          "inventory", "POST", "/companies/{empresa_a}/inventory-adjustments",
          body={
              "adjustment_key": "{clave_ajuste}",
@@ -61,9 +61,9 @@ ISOLATION = [
              "quantity": "1",
              "reason": "Intento de ajuste ajeno (validación MVP {run}, dato ficticio)",
          }),
-    _iso("I-06.eventos", "admin.test consulta los eventos de auditoría de B", "admin.test", "perm:audit:audit-events:read",
+    _iso("I-06.eventos", "admin.sio consulta los eventos de auditoría de B", "admin.sio", "perm:audit:audit-events:read",
          "audit", "GET", "/companies/{empresa_b}/audit-events"),
-    _iso("I-06.historial", "admin.test consulta el historial de la empresa B", "admin.test", "perm:audit:audit-events:read",
+    _iso("I-06.historial", "admin.sio consulta el historial de la empresa B", "admin.sio", "perm:audit:audit-events:read",
          "audit", "GET", "/companies/{empresa_b}/entity-history/Company/{empresa_b}"),
 ]
 
@@ -81,13 +81,12 @@ def _perm(step_id: str, title: str, user: str, permission: str, service: str, me
 
 
 PERMISSIONS = [
-    # Spec 026: ventas.test, compras.test e inventario.test son del mismo grupo (`empleado`), así que los rechazos se
-    # observan entre grupos. Todos son POST que el servicio rechaza antes de leer el cuerpo: ningún caso cambia datos.
-    _perm("S-01", "ventas.test (Empleado) intenta crear una empresa", "ventas.test", "perm:operational-context:companies:create",
+    # Los rechazos se observan entre grupos (superadmin, admin, empleado). Todos son POST que el servicio rechaza antes de leer el cuerpo: ningún caso cambia datos.
+    _perm("S-01", "operario.dao (Empleado) intenta crear una empresa", "operario.dao", "perm:operational-context:companies:create",
           "operational-context", "POST", "/companies", 403, {}),
-    _perm("S-02", "compras.test (Empleado) intenta crear una categoría del catálogo global", "compras.test",
+    _perm("S-02", "operario.dao (Empleado) intenta crear una categoría del catálogo global", "operario.dao",
           "perm:product-catalog:categories:create", "product-catalog", "POST", "/categories", 403, {}),
-    _perm("S-03", "supervisor.test (Admin) intenta crear una empresa", "supervisor.test",
+    _perm("S-03", "admin.dao (Admin) intenta crear una empresa", "admin.dao",
           "perm:operational-context:platform:administer", "operational-context", "POST", "/companies", 403, {}),
     _perm("S-04.crear", "La cuenta de servicio sales-service intenta registrar una venta", "service-account-sales-service",
           "perm:sales:sales:create", "sales", "POST", "/companies/{empresa_a}/sales", 403, SALE_BODY),

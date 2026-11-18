@@ -23,8 +23,8 @@ def test_create_draft_with_lines(buyer, world, fakes) -> None:
     assert purchase["status"] == "DRAFT" and purchase["number"] is None and purchase["inventory_operation_id"] is None
     assert purchase["version"] == 1
     assert purchase["currency_code"] == "COP"
-    assert purchase["created_by"] == user_sub("compras.test")
-    assert purchase["created_by_user_id"] == str(fakes.oc.members[(user_sub("compras.test"), world.company)])
+    assert purchase["created_by"] == user_sub("operario.dao")
+    assert purchase["created_by_user_id"] == str(fakes.oc.members[(user_sub("operario.dao"), world.company)])
     assert purchase["payment_condition_code_snapshot"] == "CASH" and purchase["payment_terms_days_snapshot"] == 0
     assert purchase["due_date"] == purchase["operation_date"]
     assert purchase["supplier_name_snapshot"] == "Distribuidora Ficticia S.A.S."

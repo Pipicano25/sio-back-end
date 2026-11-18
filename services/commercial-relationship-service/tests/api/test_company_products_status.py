@@ -15,20 +15,20 @@ def _action(client, product, action, version=None):
 
 
 def test_deactivate_requires_delete_permission(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
-    assert _action(as_user("ventas.test"), product, "deactivate").status_code == 403
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
+    assert _action(as_user("operario.dao"), product, "deactivate").status_code == 403
 
-    response = _action(as_user("admin.test"), product, "deactivate")
+    response = _action(as_user("admin.sio"), product, "deactivate")
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "INACTIVE" and body["version"] == 2
 
     # Sigue consultable por UUID.
-    assert as_user("compras.test").get(f"/api/v1/company-products/{product['id']}").status_code == 200
+    assert as_user("operario.dao").get(f"/api/v1/company-products/{product['id']}").status_code == 200
 
 
 def test_repeated_deactivate_is_409_without_version_change(as_user, company, fake_catalog):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog)
     inactive = _action(client, product, "deactivate").json()
 
@@ -39,13 +39,13 @@ def test_repeated_deactivate_is_409_without_version_change(as_user, company, fak
 
 
 def test_deactivate_allowed_with_inactive_company(as_user, company, fake_catalog, fake_oc):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
     fake_oc.inactive_companies.add(company)
-    assert _action(as_user("admin.test"), product, "deactivate").status_code == 200
+    assert _action(as_user("admin.sio"), product, "deactivate").status_code == 200
 
 
 def test_reactivate_without_first_use_or_completeness(as_user, company, fake_catalog):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog)
     inactive = _action(client, product, "deactivate").json()
     # El producto global quedó incompleto: la reactivación no exige completitud.
@@ -53,7 +53,7 @@ def test_reactivate_without_first_use_or_completeness(as_user, company, fake_cat
     fake_catalog.add(product_id, eligible=False)
     first_uses = len(fake_catalog.first_use_calls)
 
-    response = _action(as_user("supervisor.test"), inactive, "reactivate")
+    response = _action(as_user("admin.dao"), inactive, "reactivate")
     assert response.status_code == 200, response.text
     assert response.json()["status"] == "ACTIVE"
     assert len(fake_catalog.first_use_calls) == first_uses
@@ -61,7 +61,7 @@ def test_reactivate_without_first_use_or_completeness(as_user, company, fake_cat
 
 
 def test_reactivate_rejections(as_user, company, fake_catalog):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog)
     inactive = _action(client, product, "deactivate").json()
     global_id = UUID(product["global_product_id"])
@@ -80,7 +80,7 @@ def test_reactivate_rejections(as_user, company, fake_catalog):
 
 
 def test_reactivate_with_inactive_company_and_stale_version(as_user, company, fake_catalog, fake_oc):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog)
     inactive = _action(client, product, "deactivate").json()
 
@@ -92,13 +92,13 @@ def test_reactivate_with_inactive_company_and_stale_version(as_user, company, fa
 
 
 def test_reactivate_active_is_invalid_transition(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
-    response = _action(as_user("admin.test"), product, "reactivate")
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
+    response = _action(as_user("admin.sio"), product, "reactivate")
     assert response.status_code == 409
     assert code_of(response) == "INVALID_STATUS_TRANSITION"
 
 
 def test_no_delete_route(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
-    response = as_user("admin.test").request("DELETE", f"/api/v1/company-products/{product['id']}")
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
+    response = as_user("admin.sio").request("DELETE", f"/api/v1/company-products/{product['id']}")
     assert response.status_code == 405

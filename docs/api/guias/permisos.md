@@ -96,7 +96,7 @@ Los grupos y permisos provienen de la plantilla del realm del repositorio (`infr
 
 Ningún grupo de usuario salvo `superadmin` tiene permisos técnicos o de plataforma: `platform:administer`, `platform:lookup`, `audit:audit-events:create`, `audit:platform-events:read`, `product-catalog:first-use:register`, `commercial-relationship:automatic_price_update_requests:submit`, `inventory:entries:create` ni `inventory:outputs:create`.
 
-### Grupo `/superadmin` (rol `superadmin`, usuario de prueba `admin.test`)
+### Grupo `/superadmin` (rol `superadmin`, usuario de prueba `admin.sio`)
 
 1 permiso `perm:*`.
 
@@ -104,7 +104,7 @@ Ningún grupo de usuario salvo `superadmin` tiene permisos técnicos o de plataf
 |---|---|
 | `all` | `perm:all:all:all` |
 
-### Grupo `/admin` (rol `admin`, usuario de prueba `supervisor.test`)
+### Grupo `/admin` (rol `admin`, usuario de prueba `admin.dao`)
 
 49 permisos `perm:*`. Usa comodines por servicio con acción `create`, `read`, `update` o `delete`, que **no** cubren acciones especiales (`lookup`, `deactivate`, `submit`, `register`); en los servicios globales no incluye `delete`.
 
@@ -124,7 +124,7 @@ Ningún grupo de usuario salvo `superadmin` tiene permisos técnicos o de plataf
 | `purchase` | `perm:purchase:all:all` |
 | `sales` | `perm:sales:all:all` |
 
-### Grupo `/empleado` (rol `empleado`, usuarios de prueba `ventas.test`, `compras.test` e `inventario.test`)
+### Grupo `/empleado` (rol `empleado`, usuario de prueba `operario.dao`)
 
 80 permisos `perm:*`: la unión de los antiguos grupos de ventas, compras e inventario, más crear y modificar personas, organizaciones, perfiles de contacto y personas de contacto en Party Identity, y consultar representantes legales.
 

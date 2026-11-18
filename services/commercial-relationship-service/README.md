@@ -261,7 +261,7 @@ Las pruebas de integración escriben en servicios reales: **solo** se ejecutan c
   aplicable. Usa el entorno integrado (CR `8106`, Product Catalog `8103`, Operational Context `8104`,
   Party Identity `8101`, Geography `8102`, Payment Reference `8105`, Keycloak `8081`; variables
   `*_INTEGRATION_BASE_URL`). Requiere el realm importado con la plantilla vigente (permisos de la Fase B). La
-  contraseña de `admin.test` y el secreto del cliente técnico se leen del entorno o de
+  contraseña de `admin.sio` y el secreto del cliente técnico se leen del entorno o de
   `infrastructure/.env`. Es repetible: cada ejecución crea datos ficticios de validación. La caída
   de un proveedor (`503`) se verifica a mano deteniendo su contenedor.
 
@@ -307,7 +307,7 @@ Regla de la Constitución 2.4.0 (Principio X), feature 009:
 - En Docker la base `sio-commercial-relationship-db` tiene `healthcheck` y `restart: unless-stopped`, y la aplicación
   arranca cuando la base está sana (`infrastructure/services/commercial-relationship-service.yaml`).
 
-Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.test` y
+Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.sio` y
 `KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
 
 ```bash

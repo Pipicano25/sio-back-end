@@ -2,7 +2,7 @@
 
 Ejecutar con `pytest -m integration` con el entorno integrado en marcha y Keycloak reconstruido desde
 la plantilla con los permisos de la 013. Los datos son ficticios (`support.build_world`):
-`inventario.test` y `admin.test` están asignados a la sucursal principal y a ninguna otra.
+`operario.dao` y `admin.sio` están asignados a la sucursal principal y a ninguna otra.
 """
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ def test_fifo_end_to_end(operator, real_world) -> None:
 
 
 def test_assigned_user_adjusts_and_unassigned_branch_is_denied(real_world, stocked) -> None:
-    with user_client("inventario.test") as inventario:
+    with user_client("operario.dao") as inventario:
         applied = inventario.post(f"{INVENTORY}/companies/{real_world.company}/inventory-adjustments", json=adjustment(real_world, stocked))
         assert applied.status_code == 201, applied.text
         assert applied.json()["application_user_id"] == real_world.inventario_user
@@ -99,13 +99,15 @@ def test_assigned_user_adjusts_and_unassigned_branch_is_denied(real_world, stock
 def test_service_account_and_users_without_permission_cannot_adjust(operator, real_world, stocked) -> None:
     url = f"{INVENTORY}/companies/{real_world.company}/inventory-adjustments"
     assert operator.post(url, json=adjustment(real_world, stocked)).status_code == 403
-    with user_client("compras.test") as compras:
-        assert compras.post(url, json=adjustment(real_world, stocked)).status_code == 403
+    # Spec 026: los tres usuarios del realm pueden ajustar; el rechazo por permiso de usuario lo cubren las pruebas
+    # de API con tokens sintéticos.
+    with user_client("admin.dao") as no_member:  # tiene el permiso, pero no es miembro de esta empresa
+        assert no_member.post(url, json=adjustment(real_world, stocked)).status_code == 404
 
 
 def test_count_end_to_end(real_world, stocked) -> None:
     base = f"{INVENTORY}/companies/{real_world.company}/inventory-counts"
-    with user_client("inventario.test") as inventario:
+    with user_client("operario.dao") as inventario:
         count = inventario.post(base, json={"branch_id": real_world.branch, "observations": "Conteo ficticio INV"})
         assert count.status_code == 201, count.text
         count_id = count.json()["id"]
@@ -130,12 +132,10 @@ def test_count_end_to_end(real_world, stocked) -> None:
 def test_policies_by_administrators_only(real_world) -> None:
     url = f"{INVENTORY}/companies/{real_world.company}/inventory-policy"
     body = {"inventory_system": "PERPETUAL", "valuation_method": "FIFO", "replenishment_strategy": "STANDARD"}
-    with user_client("inventario.test") as inventario:
-        assert inventario.get(url).json()["registered"] is False
-        assert inventario.post(url, json=body).status_code == 403
-    with user_client("compras.test") as compras:
-        assert compras.post(url, json=body).status_code == 403
-    with user_client("admin.test") as admin_user:
+    with user_client("operario.dao") as empleado:
+        assert empleado.get(url).json()["registered"] is False
+        assert empleado.post(url, json=body).status_code == 403
+    with user_client("admin.sio") as admin_user:
         created = admin_user.post(url, json=body)
         assert created.status_code == 201, created.text
         assert admin_user.post(url, json=body).status_code == 409
@@ -143,7 +143,7 @@ def test_policies_by_administrators_only(real_world) -> None:
 
 def test_operational_context_down_returns_503_for_adjustments(real_world, stocked) -> None:
     url = f"{INVENTORY}/companies/{real_world.company}/inventory-adjustments"
-    with user_client("inventario.test") as inventario:
+    with user_client("operario.dao") as inventario:
         subprocess.run(["docker", "stop", "sio-operational-context-service"], check=True, capture_output=True)
         try:
             response = inventario.post(url, json=adjustment(real_world, stocked))

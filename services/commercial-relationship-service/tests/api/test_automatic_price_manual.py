@@ -30,7 +30,7 @@ RECEIPT = {"line_total": "10000.00", "quantity": "1.0000"}  # 10.000 por unidad
 
 @pytest.fixture
 def supervisor(as_user):
-    return as_user("supervisor.test")
+    return as_user("admin.dao")
 
 
 @pytest.fixture
@@ -96,5 +96,5 @@ def test_cp20_manual_change_while_an_application_is_pending(supervisor, client, 
     assert done["previous_price"] == D("15500.00") and str(done["previous_price_item_id"]) == manual["id"]
 
     actions = [(event["action"], event["username_snapshot"]) for event in outbox()]
-    assert ("CHANGE_PRICE_LIST_ITEM_PRICE", "supervisor.test") in actions
+    assert ("CHANGE_PRICE_LIST_ITEM_PRICE", "admin.dao") in actions
     assert ("APPLY_AUTOMATIC_PRICE", "commercial-relationship-price-worker") in actions

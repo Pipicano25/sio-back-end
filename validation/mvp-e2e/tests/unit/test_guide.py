@@ -8,7 +8,7 @@ from sio_mvp import guide
 pytestmark = pytest.mark.unit
 
 STEP = Step(
-    "P-02.P1", "Confirmar la compra P1", "3-compras-e-inventario", (10,), "compras.test",
+    "P-02.P1", "Confirmar la compra P1", "3-compras-e-inventario", (10,), "operario.dao",
     "perm:purchase:purchases:update", "purchase", "POST", "/companies/{empresa_a}/purchases/{compra_1}/confirmation", 200,
     body={"version": "{compra_1_version}", "nota": "Compra {run}"},
     save={"compra_1_numero": "number"},
@@ -18,9 +18,9 @@ STEP = Step(
 
 
 class FakeRealm:
-    PERMS = {"admin.test": {"perm:all:all:all"}, "compras.test": {"perm:purchase:all:all"}}
+    PERMS = {"admin.sio": {"perm:all:all:all"}, "operario.dao": {"perm:purchase:all:all"}}
     users = {name: {"groups": [f"/{name.split('.')[0]}"]} for name in (
-        "admin.test", "compras.test", "ventas.test", "supervisor.test", "inventario.test")}
+        "admin.sio", "admin.dao", "operario.dao")}
 
     def user_permissions(self, user):
         return set(self.PERMS.get(user, set()))
@@ -38,7 +38,7 @@ class FakeRealm:
 
 def test_step_render_contains_user_permission_method_path_body_and_expected():
     text = guide.render_call(STEP, FakeRealm(), number=1)
-    assert "`compras.test`" in text
+    assert "`operario.dao`" in text
     assert "`perm:purchase:purchases:update`" in text
     assert "POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases/<COMPRA_1>/confirmation" in text
     assert '"version": "<COMPRA_1_VERSION>"' in text
@@ -57,7 +57,7 @@ def test_markers_do_not_depend_on_run_id():
 
 def test_who_can_lists_users_with_the_permission():
     text = guide.render_call(STEP, FakeRealm(), number=1)
-    assert "`admin.test`" in text and "`compras.test`" in text
+    assert "`admin.sio`" in text and "`operario.dao`" in text
 
 
 def test_render_has_no_secrets():

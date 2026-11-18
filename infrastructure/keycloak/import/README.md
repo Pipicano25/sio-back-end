@@ -197,12 +197,13 @@ Operational Context dice en qué empresas:
 
 Se crean usuarios de prueba con los mismos permisos de grupo correspondientes:
 
-- `admin.test` → grupo `/superadmin`
-- `supervisor.test` → grupo `/admin`
-- `ventas.test`, `compras.test` e `inventario.test` → grupo `/empleado`
+- `admin.sio` → grupo `/superadmin`
+- `admin.dao` → grupo `/admin`
+- `operario.dao` → grupo `/empleado`
 
-`reportes.test` y `consulta.test` se eliminaron en la spec 026. Un realm ya importado no cambia al
-reimportar la plantilla; ver la guía de migración de grupos.
+Reemplazan a los usuarios genéricos anteriores (`admin.test`, `supervisor.test`, `ventas.test`, `compras.test`,
+`inventario.test`, `reportes.test` y `consulta.test`) y conservan los `id` de `admin.test`, `supervisor.test` y
+`ventas.test`. Un realm ya importado no cambia al reimportar la plantilla; ver la guía de migración de grupos.
 
 Todos los usuarios:
 

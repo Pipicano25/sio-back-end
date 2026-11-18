@@ -6,7 +6,7 @@ Ejercicio 3 — Compras e inventario: secuencias, compras de contado, confirmaci
 
 ## 1. Registrar la compra P1 en borrador
 
-Paso `P-01.P1` · usuario **`compras.test`** · ítems de la FASE 10: 9
+Paso `P-01.P1` · usuario **`operario.dao`** · ítems de la FASE 10: 9
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
@@ -38,7 +38,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
 
 **Permiso que exige la URL:** `perm:purchase:purchases:create` + `perm:purchase:purchase_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`), `ventas.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`)
 
 **Por qué se hace así**
 
@@ -52,7 +52,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
 
 ## 2. Registrar la compra P2 en borrador
 
-Paso `P-01.P2` · usuario **`compras.test`** · ítems de la FASE 10: 9
+Paso `P-01.P2` · usuario **`operario.dao`** · ítems de la FASE 10: 9
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
@@ -78,7 +78,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
 
 **Permiso que exige la URL:** `perm:purchase:purchases:create` + `perm:purchase:purchase_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`), `ventas.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`)
 
 **Por qué se hace así**
 
@@ -92,7 +92,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
 
 ## 3. Registrar la compra P3 en borrador
 
-Paso `P-01.P3` · usuario **`compras.test`** · ítems de la FASE 10: 9
+Paso `P-01.P3` · usuario **`operario.dao`** · ítems de la FASE 10: 9
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
@@ -118,7 +118,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
 
 **Permiso que exige la URL:** `perm:purchase:purchases:create` + `perm:purchase:purchase_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`), `ventas.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`)
 
 **Por qué se hace así**
 
@@ -132,7 +132,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
 
 ## 4. Registrar la compra P4 en borrador
 
-Paso `P-01.P4` · usuario **`compras.test`** · ítems de la FASE 10: 9
+Paso `P-01.P4` · usuario **`operario.dao`** · ítems de la FASE 10: 9
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
@@ -158,7 +158,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
 
 **Permiso que exige la URL:** `perm:purchase:purchases:create` + `perm:purchase:purchase_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`), `ventas.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchase_details:create`, `perm:purchase:purchases:create`)
 
 **Por qué se hace así**
 
@@ -172,7 +172,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
 
 ## 5. Intentar una compra a crédito
 
-Paso `P-01.credito` · usuario **`compras.test`** · ítems de la FASE 10: 9
+Paso `P-01.credito` · usuario **`operario.dao`** · ítems de la FASE 10: 9
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
@@ -198,7 +198,7 @@ POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases
 
 **Permiso que exige la URL:** `perm:purchase:purchases:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:create`), `ventas.test` (por `perm:purchase:purchases:create`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchases:create`)
 
 **Por qué se hace así**
 

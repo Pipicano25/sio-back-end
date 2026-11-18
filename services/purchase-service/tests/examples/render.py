@@ -213,9 +213,9 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `compras.test`, `ventas.test` e `inventario.test` (grupo `empleado`, permisos explícitos de "
-        "`purchase`) registran, confirman y anulan compras de las sucursales asignadas; `supervisor.test` (grupo "
-        "`admin`, `perm:purchase:all:all`) también, y además ajusta la tasa de impuesto de una línea; `admin.test` "
+        "- Puede: `operario.dao` (grupo `empleado`, permisos explícitos de "
+        "`purchase`) registran, confirman y anulan compras de las sucursales asignadas; `admin.dao` (grupo "
+        "`admin`, `perm:purchase:all:all`) también, y además ajusta la tasa de impuesto de una línea; `admin.sio` "
         "(grupo `superadmin`) por comodín.",
         "- No puede: ninguna cuenta de servicio escribe compras (ni el propio `purchase-service`); el grupo `empleado` "
         "no ajusta tasas de línea; sin asignación a la sucursal, ni el comodín permite escribir.",
@@ -285,7 +285,7 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "```bash",
         "curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \\",
         "  -d grant_type=password -d client_id=sio-web -d scope=openid \\",
-        "  -d username=compras.test -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"",
+        "  -d username=operario.dao -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"",
         "```",
         "",
         "## Matriz de URL",

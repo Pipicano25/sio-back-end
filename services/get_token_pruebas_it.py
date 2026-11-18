@@ -2,16 +2,16 @@
 
 Uso:
     python services/get_token_pruebas_it.py                     # menú interactivo (usuario y empresas)
-    python services/get_token_pruebas_it.py ventas.test
-    python services/get_token_pruebas_it.py --user ventas.test
-    python services/get_token_pruebas_it.py ventas.test --copy  # al portapapeles, sin imprimirlo
-    python services/get_token_pruebas_it.py ventas.test --empresas   # además, sus empresas (en stderr)
-    TOKEN=$(python services/get_token_pruebas_it.py ventas.test)
+    python services/get_token_pruebas_it.py operario.dao
+    python services/get_token_pruebas_it.py --user operario.dao
+    python services/get_token_pruebas_it.py operario.dao --copy  # al portapapeles, sin imprimirlo
+    python services/get_token_pruebas_it.py operario.dao --empresas   # además, sus empresas (en stderr)
+    TOKEN=$(python services/get_token_pruebas_it.py operario.dao)
 
 Modo interactivo (sin usuario y con teclado): menú para elegir el usuario; después se muestran su información,
 las empresas a las que pertenece y sus sucursales, y el token se copia al portapapeles sin imprimirlo. Si la
 salida estándar se captura (`TOKEN=$(...)`), el token se escribe allí en vez de copiarse. Sin teclado y sin
-usuario se usa `inventario.test`.
+usuario se usa `operario.dao`.
 
 Solo trabaja contra la pila aislada: Keycloak `http://localhost:18081` (realm `sio`, cliente `sio-web`),
 Operational Context `http://localhost:18104` y Party Identity `http://localhost:18101`. Las URL son fijas y no
@@ -61,13 +61,17 @@ PASSWORD_VARIABLE = "KEYCLOAK_TEST_USER_PASSWORD"
 ISOLATED_ENV = Path(__file__).resolve().parents[1] / "validation" / "isolated-stack" / ".env"
 
 USUARIOS = (
-    "admin.test",
-    "supervisor.test",
-    "compras.test",
-    "ventas.test",
-    "inventario.test",
+    "admin.sio",
+    "admin.dao",
+    "operario.dao",
 )
-USUARIO_PREDETERMINADO = "inventario.test"
+# Atajos aceptados además del número y del usuario completo.
+ALIAS = {
+    "superadmin": "admin.sio", "sio": "admin.sio",
+    "admin": "admin.dao", "dao": "admin.dao",
+    "empleado": "operario.dao", "operario": "operario.dao",
+}
+USUARIO_PREDETERMINADO = "operario.dao"
 TIMEOUT_SEGUNDOS = 5
 # Empresas sintéticas conocidas de la pila: solo sirven de etiqueta y para ordenar; no otorgan membresía.
 EMPRESAS_CONOCIDAS = {
@@ -87,10 +91,9 @@ def mensaje(texto: str = "") -> None:
 
 
 def normalizar_usuario(valor: str) -> str:
-    """`ventas`, `Ventas.test` → `ventas.test`; cualquier otro valor es un error."""
+    """`operario`, `Empleado`, `OPERARIO.DAO` → `operario.dao`; cualquier otro valor es un error."""
     nombre = valor.strip().lower()
-    if not nombre.endswith(".test"):
-        nombre += ".test"
+    nombre = ALIAS.get(nombre, nombre)
     if nombre not in USUARIOS:
         raise ErrorToken(f"Usuario no válido: {valor.strip()!r}. Opciones: {', '.join(USUARIOS)}.")
     return nombre
@@ -365,7 +368,7 @@ def argumentos(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=f"Token de un usuario de prueba del Keycloak aislado {AMBIENTE} ({KEYCLOAK_URL}).",
     )
-    parser.add_argument("usuario", nargs="?", help="Usuario de prueba (sin él: menú, o inventario.test sin teclado).")
+    parser.add_argument("usuario", nargs="?", help="Usuario de prueba (sin él: menú, o operario.dao sin teclado).")
     parser.add_argument("--user", dest="opcion_usuario", help="Usuario de prueba (alternativa al posicional).")
     parser.add_argument("--copy", action="store_true", help="Copia el token al portapapeles sin imprimirlo.")
     parser.add_argument("--empresas", action="store_true", help="Muestra también las empresas del usuario (stderr).")

@@ -6,7 +6,7 @@ Ejercicio 8: Políticas de inventario.
 
 `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-policy`
 
-Ejecuta: `admin.test`.
+Ejecuta: `admin.sio`.
 
 ### Por qué
 
@@ -20,11 +20,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa y tener `perm:operat
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:inventory:company-policies:read` |
-| `compras.test` | Sí | `200` | tiene `perm:inventory:company-policies:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:inventory:company-policies:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:inventory:company-policies:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:inventory:company-policies:read` |
+| `operario.dao` | Sí | `200` | tiene `perm:inventory:company-policies:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

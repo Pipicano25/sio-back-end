@@ -13,13 +13,13 @@ LOOKUP = "perm:operational-context:platform:lookup"
 
 @pytest.fixture
 def world(api, create_company, create_branch, fake_accounts, fake_persons):
-    """Empresa con sucursal, usuario `compras.test` asignado y una empresa ajena."""
+    """Empresa con sucursal, usuario `operario.dao` asignado y una empresa ajena."""
     company = create_company()
     foreign = create_company()
     branch = create_branch(company["id"], code="S-1")
     other_branch = create_branch(company["id"], code="S-2")
     foreign_branch = create_branch(foreign["id"], code="F-1")
-    sub = fake_accounts.add("compras.test", roles=("perm:inventory:all:all",))
+    sub = fake_accounts.add("operario.dao", roles=("perm:inventory:all:all",))
     user = api.post(
         f"/api/v1/companies/{company['id']}/application-users",
         json={"keycloak_user_id": sub, "person_identity_id": str(fake_persons.add()), "display_name": "C"},

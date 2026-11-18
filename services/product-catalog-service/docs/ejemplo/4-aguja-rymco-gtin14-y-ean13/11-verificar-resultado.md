@@ -14,7 +14,7 @@ GET /api/v1/products/by-identifier/27706634002850
 
 **Permiso que exige la URL:** `perm:product-catalog:products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:read`), `operario.dao` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -45,7 +45,7 @@ GET /api/v1/products/by-identifier/7706634002856
 
 **Permiso que exige la URL:** `perm:product-catalog:products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:read`), `operario.dao` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -76,7 +76,7 @@ GET /api/v1/products?identifier=RFZC18B
 
 **Permiso que exige la URL:** `perm:product-catalog:products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:read`), `operario.dao` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 

@@ -142,11 +142,9 @@ EXERCISES = {
 
 # Usuarios operativos por empresa (P-02): (variable, usuario, empresa, sucursal o None).
 OPERATIONAL_USERS = (
-    ("admin", "admin.test", "a", "a1"),
-    ("compras", "compras.test", "a", "a1"),
-    ("ventas", "ventas.test", "a", "a1"),
-    ("supervisor", "supervisor.test", "a", "a1"),
-    ("inventario", "inventario.test", "b", "b1"),
+    ("admin", "admin.sio", "a", "a1"),
+    ("operario", "operario.dao", "a", "a1"),
+    ("admin_dao", "admin.dao", "b", "b1"),
 )
 PERSONS = ("cliente",) + tuple(name for name, *_ in OPERATIONAL_USERS)
 ORGANIZATIONS = (("empresa_a", "EMPRESA A"), ("empresa_b", "EMPRESA B"), ("proveedor", "PROVEEDOR"))
@@ -155,44 +153,44 @@ ORGANIZATIONS = (("empresa_a", "EMPRESA A"), ("empresa_b", "EMPRESA B"), ("prove
 def reference_steps() -> list[Step]:
     return [
         Step(
-            "C-00.1", "Consultar el país Colombia en Geography", EX1, (1,), "admin.test",
+            "C-00.1", "Consultar el país Colombia en Geography", EX1, (1,), "admin.sio",
             "perm:geography:global_countries:read", "geography", "GET", "/global-countries", 200,
             params={"iso3_code": "COL"}, save={"pais_co": "items.0.id"},
             why="Las identidades, empresas y sucursales guardan solo el id del país de Geography.",
         ),
         Step(
-            "C-00.2", "Consultar una ciudad de Colombia en Geography", EX1, (2,), "admin.test",
+            "C-00.2", "Consultar una ciudad de Colombia en Geography", EX1, (2,), "admin.sio",
             "perm:geography:global_cities:read", "geography", "GET", "/global-cities", 200,
             params={"country_id": "{pais_co}", "search": "Bogot"},
             save={"ciudad": "items.0.id", "departamento": "items.0.administrative_division_id"},
             why="La sucursal se ubica en una ciudad del seed de Geography (ubicación coherente país–departamento–ciudad).",
         ),
         Step(
-            "C-00.3", "Consultar la regla de identificación NIT de Colombia", EX1, (1,), "admin.test",
+            "C-00.3", "Consultar la regla de identificación NIT de Colombia", EX1, (1,), "admin.sio",
             _pi("identification_type_rules:read"), "party-identity", "GET", "/identification-type-rules", 200,
             params={"party_kind": "ORGANIZATION", "country_id": "{pais_co}", "sigla": "NIT", "is_active": "true"},
             save={"patron_nit": "items.0.number_pattern"},
             why="Los NIT ficticios se generan con el patrón de la regla vigente (nunca identificaciones reales).",
         ),
         Step(
-            "C-00.4", "Consultar la regla de identificación CC de Colombia", EX1, (3, 5), "admin.test",
+            "C-00.4", "Consultar la regla de identificación CC de Colombia", EX1, (3, 5), "admin.sio",
             _pi("identification_type_rules:read"), "party-identity", "GET", "/identification-type-rules", 200,
             params={"party_kind": "PERSON", "country_id": "{pais_co}", "sigla": "CC", "is_active": "true"},
             save={"patron_cc": "items.0.number_pattern"},
         ),
         Step(
-            "C-00.5", "Consultar la unidad de medida UND en Product Catalog", EX2, (6,), "admin.test",
+            "C-00.5", "Consultar la unidad de medida UND en Product Catalog", EX2, (6,), "admin.sio",
             _pc("units-of-measure:read"), "product-catalog", "GET", "/units-of-measure", 200,
             params={"status": "ACTIVE", "page_size": 100}, save={"unidad_und": "items[code=UND].id"},
         ),
         Step(
-            "C-00.6", "Consultar el tipo de condición de pago CREDIT en Payment Reference", EX2, (4,), "admin.test",
+            "C-00.6", "Consultar el tipo de condición de pago CREDIT en Payment Reference", EX2, (4,), "admin.sio",
             "perm:payment-reference:global_payment_condition_types:read", "payment-reference", "GET",
             "/global-payment-condition-types", 200, params={"page_size": 100},
             save={"tipo_credito": "items[code=CREDIT].id"},
         ),
         Step(
-            "C-00.7", "Consultar el método de pago Efectivo en Payment Reference", EX2, (4,), "admin.test",
+            "C-00.7", "Consultar el método de pago Efectivo en Payment Reference", EX2, (4,), "admin.sio",
             "perm:payment-reference:global_payment_methods:read", "payment-reference", "GET",
             "/global-payment-methods", 200, params={"page_size": 100},
             save={"metodo_efectivo": "items[code=CASH].id"},
@@ -207,7 +205,7 @@ def identity_steps() -> list[Step]:
         steps.append(
             Step(
                 f"C-01.{name}", f"Registrar la organización {label.lower()}", EX1, (1, 4) if name == "proveedor" else (1,),
-                "admin.test", _pi("organization_identities:create"), "party-identity", "POST", "/organization-identities", 201,
+                "admin.sio", _pi("organization_identities:create"), "party-identity", "POST", "/organization-identities", 201,
                 body={
                     "country_id": "{pais_co}",
                     "identification_type": "NIT",
@@ -223,7 +221,7 @@ def identity_steps() -> list[Step]:
         steps.append(
             Step(
                 f"C-02.{name}", f"Registrar la persona {name}", EX1, (5,) if name == "cliente" else (3,),
-                "admin.test", _pi("person_identities:create"), "party-identity", "POST", "/person-identities", 201,
+                "admin.sio", _pi("person_identities:create"), "party-identity", "POST", "/person-identities", 201,
                 body={
                     "identification_country_id": "{pais_co}",
                     "identification_type": "CC",
@@ -245,7 +243,7 @@ def company_steps() -> list[Step]:
     for letter in ("a", "b"):
         steps.append(
             Step(
-                f"C-03.{letter}", f"Registrar la empresa {letter.upper()}", EX1, (1,), "admin.test",
+                f"C-03.{letter}", f"Registrar la empresa {letter.upper()}", EX1, (1,), "admin.sio",
                 f"{_oc('companies:create')} + {_oc('platform:administer')}", "operational-context", "POST", "/companies", 201,
                 body={"organization_identity_id": f"{{org_empresa_{letter}}}"},
                 save={f"empresa_{letter}": "id"},
@@ -257,7 +255,7 @@ def company_steps() -> list[Step]:
     for letter, branch in (("a", "a1"), ("b", "b1")):
         steps.append(
             Step(
-                f"C-04.{branch}", f"Registrar la sucursal {branch.upper()}", EX1, (2,), "admin.test",
+                f"C-04.{branch}", f"Registrar la sucursal {branch.upper()}", EX1, (2,), "admin.sio",
                 _oc("branches:create"), "operational-context", "POST", f"/companies/{{empresa_{letter}}}/branches", 201,
                 body={
                     "code": f"{branch.upper()}{{run}}",
@@ -275,7 +273,7 @@ def company_steps() -> list[Step]:
         steps.append(
             Step(
                 f"C-05.{name}", f"Registrar a {username} como usuario operativo de la empresa {letter.upper()}", EX1, (3,),
-                "admin.test", _oc("application_users:create"), "operational-context", "POST",
+                "admin.sio", _oc("application_users:create"), "operational-context", "POST",
                 f"/companies/{{empresa_{letter}}}/application-users", 201,
                 body={
                     "username": username,
@@ -292,7 +290,7 @@ def company_steps() -> list[Step]:
             continue
         steps.append(
             Step(
-                f"C-06.{name}", f"Asignar a {username} la sucursal {branch.upper()}", EX1, (3,), "admin.test",
+                f"C-06.{name}", f"Asignar a {username} la sucursal {branch.upper()}", EX1, (3,), "admin.sio",
                 _oc("user_branches:create"), "operational-context", "POST", f"/application-users/{{usuario_{name}}}/user-branches", 201,
                 body={"branch_id": f"{{sucursal_{branch}}}"},
                 save={f"asignacion_{name}": "id"},
@@ -317,14 +315,14 @@ def commercial_steps() -> list[Step]:
     pc = "product-catalog"
     steps = [
         Step(
-            "C-08.proveedor", "Seleccionar el proveedor de la empresa A", EX2, (4,), "admin.test",
+            "C-08.proveedor", "Seleccionar el proveedor de la empresa A", EX2, (4,), "admin.sio",
             _cr("company_suppliers:create"), cr, "POST", "/companies/{empresa_a}/company-suppliers", 201,
             body={"organization_identity_id": "{org_proveedor}", "internal_code": "PRV-{run}", "display_name": "Proveedor MVP {run} (dato ficticio)"},
             save={"proveedor": "id"},
             audit=(AuditSpec(cr, "CREATE_COMPANY_SUPPLIER", "CompanySupplier", "{proveedor}"),),
         ),
         Step(
-            "C-08.condicion", "Registrar la condición de pago a crédito del proveedor", EX2, (4,), "admin.test",
+            "C-08.condicion", "Registrar la condición de pago a crédito del proveedor", EX2, (4,), "admin.sio",
             _cr("supplier_payment_conditions:create"), cr, "POST", "/companies/{empresa_a}/supplier-payment-conditions", 201,
             body={
                 "company_supplier_id": "{proveedor}",
@@ -338,14 +336,14 @@ def commercial_steps() -> list[Step]:
             why="El tipo CREDIT de Payment Reference exige plazo mayor que 0.",
         ),
         Step(
-            "C-09.cliente", "Incorporar el cliente persona de la empresa A", EX2, (5,), "admin.test",
+            "C-09.cliente", "Incorporar el cliente persona de la empresa A", EX2, (5,), "admin.sio",
             _cr("company_customers:create"), cr, "POST", "/companies/{empresa_a}/company-customers", 201,
             body={"customer_kind": "PERSON", "person_identity_id": "{persona_cliente}", "internal_code": "CLI-{run}", "display_name": "Cliente MVP {run} (dato ficticio)"},
             save={"cliente": "id"},
             audit=(AuditSpec(cr, "CREATE_COMPANY_CUSTOMER", "CompanyCustomer", "{cliente}"),),
         ),
         Step(
-            "C-10.categoria", "Crear la categoría global de los productos", EX2, (6,), "admin.test",
+            "C-10.categoria", "Crear la categoría global de los productos", EX2, (6,), "admin.sio",
             _pc("categories:create"), pc, "POST", "/categories", 201,
             body={"code": "MVP-{run}", "name": "Categoría MVP {run} (dato ficticio)"},
             save={"categoria": "id"},
@@ -356,21 +354,21 @@ def commercial_steps() -> list[Step]:
     for letter, with_box in (("a", True), ("b", False)):
         steps += [
             Step(
-                f"C-10.producto_{letter}", f"Crear el producto global {letter.upper()}", EX2, (6,), "admin.test",
+                f"C-10.producto_{letter}", f"Crear el producto global {letter.upper()}", EX2, (6,), "admin.sio",
                 _pc("products:create"), pc, "POST", "/products", 201,
                 body={"product_type": "GOOD", "canonical_name": f"Producto {letter.upper()} MVP {{run}} (dato ficticio)", "base_unit_id": "{unidad_und}"},
                 save={f"producto_{letter}": "id"},
                 audit=(AuditSpec(pc, "CREATE_PRODUCT", "Product", f"{{producto_{letter}}}", PLATFORM, None),),
             ),
             Step(
-                f"C-10.categoria_{letter}", f"Clasificar el producto {letter.upper()}", EX2, (6,), "admin.test",
+                f"C-10.categoria_{letter}", f"Clasificar el producto {letter.upper()}", EX2, (6,), "admin.sio",
                 _pc("products:update"), pc, "POST", f"/products/{{producto_{letter}}}/categories", 201,
                 body={"global_category_id": "{categoria}"},
                 save={f"categoria_producto_{letter}": "id"},
                 audit=(AuditSpec(pc, "ADD_PRODUCT_CATEGORY", "ProductCategory", f"{{categoria_producto_{letter}}}", PLATFORM, None),),
             ),
             Step(
-                f"C-10.base_{letter}", f"Crear la presentación base (unidad) del producto {letter.upper()}", EX2, (7,), "admin.test",
+                f"C-10.base_{letter}", f"Crear la presentación base (unidad) del producto {letter.upper()}", EX2, (7,), "admin.sio",
                 _pc("products:update"), pc, "POST", f"/products/{{producto_{letter}}}/presentations", 201,
                 body={"code": f"UND-{letter.upper()}-{{run}}", "name": "Unidad (dato ficticio)", "base_quantity": "1", "display_order": 1, "is_base": True},
                 save={f"presentacion_base_{letter}": "id"},
@@ -380,7 +378,7 @@ def commercial_steps() -> list[Step]:
         if with_box:
             steps.append(
                 Step(
-                    "C-10.caja_a", "Crear la presentación \"Caja × 12\" del producto A", EX2, (7,), "admin.test",
+                    "C-10.caja_a", "Crear la presentación \"Caja × 12\" del producto A", EX2, (7,), "admin.sio",
                     _pc("products:update"), pc, "POST", "/products/{producto_a}/presentations", 201,
                     body={"code": "CJ12-A-{run}", "name": "Caja x12 (dato ficticio)", "base_quantity": "12", "display_order": 2, "is_base": False},
                     save={"presentacion_caja_a": "id"},
@@ -391,7 +389,7 @@ def commercial_steps() -> list[Step]:
     for letter in ("a", "b"):
         steps.append(
             Step(
-                f"C-11.producto_{letter}", f"Adoptar el producto {letter.upper()} en la empresa A", EX2, (6, 8), "admin.test",
+                f"C-11.producto_{letter}", f"Adoptar el producto {letter.upper()} en la empresa A", EX2, (6, 8), "admin.sio",
                 _cr("company_products:create"), cr, "POST", "/companies/{empresa_a}/company-products", 201,
                 body={
                     "global_product_id": f"{{producto_{letter}}}",
@@ -411,7 +409,7 @@ def commercial_steps() -> list[Step]:
     for letter in ("a", "b"):
         steps.append(
             Step(
-                f"C-11.base_{letter}", f"Adoptar la presentación base (unidad) del producto {letter.upper()}", EX2, (7,), "admin.test",
+                f"C-11.base_{letter}", f"Adoptar la presentación base (unidad) del producto {letter.upper()}", EX2, (7,), "admin.sio",
                 _cr("company_product_presentations:create"), cr, "POST", "/companies/{empresa_a}/company-product-presentations", 201,
                 body={"company_product_id": f"{{producto_empresa_{letter}}}", "global_product_presentation_id": f"{{presentacion_base_{letter}}}", "sku": f"SKU-UND-{letter.upper()}-{{run}}"},
                 save={f"presentacion_base_empresa_{letter}": "id"},
@@ -424,7 +422,7 @@ def commercial_steps() -> list[Step]:
         )
     steps.append(
         Step(
-            "C-11.caja_a", "Adoptar la presentación \"Caja × 12\" del producto A", EX2, (7,), "admin.test",
+            "C-11.caja_a", "Adoptar la presentación \"Caja × 12\" del producto A", EX2, (7,), "admin.sio",
             _cr("company_product_presentations:create"), cr, "POST", "/companies/{empresa_a}/company-product-presentations", 201,
             body={"company_product_id": "{producto_empresa_a}", "global_product_presentation_id": "{presentacion_caja_a}", "sku": "SKU-CJ12-{run}"},
             save={"presentacion_caja_empresa_a": "id"},
@@ -438,7 +436,7 @@ def commercial_steps() -> list[Step]:
     for name, code, default in (("general", "GENERAL", True), ("mayorista", "MAYORISTA", False)):
         steps.append(
             Step(
-                f"C-12.lista_{name}", f"Crear la lista de precios {code}", EX2, (8,), "admin.test",
+                f"C-12.lista_{name}", f"Crear la lista de precios {code}", EX2, (8,), "admin.sio",
                 _cr("price_lists:create"), cr, "POST", "/companies/{empresa_a}/price-lists", 201,
                 body={"code": f"{code}-{{run}}", "name": f"Lista {code} MVP {{run}} (dato ficticio)", "currency_code": "COP", "is_default": default},
                 save={f"lista_{name}": "id"},
@@ -448,7 +446,7 @@ def commercial_steps() -> list[Step]:
         )
     steps += [
         Step(
-            "C-12.item_general", "Precio de la unidad del producto A en GENERAL", EX2, (8,), "admin.test",
+            "C-12.item_general", "Precio de la unidad del producto A en GENERAL", EX2, (8,), "admin.sio",
             _cr("price_list_items:create"), cr, "POST", "/companies/{empresa_a}/price-list-items", 201,
             body={"price_list_id": "{lista_general}", "company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_base_empresa_a}", "unit_price": "1500.00"},
             save={"item_general": "id", "item_general_version": "version"},
@@ -456,14 +454,14 @@ def commercial_steps() -> list[Step]:
             why="Cada presentación vendible tiene su precio explícito (spec 019); no hay precios generales por producto.",
         ),
         Step(
-            "C-12.item_b", "Precio de la unidad del producto B en GENERAL", EX2, (8,), "admin.test",
+            "C-12.item_b", "Precio de la unidad del producto B en GENERAL", EX2, (8,), "admin.sio",
             _cr("price_list_items:create"), cr, "POST", "/companies/{empresa_a}/price-list-items", 201,
             body={"price_list_id": "{lista_general}", "company_product_id": "{producto_empresa_b}", "company_product_presentation_id": "{presentacion_base_empresa_b}", "unit_price": "7000.00"},
             save={"item_b": "id"},
             audit=(AuditSpec(cr, "CREATE_PRICE_LIST_ITEM", "PriceListItem", "{item_b}"),),
         ),
         Step(
-            "C-12.item_mayorista", "Precio de la caja del producto A en MAYORISTA", EX2, (8,), "admin.test",
+            "C-12.item_mayorista", "Precio de la caja del producto A en MAYORISTA", EX2, (8,), "admin.sio",
             _cr("price_list_items:create"), cr, "POST", "/companies/{empresa_a}/price-list-items", 201,
             body={"price_list_id": "{lista_mayorista}", "company_product_id": "{producto_empresa_a}", "company_product_presentation_id": "{presentacion_caja_empresa_a}", "unit_price": "16000.00"},
             save={"item_mayorista": "id"},
@@ -471,7 +469,7 @@ def commercial_steps() -> list[Step]:
         ),
         # Spec 021: tasa de compra configurada y una lista con precio automático (aparte de GENERAL y MAYORISTA).
         Step(
-            "C-12.tasas", "Configurar la tasa de impuesto de compra de los productos A y B (0 %)", EX2, (8,), "admin.test",
+            "C-12.tasas", "Configurar la tasa de impuesto de compra de los productos A y B (0 %)", EX2, (8,), "admin.sio",
             _cr("company_product_purchase_taxes:update"), cr, "POST", "/companies/{empresa_a}/company-products/purchase-taxes/batch", 200,
             body={"items": [
                 {"company_product_id": "{producto_empresa_a}", "version": "{producto_empresa_a_version}", "purchase_tax_percentage": "0"},
@@ -485,7 +483,7 @@ def commercial_steps() -> list[Step]:
             why="Spec 021: sin tasa la compra no se confirma. 0 % (exento, dato ficticio) conserva exactos los costos y márgenes del escenario; `null` sería «sin configurar».",
         ),
         Step(
-            "C-12.lista_automatica", "Crear la lista de precios AUTOMATICA", EX2, (8,), "admin.test",
+            "C-12.lista_automatica", "Crear la lista de precios AUTOMATICA", EX2, (8,), "admin.sio",
             _cr("price_lists:create"), cr, "POST", "/companies/{empresa_a}/price-lists", 201,
             body={"code": "AUTOMATICA-{run}", "name": "Lista AUTOMATICA MVP {run} (dato ficticio)", "currency_code": "COP", "is_default": False},
             save={"lista_automatica": "id"},
@@ -493,7 +491,7 @@ def commercial_steps() -> list[Step]:
             why="Spec 021: solo esta lista tiene política; GENERAL y MAYORISTA conservan sus precios manuales y las ventas no la usan.",
         ),
         Step(
-            "C-12.politica", "Crear la política de ganancia (30 %) con las presentaciones que se compran", EX2, (8,), "admin.test",
+            "C-12.politica", "Crear la política de ganancia (30 %) con las presentaciones que se compran", EX2, (8,), "admin.sio",
             _cr("pricing_policies:create"), cr, "POST", "/companies/{empresa_a}/price-lists/{lista_automatica}/pricing-policies", 201,
             body={"name": "MVP {run} (dato ficticio)", "markup_percentage": "30", "company_product_presentation_ids": ["{presentacion_caja_empresa_a}", "{presentacion_base_empresa_a}", "{presentacion_base_empresa_b}"]},
             save={"politica": "id"},
@@ -501,7 +499,7 @@ def commercial_steps() -> list[Step]:
             why="La política no cambia precios: rige desde la siguiente recepción física. Spec 021 (FR-021-35): una compra solo se confirma si cada presentación tiene política de ganancia aplicable, por eso incluye las tres presentaciones que se compran.",
         ),
         Step(
-            "C-13.compras", "Crear la secuencia de numeración de compras", EX3, (10,), "admin.test",
+            "C-13.compras", "Crear la secuencia de numeración de compras", EX3, (10,), "admin.sio",
             "perm:purchase:purchase_sequences:create", "purchase", "POST", "/companies/{empresa_a}/purchase-sequences", 201,
             body={"series_code": "MVP", "prefix": "CP", "separator": "-", "initial_number": 1, "number_length": 6, "reset_policy": "NEVER"},
             save={"secuencia_compras": "id"},
@@ -509,7 +507,7 @@ def commercial_steps() -> list[Step]:
             why="La compra recibe su número oficial al confirmarse.",
         ),
         Step(
-            "C-13.ventas", "Crear la secuencia de numeración de ventas", EX3, (15,), "admin.test",
+            "C-13.ventas", "Crear la secuencia de numeración de ventas", EX3, (15,), "admin.sio",
             "perm:sales:sale_sequences:create", "sales", "POST", "/companies/{empresa_a}/sale-sequences", 201,
             body={"series_code": "MVP", "prefix": "FV", "separator": "-", "initial_number": 1, "number_length": 6, "reset_policy": "NEVER"},
             save={"secuencia_ventas": "id"},
@@ -536,7 +534,7 @@ PURCHASE_LINES = {
 
 def purchase_create(number: str) -> Step:
     return Step(
-        f"P-01.P{number}", f"Registrar la compra P{number} en borrador", EX3, (9,), "compras.test",
+        f"P-01.P{number}", f"Registrar la compra P{number} en borrador", EX3, (9,), "operario.dao",
         "perm:purchase:purchases:create + perm:purchase:purchase_details:create", "purchase", "POST",
         "/companies/{empresa_a}/purchases", 201,
         body={
@@ -555,7 +553,7 @@ def purchase_create(number: str) -> Step:
 
 def purchase_confirm(number: str) -> Step:
     return Step(
-        f"P-02.P{number}", f"Confirmar la compra P{number}", EX3, (10,), "compras.test",
+        f"P-02.P{number}", f"Confirmar la compra P{number}", EX3, (10,), "operario.dao",
         "perm:purchase:purchases:update", "purchase", "POST", f"/companies/{{empresa_a}}/purchases/{{compra_{number}}}/confirmation", 200,
         body={"version": f"{{compra_{number}_version}}"},
         save={f"compra_{number}_version": "version", f"compra_{number}_numero": "number"},
@@ -568,7 +566,7 @@ def purchase_confirm(number: str) -> Step:
 
 def purchase_receive(number: str) -> Step:
     return Step(
-        f"P-02R.P{number}", f"Confirmar la recepción física completa de la compra P{number}", EX3, (10, 11), "compras.test",
+        f"P-02R.P{number}", f"Confirmar la recepción física completa de la compra P{number}", EX3, (10, 11), "operario.dao",
         "perm:purchase:purchases:update", "purchase", "POST", f"/companies/{{empresa_a}}/purchases/{{compra_{number}}}/receipt", 200,
         body={"version": f"{{compra_{number}_version}}", "full_receipt_confirmed": True},
         save={f"compra_{number}_version": "version", f"compra_{number}_operacion": "inventory_operation_id"},
@@ -583,7 +581,7 @@ def purchase_receive(number: str) -> Step:
 
 
 PURCHASE_CREDIT_REJECTED = Step(
-    "P-01.credito", "Intentar una compra a crédito", EX3, (9,), "compras.test",
+    "P-01.credito", "Intentar una compra a crédito", EX3, (9,), "operario.dao",
     "perm:purchase:purchases:create", "purchase", "POST", "/companies/{empresa_a}/purchases", 409,
     body={
         "branch_id": "{sucursal_a1}",
@@ -603,7 +601,7 @@ PURCHASES = (
 )
 PURCHASE_RECEIPTS = [purchase_receive(number) for number in ("1", "2", "3")]
 AUTOMATIC_PRICE_CHECK = Step(
-    "P-03.precio_automatico", "Consultar el precio automático de la caja en AUTOMATICA", EX3, (10, 11), "admin.test",
+    "P-03.precio_automatico", "Consultar el precio automático de la caja en AUTOMATICA", EX3, (10, 11), "admin.sio",
     _cr("price_list_items:read"), "commercial-relationship", "GET", "/companies/{empresa_a}/price-list-items", 200,
     params={"price_list_id": "{lista_automatica}"},
     expected_note="la caja: `unit_price` = `15600.00` y `origin` = `AUTOMATIC` (12 000 por caja en P1, tasa 0 %, × 1,30); las unidades de A y B también reciben su precio automático en AUTOMATICA (las ventas usan GENERAL y MAYORISTA); lo aplica el worker de precios después de la recepción",
@@ -612,27 +610,27 @@ AUTOMATIC_PRICE_CHECK = Step(
 
 INVENTORY_READS = [
     Step(
-        "P-03.saldo_a", "Consultar el saldo del producto A en A1", EX3, (11, 12), "supervisor.test",
+        "P-03.saldo_a", "Consultar el saldo del producto A en A1", EX3, (11, 12), "admin.sio",
         "perm:inventory:balances:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/balances/{producto_empresa_a}", 200,
         expected_note="`quantity` = `55.0000` tras las compras",
     ),
     Step(
-        "P-03.saldo_b", "Consultar el saldo del producto B en A1", EX3, (11, 12), "supervisor.test",
+        "P-03.saldo_b", "Consultar el saldo del producto B en A1", EX3, (11, 12), "admin.sio",
         "perm:inventory:balances:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/balances/{producto_empresa_b}", 200,
         expected_note="`quantity` = `10.0000`",
     ),
     Step(
-        "P-03.kardex_a", "Consultar el kardex del producto A", EX3, (11, 18), "supervisor.test",
+        "P-03.kardex_a", "Consultar el kardex del producto A", EX3, (11, 18), "admin.sio",
         "perm:inventory:movements:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/kardex/{producto_empresa_a}", 200,
         params={"page_size": 100},
     ),
     Step(
-        "P-03.capas_a", "Consultar las capas FIFO del producto A", EX3, (11, 12), "supervisor.test",
+        "P-03.capas_a", "Consultar las capas FIFO del producto A", EX3, (11, 12), "admin.sio",
         "perm:inventory:valuation:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/valuation/{producto_empresa_a}/layers", 200,
         params={"include_closed": "true"},
     ),
     Step(
-        "P-03.capas_b", "Consultar las capas FIFO del producto B", EX3, (11, 12), "supervisor.test",
+        "P-03.capas_b", "Consultar las capas FIFO del producto B", EX3, (11, 12), "admin.sio",
         "perm:inventory:valuation:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/valuation/{producto_empresa_b}/layers", 200,
         params={"include_closed": "true"},
     ),
@@ -663,7 +661,7 @@ SALE_PRICE_NOTES = {
 
 def sale_create(number: str) -> Step:
     return Step(
-        f"V-01.V{number}", f"Registrar la venta V{number} en borrador", EX4, (13,), "ventas.test",
+        f"V-01.V{number}", f"Registrar la venta V{number} en borrador", EX4, (13,), "operario.dao",
         "perm:sales:sales:create + perm:sales:sale_details:create", "sales", "POST", "/companies/{empresa_a}/sales", 201,
         body={"branch_id": "{sucursal_a1}", "company_customer_id": "{cliente}", "payment_method_id": "{metodo_efectivo}", "lines": SALE_LINES[number]},
         save={f"venta_{number}": "id", f"venta_{number}_version": "version"},
@@ -676,7 +674,7 @@ def sale_confirm(number: str, expect: int = 200, items: tuple[int, ...] = (15,),
     confirmed = expect == 200
     return Step(
         f"{family}.V{number}",
-        f"Confirmar la venta V{number}" + ("" if confirmed else " (rechazada)"), EX4, items, "ventas.test",
+        f"Confirmar la venta V{number}" + ("" if confirmed else " (rechazada)"), EX4, items, "operario.dao",
         "perm:sales:sales:update", "sales", "POST", f"/companies/{{empresa_a}}/sales/{{venta_{number}}}/confirmation", expect,
         body={"version": f"{{venta_{number}_version}}"},
         save={f"venta_{number}_version": "version", f"venta_{number}_numero": "number", f"venta_{number}_operacion": "inventory_operation_id"} if confirmed else {},
@@ -694,7 +692,7 @@ SALE_BEFORE_RECEIPT = [replace(sale_create("0"), id="V-00.V0-borrador"), sale_co
 SALES_CONFIRMATIONS = [sale_confirm(number) for number in ("1", "2", "3")]
 SALE_AVAILABILITY = [
     Step(
-        f"V-02.V{number}", f"Consultar la disponibilidad de la venta V{number}", EX4, (14,), "ventas.test",
+        f"V-02.V{number}", f"Consultar la disponibilidad de la venta V{number}", EX4, (14,), "operario.dao",
         "perm:sales:sales:read", "sales", "GET", f"/companies/{{empresa_a}}/sales/{{venta_{number}}}/availability", 200,
         expected_note="`all_available` = `true`" if number == "2" else "`all_available` = `false`",
     )
@@ -702,7 +700,7 @@ SALE_AVAILABILITY = [
 ]
 V4_REJECTED = sale_confirm("4", expect=409, items=(14,), family="V-04")
 V5_CHANGE_PRICE = Step(
-    "V-05.cambio", "Cambiar el precio de la unidad del producto A en GENERAL (1 500 → 1 550)", EX4, (15,), "admin.test",
+    "V-05.cambio", "Cambiar el precio de la unidad del producto A en GENERAL (1 500 → 1 550)", EX4, (15,), "admin.sio",
     _cr("price_list_items:update"), "commercial-relationship", "POST", "/price-list-items/{item_general}/change-price", 201,
     body={"unit_price": "1550.00", "version": "{item_general_version}"},
     save={"item_general_nuevo": "item.id"},
@@ -711,19 +709,19 @@ V5_CHANGE_PRICE = Step(
 )
 V5_REJECTED = sale_confirm("5", expect=409, items=(15,), family="V-05")
 V7_DEACTIVATE = Step(
-    "V-05b.inactivar", "Inactivar el producto B de la empresa A", EX4, (15,), "admin.test",
+    "V-05b.inactivar", "Inactivar el producto B de la empresa A", EX4, (15,), "admin.sio",
     _cr("company_products:delete"), "commercial-relationship", "POST", "/company-products/{producto_empresa_b}/deactivate", 200,
     body={"version": "{producto_empresa_b_version}"},
     save={"producto_empresa_b_version": "version"},
     audit=(AuditSpec("commercial-relationship", "DEACTIVATE_COMPANY_PRODUCT", "CompanyProduct", "{producto_empresa_b}"),),
 )
 V7_REJECTED = Step(
-    "V-05b.V7", "Confirmar la venta V7 con el producto inactivo (rechazada)", EX4, (15,), "ventas.test",
+    "V-05b.V7", "Confirmar la venta V7 con el producto inactivo (rechazada)", EX4, (15,), "operario.dao",
     "perm:sales:sales:update", "sales", "POST", "/companies/{empresa_a}/sales/{venta_7}/confirmation", 409,
     body={"version": "{venta_7_version}"}, idempotent=True,
 )
 V7_REACTIVATE = Step(
-    "V-05b.reactivar", "Reactivar el producto B de la empresa A", EX4, (15,), "admin.test",
+    "V-05b.reactivar", "Reactivar el producto B de la empresa A", EX4, (15,), "admin.sio",
     _cr("company_products:update"), "commercial-relationship", "POST", "/company-products/{producto_empresa_b}/reactivate", 200,
     body={"version": "{producto_empresa_b_version}"},
     save={"producto_empresa_b_version": "version"},
@@ -731,44 +729,44 @@ V7_REACTIVATE = Step(
 )
 SALE_PROFITABILITY = [
     Step(
-        "V-06.vendedor", "Consultar la venta V2 como vendedor (sin costo ni margen)", EX4, (16,), "ventas.test",
+        "V-06.vendedor", "Consultar la venta V2 como Empleado (sin costo ni margen)", EX4, (16,), "operario.dao",
         "perm:sales:sales:read", "sales", "GET", "/companies/{empresa_a}/sales/{venta_2}", 200,
         expected_note="Sin `unit_cost_snapshot`, `cost_total`, `cost_known`, `gross_margin_amount` ni `gross_margin_percentage`",
     ),
     Step(
-        "V-06.supervisor", "Consultar la venta V2 como supervisor (con costo y margen)", EX4, (16,), "supervisor.test",
+        "V-06.supervisor", "Consultar la venta V2 como SuperAdmin (con costo y margen)", EX4, (16,), "admin.sio",
         "perm:sales:sales:read + perm:sales:sales:read-profitability", "sales", "GET", "/companies/{empresa_a}/sales/{venta_2}", 200,
         expected_note="`cost_total` = `21600.00`, `gross_margin_amount` = `8400.00`",
     ),
 ]
 OUTPUT_READS = [
     Step(
-        "V-07.saldo_a", "Saldo del producto A tras las ventas", EX4, (16, 17), "supervisor.test",
+        "V-07.saldo_a", "Saldo del producto A tras las ventas", EX4, (16, 17), "admin.sio",
         "perm:inventory:balances:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/balances/{producto_empresa_a}", 200,
         expected_note="`quantity` = `23.0000`",
     ),
     Step(
-        "V-07.saldo_b", "Saldo del producto B tras las ventas", EX4, (16, 17), "supervisor.test",
+        "V-07.saldo_b", "Saldo del producto B tras las ventas", EX4, (16, 17), "admin.sio",
         "perm:inventory:balances:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/balances/{producto_empresa_b}", 200,
         expected_note="`quantity` = `6.0000`",
     ),
     Step(
-        "V-07.kardex_a", "Kardex del producto A con las salidas", EX4, (16, 18), "supervisor.test",
+        "V-07.kardex_a", "Kardex del producto A con las salidas", EX4, (16, 18), "admin.sio",
         "perm:inventory:movements:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/kardex/{producto_empresa_a}", 200,
         params={"page_size": 100},
     ),
     Step(
-        "V-07.kardex_b", "Kardex del producto B con la salida", EX4, (16, 18), "supervisor.test",
+        "V-07.kardex_b", "Kardex del producto B con la salida", EX4, (16, 18), "admin.sio",
         "perm:inventory:movements:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/kardex/{producto_empresa_b}", 200,
         params={"page_size": 100},
     ),
     Step(
-        "V-07.capas_a", "Capas FIFO del producto A tras las ventas", EX4, (16, 17), "supervisor.test",
+        "V-07.capas_a", "Capas FIFO del producto A tras las ventas", EX4, (16, 17), "admin.sio",
         "perm:inventory:valuation:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/valuation/{producto_empresa_a}/layers", 200,
         params={"include_closed": "true"},
     ),
     Step(
-        "V-07.capas_b", "Capas FIFO del producto B tras las ventas", EX4, (16, 17), "supervisor.test",
+        "V-07.capas_b", "Capas FIFO del producto B tras las ventas", EX4, (16, 17), "admin.sio",
         "perm:inventory:valuation:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/valuation/{producto_empresa_b}/layers", 200,
         params={"include_closed": "true"},
     ),
@@ -777,7 +775,7 @@ OUTPUT_READS = [
 
 def consumptions_step(name: str) -> Step:
     return Step(
-        f"V-07.consumos_{name}", f"Consumos de costo de la salida de {name.upper()}", EX4, (16,), "supervisor.test",
+        f"V-07.consumos_{name}", f"Consumos de costo de la salida de {name.upper()}", EX4, (16,), "admin.sio",
         "perm:inventory:valuation:read", "inventory", "GET", f"/companies/{{empresa_a}}/inventory-movements/{{movimiento_{name}}}/cost-consumptions", 200,
     )
 
@@ -787,7 +785,7 @@ CONSUMPTIONS = [consumptions_step(name) for name in ("v1", "v2", "v3")]
 # --- anulaciones (data-model §3.4) ---------------------------------------------------------------
 def cancel_step(kind: str, number: str, expect: int = 200, family: str = "A-01") -> Step:
     is_purchase = kind == "compra"
-    user = "compras.test" if is_purchase else "ventas.test"
+    user = "operario.dao" if is_purchase else "operario.dao"
     service = "purchase" if is_purchase else "sales"
     resource = "purchases" if is_purchase else "sales"
     prefix = "P" if is_purchase else "V"
@@ -824,7 +822,7 @@ def reversal_lookup(kind: str, number: str) -> Step:
     resource = "purchases" if is_purchase else "sales"
     return Step(
         f"A-01.operaciones_{'P' if is_purchase else 'V'}{number}", f"Consultar las operaciones de la {kind} anulada", EX5, (20,),
-        "compras.test" if is_purchase else "ventas.test",
+        "operario.dao" if is_purchase else "operario.dao",
         f"perm:{service}:{'purchase' if is_purchase else 'sale'}_operations:read", service, "GET",
         f"/companies/{{empresa_a}}/{resource}/{{{kind}_{number}}}/operations", 200,
         why="La operación de anulación guarda el id de la operación de reverso de Inventory.",
@@ -834,37 +832,37 @@ def reversal_lookup(kind: str, number: str) -> Step:
 REVERSAL_LOOKUPS = [reversal_lookup("venta", "3"), reversal_lookup("compra", "3")]
 FINAL_READS = [
     Step(
-        "A-03.saldo_a", "Saldo final del producto A", EX5, (17, 20), "supervisor.test",
+        "A-03.saldo_a", "Saldo final del producto A", EX5, (17, 20), "admin.sio",
         "perm:inventory:balances:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/balances/{producto_empresa_a}", 200,
         expected_note="`quantity` = `18.0000`",
     ),
     Step(
-        "A-03.saldo_b", "Saldo final del producto B", EX5, (17, 20), "supervisor.test",
+        "A-03.saldo_b", "Saldo final del producto B", EX5, (17, 20), "admin.sio",
         "perm:inventory:balances:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/balances/{producto_empresa_b}", 200,
         expected_note="`quantity` = `10.0000`",
     ),
     Step(
-        "A-03.kardex_a", "Kardex final del producto A", EX5, (18, 20), "supervisor.test",
+        "A-03.kardex_a", "Kardex final del producto A", EX5, (18, 20), "admin.sio",
         "perm:inventory:movements:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/kardex/{producto_empresa_a}", 200,
         params={"page_size": 100},
     ),
     Step(
-        "A-03.kardex_b", "Kardex final del producto B", EX5, (18, 20), "supervisor.test",
+        "A-03.kardex_b", "Kardex final del producto B", EX5, (18, 20), "admin.sio",
         "perm:inventory:movements:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/kardex/{producto_empresa_b}", 200,
         params={"page_size": 100},
     ),
     Step(
-        "A-03.capas_a", "Capas finales del producto A", EX5, (17, 20), "supervisor.test",
+        "A-03.capas_a", "Capas finales del producto A", EX5, (17, 20), "admin.sio",
         "perm:inventory:valuation:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/valuation/{producto_empresa_a}/layers", 200,
         params={"include_closed": "true"},
     ),
     Step(
-        "A-03.capas_b", "Capas finales del producto B", EX5, (17, 20), "supervisor.test",
+        "A-03.capas_b", "Capas finales del producto B", EX5, (17, 20), "admin.sio",
         "perm:inventory:valuation:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/valuation/{producto_empresa_b}/layers", 200,
         params={"include_closed": "true"},
     ),
     Step(
-        "A-03.valoracion", "Valoración final de la sucursal A1", EX5, (17, 20), "supervisor.test",
+        "A-03.valoracion", "Valoración final de la sucursal A1", EX5, (17, 20), "admin.sio",
         "perm:inventory:valuation:read", "inventory", "GET", "/companies/{empresa_a}/branches/{sucursal_a1}/valuation", 200,
         params={"page_size": 100},
     ),
@@ -873,19 +871,19 @@ FINAL_READS = [
 # --- auditoría (U-01, U-02) ----------------------------------------------------------------------
 AUDIT_STEPS = [
     Step(
-        "U-01.empresa", "Historial de auditoría de una entidad de la empresa A", EX6, (19,), "admin.test",
+        "U-01.empresa", "Historial de auditoría de una entidad de la empresa A", EX6, (19,), "admin.sio",
         "perm:audit:audit-events:read", "audit", "GET", "/companies/{empresa_a}/entity-history/{tipo_entidad}/{id_entidad}", 200,
         why="Cada acción esperada aparece exactamente una vez, con su autor y en orden por `occurred_at`.",
     ),
     Step(
-        "U-01.plataforma", "Historial de auditoría de una entidad de plataforma", EX6, (19,), "admin.test",
+        "U-01.plataforma", "Historial de auditoría de una entidad de plataforma", EX6, (19,), "admin.sio",
         "perm:audit:platform-events:read", "audit", "GET", "/platform-entity-history/{tipo_entidad}/{id_entidad}", 200,
         why="Identidades y productos globales generan eventos de plataforma (sin empresa).",
     ),
     Step(
-        "U-02.vendedor", "Consultar la auditoría como vendedor (rechazado)", EX6, (19,), "ventas.test",
+        "U-02.vendedor", "Consultar la auditoría como Empleado (rechazado)", EX6, (19,), "operario.dao",
         "perm:audit:audit-events:read", "audit", "GET", "/companies/{empresa_a}/audit-events", 403,
-        why="`ventas.test` no tiene permiso de lectura de auditoría.",
+        why="`operario.dao` no tiene permiso de lectura de auditoría.",
     ),
 ]
 

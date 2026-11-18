@@ -26,8 +26,8 @@ POST /api/v1/global-business-sectors
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `party-identity` solo tiene `read`; le falta `create`
 
 **Por qué se hace así**
 
@@ -66,8 +66,8 @@ POST /api/v1/global-business-sectors
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `party-identity` solo tiene `read`; le falta `create`
 
 **Por qué se hace así**
 
@@ -105,8 +105,8 @@ PUT /api/v1/global-business-sectors/<SECTOR_X1>
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `party-identity` solo tiene `read`; le falta `update`
 
 **Por qué se hace así**
 
@@ -135,8 +135,8 @@ POST /api/v1/global-business-sectors/<SECTOR_X>:deactivate
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `delete`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `operario.dao` — sobre `party-identity` solo tiene `read`; le falta `delete`
 
 **Por qué se hace así**
 
@@ -165,8 +165,8 @@ POST /api/v1/global-business-sectors/<SECTOR_X1>:deactivate
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `delete`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `operario.dao` — sobre `party-identity` solo tiene `read`; le falta `delete`
 
 **Por qué se hace así**
 
@@ -200,8 +200,8 @@ POST /api/v1/global-business-sectors/<SECTOR_X>:deactivate
 
 **Permiso que exige la URL:** `perm:party-identity:global_business_sectors:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `read`; les falta `delete`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao` — sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`; `operario.dao` — sobre `party-identity` solo tiene `read`; le falta `delete`
 
 **Por qué se hace así**
 

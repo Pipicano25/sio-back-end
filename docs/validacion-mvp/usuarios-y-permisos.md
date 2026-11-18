@@ -9,23 +9,21 @@ empresas recibe `404`.
 
 ## Usuarios de prueba y empresas del recorrido
 
-- Empresa A: `admin.test`, `compras.test`, `ventas.test`, `supervisor.test` (asignados a la sucursal A1). `admin.test` es SuperAdmin, `supervisor.test` Admin y los demás Empleado.
-- Empresa B: `inventario.test` (asignado a la sucursal B1). `admin.test` no se registra en B.
-- El vendedor no ve costo ni margen; `supervisor.test` sí (`perm:sales:sales:read-profitability`).
+- Empresa A: `admin.sio` (SuperAdmin) y `operario.dao` (Empleado), asignados a la sucursal A1.
+- Empresa B: `admin.dao` (Admin), asignado a la sucursal B1. `admin.sio` no se registra en B.
+- El Empleado (`operario.dao`) no ve costo ni margen; `admin.sio` sí (`perm:sales:sales:read-profitability`).
 - Las cuentas de servicio (`sales-service`, `purchase-service`) no compran ni venden: reciben `403`.
 
 | Usuario | Grupo | Permisos del grupo |
 | --- | --- | --- |
-| `admin.test` | `superadmin` | `perm:all:all:all` |
-| `compras.test` | `empleado` | `perm:business-reporting:purchases:read`<br>`perm:business-reporting:stock_evolution:read`<br>`perm:business-reporting:top_selling_products:read`<br>`perm:commercial-relationship:company_customers:create`<br>`perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>… (80 en total) |
-| `ventas.test` | `empleado` | `perm:business-reporting:purchases:read`<br>`perm:business-reporting:stock_evolution:read`<br>`perm:business-reporting:top_selling_products:read`<br>`perm:commercial-relationship:company_customers:create`<br>`perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>… (80 en total) |
-| `supervisor.test` | `admin` | `perm:audit:audit-events:read`<br>`perm:business-reporting:purchases:read`<br>`perm:business-reporting:sales_by_branch:read`<br>`perm:business-reporting:stock_evolution:read`<br>`perm:business-reporting:top_selling_products:read`<br>`perm:commercial-relationship:all:create`<br>… (49 en total) |
-| `inventario.test` | `empleado` | `perm:business-reporting:purchases:read`<br>`perm:business-reporting:stock_evolution:read`<br>`perm:business-reporting:top_selling_products:read`<br>`perm:commercial-relationship:company_customers:create`<br>`perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>… (80 en total) |
+| `admin.sio` | `superadmin` | `perm:all:all:all` |
+| `admin.dao` | `admin` | `perm:audit:audit-events:read`<br>`perm:business-reporting:purchases:read`<br>`perm:business-reporting:sales_by_branch:read`<br>`perm:business-reporting:stock_evolution:read`<br>`perm:business-reporting:top_selling_products:read`<br>`perm:commercial-relationship:all:create`<br>… (49 en total) |
+| `operario.dao` | `empleado` | `perm:business-reporting:purchases:read`<br>`perm:business-reporting:stock_evolution:read`<br>`perm:business-reporting:top_selling_products:read`<br>`perm:commercial-relationship:company_customers:create`<br>`perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>… (80 en total) |
 
 ## Cómo obtener el token
 
 ```bash
 TOKEN=$(curl -s -X POST http://127.0.0.1:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=compras.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" | jq -r .access_token)
+  -d username=operario.dao -d "password=$KEYCLOAK_TEST_USER_PASSWORD" | jq -r .access_token)
 ```

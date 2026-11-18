@@ -6,7 +6,7 @@ Ejercicio 2 — Relación comercial y precios: proveedor, cliente, productos, ad
 
 ## 1. Seleccionar el proveedor de la empresa A
 
-Paso `C-08.proveedor` · usuario **`admin.test`** · ítems de la FASE 10: 4
+Paso `C-08.proveedor` · usuario **`admin.sio`** · ítems de la FASE 10: 4
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-suppliers
@@ -22,7 +22,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-suppliers
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_suppliers:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -32,7 +32,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-suppliers
 
 ## 2. Registrar la condición de pago a crédito del proveedor
 
-Paso `C-08.condicion` · usuario **`admin.test`** · ítems de la FASE 10: 4
+Paso `C-08.condicion` · usuario **`admin.sio`** · ítems de la FASE 10: 4
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/supplier-payment-conditions
@@ -50,7 +50,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/supplier-payment-conditi
 
 **Permiso que exige la URL:** `perm:commercial-relationship:supplier_payment_conditions:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 

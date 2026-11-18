@@ -62,7 +62,7 @@ KEYCLOAK_BASE_URL = (_setting("KEYCLOAK_PUBLIC_URL") or "http://localhost:8081")
 KEYCLOAK_REALM = _setting("KEYCLOAK_REALM") or "sio"
 
 KEYCLOAK_TEST_CLIENT_ID = "sio-web"
-KEYCLOAK_TEST_USERNAME = "admin.test"
+KEYCLOAK_TEST_USERNAME = "admin.sio"
 
 # La contraseña NUNCA se escribe en el código ni tiene valor por defecto
 # (Constitución, Principio IX).

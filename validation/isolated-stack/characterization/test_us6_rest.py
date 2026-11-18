@@ -31,12 +31,12 @@ OWNERS = ("geography", "party-identity", "operational-context", "product-catalog
 
 @pytest.fixture(scope="module")
 def world(seed, users, run_id):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     colombia = expect(admin.get(f"{GEO}/global-countries", params={"iso3_code": "COL"}))["items"][0]["id"]
     city = next(item for item in expect(admin.get(f"{GEO}/global-cities", params={
         "country_id": colombia, "status": "ACTIVE", "page_size": 100}))["items"] if item.get("administrative_division_id"))
     company = seed.company(admin, colombia, f"US6{run_id}")
-    member = seed.member(admin, colombia, company, "admin.test")
+    member = seed.member(admin, colombia, company, "admin.sio")
     organization = seed.party(admin, colombia, "ORGANIZATION", "NIT", "organization-identities", {
         "country_id": colombia, "identification_type": "NIT",
         "legal_name": f"ORGANIZACION FICTICIA US6 {run_id} (DATO FICTICIO DE VALIDACION)"})
@@ -49,7 +49,7 @@ def world(seed, users, run_id):
     state = {"company": company, "member": member, "organization": organization, "person": person,
              "location": location, "aliases": aliases, "run": run_id, "memberships": []}
     yield state
-    # `compras.test` debe quedar solo en sus empresas: el resumen de la Historia 4 cuenta sus membresías activas.
+    # `operario.dao` debe quedar solo en sus empresas: el resumen de la Historia 4 cuenta sus membresías activas.
     for member_id in state["memberships"]:
         current = expect(admin.get(f"{OC}/application-users/{member_id}"))
         if current["status"] == "ACTIVE":
@@ -91,7 +91,7 @@ def _organization(admin, seed, run_id, label):
 
 
 def test_empresa_con_ubicacion(world, users, seed, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     organization = _organization(admin, seed, world["run"], "UBICADA")
     world["aliases"][organization] = "organizacion_empresa"
     response, requests = _observe("operational-context", lambda: admin.post(f"{OC}/companies", json={
@@ -100,7 +100,7 @@ def test_empresa_con_ubicacion(world, users, seed, book, reads):
 
 
 def test_empresa_con_ciudad_inexistente(world, users, seed, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     organization = _organization(admin, seed, world["run"], "SIN CIUDAD")
     world["aliases"][organization] = "organizacion_sin_ciudad"
     response, requests = _observe("operational-context", lambda: admin.post(f"{OC}/companies", json={
@@ -109,7 +109,7 @@ def test_empresa_con_ciudad_inexistente(world, users, seed, book, reads):
 
 
 def test_sucursal_con_ubicacion(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe("operational-context", lambda: admin.post(
         f"{OC}/companies/{world['company']}/branches",
         json={"code": f"G1{world['run']}", "name": f"Sucursal ficticia G1 {world['run']}", **world["location"]}))
@@ -117,7 +117,7 @@ def test_sucursal_con_ubicacion(world, users, book, reads):
 
 
 def test_sucursal_con_division_inexistente(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe("operational-context", lambda: admin.post(
         f"{OC}/companies/{world['company']}/branches",
         json={"code": f"G2{world['run']}", "name": f"Sucursal ficticia G2 {world['run']}", **world["location"],
@@ -126,12 +126,12 @@ def test_sucursal_con_division_inexistente(world, users, book, reads):
 
 
 def test_usuario_operativo_nuevo(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     company = world["company"]
     response, requests = _observe("operational-context", lambda: admin.post(
         f"{OC}/companies/{company}/application-users",
-        json={"username": "compras.test", "person_identity_id": world["person"],
-              "display_name": f"compras.test (ficticio {world['run']})"}))
+        json={"username": "operario.dao", "person_identity_id": world["person"],
+              "display_name": f"operario.dao (ficticio {world['run']})"}))
     if response.status_code == 201:
         world["memberships"].append(response.json()["id"])
     _check(world, book, reads, "usuario_operativo_nuevo", response, requests, 201)
@@ -141,7 +141,7 @@ def test_usuario_operativo_nuevo(world, users, book, reads):
 
 
 def test_perfil_de_contacto_con_ubicacion(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe("party-identity", lambda: admin.post(
         f"{PI}/organization-identities/{world['organization']}/contact-profile",
         json={"email": "contacto.us6@example.com", "address_line": "Calle ficticia 1",
@@ -155,7 +155,7 @@ def test_perfil_de_contacto_con_ubicacion(world, users, book, reads):
 
 
 def test_reporte_de_compras(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe("business-reporting", lambda: admin.get(
         f"{BRS}/companies/{world['company']}/reports/purchases",
         params={"date_from": "2026-10-01", "date_to": "2026-10-31"}))
@@ -168,7 +168,7 @@ def test_reporte_de_compras(world, users, book, reads):
 
 @pytest.fixture(scope="module")
 def catalog(world, users):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     run, company = world["run"], world["company"]
     unit = next(item["id"] for item in expect(admin.get(f"{PC}/units-of-measure", params={"status": "ACTIVE", "page_size": 100}))["items"]
                 if item["code"] == "UND")
@@ -202,7 +202,7 @@ def catalog(world, users):
 
 def test_condicion_de_pago_de_proveedor(world, catalog, users, book, reads):
     """CR → Payment Reference: el tipo de condición de pago se lee de la vista."""
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe("commercial-relationship", lambda: admin.post(
         f"{CR}/companies/{world['company']}/supplier-payment-conditions",
         json={"company_supplier_id": catalog["supplier"], "payment_condition_type_id": catalog["cash_type"],
@@ -211,7 +211,7 @@ def test_condicion_de_pago_de_proveedor(world, catalog, users, book, reads):
 
 
 def test_condicion_de_pago_tipo_inexistente(world, catalog, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe("commercial-relationship", lambda: admin.post(
         f"{CR}/companies/{world['company']}/supplier-payment-conditions",
         json={"company_supplier_id": catalog["supplier"], "payment_condition_type_id": str(uuid4()),
@@ -221,7 +221,7 @@ def test_condicion_de_pago_tipo_inexistente(world, catalog, users, book, reads):
 
 def test_producto_de_proveedor(world, catalog, users, book, reads):
     """CR → Product Catalog: la unidad base del producto global se lee de la vista."""
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe("commercial-relationship", lambda: admin.post(
         f"{CR}/companies/{world['company']}/supplier-products",
         json={"company_supplier_id": catalog["supplier"], "company_product_id": catalog["adopted"],
@@ -232,7 +232,7 @@ def test_producto_de_proveedor(world, catalog, users, book, reads):
 
 def test_fabricante_de_producto(world, catalog, users, book, reads):
     """PC → Party Identity: el fabricante se lee de la vista (existente → 201; inexistente → 422)."""
-    admin = users("admin.test")
+    admin = users("admin.sio")
     product = catalog["loose"]
     current = expect(admin.get(f"{PC}/products/{product}"))
     body = {key: current[key] for key in ("canonical_name", "base_unit_id")}
@@ -251,7 +251,7 @@ PIQ_API = ("company-products/search", "presentations/batch-lookup", "applicable-
 
 
 def test_vista_de_productos_por_sucursal(world, catalog, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe("product-inventory-query", lambda: admin.get(
         f"{PIQ}/companies/{world['company']}/branches/{catalog['branch']}/product-overviews",
         params={"page_size": 20}))
@@ -259,7 +259,7 @@ def test_vista_de_productos_por_sucursal(world, catalog, users, book, reads):
 
 
 def test_resumen_de_inventario(world, catalog, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe("product-inventory-query", lambda: admin.get(
         f"{PIQ}/companies/{world['company']}/inventory-summary"))
     _check(world, book, reads, "resumen_inventario", response, requests, 200, allowed=PIQ_API)
@@ -342,7 +342,7 @@ def _outage_actions(owner, world, catalog, admin, seed):
                                    "commercial-relationship", "inventory", "operational-context"))
 def test_caida_del_propietario(world, catalog, users, seed, outage_book, owner):
     """T079: con la base del propietario caída, cada consumidor responde el 503 de hoy, a tiempo y sin efectos."""
-    admin = users("admin.test")
+    admin = users("admin.sio")
     actions = _outage_actions(owner, world, catalog, admin, seed)
     observed = []
     with owner_database_down(owner):

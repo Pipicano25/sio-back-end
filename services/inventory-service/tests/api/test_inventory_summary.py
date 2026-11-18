@@ -40,7 +40,7 @@ def test_categories_per_branch(as_user, world, test_engine) -> None:
     insert_policy(test_engine, world.company, world.branch, zero, "0")  # 0 < 0 es falso: no hay alerta
     insert_policy(test_engine, world.company, world.branch, inactive_in_cr, "50", active=False)
 
-    body = _summary(as_user("inventario.test"), world, [world.branch])
+    body = _summary(as_user("operario.dao"), world, [world.branch])
 
     [branch] = body["branches"]
     assert branch["branch_id"] == str(world.branch)
@@ -65,7 +65,7 @@ def test_consolidated_definitions(as_user, world, test_engine) -> None:
     insert_policy(test_engine, world.company, world.branch, policy_twice, "5")
     insert_policy(test_engine, world.company, world.other_branch, policy_twice, "5")  # dos pares bajo mínimo
 
-    body = _summary(as_user("inventario.test"), world, [world.branch, world.other_branch])
+    body = _summary(as_user("operario.dao"), world, [world.branch, world.other_branch])
 
     assert _counts(body["consolidated"]) == {
         "products_with_positive_balance": 1,
@@ -79,7 +79,7 @@ def test_consolidated_definitions(as_user, world, test_engine) -> None:
 
 
 def test_branch_without_rows_reports_zeros(as_user, world) -> None:
-    body = _summary(as_user("inventario.test"), world, [world.branch])
+    body = _summary(as_user("operario.dao"), world, [world.branch])
     assert _counts(body["branches"][0]) == dict.fromkeys(KEYS, 0)
     assert _counts(body["consolidated"]) == dict.fromkeys(KEYS, 0)
 
@@ -88,7 +88,7 @@ def test_valuation_only_when_requested_and_authorized(as_user, as_token, service
     product = uuid4()
     insert_balance(test_engine, world.company, world.branch, product, "5", inventory_value="5000.50", average_unit_cost="1000.1")
     insert_balance(test_engine, world.company, world.other_branch, product, "1", inventory_value="99.50")
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
 
     without = _summary(reader, world, [world.branch])
     assert "inventory_value" not in str(without)
@@ -108,12 +108,12 @@ def test_valuation_only_when_requested_and_authorized(as_user, as_token, service
 
 def test_other_company_rows_are_never_counted(as_user, world, test_engine) -> None:
     insert_balance(test_engine, world.other_company, world.other_company_branch, world.other_company_product, "3")
-    body = _summary(as_user("inventario.test"), world, [world.other_company_branch])
+    body = _summary(as_user("operario.dao"), world, [world.other_company_branch])
     assert _counts(body["consolidated"]) == dict.fromkeys(KEYS, 0)
 
 
 def test_validation_and_permissions(as_user, as_token, service_token, world) -> None:
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     assert reader.post(url(world), json={"branch_ids": []}).status_code == 422
     assert reader.post(url(world), json={"branch_ids": [str(world.branch)], "x": 1}).status_code == 422
     assert reader.post(url(world), json={"branch_ids": [str(uuid4()) for _ in range(101)]}).status_code == 422

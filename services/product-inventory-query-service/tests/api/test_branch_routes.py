@@ -68,7 +68,7 @@ def inventory_branches(world) -> set[str]:
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
 def test_same_response_as_the_company_route_with_one_branch_id(world, seeded, as_user, endpoint) -> None:
-    client = as_user("supervisor.test")
+    client = as_user("admin.dao")
     branch = world.branches[1]
     by_path = client.get(branch_url(world, endpoint, branch))
     by_query = client.get(f"{world.base}/{endpoint}?branch_id={branch}")
@@ -78,7 +78,7 @@ def test_same_response_as_the_company_route_with_one_branch_id(world, seeded, as
 
 @pytest.mark.parametrize("endpoint", LISTINGS)
 def test_walking_all_pages_matches_the_company_route(world, seeded, as_user, endpoint) -> None:
-    client = as_user("supervisor.test")
+    client = as_user("admin.dao")
     branch = world.branches[0]
     by_path, _ = walk(client, branch_url(world, endpoint, branch) + "?page_size=7")
     by_query, _ = walk(client, f"{world.base}/{endpoint}?branch_id={branch}&page_size=7")
@@ -89,13 +89,13 @@ def test_walking_all_pages_matches_the_company_route(world, seeded, as_user, end
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
 def test_inventory_is_queried_only_for_the_branch_in_the_path(world, seeded, as_user, endpoint) -> None:
-    response = as_user("supervisor.test").get(branch_url(world, endpoint, world.branches[1]))
+    response = as_user("admin.dao").get(branch_url(world, endpoint, world.branches[1]))
     assert response.status_code == 200, response.text
     assert inventory_branches(world) == {str(world.branches[1])}
 
 
 def test_stock_and_minimums_are_only_from_the_branch(world, seeded, as_user) -> None:
-    client = as_user("supervisor.test")
+    client = as_user("admin.dao")
     body = client.get(branch_url(world, "inventory-overviews", world.branches[0]) + "?page_size=20").json()
     for item in body["items"]:
         assert {row["branch_id"] for row in item["stock"]["branches"]} == {str(world.branches[0])}
@@ -126,7 +126,7 @@ def test_summary_of_one_branch(world, seeded, as_user) -> None:
 
 
 def test_product_overviews_stock_only_for_the_branch(world, seeded, as_user) -> None:
-    items, _ = walk(as_user("supervisor.test"), branch_url(world, "product-overviews", world.branches[1]))
+    items, _ = walk(as_user("admin.dao"), branch_url(world, "product-overviews", world.branches[1]))
     only_0 = next(item for item in items if item["company_product_id"] == seeded["only_0"].id)
     assert [row["branch_id"] for row in only_0["stock"]["branches"]] == [str(world.branches[1])]
     assert only_0["stock"]["branches"][0]["balance_state"] == "NOT_REGISTERED"  # su saldo es de la sucursal 0
@@ -137,7 +137,7 @@ def test_product_overviews_stock_only_for_the_branch(world, seeded, as_user) -> 
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
 def test_branch_of_another_company_is_404_before_any_dependency(world, as_user, endpoint) -> None:
-    response = as_user("supervisor.test").get(branch_url(world, endpoint, world.other_branches[0]))
+    response = as_user("admin.dao").get(branch_url(world, endpoint, world.other_branches[0]))
     assert response.status_code == 404
     assert "PRODUCT_INVENTORY_QUERY.NOT_FOUND" in response.text or response.json()["status"] == 404
     assert not any(world.fakes.log.count(name) for name in DEPENDENCIES)
@@ -145,7 +145,7 @@ def test_branch_of_another_company_is_404_before_any_dependency(world, as_user, 
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
 def test_unknown_branch_and_foreign_company_are_404(world, as_user, endpoint) -> None:
-    client = as_user("supervisor.test")
+    client = as_user("admin.dao")
     assert client.get(branch_url(world, endpoint, uuid4())).status_code == 404
     foreign = branch_url(world, endpoint, world.other_branches[0], company=world.other_company)
     assert client.get(foreign).status_code == 404
@@ -154,7 +154,7 @@ def test_unknown_branch_and_foreign_company_are_404(world, as_user, endpoint) ->
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
 def test_invalid_branch_id_in_path_is_422(world, as_user, endpoint) -> None:
-    response = as_user("supervisor.test").get(f"{world.base}/branches/no-es-uuid/{endpoint}")
+    response = as_user("admin.dao").get(f"{world.base}/branches/no-es-uuid/{endpoint}")
     assert response.status_code == 422
 
 
@@ -162,14 +162,14 @@ def test_invalid_branch_id_in_path_is_422(world, as_user, endpoint) -> None:
 @pytest.mark.parametrize("query", ["branch_id={other}", "scope=COMPANY", "branch_id={same}"])
 def test_branch_or_scope_in_the_query_is_rejected(world, as_user, endpoint, query) -> None:
     url = branch_url(world, endpoint) + "?" + query.format(other=world.branches[1], same=world.branches[0])
-    response = as_user("supervisor.test").get(url)
+    response = as_user("admin.dao").get(url)
     assert response.status_code == 422, response.text
     assert response.json()["errors"][0]["code"] == "UNKNOWN_FIELD"
     assert not any(world.fakes.log.count(name) for name in DEPENDENCIES | {"operational_access"})
 
 
 def test_a_cursor_from_another_branch_restarts_without_leaking(world, seeded, as_user) -> None:
-    client = as_user("supervisor.test")
+    client = as_user("admin.dao")
     first = client.get(branch_url(world, "inventory-overviews", world.branches[0]) + "?page_size=5").json()
     assert first["next_cursor"]
     moved = client.get(branch_url(world, "inventory-overviews", world.branches[1])
@@ -186,7 +186,7 @@ def test_a_cursor_from_another_company_is_rejected(world, as_user, fakes) -> Non
         fakes.inventory.set_balance(other, other_branches[0], item.product.id, "1")
     for index in range(8):
         world.stock(world.product(f"Propio {index}"), "1")
-    client = as_user("supervisor.test")
+    client = as_user("admin.dao")
     page = client.get(f"/api/v1/companies/{other}/branches/{other_branches[0]}/inventory-overviews?page_size=2")
     cursor = page.json()["next_cursor"]
     assert cursor
@@ -241,7 +241,7 @@ def calls_of(world, client, url: str) -> tuple[int, int]:
 def test_branch_route_costs_the_same_as_one_branch_id_and_no_more_than_the_company(world, seeded, as_user,
                                                                                   endpoint) -> None:
     """Rendimiento comparativo sin tiempos: mismas llamadas que `?branch_id=` y nunca más que el consolidado."""
-    client = as_user("supervisor.test")
+    client = as_user("admin.dao")
     by_path = calls_of(world, client, branch_url(world, endpoint))
     by_query = calls_of(world, client, f"{world.base}/{endpoint}?branch_id={world.branches[0]}")
     consolidated = calls_of(world, client, f"{world.base}/{endpoint}")

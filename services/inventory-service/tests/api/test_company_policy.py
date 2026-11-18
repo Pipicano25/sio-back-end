@@ -19,7 +19,7 @@ BODY = {"inventory_system": "PERPETUAL", "valuation_method": "FIFO", "replenishm
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 def events(test_engine) -> list[dict]:
@@ -114,14 +114,14 @@ def test_periodic_does_not_change_the_engine(admin, operator, world) -> None:
 
 
 def test_permissions(as_user, as_token, service_token, world, fake_oc) -> None:
-    for username in ("inventario.test", "compras.test", "sin-permisos.test"):
+    for username in ("operario.dao", "sin-permisos.test"):
         assert as_user(username).post(url(world), json=BODY).status_code == 403, username
-    assert as_user("supervisor.test").post(url(world), json=BODY).status_code == 201
+    assert as_user("admin.dao").post(url(world), json=BODY).status_code == 201
 
     service = as_token(service_token("perm:all:all:all"))
     assert service.request("PUT", url(world), json={**BODY, "version": 1}).status_code == 403
 
-    assert as_user("inventario.test").get(url(world)).status_code == 200
+    assert as_user("operario.dao").get(url(world)).status_code == 200
     assert as_user("sin-permisos.test").get(url(world)).status_code == 403
     fake_oc.fail_if_called = True
     assert as_token(service_token(COMPANY_POLICIES_READ, PLATFORM_LOOKUP)).get(url(world)).status_code == 200
@@ -129,4 +129,4 @@ def test_permissions(as_user, as_token, service_token, world, fake_oc) -> None:
 
 def test_writes_require_membership(as_user, world, fake_oc) -> None:
     other = f"/api/v1/companies/{world.other_company}/inventory-policy"
-    assert as_user("admin.test").post(other, json=BODY).status_code == 404
+    assert as_user("admin.sio").post(other, json=BODY).status_code == 404

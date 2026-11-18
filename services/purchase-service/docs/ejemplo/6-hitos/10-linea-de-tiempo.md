@@ -6,7 +6,7 @@ Ejercicio 6: Hitos logísticos.
 
 `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events`
 
-Ejecuta: `compras.test`.
+Ejecuta: `operario.dao`.
 
 ### Por qué
 
@@ -20,11 +20,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (Operational Context
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:purchase:all:all` |
-| `compras.test` | Sí | `200` | tiene `perm:purchase:purchase_lifecycle_events:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:purchase:purchase_lifecycle_events:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:purchase:purchase_lifecycle_events:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:purchase:all:all` |
+| `operario.dao` | Sí | `200` | tiene `perm:purchase:purchase_lifecycle_events:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -56,7 +54,7 @@ Estado `200`.
       "source": "USER",
       "notes": null,
       "created_at": "<asignado por el servicio>",
-      "created_by": "compras.test",
+      "created_by": "operario.dao",
       "is_current": true
     },
     {
@@ -68,7 +66,7 @@ Estado `200`.
       "source": "SUPPLIER",
       "notes": null,
       "created_at": "<asignado por el servicio>",
-      "created_by": "compras.test",
+      "created_by": "operario.dao",
       "is_current": true
     },
     {
@@ -80,7 +78,7 @@ Estado `200`.
       "source": "USER",
       "notes": null,
       "created_at": "<asignado por el servicio>",
-      "created_by": "compras.test",
+      "created_by": "operario.dao",
       "is_current": true
     },
     {
@@ -92,7 +90,7 @@ Estado `200`.
       "source": "USER",
       "notes": null,
       "created_at": "<asignado por el servicio>",
-      "created_by": "compras.test",
+      "created_by": "operario.dao",
       "is_current": true
     },
     {
@@ -104,7 +102,7 @@ Estado `200`.
       "source": "USER",
       "notes": null,
       "created_at": "<asignado por el servicio>",
-      "created_by": "compras.test",
+      "created_by": "operario.dao",
       "is_current": true
     }
   ],

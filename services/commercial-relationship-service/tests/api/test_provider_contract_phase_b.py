@@ -55,7 +55,7 @@ KINDS = sorted(PATH)
 
 @pytest.fixture
 def resources(as_user, company, fake_catalog, fake_party, fake_payment):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog)
     provider = supplier(client, company, fake_party)
     price_list = create_price_list(client, company)
@@ -86,7 +86,7 @@ def test_service_account_with_lookup_reads_guaranteed_fields(resources, no_membe
 @pytest.mark.parametrize("kind", KINDS)
 def test_reads_in_any_state(as_user, resources, as_token, service_token, kind):
     item = resources[kind]
-    as_user("admin.test").post(PATH[kind].format(id=item["id"]) + "/deactivate", json={"version": item["version"]})
+    as_user("admin.sio").post(PATH[kind].format(id=item["id"]) + "/deactivate", json={"version": item["version"]})
     response = as_token(service_token(READ[kind], LOOKUP)).get(PATH[kind].format(id=item["id"]))
     assert response.status_code == 200 and response.json()["status"] == "INACTIVE"
 
@@ -102,8 +102,8 @@ def test_without_lookup_isolation_applies(resources, no_members, as_token, servi
 
 @pytest.mark.parametrize("kind", KINDS)
 def test_human_with_all_all_all_without_membership_is_404(resources, as_user, fake_oc, company, kind):
-    fake_oc.deactivate_member(user_sub("admin.test"), company)
-    assert as_user("admin.test").get(PATH[kind].format(id=resources[kind]["id"])).status_code == 404
+    fake_oc.deactivate_member(user_sub("admin.sio"), company)
+    assert as_user("admin.sio").get(PATH[kind].format(id=resources[kind]["id"])).status_code == 404
 
 
 @pytest.mark.parametrize("kind", KINDS)
@@ -126,7 +126,7 @@ def test_presentation_batch_lookup(as_user, company, other_company, fake_catalog
     assert missing["found"] is False and all(value is None for key, value in missing.items() if key not in {"id", "found"})
 
     # Un humano sin membresía ve la presentación como no encontrada.
-    human = as_user("supervisor.test").post("/api/v1/company-product-presentations/batch-lookup", json={"ids": [known]})
+    human = as_user("admin.dao").post("/api/v1/company-product-presentations/batch-lookup", json={"ids": [known]})
     assert human.json()["items"][0]["found"] is False
 
     too_many = as_token(service_token(READ["presentation"], LOOKUP)).post(

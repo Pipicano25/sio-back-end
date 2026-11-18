@@ -8,7 +8,7 @@ from sio_auth import FORBIDDEN_DETAIL
 
 from tests.examples.users import USERS, matching_grant
 
-EMPLEADO = next(u for u in USERS if u["username"] == "ventas.test")
+EMPLEADO = next(u for u in USERS if u["username"] == "operario.dao")
 
 SHORT = {u["username"]: u["username"].replace(".test", "") for u in USERS}
 KEYCLOAK = "http://localhost:8081/realms/sio/protocol/openid-connect/token"
@@ -170,7 +170,7 @@ def render_users(ex, records):
 
     out += ["## Resumen por usuario", ""]
     out += user_summary(ex, rows)
-    out += ["", "**Para hacer el ejercicio completo use `admin.test`** (grupo `superadmin`). `supervisor.test` (grupo "
+    out += ["", "**Para hacer el ejercicio completo use `admin.sio`** (grupo `superadmin`). `admin.dao` (grupo "
             "`admin`) también sirve para crear y modificar, pero no para inactivar ni eliminar.", ""]
 
     out += ["## Permiso por URL", "",
@@ -187,13 +187,13 @@ def render_users(ex, records):
             "`infrastructure/.env`. Cárguela en la terminal antes de pedir tokens.", ""]
 
     n = 1
-    out += [f"### {n}. Ejecutar el ejercicio con `admin.test`", ""]
-    out += token_command("admin.test", "TOKEN_ADMIN")
+    out += [f"### {n}. Ejecutar el ejercicio con `admin.sio`", ""]
+    out += token_command("admin.sio", "TOKEN_ADMIN_SIO")
     create = pick_example(rows, lambda s_i, c, p, r: c["method"] == "POST" and p.endswith(":products:create"))
     if create:
         out += ["", f"Por ejemplo, el paso {create[0] + 1:02d} (*{create[2]['title']}*):", ""]
-        out += curl_for(create[3], "TOKEN_ADMIN")
-        out += ["", f"Responde `201 Created`: `admin.test` tiene `perm:all:all:all`, que cubre `{create[4]}`. "
+        out += curl_for(create[3], "TOKEN_ADMIN_SIO")
+        out += ["", f"Responde `201 Created`: `admin.sio` tiene `perm:all:all:all`, que cubre `{create[4]}`. "
                 "Reemplace las variables `<…>` por los `id` guardados.", ""]
 
     n += 1
@@ -201,8 +201,8 @@ def render_users(ex, records):
                           and not matching_grant(EMPLEADO, p))
     if denied:
         s_i, c_i, s, c, p, r = denied
-        out += [f"### {n}. `ventas.test` (Empleado) intenta crear (rechazado)", ""]
-        out += token_command("ventas.test", "TOKEN_EMPLEADO")
+        out += [f"### {n}. `operario.dao` (Empleado) intenta crear (rechazado)", ""]
+        out += token_command("operario.dao", "TOKEN_EMPLEADO")
         out += ["", f"Intenta el paso {s_i + 1:02d} (*{s['title']}*), llamada {c_i + 1}:", ""]
         out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
@@ -215,11 +215,11 @@ def render_users(ex, records):
     read = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] == "GET" and s_i == len(ex["steps"]) - 1)
     if read:
         s_i, c_i, s, c, p, r = read
-        out += [f"### {n}. `ventas.test` (Empleado) consulta el resultado (permitido)", ""]
+        out += [f"### {n}. `operario.dao` (Empleado) consulta el resultado (permitido)", ""]
         out += curl_for(c, "TOKEN_EMPLEADO")
         readers = [f"`{u['username']}`" for u in USERS
-                   if u["username"] not in ("admin.test", "ventas.test") and matching_grant(u, p)]
-        out += ["", f"Responde `200 OK` con la misma información que ve `admin.test` en el paso {s_i + 1:02d}: "
+                   if u["username"] not in ("admin.sio", "operario.dao") and matching_grant(u, p)]
+        out += ["", f"Responde `200 OK` con la misma información que ve `admin.sio` en el paso {s_i + 1:02d}: "
                 f"`{matching_grant(EMPLEADO, p)}` cubre `{p}`. Lo mismo pasa con {', '.join(readers)}, que tienen "
                 "lectura sobre `product-catalog`.", ""]
 
@@ -227,30 +227,30 @@ def render_users(ex, records):
     if deactivate:
         n += 1
         s_i, c_i, s, c, p, r = deactivate
-        out += [f"### {n}. `supervisor.test` intenta inactivar (rechazado)", ""]
-        out += token_command("supervisor.test", "TOKEN_SUPERVISOR")
+        out += [f"### {n}. `admin.dao` intenta inactivar (rechazado)", ""]
+        out += token_command("admin.dao", "TOKEN_ADMIN_DAO")
         out += [""]
-        out += curl_for(c, "TOKEN_SUPERVISOR")
+        out += curl_for(c, "TOKEN_ADMIN_DAO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
-        out += ["`supervisor.test` (grupo `admin`) tiene `perm:product-catalog:all:create`, `:all:read` y `:all:update`, "
+        out += ["`admin.dao` (grupo `admin`) tiene `perm:product-catalog:all:create`, `:all:read` y `:all:update`, "
                 "pero **no** `deactivate` ni `delete`: el catálogo es global y el Admin no lo inactiva. Por eso pudo cargar "
-                "todo el producto y no puede inactivarlo: esa acción queda para `admin.test` (grupo `superadmin`).", ""]
+                "todo el producto y no puede inactivarlo: esa acción queda para `admin.sio` (grupo `superadmin`).", ""]
 
     party = pick_example(rows, lambda s_i, c, p, r: p == "perm:party-identity:organization_identities:read")
-    inventario = next(u for u in USERS if u["username"] == "inventario.test")
+    inventario = EMPLEADO
     if party and not matching_grant(inventario, party[4]):
         n += 1
         s_i, c_i, s, c, p, r = party
-        out += [f"### {n}. `inventario.test` busca el fabricante (rechazado)", ""]
-        out += token_command("inventario.test", "TOKEN_INVENTARIO")
+        out += [f"### {n}. `operario.dao` busca el fabricante (rechazado)", ""]
+        out += token_command("operario.dao", "TOKEN_EMPLEADO")
         out += [""]
-        out += curl_for(c, "TOKEN_INVENTARIO")
+        out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden` (formato de Party Identity Service):", "", "```json",
                 json.dumps({"detail": FORBIDDEN_DETAIL}, ensure_ascii=False, indent=2), "```", ""]
         searchers = [f"`{u['username']}`" for u in USERS
-                     if u["username"] not in ("admin.test", "inventario.test") and matching_grant(u, p)]
-        out += ["`inventario.test` lee el catálogo (`perm:product-catalog:all:read`) y Geography, pero **no** tiene "
+                     if u["username"] not in ("admin.sio", "operario.dao") and matching_grant(u, p)]
+        out += ["`operario.dao` lee el catálogo (`perm:product-catalog:all:read`) y Geography, pero **no** tiene "
                 f"ningún permiso sobre `party-identity`. Sí pueden hacer esta búsqueda: {', '.join(searchers)} "
                 f"(lectura explícita de `{p}`).", ""]
 
@@ -296,11 +296,9 @@ def render_general(exercises, all_records):
             "Todos comparten la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD` (`infrastructure/.env`).", "",
             "| Usuario | Grupo | Permisos del grupo | En el catálogo puede |", "| --- | --- | --- | --- |"]
     summary = {
-        "admin.test": "Todo, incluido inactivar",
-        "supervisor.test": "Consultar, crear y modificar. **No** inactivar ni eliminar",
-        "compras.test": "Solo consultar",
-        "ventas.test": "Solo consultar",
-        "inventario.test": "Solo consultar",
+        "admin.sio": "Todo, incluido inactivar",
+        "admin.dao": "Consultar, crear y modificar. **No** inactivar ni eliminar",
+        "operario.dao": "Solo consultar",
     }
     for u in USERS:
         if len(u["perms"]) <= 10:
@@ -314,11 +312,11 @@ def render_general(exercises, all_records):
 
     out += ["## Cómo obtener el token de cada usuario", "",
             "Cambie `username` por el usuario que quiera probar:", ""]
-    out += token_command("ventas.test", "TOKEN")
+    out += token_command("operario.dao", "TOKEN")
     out += ["", "En **PowerShell** (Windows), donde `curl` no es el curl real:", "",
             "```powershell",
             "$body = @{ grant_type = 'password'; client_id = 'sio-web'; scope = 'openid'",
-            "           username = 'ventas.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
+            "           username = 'operario.dao'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
             f"$TOKEN = (Invoke-RestMethod -Method Post -Uri '{KEYCLOAK}' -Body $body).access_token",
             "Invoke-RestMethod -Uri 'http://localhost:8003/api/v1/units-of-measure?code=UND' `",
             "  -Headers @{ Authorization = \"Bearer $TOKEN\" }",
@@ -326,8 +324,7 @@ def render_general(exercises, all_records):
             "En Postman: pestaña *Authorization* → tipo *OAuth 2.0* → *Password Credentials*, con la URL del token de arriba, "
             "cliente `sio-web` y el usuario y contraseña.", "",
             "Luego envíe el token en cada llamada:", "", "```http", "Authorization: Bearer <TOKEN>", "```", "",
-            "Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python services/get_token.py ventas)`) "
-            "obtiene el token de `<rol>.test`; sin argumento muestra un menú. Lee la contraseña de "
+            "Atajo: `python services/get_token.py` (menú) obtiene el token de un usuario de prueba. Lee la contraseña de "
             "`KEYCLOAK_TEST_USER_PASSWORD` o de `infrastructure/.env`.", ""]
 
     out += ["## Permiso de cada URL de los ejercicios", "",
@@ -346,11 +343,10 @@ def render_general(exercises, all_records):
 
     out += ["## Qué usuario usar", "",
             "| Para… | Usuario |", "| --- | --- |",
-            "| Hacer los ejercicios completos | `admin.test` |",
-            "| Cargar productos sin poder inactivarlos | `supervisor.test` (Admin; falla en el paso de inactivar del "
+            "| Hacer los ejercicios completos | `admin.sio` |",
+            "| Cargar productos sin poder inactivarlos | `admin.dao` (Admin; falla en el paso de inactivar del "
             "ejercicio 5) |",
-            "| Verificar lo cargado (pasos de consulta y verificación) | `ventas.test`, `compras.test` o "
-            "`inventario.test` (Empleado) |",
-            "| Probar rechazos por falta de permiso | `ventas.test` en cualquier `POST` o `PUT`; `supervisor.test` al "
+            "| Verificar lo cargado (pasos de consulta y verificación) | `operario.dao` (Empleado) |",
+            "| Probar rechazos por falta de permiso | `operario.dao` en cualquier `POST` o `PUT`; `admin.dao` al "
             "inactivar |", ""]
     return "\n".join(out)

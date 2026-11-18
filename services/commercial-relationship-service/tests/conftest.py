@@ -417,7 +417,7 @@ def as_token(test_client):
 @pytest.fixture
 def company(fake_oc) -> UUID:
     """Empresa activa con su organización y con todos los usuarios de prueba del realm
-    (`admin.test`, `supervisor.test`, `compras.test`, `ventas.test` e `inventario.test`) y la identidad sintética
+    (`admin.sio`, `admin.dao` y `operario.dao`) y la identidad sintética
     `sin-permisos.test` como miembros."""
     company_id = uuid4()
     fake_oc.organizations[company_id] = uuid4()

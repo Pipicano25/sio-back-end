@@ -66,7 +66,7 @@ def test_fifty_concurrent_confirmations(test_client, user_token, world, fakes, m
     received: list[dict] = []
     errors: list[str] = []
     lock = threading.Lock()
-    token = user_token("compras.test")
+    token = user_token("operario.dao")
 
     def run(purchase, action: str, body: dict, results: list) -> None:
         barrier.wait(30)
@@ -119,7 +119,7 @@ def seed_purchases(engine, world, count: int, application_user) -> None:
 
 
 def test_queries_with_ten_thousand_purchases(buyer, world, fakes, test_engine) -> None:
-    seed_purchases(test_engine, world, 10_000, fakes.oc.members[(user_sub("compras.test"), world.company)])
+    seed_purchases(test_engine, world, 10_000, fakes.oc.members[(user_sub("operario.dao"), world.company)])
     draft = buyer.post(f"{base(world)}/purchases", json=purchase_body(world, line(world.product))).json()
     calls = [
         lambda: buyer.get(f"{base(world)}/purchases"),

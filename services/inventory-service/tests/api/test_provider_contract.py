@@ -69,7 +69,7 @@ def test_sales_flow_check_stock_then_output_then_reverse(purchase, sales, as_tok
 
 
 def test_human_with_wildcard_never_applies(as_user, world) -> None:
-    assert as_user("admin.test").post(ENTRIES, json=operation_body(world, line(world.products[0], "1"))).status_code == 403
+    assert as_user("admin.sio").post(ENTRIES, json=operation_body(world, line(world.products[0], "1"))).status_code == 403
 
 
 def test_technical_reader_without_lookup_gets_isolation(as_token, service_token, world) -> None:

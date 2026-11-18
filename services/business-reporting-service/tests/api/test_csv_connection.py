@@ -43,7 +43,7 @@ def server(test_auth, user_token):
         if instance.started:
             break
         time.sleep(0.05)
-    yield f"http://127.0.0.1:{port}", fakes, user_token("inventario.test")
+    yield f"http://127.0.0.1:{port}", fakes, user_token("operario.dao")
     instance.should_exit = True
     thread.join(timeout=5)
 

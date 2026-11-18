@@ -6,7 +6,7 @@ Ejercicio 5 — Anulaciones y reversos · [Orden del ejercicio](ORDEN.md)
 
 ## 1. Anular la compra P4
 
-Paso `A-01.P4` · usuario **`compras.test`** · ítems de la FASE 10: 20
+Paso `A-01.P4` · usuario **`operario.dao`** · ítems de la FASE 10: 20
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases/<COMPRA_4>/cancellation
@@ -23,7 +23,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:delete`), `ventas.test` (por `perm:purchase:purchases:delete`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:delete`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchases:delete`)
 
 **Respuesta esperada:** `200`
 
@@ -33,7 +33,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 ## 2. Anular la venta V6
 
-Paso `A-01.V6` · usuario **`ventas.test`** · ítems de la FASE 10: 20
+Paso `A-01.V6` · usuario **`operario.dao`** · ítems de la FASE 10: 20
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_6>/cancellation
@@ -50,7 +50,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:delete`), `ventas.test` (por `perm:sales:all:delete`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:delete`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:delete`)
 
 **Respuesta esperada:** `200`
 
@@ -60,7 +60,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 ## 3. Anular la venta V3
 
-Paso `A-01.V3` · usuario **`ventas.test`** · ítems de la FASE 10: 20
+Paso `A-01.V3` · usuario **`operario.dao`** · ítems de la FASE 10: 20
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_3>/cancellation
@@ -77,7 +77,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:delete`), `ventas.test` (por `perm:sales:all:delete`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:delete`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:delete`)
 
 **Respuesta esperada:** `200`
 
@@ -87,7 +87,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 ## 4. Anular la compra P3
 
-Paso `A-01.P3` · usuario **`compras.test`** · ítems de la FASE 10: 20
+Paso `A-01.P3` · usuario **`operario.dao`** · ítems de la FASE 10: 20
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases/<COMPRA_3>/cancellation
@@ -104,7 +104,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:delete`), `ventas.test` (por `perm:purchase:purchases:delete`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:delete`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchases:delete`)
 
 **Respuesta esperada:** `200`
 
@@ -114,7 +114,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 ## 5. Consultar las operaciones de la venta anulada
 
-Paso `A-01.operaciones_V3` · usuario **`ventas.test`** · ítems de la FASE 10: 20
+Paso `A-01.operaciones_V3` · usuario **`operario.dao`** · ítems de la FASE 10: 20
 
 ```http
 GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_3>/operations
@@ -122,7 +122,7 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_3>/operation
 
 **Permiso que exige la URL:** `perm:sales:sale_operations:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:read`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:read`)
 
 **Por qué se hace así**
 
@@ -132,7 +132,7 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_3>/operation
 
 ## 6. Consultar las operaciones de la compra anulada
 
-Paso `A-01.operaciones_P3` · usuario **`compras.test`** · ítems de la FASE 10: 20
+Paso `A-01.operaciones_P3` · usuario **`operario.dao`** · ítems de la FASE 10: 20
 
 ```http
 GET http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases/<COMPRA_3>/operations
@@ -140,7 +140,7 @@ GET http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases/<COMPRA_3>/oper
 
 **Permiso que exige la URL:** `perm:purchase:purchase_operations:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchase_operations:read`), `ventas.test` (por `perm:purchase:purchase_operations:read`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchase_operations:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchase_operations:read`)
 
 **Por qué se hace así**
 

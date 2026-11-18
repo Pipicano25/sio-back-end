@@ -28,7 +28,7 @@ def test_receipt_applies_the_entry_with_base_units_and_base_cost(world, fakes, m
     assert response.status_code == 200, response.text
     received = response.json()
     assert received["status"] == "CONFIRMED" and received["receipt_status"] == "RECEIVED"
-    receiver = fakes.oc.members[(user_sub("compras.test"), world.company)]
+    receiver = fakes.oc.members[(user_sub("operario.dao"), world.company)]
     assert received["received_by_user_id"] == str(receiver) and received["received_at"] is not None
     assert received["number"] == purchase["number"]  # la recepción no numera
 
@@ -117,7 +117,7 @@ def test_receipt_version_conflict_and_branch_access(world, fakes, make_sequence,
     purchase = confirmed_purchase(make_sequence, make_draft, confirm)
     response = receive(purchase, version=purchase["version"] + 5)
     assert response.status_code == 409 and response.json()["code"] == "PURCHASE.VERSION_CONFLICT"
-    fakes.oc.assignments.discard((user_sub("compras.test"), world.branch))
+    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
     response = receive(purchase)
     assert response.status_code == 403 and response.json()["code"] == "PURCHASE.BRANCH_ACCESS_DENIED"
     assert fakes.inventory.entries() == []
@@ -143,7 +143,7 @@ def test_definitive_inventory_rejection_keeps_the_purchase_pending(world, fakes,
 
 def test_receipt_rechecks_the_operator(world, fakes, make_sequence, make_draft, confirm, receive) -> None:
     purchase = confirmed_purchase(make_sequence, make_draft, confirm)
-    user = fakes.oc.members[(user_sub("compras.test"), world.company)]
+    user = fakes.oc.members[(user_sub("operario.dao"), world.company)]
     fakes.oc.users[user] = replace(fakes.oc.users[user], status="INACTIVE")
     response = receive(purchase)
     assert response.status_code == 409 and response.json()["errors"][0]["code"] == "APPLICATION_USER_INACTIVE"
@@ -152,9 +152,9 @@ def test_receipt_rechecks_the_operator(world, fakes, make_sequence, make_draft, 
 
 def test_receipt_records_the_receiving_user(as_user, world, fakes, make_sequence, make_draft, confirm, receive) -> None:
     """Quien confirma la recepción queda como `received_by_user_id` y como usuario de la entrada."""
-    purchase = confirmed_purchase(make_sequence, make_draft, confirm)  # creada y confirmada por compras.test
-    received = receive(purchase, client=as_user("admin.test")).json()
-    receiver = str(fakes.oc.members[(user_sub("admin.test"), world.company)])
+    purchase = confirmed_purchase(make_sequence, make_draft, confirm)  # creada y confirmada por operario.dao
+    received = receive(purchase, client=as_user("admin.sio")).json()
+    receiver = str(fakes.oc.members[(user_sub("admin.sio"), world.company)])
     assert received["received_by_user_id"] == receiver
     assert fakes.inventory.entries()[0].payload["application_user_id"] == receiver
 
@@ -171,7 +171,7 @@ def test_two_keys_concurrently_apply_one_entry(test_client, user_token, world, f
         response = test_client.post(
             f"{base(world)}/purchases/{purchase['id']}/receipt",
             json={"version": purchase["version"], "full_receipt_confirmed": True},
-            headers={"Authorization": f"Bearer {user_token('compras.test')}", "Idempotency-Key": new_key()},
+            headers={"Authorization": f"Bearer {user_token('operario.dao')}", "Idempotency-Key": new_key()},
         )
         with lock:
             responses.append(response)

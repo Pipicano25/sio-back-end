@@ -47,7 +47,7 @@ def _load(engine, company):
 @pytest.mark.parametrize("search", ["acetaminofen", "0123", "ref-5", None])
 def test_first_page_p95_under_one_second(test_engine, as_user, company, search):
     _load(test_engine, company)
-    client = as_user("supervisor.test")
+    client = as_user("admin.dao")
     params = {"page": 1, "page_size": 20}
     if search:
         params["search"] = search

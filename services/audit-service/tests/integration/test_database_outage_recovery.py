@@ -78,7 +78,7 @@ def clients():
     if shutil.which("docker") is None:
         pytest.skip("Docker no está disponible.")
     require_audit()
-    with emitter_client() as emitter, user_client("supervisor.test") as supervisor:
+    with emitter_client() as emitter, user_client("admin.dao") as supervisor:
         yield emitter, supervisor
 
 

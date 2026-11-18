@@ -22,9 +22,9 @@ POST /api/v1/company-suppliers/<PROVEEDOR>/unblock
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_suppliers:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `company_suppliers` solo tienen `read`; les falta `update`
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `company_suppliers` solo tiene `read`; le falta `update`
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 
@@ -58,10 +58,10 @@ POST /api/v1/company-suppliers/<PROVEEDOR_2>/deactivate
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_suppliers:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:delete`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `company_suppliers` solo tienen `read`; les falta `delete`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:delete`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `company_suppliers` solo tiene `read`; le falta `delete`
 - ℹ️ Inactivar **y bloquear** un proveedor exigen `delete` (DS-16); reactivar y desbloquear exigen `update`. El grupo `empleado` no puede bloquear.
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 
@@ -85,8 +85,8 @@ GET /api/v1/companies/<EMPRESA>/company-suppliers?status=ALL
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_suppliers:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:read`), `compras.test` (por `perm:commercial-relationship:company_suppliers:read`), `ventas.test` (por `perm:commercial-relationship:company_suppliers:read`), `inventario.test` (por `perm:commercial-relationship:company_suppliers:read`)
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:read`), `operario.dao` (por `perm:commercial-relationship:company_suppliers:read`)
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 

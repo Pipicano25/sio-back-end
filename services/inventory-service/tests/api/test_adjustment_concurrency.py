@@ -35,7 +35,7 @@ def test_negative_adjustments_and_outputs_never_overdraw(app, operator, service_
                 "quantity": "1",
                 "reason": "Merma ficticia",
             }
-            requests.append((adjustments, body, user_token("inventario.test")))
+            requests.append((adjustments, body, user_token("operario.dao")))
 
     def send(request):
         url, body, token = request

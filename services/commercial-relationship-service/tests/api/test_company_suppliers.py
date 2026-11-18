@@ -29,13 +29,13 @@ def _put(client, item, **overrides):
 
 
 def test_select_supplier(as_user, company, fake_party):
-    created = supplier(as_user("supervisor.test"), company, fake_party)
+    created = supplier(as_user("admin.dao"), company, fake_party)
     assert created["status"] == "ACTIVE" and created["block_reason"] is None
     assert not {"legal_name", "email"} & set(created)
 
 
 def test_duplicate_supplier_and_same_org_as_customer(as_user, company, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     customer = organization_customer(client, company, fake_party)
     as_supplier = supplier(client, company, fake_party, organization_identity_id=customer["organization_identity_id"])
     assert as_supplier["organization_identity_id"] == customer["organization_identity_id"]
@@ -49,25 +49,25 @@ def test_duplicate_supplier_and_same_org_as_customer(as_user, company, fake_part
 
 
 def test_block_requires_delete_and_reason(as_user, company, fake_party):
-    created = supplier(as_user("admin.test"), company, fake_party)
+    created = supplier(as_user("admin.sio"), company, fake_party)
 
-    assert _action(as_user("ventas.test"), created, "block", block_reason="Incumplimiento").status_code == 403
+    assert _action(as_user("operario.dao"), created, "block", block_reason="Incumplimiento").status_code == 403
 
-    missing = _action(as_user("admin.test"), created, "block")
+    missing = _action(as_user("admin.sio"), created, "block")
     assert missing.status_code == 422 and code_of(missing) == "VALIDATION_ERROR"
-    too_long = _action(as_user("admin.test"), created, "block", block_reason="x" * 501)
+    too_long = _action(as_user("admin.sio"), created, "block", block_reason="x" * 501)
     assert too_long.status_code == 422
-    blank = _action(as_user("admin.test"), created, "block", block_reason="   ")
+    blank = _action(as_user("admin.sio"), created, "block", block_reason="   ")
     assert blank.status_code == 422
 
-    blocked = _action(as_user("admin.test"), created, "block", block_reason="  Incumplimiento de entregas  ")
+    blocked = _action(as_user("admin.sio"), created, "block", block_reason="  Incumplimiento de entregas  ")
     assert blocked.status_code == 200
     assert blocked.json()["status"] == "BLOCKED"
     assert blocked.json()["block_reason"] == "Incumplimiento de entregas"
 
 
 def test_blocked_transitions(as_user, company, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     created = supplier(client, company, fake_party)
     blocked = _action(client, created, "block", block_reason="Revisión").json()
 
@@ -77,13 +77,13 @@ def test_blocked_transitions(as_user, company, fake_party):
     again = _action(client, blocked, "block", block_reason="otra")
     assert again.status_code == 409
 
-    unblocked = _action(as_user("supervisor.test"), blocked, "unblock")
+    unblocked = _action(as_user("admin.dao"), blocked, "unblock")
     assert unblocked.status_code == 200
     assert unblocked.json()["status"] == "ACTIVE" and unblocked.json()["block_reason"] is None
 
 
 def test_block_from_inactive_and_unblock_with_inactive_org(as_user, company, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     created = supplier(client, company, fake_party)
     inactive = _action(client, created, "deactivate").json()
     blocked = _action(client, inactive, "block", block_reason="Motivo").json()
@@ -97,7 +97,7 @@ def test_block_from_inactive_and_unblock_with_inactive_org(as_user, company, fak
 def test_self_relationship(as_user, company, fake_oc, fake_party):
     own = fake_oc.organizations[company]
     fake_party.organizations[own] = "ACTIVE"
-    response = as_user("admin.test").post(
+    response = as_user("admin.sio").post(
         URL.format(company=company), json={"organization_identity_id": str(own), "internal_code": "Y", "display_name": "Y"}
     )
     assert response.status_code == 422 and code_of(response) == "SELF_RELATIONSHIP_NOT_ALLOWED"
@@ -107,7 +107,7 @@ def test_contact_of_other_organization(as_user, company, fake_party):
     organization = uuid4()
     fake_party.organizations[organization] = "ACTIVE"
     contact = fake_party.add_contact(uuid4(), uuid4())
-    response = as_user("admin.test").post(
+    response = as_user("admin.sio").post(
         URL.format(company=company),
         json={"organization_identity_id": str(organization), "internal_code": "C", "display_name": "C",
               "preferred_contact_person_id": str(contact)},
@@ -117,15 +117,15 @@ def test_contact_of_other_organization(as_user, company, fake_party):
 
 @pytest.mark.parametrize("field", ["status", "block_reason", "organization_identity_id", "company_id"])
 def test_put_immutables(as_user, company, fake_party, field):
-    created = supplier(as_user("admin.test"), company, fake_party)
+    created = supplier(as_user("admin.sio"), company, fake_party)
     body = {"internal_code": "A", "display_name": "B", "version": 1, field: "x"}
-    response = as_user("admin.test").put(f"/api/v1/company-suppliers/{created['id']}", json=body)
+    response = as_user("admin.sio").put(f"/api/v1/company-suppliers/{created['id']}", json=body)
     assert code_of(response) == "IMMUTABLE_FIELD"
 
 
 def test_put_on_blocked_and_inactive_keeps_state(as_user, company, fake_party):
     """DS-17: PUT sobre BLOCKED no desbloquea; sobre INACTIVE no reactiva."""
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     created = supplier(client, company, fake_party, internal_code="PRV-1")
     blocked = _action(client, created, "block", block_reason="Motivo").json()
 
@@ -142,7 +142,7 @@ def test_put_on_blocked_and_inactive_keeps_state(as_user, company, fake_party):
 
 
 def test_code_reuse_after_changing_inactive_supplier(as_user, company, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     old = supplier(client, company, fake_party, internal_code="PRV-9")
     inactive = _action(client, old, "deactivate").json()
 
@@ -156,7 +156,7 @@ def test_code_reuse_after_changing_inactive_supplier(as_user, company, fake_part
 
 
 def test_inactive_company_rules(as_user, company, fake_party, fake_oc):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     active = supplier(client, company, fake_party, internal_code="A")
     blocked = _action(client, supplier(client, company, fake_party, internal_code="B"), "block", block_reason="M").json()
     inactive = _action(client, supplier(client, company, fake_party, internal_code="C"), "deactivate").json()
@@ -171,7 +171,7 @@ def test_inactive_company_rules(as_user, company, fake_party, fake_oc):
 
 
 def test_list_blocked(as_user, company, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     created = supplier(client, company, fake_party)
     _action(client, created, "block", block_reason="M")
     listing = client.get(URL.format(company=company), params={"status": "BLOCKED"}).json()

@@ -52,7 +52,7 @@ def history(operator, as_user, world):
     assert operator.post(f"{OUTPUTS}/{output.json()['id']}/reversal", json=reversal_body(world)).status_code == 201
     entry = operator.post(ENTRIES, json=operation_body(world, line(product, "3", unit_cost="1100")))
     assert operator.post(f"{ENTRIES}/{entry.json()['id']}/reversal", json=reversal_body(world)).status_code == 201
-    clerk = as_user("inventario.test")
+    clerk = as_user("operario.dao")
     adjustments = f"/api/v1/companies/{world.company}/inventory-adjustments"
     assert clerk.post(adjustments, json=adjustment(world, product, "POSITIVE", "2")).status_code == 201
     assert clerk.post(adjustments, json=adjustment(world, product, "NEGATIVE", "1")).status_code == 201
@@ -61,7 +61,7 @@ def history(operator, as_user, world):
 
 def test_sums_by_type_identity_and_opening(as_user, world, history) -> None:
     start = history["middle"] - timedelta(microseconds=1)
-    response = as_user("inventario.test").get(url(world), params=window(start, history["end"]))
+    response = as_user("operario.dao").get(url(world), params=window(start, history["end"]))
     assert response.status_code == 200, response.text
     body = response.json()
     rows = {row["company_product_id"]: row for row in body["items"]}
@@ -107,14 +107,14 @@ def test_permission_and_isolation(as_user, as_token, make_token, world, history)
     kardex_only = as_token(make_token("perm:inventory:movements:read", sub="solo-kardex-" + uuid4().hex))
     assert kardex_only.get(url(world), params=params).status_code == 403  # el permiso es propio
     assert as_user("sin-permisos.test").get(url(world), params=params).status_code == 403
-    other_company = as_user("inventario.test").get(url(world, company=uuid4()), params=params)
+    other_company = as_user("operario.dao").get(url(world, company=uuid4()), params=params)
     assert other_company.status_code == 404
-    empty = as_user("inventario.test").get(url(world, branch=uuid4()), params=params).json()
+    empty = as_user("operario.dao").get(url(world, branch=uuid4()), params=params).json()
     assert empty["items"] == [] and empty["total_records"] == 0  # sucursal ajena: ninguna fila de esta empresa
 
 
 def test_product_filter_pagination_and_validation(as_user, world, history) -> None:
-    client = as_user("inventario.test")
+    client = as_user("operario.dao")
     params = window(history["middle"] - timedelta(days=1), history["end"])
     only = client.get(url(world), params={**params, "company_product_id": str(history["product"])}).json()
     assert [row["company_product_id"] for row in only["items"]] == [str(history["product"])]
@@ -131,7 +131,7 @@ def test_reportes_user_has_the_new_permission() -> None:
     from tests.conftest import USER_ROLES
 
     # Spec 026: el grupo `empleado` (antes `inventario`) conserva la evolución de existencias.
-    assert STOCK_EVOLUTION_READ in USER_ROLES["inventario.test"]
+    assert STOCK_EVOLUTION_READ in USER_ROLES["operario.dao"]
     assert "perm:inventory:movements:read" not in USER_ROLES["solo-evolucion.test"]
 
 
@@ -148,7 +148,7 @@ def test_consolidated_sums_each_branch_by_product(operator, as_user, world, hist
     branch_b = world.other_branch
     assert operator.post(ENTRIES, json=operation_body(world, line(product, "4", unit_cost="1000"),
                                                       branch_id=str(branch_b))).status_code == 201
-    client = as_user("inventario.test")
+    client = as_user("operario.dao")
     params = {**window(history["middle"] - timedelta(microseconds=1), datetime.now(UTC) + timedelta(seconds=1))}
     single = client.get(url(world), params=params).json()
     other = client.get(url(world, branch=branch_b), params=params).json()
@@ -165,7 +165,7 @@ def test_consolidated_sums_each_branch_by_product(operator, as_user, world, hist
 
 def test_consolidated_requires_branches_and_permission(as_user, as_token, make_token, world, history) -> None:
     params = window(history["middle"], history["end"])
-    client = as_user("inventario.test")
+    client = as_user("operario.dao")
     assert client.get(consolidated_url(world), params=params).status_code == 422  # branch_id obligatorio
     assert client.get(consolidated_url(world), params={**params, "branch_id": "no-uuid"}).status_code == 422
     kardex_only = as_token(make_token("perm:inventory:movements:read", sub="solo-kardex-" + uuid4().hex))
@@ -177,5 +177,5 @@ def test_consolidated_requires_branches_and_permission(as_user, as_token, make_t
 
 
 def test_single_branch_route_does_not_expose_branch_count(as_user, world, history) -> None:
-    body = as_user("inventario.test").get(url(world), params=window(history["middle"], history["end"])).json()
+    body = as_user("operario.dao").get(url(world), params=window(history["middle"], history["end"])).json()
     assert all("branch_count" not in item for item in body["items"])

@@ -112,7 +112,7 @@ def test_operation_columns_and_error_details(world, fakes, make_sequence, make_d
         test_engine,
         "SELECT operation_type, application_user_id, reason, error_details FROM purchase_operations ORDER BY started_at",
     )
-    buyer_user = fakes.oc.members[(user_sub("compras.test"), world.company)]
+    buyer_user = fakes.oc.members[(user_sub("operario.dao"), world.company)]
     assert [(row["operation_type"], row["application_user_id"], row["reason"], row["error_details"]) for row in rows] == [
         ("CONFIRM", buyer_user, None, None),
         ("RECEIVE", buyer_user, None, None),

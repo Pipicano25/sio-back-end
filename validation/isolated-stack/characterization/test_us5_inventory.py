@@ -4,7 +4,7 @@ Lo grabado con las lecturas por HTTP debe repetirse igual con las lecturas por c
 no hace **ninguna** solicitud a Operational Context ni a Commercial Relationship para validar la sucursal, el usuario,
 la moneda y los productos (SC-005).
 
-Mundo propio de cada ejecución (datos ficticios): una empresa con ``admin.test`` asignado a la sucursal ``B1``, una
+Mundo propio de cada ejecución (datos ficticios): una empresa con ``admin.sio`` asignado a la sucursal ``B1``, una
 sucursal ``B2`` inactiva, un producto con control de inventario (``P1``) y otro sin él (``P2``), y existencias de
 ``P1`` en ``B1`` cargadas por la cuenta técnica ``inventory-test-operator``. Casos:
 
@@ -13,7 +13,7 @@ sucursal ``B2`` inactiva, un producto con control de inventario (``P1``) y otro 
   de los errores (sucursal, usuario, productos);
 - salida de un producto sin control de inventario;
 - entrada (valida además la moneda de la empresa);
-- ajuste positivo de ``admin.test`` (acceso operativo, producto y moneda).
+- ajuste positivo de ``admin.sio`` (acceso operativo, producto y moneda).
 
 La moneda inexistente no se puede provocar en la pila (toda empresa tiene una); la cubren las pruebas de
 ``INV/tests/contract_reads/test_inventory_reads.py``.
@@ -36,10 +36,10 @@ STOCK = "50"
 
 @pytest.fixture(scope="module")
 def world(seed, users, run_id, stack_env):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     colombia = expect(admin.get(f"{URLS['geography']}/global-countries", params={"iso3_code": "COL"}))["items"][0]["id"]
     company = seed.company(admin, colombia, f"US5{run_id}")
-    member = seed.member(admin, colombia, company, "admin.test")
+    member = seed.member(admin, colombia, company, "admin.sio")
     b1, b2 = (
         expect(admin.post(f"{OC}/companies/{company}/branches", json={
             "code": f"{code}{run_id}", "name": f"Sucursal ficticia {code} {run_id}"}))
@@ -128,7 +128,7 @@ def test_entrada(world, book, reads):
 
 
 def test_ajuste(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe(lambda: admin.post(f"{INV}/companies/{world['company']}/inventory-adjustments", json={
         "adjustment_key": str(uuid4()), "branch_id": world["B1"], "company_product_id": world["P1"],
         "adjustment_type": "POSITIVE", "quantity": "2", "unit_cost": "750",

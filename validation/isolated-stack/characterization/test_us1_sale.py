@@ -42,10 +42,10 @@ LATENCY_SAMPLES = 40
 
 @pytest.fixture(scope="module")
 def world(seed, users, run_id, stack_env):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     colombia = expect(admin.get(f"{URLS['geography']}/global-countries", params={"iso3_code": "COL"}))["items"][0]["id"]
     company = seed.company(admin, colombia, f"US1{run_id}")
-    admin_member = seed.member(admin, colombia, company, "admin.test")
+    admin_member = seed.member(admin, colombia, company, "admin.sio")
     b1, b2 = (
         expect(admin.post(f"{OC}/companies/{company}/branches", json={
             "code": f"{code}{run_id}", "name": f"Sucursal ficticia {code} {run_id}"}))["id"]
@@ -158,7 +158,7 @@ def _case(world, response):
 
 
 def test_success(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     draft, draft_requests = _observe(world, lambda: _draft(admin, world))
     assert draft.status_code == 201, draft.text[:300]
     confirmed, requests = _observe(world, lambda: _confirm(admin, world, draft.json()))
@@ -173,7 +173,7 @@ def test_success(world, users, book, reads):
 
 
 def test_inactive_product(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     draft = expect(_draft(admin, world), 201)
     target = world["products"][4]
     current = expect(admin.get(f"{CR}/company-products/{target['id']}"))
@@ -188,7 +188,7 @@ def test_inactive_product(world, users, book, reads):
 
 
 def test_insufficient_stock(world, users, book, reads):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     draft = expect(_draft(admin, world, quantities=("1", "1", "1", "1", "50000")), 201)
     response, requests = _observe(world, lambda: _confirm(admin, world, draft))
     book.check("existencias_insuficientes", _case(world, response), requests=requests)
@@ -198,7 +198,7 @@ def test_insufficient_stock(world, users, book, reads):
 def test_user_without_permission(world, users, book, seed, stack_env):
     # Desde la spec 026 todos los grupos de usuario confirman ventas: el 403 se observa con un cliente técnico sin
     # permisos de Sales (`inventory-test-operator`); la respuesta es la misma que recibía un usuario sin el permiso.
-    admin = users("admin.test")
+    admin = users("admin.sio")
     reports = seed.service(stack_env, "inventory-test-operator", "INVENTORY_TEST_OPERATOR_CLIENT_SECRET")
     draft = expect(_draft(admin, world), 201)
     response, requests = _observe(world, lambda: _confirm(reports, world, draft))
@@ -206,7 +206,7 @@ def test_user_without_permission(world, users, book, seed, stack_env):
 
 
 def test_branch_not_assigned(world, users, book):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     response, requests = _observe(world, lambda: _draft(admin, world, branch="B2"))
     book.check("sucursal_no_asignada", _case(world, response), requests=requests)
 
@@ -217,7 +217,7 @@ def test_confirmation_latency(world, users, reads):
     import statistics
     from pathlib import Path
 
-    admin = users("admin.test")
+    admin = users("admin.sio")
     samples = []
     for index in range(LATENCY_SAMPLES + 5):
         draft = expect(_draft(admin, world), 201)
@@ -244,7 +244,7 @@ SALE_OWNERS = ("operational-context", "product-catalog", "commercial-relationshi
 @pytest.mark.parametrize("owner", SALE_OWNERS)
 def test_caida_del_propietario(world, users, outage_book, owner):
     """T079: con la base del propietario caída, la confirmación responde el 503 de hoy, a tiempo y sin efectos."""
-    admin = users("admin.test")
+    admin = users("admin.sio")
     draft = expect(_draft(admin, world), 201)
     with owner_database_down(owner):
         start = time.monotonic()

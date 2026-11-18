@@ -6,7 +6,7 @@ Ejercicio 5 — Anulaciones y reversos · [Orden del ejercicio](ORDEN.md)
 
 ## 1. Anular la compra P1 (rechazada)
 
-Paso `A-02.P1` · usuario **`compras.test`** · ítems de la FASE 10: 20
+Paso `A-02.P1` · usuario **`operario.dao`** · ítems de la FASE 10: 20
 
 ```http
 POST http://127.0.0.1:8107/api/v1/companies/<EMPRESA_A>/purchases/<COMPRA_1>/cancellation
@@ -23,7 +23,7 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:purchase:purchases:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:purchase:purchases:delete`), `ventas.test` (por `perm:purchase:purchases:delete`), `supervisor.test` (por `perm:purchase:all:all`), `inventario.test` (por `perm:purchase:purchases:delete`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:purchase:all:all`), `operario.dao` (por `perm:purchase:purchases:delete`)
 
 **Respuesta esperada:** `409`
 

@@ -8,7 +8,7 @@
 
 Antes de empezar revise los [requisitos comunes](../README.md#antes-de-empezar).
 
-**Usuarios:** ejecútelo con `admin.test`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
+**Usuarios:** ejecútelo con `admin.sio`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
 
 ## Orden de ejecución
 
@@ -21,7 +21,7 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | 02 | [02-registrar-empresas.md](02-registrar-empresas.md) | Crear las empresas A y B (solo el administrador de plataforma). | 4 | — |
 | 03 | [03-registrar-usuarios.md](03-registrar-usuarios.md) | Registrar a la supervisora por `username` y comprobar los rechazos. | 4 | 01, 02 |
 | 04 | [04-consultar-usuarios.md](04-consultar-usuarios.md) | Listar las membresías y consultar una por su `id`. | 2 | 02, 03 |
-| 05 | [05-misma-persona-otra-empresa.md](05-misma-persona-otra-empresa.md) | Registrar a `compras.test` también en la empresa B y retirarlo solo de esa empresa. | 4 | 01, 02, 03 |
+| 05 | [05-misma-persona-otra-empresa.md](05-misma-persona-otra-empresa.md) | Registrar a `operario.dao` también en la empresa B y retirarlo solo de esa empresa. | 4 | 01, 02, 03 |
 
 ## Por qué este orden
 

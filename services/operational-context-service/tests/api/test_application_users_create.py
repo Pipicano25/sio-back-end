@@ -23,7 +23,7 @@ def person(fake_persons):
 
 @pytest.fixture
 def account(fake_accounts):
-    return fake_accounts.add("compras.test")
+    return fake_accounts.add("operario.dao")
 
 
 def _body(person_id, **overrides):
@@ -57,7 +57,7 @@ def test_create_by_sub(api, company, person, account):
 def test_create_by_username_stores_only_the_sub(api, company, person, account, test_engine):
     response = api.post(
         BASE.format(company_id=company["id"]),
-        json=_body(person, username="  Compras.Test "),
+        json=_body(person, username="  Operario.DAO "),
     )
 
     assert response.status_code == 201, response.text
@@ -75,7 +75,7 @@ def test_create_by_username_stores_only_the_sub(api, company, person, account, t
 
 @pytest.mark.parametrize(
     "account_fields",
-    [{}, {"keycloak_user_id": "x", "username": "compras.test"}],
+    [{}, {"keycloak_user_id": "x", "username": "operario.dao"}],
     ids=["ninguno", "ambos"],
 )
 def test_exactly_one_account_reference(api, company, person, account_fields):

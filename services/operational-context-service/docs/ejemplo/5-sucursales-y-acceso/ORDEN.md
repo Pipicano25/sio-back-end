@@ -8,7 +8,7 @@
 
 Antes de empezar revise los [requisitos comunes](../README.md#antes-de-empezar).
 
-**Usuarios:** ejecútelo con `admin.test`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
+**Usuarios:** ejecútelo con `admin.sio`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
 
 ## Orden de ejecución
 
@@ -18,9 +18,9 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | --- | --- | --- | --- | --- |
 | 00 | [00-datos-ficticios.md](00-datos-ficticios.md) | Leer: los datos ficticios y cómo se interpretan | — | — |
 | 01 | [01-consultar-datos.md](01-consultar-datos.md) | Obtener `<ORG_EMPRESA>` y `<PERSONA_COMPRADOR>`. | 2 | — |
-| 02 | [02-empresa-y-sucursales.md](02-empresa-y-sucursales.md) | Crear la empresa, dos sucursales y la membresía de `compras.test`. | 4 | 01 |
+| 02 | [02-empresa-y-sucursales.md](02-empresa-y-sucursales.md) | Crear la empresa, dos sucursales y la membresía de `operario.dao`. | 4 | 01 |
 | 03 | [03-asignar-sucursal.md](03-asignar-sucursal.md) | Asignar `PRI-01` al usuario y ver su acceso calculado. | 3 | 02 |
-| 04 | [04-comprobar-acceso.md](04-comprobar-acceso.md) | Consultar el acceso de `compras.test` como lo haría Purchase con su identidad técnica. | 3 | 02 |
+| 04 | [04-comprobar-acceso.md](04-comprobar-acceso.md) | Consultar el acceso de `operario.dao` como lo haría Purchase con su identidad técnica. | 3 | 02 |
 | 05 | [05-efecto-de-inactivar.md](05-efecto-de-inactivar.md) | Retirar la asignación, inactivar la sucursal y volver a comprobar. | 4 | 02, 03 |
 
 ## Por qué este orden

@@ -13,7 +13,7 @@ Se ejecuta solo con `pytest -m integration` y exige el entorno integrado en ejec
   de entorno homónima la fija `conftest.py` con un valor de prueba).
 
 **Repetible**: cada ejecución crea en Party Identity una organización y una persona nuevas, en
-Operational Context una empresa con `admin.test` como miembro y en Product Catalog un producto
+Operational Context una empresa con `admin.sio` como miembro y en Product Catalog un producto
 global completo, todos con datos **ficticios de validación** marcados con el identificador de
 ejecución. No depende de `DELETE`: los datos quedan en el entorno y no provocan `409` después.
 
@@ -99,10 +99,10 @@ def client():
         try:
             token = http.post(TOKEN_URL, data={
                 "grant_type": "password", "client_id": "sio-web", "scope": "openid",
-                "username": "admin.test", "password": password,
+                "username": "admin.sio", "password": password,
             }).raise_for_status().json()["access_token"]
         except (httpx.HTTPError, KeyError):
-            pytest.skip("No fue posible obtener el token de admin.test en Keycloak.")
+            pytest.skip("No fue posible obtener el token de admin.sio en Keycloak.")
 
         http.headers["Authorization"] = f"Bearer {token}"
         yield http
@@ -185,18 +185,18 @@ def person_id(client, colombia):
 
 @pytest.fixture(scope="module")
 def company_id(client, organization_id, person_id):
-    """Empresa de esta ejecución con `admin.test` como miembro activo en Operational Context."""
+    """Empresa de esta ejecución con `admin.sio` como miembro activo en Operational Context."""
     response = client.post(f"{OPERATIONAL_CONTEXT}/companies", json={"organization_identity_id": organization_id})
     assert response.status_code == 201, response.text
     company = response.json()["id"]
 
     member = client.post(f"{OPERATIONAL_CONTEXT}/companies/{company}/application-users", json={
-        "username": "admin.test",
+        "username": "admin.sio",
         "person_identity_id": person_id,
         "display_name": f"Validación CR {RUN_ID} (dato ficticio)",
     })
     if member.status_code == 503:
-        pytest.skip("Operational Context no pudo resolver admin.test en Keycloak Admin.")
+        pytest.skip("Operational Context no pudo resolver admin.sio en Keycloak Admin.")
     assert member.status_code == 201, member.text
     return company
 
@@ -212,7 +212,7 @@ def _organization(client, colombia, label: str) -> str:
 
 @pytest.fixture(scope="module")
 def foreign_company_id(client, colombia):
-    """Empresa de esta ejecución en la que `admin.test` NO es miembro."""
+    """Empresa de esta ejecución en la que `admin.sio` NO es miembro."""
     organization = _organization(client, colombia, "AJENA ")
     response = client.post(f"{OPERATIONAL_CONTEXT}/companies", json={"organization_identity_id": organization})
     assert response.status_code == 201, response.text
@@ -377,7 +377,7 @@ def test_company_summary_with_real_dependencies(client, company_id, organization
         found = next((item for item in body.json()["items"] if item["company_id"] == company_id), None)
         page += 1
 
-    assert found is not None, "La empresa de la ejecución no aparece en el resumen de admin.test."
+    assert found is not None, "La empresa de la ejecución no aparece en el resumen de admin.sio."
     organization = client.get(f"{PARTY_IDENTITY}/organization-identities/{organization_id}").json()
     assert found["legal_name"] == organization["legal_name"]
     assert found["company_status"] == "ACTIVE"
@@ -593,10 +593,10 @@ def test_quickstart_prices_in_effect_explicit_list_history_and_access(client, co
     no_price = client.post(resolve, json={"at": "2027-01-01T00:00:00Z", "lines": [line]}).json()["items"][0]
     assert no_price["resolution"] == "NO_PRICE_IN_LIST" and no_price["unit_price"] is None
 
-    inventory = {"Authorization": f"Bearer {_password_token('inventario.test')}"}
-    assert httpx.get(f"{COMMERCIAL_RELATIONSHIP}/price-lists/{price_list['id']}", headers=inventory, timeout=15).status_code == 403
-    sales = {"Authorization": f"Bearer {_password_token('ventas.test')}"}
-    write = httpx.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-lists", headers=sales,
+    # `operario.dao` (Empleado) sí lee listas de precios, pero no es miembro de esta empresa: 404 sin filtrar datos.
+    employee = {"Authorization": f"Bearer {_password_token('operario.dao')}"}
+    assert httpx.get(f"{COMMERCIAL_RELATIONSHIP}/price-lists/{price_list['id']}", headers=employee, timeout=15).status_code == 404
+    write = httpx.post(f"{COMMERCIAL_RELATIONSHIP}/companies/{company_id}/price-lists", headers=employee,
                        json={"code": "X", "name": "X", "currency_code": "COP"}, timeout=15)
     assert write.status_code == 403 and "perm:" not in write.text
     assert client.get(f"{COMMERCIAL_RELATIONSHIP}/companies/{foreign_company_id}/price-lists").status_code == 404

@@ -204,18 +204,18 @@ class RealWorld:
     branch_b: str = ""
     """013: segunda sucursal `ACTIVE` sin asignaciones (ajustes y conteos → `BRANCH_ACCESS_DENIED`)."""
     inventario_user: str = ""
-    """013: usuario operativo de `inventario.test`, asignado solo a `branch`."""
+    """013: usuario operativo de `operario.dao`, asignado solo a `branch`."""
 
 
 def build_world(admin: httpx.Client) -> RealWorld:
-    """Empresa con sucursal, `admin.test` e `inventario.test` como miembros y productos adoptados."""
+    """Empresa con sucursal, `admin.sio` e `operario.dao` como miembros y productos adoptados."""
     colombia = _first_id(admin, f"{GEOGRAPHY}/global-countries", iso3_code="COL")
     company = admin.post(f"{OPERATIONAL_CONTEXT}/companies", json={"organization_identity_id": _organization(admin, colombia, "")})
     assert company.status_code == 201, company.text
     company_id = company.json()["id"]
 
-    user = _member(admin, company_id, "admin.test", _person(admin, colombia, "A"))
-    inventario = _member(admin, company_id, "inventario.test", _person(admin, colombia, "I"))
+    user = _member(admin, company_id, "admin.sio", _person(admin, colombia, "A"))
+    inventario = _member(admin, company_id, "operario.dao", _person(admin, colombia, "I"))
 
     branch = admin.post(f"{OPERATIONAL_CONTEXT}/companies/{company_id}/branches", json={
         "code": f"INV{RUN_ID}", "name": f"Bodega ficticia de validación INV {RUN_ID}",
@@ -225,7 +225,7 @@ def build_world(admin: httpx.Client) -> RealWorld:
         "code": f"INVB{RUN_ID}", "name": f"Bodega B ficticia de validación INV {RUN_ID}",
     })
     assert branch_b.status_code == 201, branch_b.text
-    # 013 (DS-14): `inventario.test` y `admin.test` asignados a la sucursal principal, no a la B.
+    # 013 (DS-14): `operario.dao` y `admin.sio` asignados a la sucursal principal, no a la B.
     for member in (inventario, user):
         assigned = admin.post(
             f"{OPERATIONAL_CONTEXT}/application-users/{member}/user-branches", json={"branch_id": branch.json()["id"]}

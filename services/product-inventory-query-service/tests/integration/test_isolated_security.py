@@ -16,12 +16,9 @@ pytestmark = pytest.mark.integration
 
 ENDPOINTS = ("product-overviews", "inventory-overviews", "low-stock-products", "inventory-summary")
 MATRIX = {
-    "admin.test": (200, 200, 200, 200),
-    "supervisor.test": (200, 200, 200, 200),
-    # Spec 026: ventas.test, inventario.test y compras.test son del grupo `empleado`, con las cuatro consultas.
-    "ventas.test": (200, 200, 200, 200),
-    "inventario.test": (200, 200, 200, 200),
-    "compras.test": (200, 200, 200, 200),
+    "admin.sio": (200, 200, 200, 200),
+    "admin.dao": (200, 200, 200, 200),
+    "operario.dao": (200, 200, 200, 200),  # grupo `empleado`: las cuatro consultas
 }
 COSTS = re.compile(r"inventory_value|average_unit_cost|unit_cost|margin|fifo|valuation", re.IGNORECASE)
 
@@ -51,25 +48,25 @@ def test_no_token_and_forged_token_are_401(seed) -> None:
 
 
 def test_other_company_never_leaks(users, seed) -> None:
-    """`inventario.test` no es miembro de la empresa B: `404`, sin datos; con `ventas.test` (miembro) solo filas de B."""
-    assert users("inventario.test").get(f"{PIQ}/companies/{seed['other_company']}/product-overviews").status_code == 404
-    items = users("ventas.test").get(f"{PIQ}/companies/{seed['other_company']}/product-overviews",
+    """`admin.dao` no es miembro de la empresa B: `404`, sin datos; con `operario.dao` (miembro) solo filas de B."""
+    assert users("admin.dao").get(f"{PIQ}/companies/{seed['other_company']}/product-overviews").status_code == 404
+    items = users("operario.dao").get(f"{PIQ}/companies/{seed['other_company']}/product-overviews",
                                      params={"page_size": "20"}).raise_for_status().json()["items"]
     own = {p["company_product_id"] for p in seed["products"].values()}
     assert items and not {i["company_product_id"] for i in items} & own
 
 
 def test_altered_cursor_is_422(users, seed) -> None:
-    ventas = users("ventas.test")
+    operario = users("operario.dao")
     base = f"{PIQ}/companies/{seed['company']}/product-overviews"
-    cursor = ventas.get(base, params={"page_size": "2"}).raise_for_status().json()["next_cursor"]
+    cursor = operario.get(base, params={"page_size": "2"}).raise_for_status().json()["next_cursor"]
     altered = cursor[:-2] + ("AA" if not cursor.endswith("AA") else "BB")
-    response = ventas.get(base, params={"page_size": "2", "cursor": altered})
+    response = operario.get(base, params={"page_size": "2", "cursor": altered})
     assert response.status_code == 422 and response.json()["code"] == "PRODUCT_INVENTORY_QUERY.INVALID_CURSOR"
 
 
 def test_public_image_reference_is_signed_and_not_listable(users, seed) -> None:
-    (item,) = users("ventas.test").get(f"{PIQ}/companies/{seed['company']}/product-overviews",
+    (item,) = users("operario.dao").get(f"{PIQ}/companies/{seed['company']}/product-overviews",
                                        params={"internal_code": f"P-0001-{seed['run']}"}).raise_for_status().json()["items"]
     url = next(p["image_url"] for p in item["presentations"] if p["has_image"])  # spec 024: por presentación
     assert url.startswith("http://127.0.0.1:18103/api/v1/public/product-images?ref=")
@@ -90,8 +87,8 @@ def test_public_image_reference_is_signed_and_not_listable(users, seed) -> None:
 
 def test_container_logs_have_no_tokens_cursors_or_refs(users, seed) -> None:
     """Después de las consultas anteriores, ningún log de la pila aislada contiene secretos de sesión."""
-    ventas = users("ventas.test")
-    ventas.get(f"{PIQ}/companies/{seed['company']}/product-overviews", params={"page_size": "2"})
+    operario = users("operario.dao")
+    operario.get(f"{PIQ}/companies/{seed['company']}/product-overviews", params={"page_size": "2"})
     patterns = (re.compile(r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}"), re.compile(r"v1\.eyJ[A-Za-z0-9_-]{20,}"),
                 re.compile(r"ref=[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}"))
     for name in ("sio-it-product-inventory-query-service", "sio-it-product-catalog-service",

@@ -49,7 +49,7 @@ def image_url() -> str:
     seed = json.loads(state.read_text(encoding="utf-8"))
     presentation = next(p["image_presentation_id"] for p in seed["products"].values() if p["image"])
     token = httpx.post(TOKEN_URL, data={"grant_type": "password", "client_id": "sio-web", "scope": "openid",
-                                        "username": "ventas.test", "password": isolated_password()}).raise_for_status()
+                                        "username": "operario.dao", "password": isolated_password()}).raise_for_status()
     # Spec 024: la URL es de la imagen principal de la presentación (PC-3).
     response = httpx.post(f"{PC}/presentations/batch-lookup", json={"ids": [presentation]},
                           headers={"Authorization": f"Bearer {token.json()['access_token']}"}).raise_for_status()

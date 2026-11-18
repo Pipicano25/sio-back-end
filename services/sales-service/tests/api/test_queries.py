@@ -15,7 +15,7 @@ def test_list_with_filters_and_stable_order(seller, as_user, world, clock, make_
     clock.fixed = datetime(2026, 10, 7, 15, 0, tzinfo=UTC)
     confirmed = confirm(make_draft()).json()
     newest = make_draft(company_customer_id=world.customer_org)
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     other_branch = admin.post(f"{base(world)}/sales", json=sale_body(world, branch_id=world.branch_b)).json()
 
     page = seller.get(f"{base(world)}/sales").json()
@@ -62,7 +62,7 @@ def test_get_sale_lines_and_operations(seller, world, make_sequence, make_draft,
 def test_reads_need_membership_but_not_assignment(as_user, world, fakes, make_draft) -> None:
     draft = make_draft()
     fakes.oc.assignments.clear()
-    for username in ("lector.sintetico", "compras.test", "ventas.test", "supervisor.test"):
+    for username in ("lector.sintetico", "operario.dao", "admin.dao"):
         reader = as_user(username)
         assert reader.get(f"{base(world)}/sales").status_code == 200
         assert reader.get(f"{base(world)}/sales/{draft['id']}").status_code == 200
@@ -80,4 +80,4 @@ def test_membership_is_checked_with_user_token(seller, world, fakes) -> None:
     assert kind == "company" and target == world.company
     from tests.fakes import subject_of
 
-    assert subject_of(authorization) == user_sub("ventas.test")
+    assert subject_of(authorization) == user_sub("operario.dao")

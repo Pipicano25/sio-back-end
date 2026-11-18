@@ -6,7 +6,7 @@ Ejercicio 1: Catálogo con imagen y precio.
 
 `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/product-overviews?search=Colgate&has_image=true&page_size=2`
 
-Ejecuta: `ventas.test`.
+Ejecuta: `operario.dao`.
 
 ### Por qué
 
@@ -15,7 +15,7 @@ Ejecuta: `ventas.test`.
 - La imagen es de cada presentación (spec 024): `presentations[].has_image`, `asset_id` e `image_url`. `has_image=true` como filtro significa «al menos una presentación con imagen principal»: una presentación sin imagen propia trae `has_image = false` aunque otra presentación del producto tenga imagen (la «Caja x 12» del paso 2).
 - `image_url` es la URL directa que construye Product Catalog: se usa sin token en `<img src>`.
 - Sin `include_images`, las presentaciones no traen `images`.
-- `ventas.test` (grupo `empleado`) ve precios, existencias y mínimos.
+- `operario.dao` (grupo `empleado`) ve precios, existencias y mínimos.
 
 ## Permiso
 
@@ -25,11 +25,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
-| `compras.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
+| `operario.dao` | Sí | `200` | tiene `perm:product-inventory-query:product_overviews:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

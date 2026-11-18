@@ -13,7 +13,7 @@ def test_list_with_filters_and_stable_order(buyer, as_user, world, make_sequence
     old = make_draft(operation_date=yesterday)
     confirmed = confirm(make_draft()).json()
     newest = make_draft()
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     other_branch = admin.post(
         f"{base(world)}/purchases",
         json={
@@ -62,7 +62,7 @@ def test_get_purchase_lines_and_operations(buyer, world, make_sequence, make_dra
 def test_reads_need_membership_but_not_assignment(as_user, world, fakes, make_draft) -> None:
     draft = make_draft()
     fakes.oc.assignments.clear()
-    for username in ("lector.sintetico", "supervisor.test", "compras.test"):
+    for username in ("lector.sintetico", "admin.dao", "operario.dao"):
         reader = as_user(username)
         assert reader.get(f"{base(world)}/purchases").status_code == 200
         assert reader.get(f"{base(world)}/purchases/{draft['id']}").status_code == 200
@@ -80,4 +80,4 @@ def test_membership_is_checked_with_user_token(buyer, world, fakes) -> None:
     assert kind == "company" and target == world.company
     from tests.fakes import subject_of
 
-    assert subject_of(authorization) == user_sub("compras.test")
+    assert subject_of(authorization) == user_sub("operario.dao")

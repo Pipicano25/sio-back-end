@@ -4,7 +4,7 @@ Lo grabado con las lecturas por HTTP debe repetirse igual con las lecturas por c
 ``GET /company-summaries`` no hace **ninguna** solicitud a otros servicios y responde en menos de 1 s con
 ``page_size=100`` (SC-003).
 
-Mundo propio de cada ejecución (datos ficticios): ``compras.test`` (grupo ``empleado``) es miembro activo de 101 empresas nuevas
+Mundo propio de cada ejecución (datos ficticios): ``operario.dao`` (grupo ``empleado``) es miembro activo de 101 empresas nuevas
 (una con la membresía inactivada, que no debe aparecer, y otra con la empresa inactivada, que aparece con
 ``company_status=INACTIVE``); se observan ``page_size=100`` y la segunda página con ``page_size=60``. Al terminar se inactivan sus membresías para que la siguiente ejecución vea solo las suyas.
 
@@ -25,14 +25,14 @@ from support import Normalizer, RequestWindow, outage_case, owner_database_down,
 
 OC, CR, PI = (URLS[k] for k in ("operational_context", "commercial_relationship", "party_identity"))
 CONTAINERS = tuple(f"sio-it-{name}-service" for name in ("commercial-relationship", "operational-context", "party-identity"))
-USER = "compras.test"
+USER = "operario.dao"
 COMPANIES = 100
 LIMIT_MS = 1000
 
 
 @pytest.fixture(scope="module")
 def world(seed, users, run_id):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     colombia = expect(admin.get(f"{URLS['geography']}/global-countries", params={"iso3_code": "COL"}))["items"][0]["id"]
     person = seed.party(admin, colombia, "PERSON", "CC", "person-identities", {
         "identification_country_id": colombia, "identification_type": "CC",
@@ -154,8 +154,8 @@ def test_caida_del_propietario(world, users, outage_book, owner):
     """T079: Commercial Relationship → Operational Context y → Party Identity con la base del propietario caída."""
     # Con http, Operational Context consulta Party Identity por cada empresa del usuario (`/me/operational-context`):
     # para un usuario con cientos de membresías, eso ya agota los 5 s sin ninguna caída y el 503 grabado sería ese.
-    # Se usa `inventario.test` (pocas empresas) y una página de 5.
-    client = users("inventario.test")
+    # Se usa `admin.dao` (pocas empresas) y una página de 5.
+    client = users("admin.dao")
     with owner_database_down(owner):
         start = time.monotonic()
         response = _summaries(client, page=1, page_size=5)

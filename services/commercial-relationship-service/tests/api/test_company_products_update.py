@@ -15,11 +15,11 @@ def _put(client, product, **overrides):
 
 
 def test_update_all_fields(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
     lookups = len(fake_catalog.lookup_calls)
 
     response = _put(
-        as_user("supervisor.test"),
+        as_user("admin.dao"),
         product,
         display_name="Nuevo nombre",
         short_name="Corto",
@@ -34,30 +34,30 @@ def test_update_all_fields(as_user, company, fake_catalog):
     assert body["version"] == product["version"] + 1
     assert body["display_name"] == "Nuevo nombre" and body["is_sellable"] is False
     assert "sale_price" not in body and "reference_cost" not in body  # spec 019
-    assert body["updated_by"] == user_sub("supervisor.test")
+    assert body["updated_by"] == user_sub("admin.dao")
     assert body["created_by"] == product["created_by"]
     assert body["status"] == "ACTIVE"
     assert len(fake_catalog.lookup_calls) == lookups  # el PUT no consulta Product Catalog
 
 
 def test_identical_put_does_not_bump_version(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
-    response = _put(as_user("admin.test"), product)
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
+    response = _put(as_user("admin.sio"), product)
     assert response.status_code == 200
     assert response.json()["version"] == product["version"]
     assert response.json()["updated_at"] == product["updated_at"]
 
 
 def test_stale_version_is_409(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
-    assert _put(as_user("admin.test"), product, display_name="v2").status_code == 200
-    response = _put(as_user("admin.test"), product, display_name="v3")
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
+    assert _put(as_user("admin.sio"), product, display_name="v2").status_code == 200
+    response = _put(as_user("admin.sio"), product, display_name="v3")
     assert response.status_code == 409
     assert code_of(response) == "VERSION_CONFLICT"
 
 
 def test_immutable_fields(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
 
     for field, value in (
         ("global_product_id", product["global_product_id"]),
@@ -66,13 +66,13 @@ def test_immutable_fields(as_user, company, fake_catalog):
     ):
         body = product_update_body(product)
         body[field] = value
-        response = as_user("admin.test").put(f"/api/v1/company-products/{product['id']}", json=body)
+        response = as_user("admin.sio").put(f"/api/v1/company-products/{product['id']}", json=body)
         assert response.status_code == 422, field
         assert code_of(response) == "IMMUTABLE_FIELD"
 
 
 def test_internal_code_changes(as_user, company, fake_catalog):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog, internal_code="abc-1")
     adopt(client, company, fake_catalog, internal_code="OTRO")
 
@@ -87,33 +87,33 @@ def test_internal_code_changes(as_user, company, fake_catalog):
 
 def test_currency_change_without_price_spec_019(as_user, company, fake_catalog):
     """Spec 019: la moneda se conserva y se valida; no hay precio que revalidar."""
-    product = adopt(as_user("admin.test"), company, fake_catalog)
-    response = _put(as_user("admin.test"), product, currency_code="CLP")
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
+    response = _put(as_user("admin.sio"), product, currency_code="CLP")
     assert response.status_code == 200, response.text
     assert response.json()["currency_code"] == "CLP"
-    assert code_of(_put(as_user("admin.test"), response.json(), currency_code="XYZ")) == "CURRENCY_NOT_SUPPORTED"
+    assert code_of(_put(as_user("admin.sio"), response.json(), currency_code="XYZ")) == "CURRENCY_NOT_SUPPORTED"
 
 
 def test_put_with_price_or_cost_is_rejected_spec_019(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
     for field in ("sale_price", "reference_cost"):
-        response = _put(as_user("admin.test"), product, **{field: "0"})
+        response = _put(as_user("admin.sio"), product, **{field: "0"})
         assert response.status_code == 422 and code_of(response) == "VALIDATION_ERROR", response.text
 
 
 def test_invalid_flags_on_update(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
-    response = _put(as_user("admin.test"), product, inventory_control_enabled=False, lot_tracking_enabled=True)
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
+    response = _put(as_user("admin.sio"), product, inventory_control_enabled=False, lot_tracking_enabled=True)
     assert code_of(response) == "INVENTORY_FLAGS_INVALID"
 
 
 def test_read_only_user_cannot_update(as_user, company, fake_catalog):
-    product = adopt(as_user("admin.test"), company, fake_catalog)
-    assert _put(as_user("compras.test"), product, display_name="x").status_code == 403
+    product = adopt(as_user("admin.sio"), company, fake_catalog)
+    assert _put(as_user("operario.dao"), product, display_name="x").status_code == 403
 
 
 def test_inactive_company_blocks_put_in_any_state(as_user, company, fake_catalog, fake_oc):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     active = adopt(client, company, fake_catalog)
     other = adopt(client, company, fake_catalog, internal_code="INACT")
     inactive = client.post(f"/api/v1/company-products/{other['id']}/deactivate", json={"version": 1}).json()
@@ -128,7 +128,7 @@ def test_inactive_company_blocks_put_in_any_state(as_user, company, fake_catalog
 
 def test_put_on_inactive_product_keeps_status(as_user, company, fake_catalog):
     """DS-17: el PUT se permite sobre INACTIVE y no reactiva."""
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog, internal_code="VIEJO")
     inactive = client.post(f"/api/v1/company-products/{product['id']}/deactivate", json={"version": 1}).json()
 
@@ -137,7 +137,7 @@ def test_put_on_inactive_product_keeps_status(as_user, company, fake_catalog):
     body = response.json()
     assert body["status"] == "INACTIVE"
     assert body["version"] == inactive["version"] + 1
-    assert body["updated_by"] == user_sub("admin.test")
+    assert body["updated_by"] == user_sub("admin.sio")
 
     immutable = product_update_body(body)
     immutable["global_product_id"] = body["global_product_id"]
@@ -146,7 +146,7 @@ def test_put_on_inactive_product_keeps_status(as_user, company, fake_catalog):
 
 def test_changing_code_of_inactive_product_releases_it(as_user, company, fake_catalog):
     """Flujo de reutilización del código interno (DS-17, RN-13)."""
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog, internal_code="000045")
     inactive = client.post(f"/api/v1/company-products/{product['id']}/deactivate", json={"version": 1}).json()
 

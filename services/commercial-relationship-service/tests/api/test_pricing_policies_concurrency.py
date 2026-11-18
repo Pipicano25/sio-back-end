@@ -15,7 +15,7 @@ ATTEMPTS = 50
 
 
 def test_cp47_concurrent_assignments_leave_a_single_policy(app, user_token, as_user, company, fake_catalog, test_engine):
-    supervisor = as_user("supervisor.test")
+    supervisor = as_user("admin.dao")
     product = adopt(supervisor, company, fake_catalog)
     presentation = adopt_presentation(supervisor, company, fake_catalog, product)["id"]
     public = create_price_list(supervisor, company)
@@ -30,7 +30,7 @@ def test_cp47_concurrent_assignments_leave_a_single_policy(app, user_token, as_u
 
     results = race(
         app,
-        user_token("supervisor.test"),
+        user_token("admin.dao"),
         [
             ("POST", f"/api/v1/pricing-policies/{policy['id']}/presentations",
              {"version": policy["version"], "company_product_presentation_ids": [presentation]})

@@ -36,7 +36,7 @@ def test_confirmation_applies_output_copies_fifo_cost_and_assigns_number(
     payload = output.payload
     assert payload["origin_type"] == "SALE" and payload["origin_id"] == draft["id"]
     assert payload["company_id"] == str(world.company) and payload["branch_id"] == str(world.branch)
-    assert payload["application_user_id"] == str(fakes.oc.members[(user_sub("ventas.test"), world.company)])
+    assert payload["application_user_id"] == str(fakes.oc.members[(user_sub("operario.dao"), world.company)])
     assert payload["reason"] is None
     first, second = payload["lines"]
     # Cantidad en unidad base y sin costo: Inventory calcula el FIFO (RN-05, RN-06).
@@ -70,8 +70,8 @@ def test_operation_key_is_the_operation_id(seller, world, fakes, make_sequence, 
     assert output.payload["correlation_id"] == str(operation["correlation_id"])
     assert operation["status"] == "SUCCEEDED" and operation["idempotency_key"] == key
     assert operation["inventory_operation_id"] == output.ref.id
-    assert operation["created_by"] == user_sub("ventas.test") and operation["completed_at"] is not None
-    assert operation["application_user_id"] == fakes.oc.members[(user_sub("ventas.test"), world.company)]
+    assert operation["created_by"] == user_sub("operario.dao") and operation["completed_at"] is not None
+    assert operation["application_user_id"] == fakes.oc.members[(user_sub("operario.dao"), world.company)]
 
 
 def test_correlation_id_is_propagated(seller, world, fakes, make_sequence, make_draft) -> None:
@@ -171,7 +171,7 @@ def test_definitive_inventory_rejection_fails_operation(world, fakes, make_seque
 def test_inactive_operator_is_409(as_user, world, fakes, make_sequence, make_draft, confirm) -> None:
     make_sequence()
     draft = make_draft()
-    user = fakes.oc.members[(user_sub("ventas.test"), world.company)]
+    user = fakes.oc.members[(user_sub("operario.dao"), world.company)]
     fakes.oc.users[user] = replace(fakes.oc.users[user], status="INACTIVE")
     response = confirm(draft)
     assert response.status_code == 409
@@ -181,7 +181,7 @@ def test_inactive_operator_is_409(as_user, world, fakes, make_sequence, make_dra
 def test_confirmation_requires_branch_assignment(as_user, world, fakes, make_sequence, make_draft, confirm) -> None:
     make_sequence()
     draft = make_draft()
-    fakes.oc.assignments.discard((user_sub("ventas.test"), world.branch))
+    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
     response = confirm(draft)
     assert response.status_code == 403 and response.json()["code"] == "SALES.BRANCH_ACCESS_DENIED"
 

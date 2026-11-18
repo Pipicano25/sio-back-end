@@ -22,12 +22,12 @@ URL = "/api/v1/companies/{company}/pricing-policies/coverage"
 
 @pytest.fixture
 def supervisor(as_user):
-    return as_user("supervisor.test")
+    return as_user("admin.dao")
 
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 @pytest.fixture
@@ -150,11 +150,11 @@ def test_authorization(as_token, as_user, service_token, company, fake_catalog, 
     denied = as_token(service_token(LOOKUP, client_id="purchase-service")).post(url, json=body)
     assert denied.status_code == 403 and "pricing_policy_coverage" not in denied.text
     # el vendedor no consulta políticas (FR-021-32a)
-    assert as_user("ventas.test").post(url, json=body).status_code == 403
+    assert as_user("operario.dao").post(url, json=body).status_code == 403
     # identidad técnica sin platform:lookup ni membresía: 404 (no revela la empresa)
     assert as_token(service_token(COVERAGE, client_id="purchase-service")).post(url, json=body).status_code == 404
     # un supervisor miembro de la empresa sí puede consultarla
-    assert as_user("supervisor.test").post(url, json=body).status_code == 200
+    assert as_user("admin.dao").post(url, json=body).status_code == 200
 
 
 def test_validation(purchase, company) -> None:

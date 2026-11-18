@@ -16,7 +16,7 @@ GET /api/v1/products/<PRODUCTO>
 
 **Permiso que exige la URL:** `perm:product-catalog:products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:read`), `operario.dao` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -53,8 +53,8 @@ POST /api/v1/products/<PRODUCTO>/deactivate
 
 **Permiso que exige la URL:** `perm:product-catalog:products:deactivate`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test` — sobre `product-catalog` solo tiene `create`, `read`, `update`; le falta `deactivate`; `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `deactivate`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao` — sobre `product-catalog` solo tiene `create`, `read`, `update`; le falta `deactivate`; `operario.dao` — sobre `product-catalog` solo tiene `read`; le falta `deactivate`
 - ℹ️ Inactivar es una acción propia (`deactivate`): no la cubren `create` ni `update`.
 
 **Por qué se hace así**

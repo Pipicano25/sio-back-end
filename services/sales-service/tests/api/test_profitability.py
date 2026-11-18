@@ -51,7 +51,7 @@ def responses_for(client, world, fakes, make_draft, confirm, cancel, username):
 
 def test_without_permission_every_sale_response_omits_profitability(seller, world, fakes, make_sequence, make_draft, confirm, cancel) -> None:
     make_sequence()
-    responses = responses_for(seller, world, fakes, make_draft, confirm, cancel, "ventas.test")
+    responses = responses_for(seller, world, fakes, make_draft, confirm, cancel, "operario.dao")
     for name, response in responses.items():
         assert response.status_code in (200, 201), (name, response.text)
         assert not has_profitability(response.json()), name
@@ -61,7 +61,7 @@ def test_without_permission_every_sale_response_omits_profitability(seller, worl
 
 def test_with_permission_every_sale_response_includes_profitability(supervisor, world, fakes, make_sequence, make_draft, confirm, cancel) -> None:
     make_sequence()
-    responses = responses_for(supervisor, world, fakes, make_draft, confirm, cancel, "supervisor.test")
+    responses = responses_for(supervisor, world, fakes, make_draft, confirm, cancel, "admin.dao")
     # Spec 026: el grupo `admin` tiene `perm:sales:all:all`, así que también borra líneas y anula.
     assert responses["delete_line"].status_code in (200, 204) and responses["cancel"].status_code == 200
     for name in ("create", "update", "add_line", "update_line", "confirm", "confirm_replay", "get"):
@@ -74,7 +74,7 @@ def test_with_permission_every_sale_response_includes_profitability(supervisor, 
     assert confirmed_line["cost_known"] is True and confirmed_line["gross_margin_amount"] is not None
 
 
-@pytest.mark.parametrize("username", ["lector.sintetico", "compras.test"])
+@pytest.mark.parametrize("username", ["lector.sintetico", "operario.dao"])
 def test_readers_do_not_see_profitability(as_user, seller, world, make_sequence, make_draft, confirm, username) -> None:
     make_sequence()
     draft = make_draft()
@@ -92,7 +92,7 @@ def test_admin_sees_profitability_through_the_global_wildcard(as_user, world, ma
     make_sequence()
     draft = make_draft()
     confirm(draft)
-    body = as_user("admin.test").get(f"{base(world)}/sales/{draft['id']}").json()
+    body = as_user("admin.sio").get(f"{base(world)}/sales/{draft['id']}").json()
     assert body["lines"][0]["cost_known"] is True
 
 
@@ -106,8 +106,8 @@ def test_errors_never_include_profitability(seller, world, fakes, make_sequence,
 
 def test_delete_line_and_cancel_include_profitability_with_permission(as_user, world, fakes, make_sequence, make_draft, confirm, cancel) -> None:
     make_sequence()
-    admin = as_user("admin.test")
-    responses = responses_for(admin, world, fakes, make_draft, confirm, cancel, "admin.test")
+    admin = as_user("admin.sio")
+    responses = responses_for(admin, world, fakes, make_draft, confirm, cancel, "admin.sio")
     for name in ("delete_line", "cancel"):
         assert responses[name].status_code == 200, responses[name].text
         assert all(field in responses[name].json()["lines"][0] for field in LINE_FIELDS), name

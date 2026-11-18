@@ -2010,12 +2010,12 @@
     },
     {
       "id": "13fb7acf-dac0-4fba-ae39-6759c77c3f97",
-      "username": "admin.test",
+      "username": "admin.sio",
       "enabled": true,
       "emailVerified": true,
       "firstName": "Administrador",
-      "lastName": "Pruebas",
-      "email": "admin.test@sio.local",
+      "lastName": "SIO",
+      "email": "admin.sio@sio.local",
       "groups": [
         "/superadmin"
       ],
@@ -2036,12 +2036,12 @@
     },
     {
       "id": "c623059e-c281-4bfb-b8ad-e648f6daa104",
-      "username": "supervisor.test",
+      "username": "admin.dao",
       "enabled": true,
       "emailVerified": true,
-      "firstName": "Supervisor",
-      "lastName": "Pruebas",
-      "email": "supervisor.test@sio.local",
+      "firstName": "Administrador",
+      "lastName": "DAO",
+      "email": "admin.dao@sio.local",
       "groups": [
         "/admin"
       ],
@@ -2061,65 +2061,13 @@
       ]
     },
     {
-      "id": "3c29aee6-a22f-44ae-808e-ba86b908e84b",
-      "username": "compras.test",
-      "enabled": true,
-      "emailVerified": true,
-      "firstName": "Compras",
-      "lastName": "Pruebas",
-      "email": "compras.test@sio.local",
-      "groups": [
-        "/empleado"
-      ],
-      "clientRoles": {
-        "account": [
-          "manage-account",
-          "manage-account-links",
-          "view-profile"
-        ]
-      },
-      "credentials": [
-        {
-          "type": "password",
-          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
-          "temporary": false
-        }
-      ]
-    },
-    {
       "id": "7a34c410-ce85-47d9-b897-8acb56e31449",
-      "username": "ventas.test",
+      "username": "operario.dao",
       "enabled": true,
       "emailVerified": true,
-      "firstName": "Ventas",
-      "lastName": "Pruebas",
-      "email": "ventas.test@sio.local",
-      "groups": [
-        "/empleado"
-      ],
-      "clientRoles": {
-        "account": [
-          "manage-account",
-          "manage-account-links",
-          "view-profile"
-        ]
-      },
-      "credentials": [
-        {
-          "type": "password",
-          "value": "${KEYCLOAK_TEST_USER_PASSWORD}",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "id": "e3fb3ca8-1e0c-4b1c-86d3-30672762dc03",
-      "username": "inventario.test",
-      "enabled": true,
-      "emailVerified": true,
-      "firstName": "Inventario",
-      "lastName": "Pruebas",
-      "email": "inventario.test@sio.local",
+      "firstName": "Operario",
+      "lastName": "DAO",
+      "email": "operario.dao@sio.local",
       "groups": [
         "/empleado"
       ],

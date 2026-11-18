@@ -2,13 +2,13 @@
 
 [← Todos los ejercicios](../README.md)
 
-**Qué enseña:** Registrar el contacto vigente de un proveedor **confirmado desde una empresa**, ver que una solicitud idéntica no crea versión, **reemplazarlo** (se cierra la versión anterior y se crea otra), consultar el **historial**, los rechazos por **geografía incoherente**, por **usuario sin membresía** y por **dependencia caída**, y **cerrar** el perfil sin reemplazo (y el `409` al repetirlo). Muestra además que los usuarios del grupo `empleado` (por ejemplo `compras.test`) leen el contacto.
+**Qué enseña:** Registrar el contacto vigente de un proveedor **confirmado desde una empresa**, ver que una solicitud idéntica no crea versión, **reemplazarlo** (se cierra la versión anterior y se crea otra), consultar el **historial**, los rechazos por **geografía incoherente**, por **usuario sin membresía** y por **dependencia caída**, y **cerrar** el perfil sin reemplazo (y el `409` al repetirlo). Muestra además que los usuarios del grupo `empleado` (por ejemplo `operario.dao`) leen el contacto.
 
 **Datos:** **ficticios** — detalle y decisiones en [00-datos-ficticios.md](00-datos-ficticios.md).
 
 Antes de empezar revise los [requisitos comunes](../README.md#antes-de-empezar).
 
-**Usuarios:** ejecútelo con `admin.test`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
+**Usuarios:** ejecútelo con `admin.sio`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
 
 ## Orden de ejecución
 

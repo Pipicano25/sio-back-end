@@ -27,8 +27,8 @@ EX4 = dict(
     data=[
         ("Empresa A", "COMERCIALIZADORA USUARIOS FICTICIA S.A.S. (**ficticia**)"),
         ("Empresa B", "ALIADO USUARIOS FICTICIO S.A.S. (**ficticia**)"),
-        ("Persona 1", "Supervisora ficticia; cuenta de Keycloak `supervisor.test`"),
-        ("Persona 2", "Comprador ficticio; cuenta de Keycloak `compras.test`"),
+        ("Persona 1", "Supervisora ficticia; cuenta de Keycloak `admin.dao`"),
+        ("Persona 2", "Comprador ficticio; cuenta de Keycloak `operario.dao`"),
         ("Cuenta técnica", f"`{TECHNICAL_ACCOUNT}` (cuenta de servicio de un cliente `client_credentials`)"),
     ],
     interpretation=[
@@ -39,7 +39,7 @@ EX4 = dict(
         ("Persona", "`person_identity_id` es obligatorio y debe estar `ACTIVE` en Party Identity (DS-16)."),
         ("Unicidad", "Como máximo una membresía `ACTIVE` por empresa y persona, y por empresa y cuenta; el historial se "
          "conserva (DS-01)."),
-        ("Aislamiento", "Desde que `supervisor.test` es miembro de la empresa A, puede consultarla; los demás usuarios "
+        ("Aislamiento", "Desde que `admin.dao` es miembro de la empresa A, puede consultarla; los demás usuarios "
          "sin membresía reciben `404`."),
     ],
     order_rules=[
@@ -58,7 +58,7 @@ EX4 = dict(
                  get_organization("ORG_B", ORG_EJ4B, "ALIADO USUARIOS FICTICIO S.A.S."),
                  call("Registrar la empresa A", "POST", f"{API}/companies", also=PLATFORM,
                       body={"organization_identity_id": "<ORG_A>"},
-                      why=["Registrar empresas exige `platform:administer` (Fase B): solo `admin.test`."],
+                      why=["Registrar empresas exige `platform:administer` (Fase B): solo `admin.sio`."],
                       save={"EMPRESA_A": "id"}, show=["id", "status"]),
                  call("Registrar la empresa B", "POST", f"{API}/companies", also=PLATFORM,
                       body={"organization_identity_id": "<ORG_B>"},
@@ -70,17 +70,17 @@ EX4 = dict(
             "Registrar los usuarios operativos de la empresa A",
             "Registrar a la supervisora por `username` y comprobar los rechazos.",
             [
-                call("Registrar a supervisor.test por nombre de usuario", "POST",
+                call("Registrar a admin.dao por nombre de usuario", "POST",
                      f"{API}/companies/<EMPRESA_A>/application-users",
-                     body={"username": "supervisor.test", "person_identity_id": "<PERSONA_SUPERVISORA>",
+                     body={"username": "admin.dao", "person_identity_id": "<PERSONA_SUPERVISORA>",
                            "display_name": "Supervisora (ficticia)", "reference_email": "supervisora@ficticia.co"},
-                     why=["El servicio busca la cuenta `supervisor.test` en Keycloak (solo lectura, con su propia "
+                     why=["El servicio busca la cuenta `admin.dao` en Keycloak (solo lectura, con su propia "
                           "identidad técnica) y guarda su `sub`; el `username` no se guarda.",
                           "La persona se valida en Party Identity con el token de quien registra."],
                      save={"USR_SUPERVISORA": "id"}, show=USER_SHOW),
                 call("Intentar registrarla otra vez (rechazado)", "POST",
                      f"{API}/companies/<EMPRESA_A>/application-users",
-                     body={"username": "supervisor.test", "person_identity_id": "<PERSONA_SUPERVISORA>",
+                     body={"username": "admin.dao", "person_identity_id": "<PERSONA_SUPERVISORA>",
                            "display_name": "Duplicada"},
                      why=["Ya existe una membresía `ACTIVE` de esa persona en la empresa: `409 DUPLICATE_MEMBERSHIP`."],
                      expect=409, show=["status", "code", "detail", "errors"]),
@@ -91,8 +91,8 @@ EX4 = dict(
                      why=["Las cuentas de servicio (`client_credentials`) no son usuarios operativos: "
                           "`422 TECHNICAL_ACCOUNT_NOT_ALLOWED` (FR-019)."],
                      expect=422, show=["status", "code", "detail"]),
-                call("Registrar a compras.test", "POST", f"{API}/companies/<EMPRESA_A>/application-users",
-                     body={"username": "compras.test", "person_identity_id": "<PERSONA_COMPRADOR>",
+                call("Registrar a operario.dao", "POST", f"{API}/companies/<EMPRESA_A>/application-users",
+                     body={"username": "operario.dao", "person_identity_id": "<PERSONA_COMPRADOR>",
                            "display_name": "Comprador (ficticio)"},
                      why=["Usuario operativo de solo lectura en Operational Context."],
                      save={"USR_COMPRADOR_A": "id"}, show=USER_SHOW),
@@ -106,7 +106,7 @@ EX4 = dict(
                 call("Listar los usuarios activos de la empresa A", "GET",
                      f"{API}/companies/<EMPRESA_A>/application-users",
                      why=["Solo los miembros de la empresa A (o el administrador de plataforma) la ven: "
-                          "`supervisor.test` y `compras.test` responden `200`; los demás, `404`."],
+                          "`admin.sio` (plataforma), `admin.dao` y `operario.dao` responden `200`; un usuario sin membresía, `404`."],
                      show=["items[].keycloak_user_id", "items[].display_name", "total_records"]),
                 call("Consultar la supervisora por su `id`", "GET", f"{API}/application-users/<USR_SUPERVISORA>",
                      why=["Es la consulta que usan los demás servicios para el usuario operativo de un documento."],
@@ -116,11 +116,11 @@ EX4 = dict(
         step(
             "05-misma-persona-otra-empresa.md",
             "La misma persona en otra empresa",
-            "Registrar a `compras.test` también en la empresa B y retirarlo solo de esa empresa.",
+            "Registrar a `operario.dao` también en la empresa B y retirarlo solo de esa empresa.",
             [
-                call("Registrar a compras.test en la empresa B", "POST",
+                call("Registrar a operario.dao en la empresa B", "POST",
                      f"{API}/companies/<EMPRESA_B>/application-users",
-                     body={"username": "compras.test", "person_identity_id": "<PERSONA_COMPRADOR>",
+                     body={"username": "operario.dao", "person_identity_id": "<PERSONA_COMPRADOR>",
                            "display_name": "Comprador (ficticio)"},
                      why=["Ni la persona ni la cuenta son únicas globalmente: son dos membresías independientes."],
                      save={"USR_COMPRADOR_B": "id"}, show=USER_SHOW),

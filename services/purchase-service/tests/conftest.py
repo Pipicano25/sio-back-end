@@ -7,7 +7,7 @@
   usuarios llevan los roles de sus grupos en la plantilla del realm; las cuentas de
   servicio llevan `client_id` y `preferred_username = service-account-{client_id}`.
 - Las seis dependencias se sustituyen por `tests/fakes.py` inyectados en `create_app`.
-- `compras.test` es miembro de la empresa ficticia y está asignado a la sucursal A.
+- `operario.dao` es miembro de la empresa ficticia y está asignado a la sucursal A.
 """
 
 from __future__ import annotations
@@ -61,9 +61,8 @@ def _realm_user_roles() -> dict[str, tuple[str, ...]]:
     }
 
 
-# Usuarios de prueba del realm (`admin.test` superadmin; `supervisor.test` admin; `compras.test`, `ventas.test` e
-# `inventario.test` empleado) más dos identidades **sintéticas** que no existen en el realm, para cubrir casos que los
-# tres grupos ya no tienen: un lector de compras sin escritura y un usuario sin permisos de Purchase.
+# Usuarios de prueba del realm (`admin.sio` superadmin; `admin.dao` admin; `operario.dao` empleado) más dos
+# identidades **sintéticas** que no existen en el realm, para cubrir casos que los tres grupos ya no tienen: un lector de compras sin escritura y un usuario sin permisos de Purchase.
 USER_ROLES: dict[str, tuple[str, ...]] = {
     **_realm_user_roles(),
     "lector.sintetico": ("perm:purchase:all:read", "perm:operational-context:application_users:read"),
@@ -264,13 +263,11 @@ def service_token(make_token):
 def fakes() -> Fakes:
     built = build_fakes()
     world = built.world
-    built.oc.add_member(user_sub("compras.test"), world.company, branches=(world.branch,))
-    built.oc.add_member(user_sub("admin.test"), world.company, branches=(world.branch, world.branch_b))
-    built.oc.add_member(user_sub("supervisor.test"), world.company, branches=(world.branch,))
+    built.oc.add_member(user_sub("operario.dao"), world.company, branches=(world.branch,))
+    built.oc.add_member(user_sub("admin.sio"), world.company, branches=(world.branch, world.branch_b))
+    built.oc.add_member(user_sub("admin.dao"), world.company, branches=(world.branch,))
     built.oc.add_member(user_sub("lector.sintetico"), world.company)
     built.oc.add_member(user_sub("sin-compras.sintetico"), world.company, branches=(world.branch,))
-    built.oc.add_member(user_sub("inventario.test"), world.company, branches=(world.branch,))
-    built.oc.add_member(user_sub("ventas.test"), world.company, branches=(world.branch,))
     return built
 
 
@@ -390,7 +387,7 @@ def as_token(test_client):
 
 @pytest.fixture
 def buyer(as_user) -> ApiClient:
-    return as_user("compras.test")
+    return as_user("operario.dao")
 
 
 # --------------------------------------------------------------------------

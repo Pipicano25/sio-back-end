@@ -30,7 +30,7 @@ YESTERDAY = _iso(NOW - timedelta(days=1))
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 @pytest.fixture
@@ -176,9 +176,9 @@ def test_immutable_fields_and_filters(admin, company, world):
 def test_permissions(as_user, admin, company, world):
     created = create_price(admin, company, world["list"], world["product"])
     url = f"/api/v1/price-list-items/{created['id']}"
-    assert as_user("ventas.test").get(url).status_code == 200
-    assert as_user("ventas.test").post(url + "/change-price", json={"unit_price": "1", "version": 1}).status_code == 403
-    assert as_user("ventas.test").post(url + "/deactivate", json={"version": 1}).status_code == 403
+    assert as_user("operario.dao").get(url).status_code == 200
+    assert as_user("operario.dao").post(url + "/change-price", json={"unit_price": "1", "version": 1}).status_code == 403
+    assert as_user("operario.dao").post(url + "/deactivate", json={"version": 1}).status_code == 403
     assert as_user("sin-permisos.test").get(URL.format(company=company)).status_code == 403
 
 

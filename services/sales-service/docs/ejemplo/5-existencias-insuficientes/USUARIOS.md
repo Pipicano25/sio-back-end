@@ -2,11 +2,9 @@
 
 | Usuario | Paso 1 | Paso 2 | Paso 3 |
 | --- | --- | --- | --- |
-| `admin.test` | `—` | `—` | `—` |
-| `supervisor.test` | `—` | `—` | `—` |
-| `compras.test` | `—` | `—` | `—` |
-| `ventas.test` | `201` | `201` | `409` |
-| `inventario.test` | `—` | `—` | `—` |
+| `admin.sio` | `—` | `—` | `—` |
+| `admin.dao` | `—` | `—` | `—` |
+| `operario.dao` | `201` | `201` | `409` |
 
 ## Permiso por URL
 
@@ -18,5 +16,5 @@
 
 ## Ejemplos
 
-- Puede: `ventas.test`, `compras.test` e `inventario.test` (grupo `empleado`, `perm:sales:all:create|read|update|delete`) registran, confirman y anulan ventas de las sucursales asignadas, **sin** ver costo ni margen; `supervisor.test` (grupo `admin`, `perm:sales:all:all`) también, y ve la rentabilidad; `admin.test` (grupo `superadmin`) por comodín, con rentabilidad.
+- Puede: `operario.dao` (grupo `empleado`, `perm:sales:all:create|read|update|delete`) registran, confirman y anulan ventas de las sucursales asignadas, **sin** ver costo ni margen; `admin.dao` (grupo `admin`, `perm:sales:all:all`) también, y ve la rentabilidad; `admin.sio` (grupo `superadmin`) por comodín, con rentabilidad.
 - No puede: ninguna cuenta de servicio escribe ventas (ni el propio `sales-service`); el grupo `empleado` no ve la rentabilidad; sin asignación a la sucursal, ni el comodín permite escribir.

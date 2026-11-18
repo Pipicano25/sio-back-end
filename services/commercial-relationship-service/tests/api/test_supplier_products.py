@@ -21,7 +21,7 @@ URL = "/api/v1/companies/{company}/supplier-products"
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 @pytest.fixture
@@ -188,9 +188,9 @@ def test_list_filters(admin, company, fake_catalog, fake_party, world):
 def test_readers_and_permissions(as_user, admin, company, fake_catalog, world):
     created = create_supplier_product(admin, company, world["supplier"], world["product"], fake_catalog)
 
-    assert as_user("supervisor.test").get(f"/api/v1/supplier-products/{created['id']}").status_code == 200
-    assert _post(as_user("compras.test"), company, {}).status_code == 403
-    assert as_user("ventas.test").post(
+    assert as_user("admin.dao").get(f"/api/v1/supplier-products/{created['id']}").status_code == 200
+    assert _post(as_user("operario.dao"), company, {}).status_code == 403
+    assert as_user("operario.dao").post(
         f"/api/v1/supplier-products/{created['id']}/deactivate", json={"version": 1}
     ).status_code == 403
     assert as_user("sin-permisos.test").get(URL.format(company=company)).status_code == 403

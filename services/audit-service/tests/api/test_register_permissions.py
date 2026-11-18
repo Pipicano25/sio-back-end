@@ -14,7 +14,7 @@ def _payload(url: str) -> dict:
 
 
 @pytest.mark.parametrize("url", URLS)
-@pytest.mark.parametrize("username", ["admin.test"])  # spec 026: solo `superadmin` tiene el permiso (comodín)
+@pytest.mark.parametrize("username", ["admin.sio"])  # spec 026: solo `superadmin` tiene el permiso (comodín)
 def test_humans_with_wildcards_are_forbidden(as_user, as_token, service_token, url, username) -> None:
     human = as_user(username).post(url, json=_payload(url))
     missing = as_token(service_token("perm:audit:audit-events:read")).post(url, json=_payload(url))
@@ -39,5 +39,5 @@ def test_service_account_without_permission_is_forbidden(as_token, service_token
 
 
 def test_forbidden_before_validation(as_user) -> None:
-    response = as_user("admin.test").post("/api/v1/audit-events", json={"invalido": True})
+    response = as_user("admin.sio").post("/api/v1/audit-events", json={"invalido": True})
     assert response.status_code == 403

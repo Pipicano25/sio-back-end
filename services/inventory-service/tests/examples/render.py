@@ -253,11 +253,11 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "## Ejemplos",
         "",
-        "- Puede: `admin.test` (SuperAdmin), `supervisor.test` (Admin) y los usuarios del grupo `empleado` "
-        "(`inventario.test`, `compras.test`, `ventas.test`) consultan inventario de las empresas donde son "
-        "miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.test` y "
-        "`supervisor.test` configuran políticas.",
-        "- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.test`, que "
+        "- Puede: `admin.sio` (SuperAdmin), `admin.dao` (Admin) y el usuario del grupo `empleado` "
+        "(`operario.dao`) consultan inventario de las empresas donde son "
+        "miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.sio` y "
+        "`admin.dao` configuran políticas.",
+        "- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.sio`, que "
         "tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; "
         "el grupo `empleado` recibe `403` al configurar políticas.",
     ]
@@ -336,7 +336,7 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "```bash",
         "curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \\",
         "  -d grant_type=password -d client_id=sio-web -d scope=openid \\",
-        "  -d username=inventario.test -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"",
+        "  -d username=operario.dao -d password=\"$KEYCLOAK_TEST_USER_PASSWORD\"",
         "```",
         "",
         "Cuenta de servicio de pruebas (secreto en `INVENTORY_TEST_OPERATOR_CLIENT_SECRET`):",

@@ -228,7 +228,7 @@ def render_order(ex, info, produced_by, used_in):
     kind = "**reales** del sistema anterior (`docs/CAMPOS PRODUCTOS.xlsx`)" if ex.get("real_data") else "**ficticios**"
     out += [f"**Datos:** {kind} — detalle y decisiones en [{data_file(ex)}]({data_file(ex)}).", ""]
     out += ["Antes de empezar revise los [requisitos comunes](../README.md#antes-de-empezar).", ""]
-    out += ["**Usuarios:** ejecútelo con `admin.test`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL "
+    out += ["**Usuarios:** ejecútelo con `admin.sio`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL "
             "y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).", ""]
     out += ["## Orden de ejecución", ""]
     out += ["Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos anteriores.", ""]

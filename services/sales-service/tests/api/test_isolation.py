@@ -16,8 +16,8 @@ def test_non_member_gets_404_everywhere(as_user, world, fakes, make_sequence, ma
     sequence = make_sequence()
     draft = make_draft()
     confirm(draft)
-    fakes.oc.members.pop((user_sub("ventas.test"), world.company))
-    client = as_user("ventas.test")
+    fakes.oc.members.pop((user_sub("operario.dao"), world.company))
+    client = as_user("operario.dao")
     ids = {"sale": draft["id"], "detail": draft["lines"][0]["id"], "operation": uuid4(), "sequence": sequence["id"]}
     for method, path, _ in ROUTES:
         response = client.request(
@@ -41,7 +41,7 @@ def test_member_of_another_company_never_sees_foreign_data(as_user, world, fakes
     assert reader.get(f"{other}/sales/{draft['id']}/details").status_code == 404
     assert reader.get(f"{other}/sales/{draft['id']}/operations").status_code == 404
     assert reader.get(f"{other}/sales/{draft['id']}/availability").status_code == 404
-    operation = as_user("ventas.test").get(f"{base(world)}/sales/{draft['id']}/operations").json()[0]
+    operation = as_user("operario.dao").get(f"{base(world)}/sales/{draft['id']}/operations").json()[0]
     assert reader.get(f"{other}/sale-operations/{operation['id']}").status_code == 404
     assert reader.get(f"{other}/sale-sequences").json()["items"] == []
     assert reader.get(f"{other}/sale-sequences/{sequence['id']}").status_code == 404

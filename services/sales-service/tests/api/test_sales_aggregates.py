@@ -101,9 +101,9 @@ def test_period_validation(supervisor, world) -> None:
 def test_other_company_and_permissions(as_user, make_token, as_token, world, fakes, make_sequence, make_draft, confirm,
                                        cancel) -> None:
     seed(world, fakes, make_sequence, make_draft, confirm, cancel)
-    fakes.oc.members.pop((user_sub("ventas.test"), world.company))
-    assert by_product(as_user("ventas.test"), world).status_code == 404
-    other = as_user("supervisor.test").get(f"/api/v1/companies/{world.other_company}/sales-aggregates/by-product",
+    fakes.oc.members.pop((user_sub("operario.dao"), world.company))
+    assert by_product(as_user("operario.dao"), world).status_code == 404
+    other = as_user("admin.dao").get(f"/api/v1/companies/{world.other_company}/sales-aggregates/by-product",
                                             params=PERIOD)
     assert other.status_code == 404
     unrelated = as_token(make_token("perm:inventory:all:all", sub="sin-permiso-" + uuid4().hex))

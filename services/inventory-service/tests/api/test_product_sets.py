@@ -46,7 +46,7 @@ def test_in_stock_sums_requested_branches(as_user, world, test_engine) -> None:
     insert_balance(test_engine, world.company, world.other_branch, b, "2")
     insert_balance(test_engine, world.company, world.branch, c, "0")
     insert_balance(test_engine, world.company, world.other_branch, d, "1")
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     both = [str(world.branch), str(world.other_branch)]
 
     assert _ids(_walk(reader, world, 10, branch_ids=both, stock_state="IN_STOCK")) == [str(a), str(b), str(d)]
@@ -63,7 +63,7 @@ def test_minimum_states_with_unregistered_balance_counting_as_zero(as_user, worl
     insert_policy(test_engine, world.company, world.branch, above, "5")
     insert_policy(test_engine, world.company, world.branch, unregistered, "2")
     insert_policy(test_engine, world.company, world.branch, inactive_policy, "50", active=False)
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     scope = [str(world.branch)]
 
     def ids(state: str) -> set[str]:
@@ -82,7 +82,7 @@ def test_minimum_state_matches_if_any_branch_in_scope_has_it(as_user, world, tes
     insert_balance(test_engine, world.company, world.branch, product, "9")
     insert_policy(test_engine, world.company, world.branch, product, "5")
     insert_policy(test_engine, world.company, world.other_branch, product, "1")  # sin saldo: bajo mínimo
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     both = [str(world.branch), str(world.other_branch)]
     assert _ids(_walk(reader, world, 10, branch_ids=both, minimum_state="BELOW_MINIMUM")) == [str(product)]
     assert _ids(_walk(reader, world, 10, branch_ids=both, minimum_state="ABOVE_MINIMUM")) == [str(product)]
@@ -92,7 +92,7 @@ def test_products_keyset_walk_without_gaps_or_duplicates(as_user, world, test_en
     products = _products(7)
     for product in products:
         insert_balance(test_engine, world.company, world.branch, product, "1")
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     for limit in (1, 2, 3, 7):
         assert _ids(_walk(reader, world, limit, branch_ids=[str(world.branch)], stock_state="IN_STOCK")) == [
             str(p) for p in products
@@ -108,7 +108,7 @@ def test_pairs_ordered_by_shortfall_desc_with_ties(as_user, world, test_engine) 
     insert_policy(test_engine, world.company, world.branch, b, "10")  # faltante 8
     insert_balance(test_engine, world.company, world.branch, c, "4")
     insert_policy(test_engine, world.company, world.branch, c, "5")  # faltante 1
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     scope = [str(world.branch), str(world.other_branch)]
     branches = sorted([world.branch, world.other_branch])
 
@@ -128,7 +128,7 @@ def test_never_returns_costs_or_totals(as_user, world, test_engine) -> None:
     product = uuid4()
     insert_balance(test_engine, world.company, world.branch, product, "5", inventory_value="5000", average_unit_cost="1000")
     insert_policy(test_engine, world.company, world.branch, product, "9")
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     for body in (
         {"branch_ids": [str(world.branch)], "stock_state": "IN_STOCK", "limit": 5},
         {"branch_ids": [str(world.branch)], "minimum_state": "BELOW_MINIMUM", "unit": "PAIRS", "limit": 5},
@@ -140,12 +140,12 @@ def test_never_returns_costs_or_totals(as_user, world, test_engine) -> None:
 
 def test_other_company_rows_are_never_returned(as_user, world, test_engine) -> None:
     insert_balance(test_engine, world.other_company, world.other_company_branch, world.other_company_product, "3")
-    page = _post(as_user("inventario.test"), world, branch_ids=[str(world.other_company_branch)], stock_state="IN_STOCK", limit=5)
+    page = _post(as_user("operario.dao"), world, branch_ids=[str(world.other_company_branch)], stock_state="IN_STOCK", limit=5)
     assert page == {"items": [], "has_more": False}
 
 
 def test_validation(as_user, world) -> None:
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     branch = [str(world.branch)]
     cases = [
         {"branch_ids": branch, "limit": 5},

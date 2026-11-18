@@ -37,7 +37,7 @@ GUARANTEED = {
 
 @pytest.fixture
 def resources(as_user, company, fake_catalog, fake_party):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     return {
         "product": adopt(client, company, fake_catalog),
         "customer": person_customer(client, company, fake_party),
@@ -65,7 +65,7 @@ def test_service_account_with_lookup_reads_without_membership(resources, no_memb
 def test_reads_in_any_state(as_user, resources, as_token, service_token, kind):
     action = "deactivate"
     item = resources[kind]
-    as_user("admin.test").post(f"{PATH[kind].format(id=item['id'])}/{action}", json={"version": item["version"]})
+    as_user("admin.sio").post(f"{PATH[kind].format(id=item['id'])}/{action}", json={"version": item["version"]})
     response = as_token(service_token(READ[kind], LOOKUP)).get(PATH[kind].format(id=item["id"]))
     assert response.status_code == 200 and response.json()["status"] == "INACTIVE"
 
@@ -86,8 +86,8 @@ def test_service_account_without_lookup_is_isolated(resources, no_members, as_to
 
 @pytest.mark.parametrize("kind", ["product", "customer", "supplier"])
 def test_human_with_all_all_all_without_membership_is_404(resources, as_user, fake_oc, company, kind):
-    fake_oc.deactivate_member(user_sub("admin.test"), company)
-    assert as_user("admin.test").get(PATH[kind].format(id=resources[kind]["id"])).status_code == 404
+    fake_oc.deactivate_member(user_sub("admin.sio"), company)
+    assert as_user("admin.sio").get(PATH[kind].format(id=resources[kind]["id"])).status_code == 404
 
 
 def test_incoherent_claims_do_not_exempt(resources, no_members, as_token, make_token):
@@ -134,8 +134,8 @@ def test_unchanged_after_rejected_write(as_user, resources, no_members, as_token
     product = resources["product"]
     writer = as_token(service_token(READ["product"], LOOKUP, "perm:commercial-relationship:company_products:update"))
     writer.put(PATH["product"].format(id=product["id"]), json=product_update_body(product, display_name="X"))
-    fake_oc.add_member(user_sub("admin.test"), company)
-    current = as_user("admin.test").get(PATH["product"].format(id=product["id"])).json()
+    fake_oc.add_member(user_sub("admin.sio"), company)
+    current = as_user("admin.sio").get(PATH["product"].format(id=product["id"])).json()
     assert current["version"] == product["version"] and current["updated_at"] == product["updated_at"]
 
 
@@ -158,10 +158,10 @@ def test_batch_lookup_with_exemption(as_user, company, fake_catalog, resources, 
 
 
 def test_batch_lookup_human_checks_once_per_company(as_user, company, fake_catalog, fake_oc):
-    client = as_user("supervisor.test")
-    admin = as_user("admin.test")
+    client = as_user("admin.dao")
+    admin = as_user("admin.sio")
     other = uuid4()
-    fake_oc.add_member(user_sub("admin.test"), other)
+    fake_oc.add_member(user_sub("admin.sio"), other)
     mine = [adopt(admin, company, fake_catalog, internal_code=f"M{i}")["id"] for i in range(3)]
     foreign = adopt(admin, other, fake_catalog, internal_code="F")["id"]
     fake_oc.access_calls.clear()

@@ -111,7 +111,7 @@ def oracle_client(data, test_auth, user_token, **overrides):
     app = create_app(build_test_settings(**overrides), auth=test_auth, jwks_probe=lambda: True,
                      ports_factory=lambda authorization: Ports(fakes.oc, fakes.cr, fakes.pc, fakes.inventory))
     client = TestClient(app, raise_server_exceptions=False)
-    client.headers["Authorization"] = f"Bearer {user_token('supervisor.test')}"
+    client.headers["Authorization"] = f"Bearer {user_token('admin.dao')}"
     return client, fakes
 
 

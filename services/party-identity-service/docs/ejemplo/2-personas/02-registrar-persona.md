@@ -31,7 +31,7 @@ POST /api/v1/person-identities
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:person_identities:create`), `ventas.test` (por `perm:party-identity:person_identities:create`), `inventario.test` (por `perm:party-identity:person_identities:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:person_identities:create`)
 
 **Por qué se hace así**
 
@@ -77,7 +77,7 @@ POST /api/v1/person-identities
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:person_identities:create`), `ventas.test` (por `perm:party-identity:person_identities:create`), `inventario.test` (por `perm:party-identity:person_identities:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:person_identities:create`)
 
 **Por qué se hace así**
 
@@ -114,7 +114,7 @@ POST /api/v1/person-identities
 
 **Permiso que exige la URL:** `perm:party-identity:person_identities:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:person_identities:create`), `ventas.test` (por `perm:party-identity:person_identities:create`), `inventario.test` (por `perm:party-identity:person_identities:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:person_identities:create`)
 
 **Por qué se hace así**
 

@@ -26,7 +26,7 @@ def test_no_user_receives_costs_or_valuation(world, as_user) -> None:
     world.minimum(item, "6")
     world.fakes.cr.set_price(item.presentations[0], "2500.00")
     paths = ("product-overviews", "inventory-overviews", "low-stock-products", "inventory-summary")
-    for user in ("vendedor.sintetico", "bodeguero.sintetico", "supervisor.test", "admin.test"):
+    for user in ("vendedor.sintetico", "bodeguero.sintetico", "admin.dao", "admin.sio"):
         for path in paths:
             response = as_user(user).get(f"{world.base}/{path}")
             if response.status_code == 403:

@@ -243,7 +243,7 @@ def render_order(ex, info, produced_by, used_in):
     out += [f"**Qué enseña:** {ex['focus']}", ""]
     out += [f"**Filas del Excel:** ID {ex['excel_ids']} — detalle y decisiones en [00-datos-del-excel.md](00-datos-del-excel.md).", ""]
     out += ["Antes de empezar revise los [requisitos comunes](../README.md#antes-de-empezar).", ""]
-    out += ["**Usuarios:** ejecútelo con `admin.test`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL "
+    out += ["**Usuarios:** ejecútelo con `admin.sio`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL "
             "y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).", ""]
     out += ["## Orden de ejecución", ""]
     out += ["Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos anteriores.", ""]

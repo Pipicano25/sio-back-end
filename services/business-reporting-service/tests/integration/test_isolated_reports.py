@@ -20,13 +20,13 @@ from tests.integration.support import BRS, INVENTORY, OC, PURCHASE, SALES
 
 pytestmark = pytest.mark.integration
 
-USERS = ("admin.test", "supervisor.test", "ventas.test", "compras.test", "inventario.test")
+USERS = ("admin.sio", "admin.dao", "operario.dao")
 # Permisos del reporte + del propietario (plantilla del realm): quién puede cada reporte si es miembro.
 CAN = {
-    "top-selling-products": {"admin.test", "supervisor.test", "ventas.test", "compras.test", "inventario.test"},
-    "sales-by-branch": {"admin.test", "supervisor.test"},
-    "purchases": {"admin.test", "supervisor.test", "ventas.test", "compras.test", "inventario.test"},
-    "stock-evolution": {"admin.test", "supervisor.test", "ventas.test", "compras.test", "inventario.test"},
+    "top-selling-products": {"admin.sio", "admin.dao", "operario.dao"},
+    "sales-by-branch": {"admin.sio", "admin.dao"},
+    "purchases": {"admin.sio", "admin.dao", "operario.dao"},
+    "stock-evolution": {"admin.sio", "admin.dao", "operario.dao"},
 }
 QUANTITIES = ("opening_quantity", "entries", "outputs", "entry_reversals", "output_reversals", "positive_adjustments",
               "negative_adjustments", "closing_quantity")
@@ -59,7 +59,7 @@ def memberships(users) -> dict[str, set[str]]:
 def branches(users) -> dict[str, list[dict]]:
     found = {}
     for company in (SALES_COMPANY, PURCHASE_COMPANY, VOLUME_COMPANY):
-        found[company] = ok(users("admin.test").get(f"{OC}/companies/{company}/branches",
+        found[company] = ok(users("admin.sio").get(f"{OC}/companies/{company}/branches",
                                                      params={"page_size": 100})).json()["items"]
     return found
 
@@ -71,7 +71,7 @@ def report_url(report: str, company: str, branch: str | None = None) -> str:
 
 
 def sales_branch(users) -> str:
-    rows = ok(users("admin.test").get(f"{SALES}/companies/{SALES_COMPANY}/sales-aggregates/by-branch",
+    rows = ok(users("admin.sio").get(f"{SALES}/companies/{SALES_COMPANY}/sales-aggregates/by-branch",
                                       params=PERIOD)).json()["items"]
     return rows[0]["branch_id"]
 
@@ -96,7 +96,7 @@ def test_matrix_per_group_with_real_tokens_and_real_memberships(users, membershi
 
 
 def test_other_company_and_foreign_branch_are_404(users, branches) -> None:
-    reportes = users("supervisor.test")
+    reportes = users("admin.dao")
     assert reportes.get(report_url("top-selling-products", str(uuid.uuid4())), params=PERIOD).status_code == 404
     foreign = branches[PURCHASE_COMPANY][0]["id"]
     assert reportes.get(report_url("stock-evolution", SALES_COMPANY, foreign), params=PERIOD).status_code == 404
@@ -109,8 +109,8 @@ def test_owner_permissions_are_enforced_with_the_user_token(users, branches) -> 
     """DR-07 y DR-11 con los grupos de la spec 026: el Empleado no tiene el reporte de ventas por sucursal, y la
     evolución de existencias nunca devuelve costos aunque el usuario pueda ver la valorización."""
     branch = branches[SALES_COMPANY][0]["id"]
-    assert users("ventas.test").get(report_url("sales-by-branch", SALES_COMPANY), params=PERIOD).status_code == 403
-    reportes = users("supervisor.test")
+    assert users("operario.dao").get(report_url("sales-by-branch", SALES_COMPANY), params=PERIOD).status_code == 403
+    reportes = users("admin.dao")
     window = {"from": "2026-10-01T00:00:00-05:00", "to": "2026-10-19T00:00:00-05:00"}
     evolution = ok(reportes.get(f"{INVENTORY}/companies/{SALES_COMPANY}/branches/{branch}/stock-evolution",
                                 params=window)).json()
@@ -122,7 +122,7 @@ def test_owner_permissions_are_enforced_with_the_user_token(users, branches) -> 
 
 def confirmed_sales_oracle(users) -> tuple[Decimal, int, set[str]]:
     """Oráculo independiente: el listado de ventas `CONFIRMED` de Sales (y que hay anuladas que no deben contar)."""
-    client = users("admin.test")
+    client = users("admin.sio")
     total, count, page = Decimal("0"), 0, 1
     while True:
         body = ok(client.get(f"{SALES}/companies/{SALES_COMPANY}/sales", params={
@@ -140,7 +140,7 @@ def confirmed_sales_oracle(users) -> tuple[Decimal, int, set[str]]:
 
 
 def test_r1_top_selling_products_against_sales(users) -> None:
-    reportes = users("supervisor.test")
+    reportes = users("admin.dao")
     report = ok(reportes.get(report_url("top-selling-products", SALES_COMPANY), params=PERIOD)).json()
     direct = ok(reportes.get(f"{SALES}/companies/{SALES_COMPANY}/sales-aggregates/by-product", params=PERIOD)).json()
     assert [i["company_product_id"] for i in report["items"]] == [i["company_product_id"] for i in direct["items"]]
@@ -159,7 +159,7 @@ def test_r1_top_selling_products_against_sales(users) -> None:
 
 
 def test_r2_sales_by_branch_against_sales(users, branches) -> None:
-    reportes = users("supervisor.test")
+    reportes = users("admin.dao")
     report = ok(reportes.get(report_url("sales-by-branch", SALES_COMPANY), params=PERIOD)).json()
     active = {b["id"] for b in branches[SALES_COMPANY] if b["status"] == "ACTIVE"}
     assert {i["branch_id"] for i in report["items"]} == active  # todas, también las que no venden
@@ -180,7 +180,7 @@ def test_r2_sales_by_branch_against_sales(users, branches) -> None:
 
 
 def purchases_oracle(users) -> dict:
-    client = users("admin.test")
+    client = users("admin.sio")
     sums, counts = defaultdict(Decimal), defaultdict(int)
     page = 1
     while True:
@@ -200,7 +200,7 @@ def purchases_oracle(users) -> dict:
 
 
 def test_r3_purchases_classification_totals_filters_and_pages(users) -> None:
-    reportes = users("supervisor.test")
+    reportes = users("admin.dao")
     report = ok(reportes.get(report_url("purchases", PURCHASE_COMPANY), params=PERIOD)).json()
     oracle = purchases_oracle(users)
     [totals] = report["totals"]
@@ -232,8 +232,8 @@ def test_r3_purchases_classification_totals_filters_and_pages(users) -> None:
 
 
 def kardex_oracle(users, company: str, branch: str, product: str) -> dict:
-    """Sumas por tipo desde el kardex (con `admin.test`, que sí puede leerlo)."""
-    body = ok(users("admin.test").get(f"{INVENTORY}/companies/{company}/branches/{branch}/kardex/{product}",
+    """Sumas por tipo desde el kardex (con `admin.sio`, que sí puede leerlo)."""
+    body = ok(users("admin.sio").get(f"{INVENTORY}/companies/{company}/branches/{branch}/kardex/{product}",
                                       params={"page_size": 100})).json()
     sums = defaultdict(Decimal)
     for movement in body["items"]:
@@ -244,7 +244,7 @@ def kardex_oracle(users, company: str, branch: str, product: str) -> dict:
 
 def test_r4_stock_evolution_against_inventory_and_kardex(users, branches) -> None:
     branch = sales_branch(users)
-    reportes = users("supervisor.test")
+    reportes = users("admin.dao")
     report = ok(reportes.get(report_url("stock-evolution", SALES_COMPANY, branch), params=PERIOD)).json()
     assert report["items"] and report["branch_id"] == branch
     for item in report["items"]:
@@ -261,7 +261,7 @@ def test_r4_stock_evolution_against_inventory_and_kardex(users, branches) -> Non
 
 def test_r4_pagination_on_volume_company(users, branches) -> None:
     branch = branches[VOLUME_COMPANY][0]["id"]
-    client = users("inventario.test")
+    client = users("operario.dao")
     first = ok(client.get(report_url("stock-evolution", VOLUME_COMPANY, branch), params={**PERIOD, "page_size": 100})).json()
     assert first["total_records"] > 100, "el juego de volumen debe tener más de una página"
     second = ok(client.get(report_url("stock-evolution", VOLUME_COMPANY, branch),
@@ -280,7 +280,7 @@ def test_r4_pagination_on_volume_company(users, branches) -> None:
 def test_csv_matches_json(users, report) -> None:
     company = PURCHASE_COMPANY if report == "purchases" else SALES_COMPANY
     branch = sales_branch(users) if report == "stock-evolution" else None
-    client = users("supervisor.test")
+    client = users("admin.dao")
     paged = {"page_size": 100} if report in ("purchases", "stock-evolution") else {}  # R1 y R2 no paginan (422)
     data = ok(client.get(report_url(report, company, branch), params={**PERIOD, **paged})).json()
     rows = csv_rows(ok(client.get(report_url(report, company, branch), params={**PERIOD, "format": "csv"})))
@@ -297,7 +297,7 @@ def test_csv_matches_json(users, report) -> None:
 
 def test_csv_of_large_stock_evolution_is_complete(users, branches) -> None:
     branch = branches[VOLUME_COMPANY][0]["id"]
-    client = users("inventario.test")
+    client = users("operario.dao")
     data = ok(client.get(report_url("stock-evolution", VOLUME_COMPANY, branch), params={**PERIOD, "page_size": 1})).json()
     rows = csv_rows(ok(client.get(report_url("stock-evolution", VOLUME_COMPANY, branch), params={**PERIOD, "format": "csv"})))
     assert int(rows[-1][1]) == data["total_records"] == len(rows) - 2
@@ -313,9 +313,9 @@ def branch_report_url(report: str, company: str, branch: str) -> str:
 @pytest.mark.parametrize("report", ["top-selling-products", "purchases"])
 def test_branch_routes_equal_company_route_with_branch_id(users, report) -> None:
     company = PURCHASE_COMPANY if report == "purchases" else SALES_COMPANY
-    branch = sales_branch(users) if report != "purchases" else ok(users("admin.test").get(
+    branch = sales_branch(users) if report != "purchases" else ok(users("admin.sio").get(
         f"{PURCHASE}/companies/{PURCHASE_COMPANY}/purchase-reports/period", params=PERIOD)).json()["items"][0]["branch_id"]
-    client = users("supervisor.test")
+    client = users("admin.dao")
     by_path = ok(client.get(branch_report_url(report, company, branch), params=PERIOD)).json()
     by_query = ok(client.get(report_url(report, company), params={**PERIOD, "branch_id": branch})).json()
     by_path.pop("generated_at"), by_query.pop("generated_at")
@@ -325,7 +325,7 @@ def test_branch_routes_equal_company_route_with_branch_id(users, report) -> None
 
 
 def test_branch_sales_has_only_that_branch(users, branches) -> None:
-    client = users("supervisor.test")
+    client = users("admin.dao")
     selling = sales_branch(users)
     body = ok(client.get(branch_report_url("sales-by-branch", SALES_COMPANY, selling), params=PERIOD)).json()
     direct = ok(client.get(f"{SALES}/companies/{SALES_COMPANY}/sales-aggregates/by-branch",
@@ -344,7 +344,7 @@ def test_branch_sales_has_only_that_branch(users, branches) -> None:
 
 def test_r4_company_route_consolidates_the_branch_routes(users, branches) -> None:
     """Ruta de empresa = suma por producto de las rutas por sucursal (y = INV-R1C directo)."""
-    client = users("inventario.test")
+    client = users("operario.dao")
     company_rows = []
     page = 1
     while True:
@@ -381,7 +381,7 @@ def test_r4_company_route_consolidates_the_branch_routes(users, branches) -> Non
 
 
 def test_r4_company_route_with_branch_filter_and_csv(users, branches) -> None:
-    client = users("supervisor.test")
+    client = users("admin.dao")
     branch = sales_branch(users)
     filtered = ok(client.get(f"{BRS}/companies/{SALES_COMPANY}/reports/stock-evolution",
                              params={**PERIOD, "branch_id": branch})).json()

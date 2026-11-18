@@ -25,8 +25,8 @@ POST /api/v1/products/<PRODUCTO>/presentations
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `product-catalog` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `product-catalog` solo tiene `read`; le falta `update`
 - ℹ️ Todo lo que se agrega **dentro** de un producto (categorías, valores, presentaciones, códigos, grupos, imágenes) exige `update` sobre `products`.
 
 **Por qué se hace así**
@@ -51,7 +51,7 @@ GET /api/v1/products?status=INACTIVE&search=cepillo
 
 **Permiso que exige la URL:** `perm:product-catalog:products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:read`), `operario.dao` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 
@@ -79,7 +79,7 @@ GET /api/v1/products/<PRODUCTO>?expand=detail
 
 **Permiso que exige la URL:** `perm:product-catalog:products:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:read`), `compras.test` (por `perm:product-catalog:all:read`), `ventas.test` (por `perm:product-catalog:all:read`), `inventario.test` (por `perm:product-catalog:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:read`), `operario.dao` (por `perm:product-catalog:all:read`)
 
 **Por qué se hace así**
 

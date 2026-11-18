@@ -24,7 +24,7 @@ def test_incompatible_concurrent_events_are_serialized(test_client, user_token, 
         response = test_client.post(
             f"{base(world)}/purchases/{draft['id']}/lifecycle-events",
             json=body,
-            headers={"Authorization": f"Bearer {user_token('compras.test')}"},
+            headers={"Authorization": f"Bearer {user_token('operario.dao')}"},
         )
         statuses.append(response.status_code)
 

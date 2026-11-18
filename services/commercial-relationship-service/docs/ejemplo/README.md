@@ -38,7 +38,7 @@ Cada ejercicio es independiente: puede ejecutarse en una base nueva.
    propia identidad técnica (DS-02).
 3. **Membresía en la empresa.** El usuario que ejecuta el ejercicio debe tener una membresía `ACTIVE` en la
    empresa en Operational Context. Sin ella, todas las URL de este servicio responden `404`, **también para
-   `admin.test`**: ningún permiso de usuario exime de la membresía (DS-03). El resumen de empresas
+   `admin.sio`**: ningún permiso de usuario exime de la membresía (DS-03). El resumen de empresas
    (`GET /api/v1/company-summaries`) no responde `404`: solo lista las empresas donde el usuario es miembro.
 4. **Token.** La contraseña de todos los usuarios de prueba está en la variable
    `KEYCLOAK_TEST_USER_PASSWORD` (`infrastructure/.env`). Cómo pedir el token:

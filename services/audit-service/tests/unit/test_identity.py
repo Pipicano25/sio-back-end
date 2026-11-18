@@ -15,10 +15,10 @@ def test_service_account_is_recognized() -> None:
 @pytest.mark.parametrize(
     "claims",
     [
-        {"preferred_username": "admin.test"},
+        {"preferred_username": "admin.sio"},
         {"preferred_username": "service-account-inventory-service"},
         {"client_id": "inventory-service"},
-        {"client_id": "inventory-service", "preferred_username": "admin.test"},
+        {"client_id": "inventory-service", "preferred_username": "admin.sio"},
         {"client_id": "inventory-service", "preferred_username": "service-account-other"},
         {"client_id": "inventory", "preferred_username": "service-account-inventory-service"},
         {"client_id": "", "preferred_username": "service-account-"},

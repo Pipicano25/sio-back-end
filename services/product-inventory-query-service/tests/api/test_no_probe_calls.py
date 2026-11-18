@@ -50,7 +50,7 @@ def test_listings_never_count_or_probe_and_never_repeat_a_call(world, as_user, r
     world.fakes.cr.forbidden |= {"count_adopted"}
     world.fakes.inventory.forbidden |= {"summary"}
     endpoint, query = QUERIES[route]
-    response = as_user("supervisor.test").get(f"{world.base}/{endpoint}?{query.format(brand=brand)}")
+    response = as_user("admin.dao").get(f"{world.base}/{endpoint}?{query.format(brand=brand)}")
     assert response.status_code == 200, response.text
     assert world.fakes.log.repeated() == []
     assert not any(world.fakes.log.count(name) for name in COUNTS)
@@ -70,7 +70,7 @@ def test_the_same_page_makes_the_same_calls_with_2000_and_20000_products(test_au
                          ports_factory=lambda authorization, f=fakes: Ports(f.oc, f.cr, f.pc, f.inventory))
         with TestClient(app) as client:
             response = client.get(f"{world.base}/{endpoint}?{query.format(brand=brand)}",
-                                  headers={"Authorization": f"Bearer {user_token('supervisor.test')}"})
+                                  headers={"Authorization": f"Bearer {user_token('admin.dao')}"})
         assert response.status_code == 200, response.text
         results.append(Counter(fakes.log.order))
     assert results[0] == results[1]

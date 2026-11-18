@@ -125,7 +125,7 @@ def test_operations_by_key_match_endpoint(operator, as_user, world, test_engine)
     entry_reversal_body = reversal_body(world)
     assert operator.post(f"{ENTRIES}/{other_entry['id']}/reversal", json=entry_reversal_body).status_code == 201
 
-    clerk = as_user("inventario.test")
+    clerk = as_user("operario.dao")
     adjustment_key = str(uuid4())
     response = clerk.post(
         f"/api/v1/companies/{world.company}/inventory-adjustments",
@@ -166,7 +166,7 @@ def test_operations_by_key_match_endpoint(operator, as_user, world, test_engine)
 def test_unknown_or_foreign_key_has_no_row(operator, as_user, world, test_engine) -> None:
     body = operation_body(world, line(world.products[0], "1"))
     assert operator.post(ENTRIES, json=body).status_code == 201
-    clerk = as_user("inventario.test")
+    clerk = as_user("operario.dao")
 
     for company, key in ((world.company, str(uuid4())), (world.other_company, body["operation_key"])):
         assert _from_views(test_engine, company, key) is None
@@ -179,7 +179,7 @@ def test_balances_match_lookup_and_missing_product_has_no_row(operator, as_user,
     operator.post(ENTRIES, json=operation_body(world, line(stocked, "7", unit_cost="4"), line(emptied, "2")))
     operator.post(OUTPUTS, json=operation_body(world, line(emptied, "2"), origin_type="SALE"))
 
-    response = as_user("inventario.test").post(
+    response = as_user("operario.dao").post(
         f"/api/v1/companies/{world.company}/branches/{world.branch}/balances/lookup",
         json={"company_product_ids": [str(stocked), str(emptied), str(never)]},
     )
@@ -212,7 +212,7 @@ def test_policies_match_lookup_and_missing_policy_has_no_row(as_user, world, tes
     missing = uuid4()
     ids = [with_policy, inactive, foreign_branch, missing]
 
-    response = as_user("inventario.test").post(
+    response = as_user("operario.dao").post(
         f"/api/v1/companies/{world.company}/branches/{world.branch}/inventory-policies/lookup",
         json={"company_product_ids": [str(value) for value in ids]},
     )

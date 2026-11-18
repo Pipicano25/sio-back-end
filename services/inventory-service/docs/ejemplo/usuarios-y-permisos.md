@@ -16,11 +16,9 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 
 | Usuario | Grupo | Stock y kardex | Ajustes y conteos | Políticas | Valoración | Aplicar operaciones |
 | --- | --- | --- | --- | --- | --- | --- |
-| `admin.test` | `superadmin` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
-| `supervisor.test` | `admin` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
-| `compras.test` | `empleado` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
-| `ventas.test` | `empleado` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
-| `inventario.test` | `empleado` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
+| `admin.sio` | `superadmin` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
+| `admin.dao` | `admin` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
+| `operario.dao` | `empleado` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
 | `inventory-test-operator` | cuenta de servicio | Sí (`platform:lookup`) | No (no es usuario humano) | No (no es usuario humano) | Sí (`platform:lookup`) | Sí (entradas y salidas) |
 
 ## Cómo obtener los tokens
@@ -30,7 +28,7 @@ Usuarios (contraseña en la variable `KEYCLOAK_TEST_USER_PASSWORD`, nunca en est
 ```bash
 curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=inventario.test -d password="$KEYCLOAK_TEST_USER_PASSWORD"
+  -d username=operario.dao -d password="$KEYCLOAK_TEST_USER_PASSWORD"
 ```
 
 Cuenta de servicio de pruebas (secreto en `INVENTORY_TEST_OPERATOR_CLIENT_SECRET`):

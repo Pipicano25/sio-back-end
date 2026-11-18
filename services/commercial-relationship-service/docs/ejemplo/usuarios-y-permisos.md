@@ -23,11 +23,9 @@ Todos comparten la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD` (`in
 
 | Usuario | Grupo | Permisos del grupo en Commercial Relationship | Puede |
 | --- | --- | --- | --- |
-| `admin.test` | `superadmin` | `perm:all:all:all` | Todo, en las empresas donde es miembro |
-| `supervisor.test` | `admin` | `perm:commercial-relationship:all:create`<br>`perm:commercial-relationship:all:delete`<br>`perm:commercial-relationship:all:read`<br>`perm:commercial-relationship:all:update`<br>`perm:commercial-relationship:automatic_price_applications:resolve` | Todo en las empresas donde es miembro (grupo `admin`): adoptar, incorporar, modificar, inactivar, bloquear, administrar políticas de ganancia y resolver actualizaciones automáticas |
-| `compras.test` | `empleado` | `perm:commercial-relationship:company_customers:create`<br>`perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>`perm:commercial-relationship:company_products:read`<br>`perm:commercial-relationship:company_suppliers:read`<br>`perm:commercial-relationship:price_list_items:read`<br>`perm:commercial-relationship:price_lists:read` | Consultar (sin políticas de ganancia ni actualizaciones automáticas) e incorporar clientes |
-| `ventas.test` | `empleado` | `perm:commercial-relationship:company_customers:create`<br>`perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>`perm:commercial-relationship:company_products:read`<br>`perm:commercial-relationship:company_suppliers:read`<br>`perm:commercial-relationship:price_list_items:read`<br>`perm:commercial-relationship:price_lists:read` | Igual que `compras.test` (grupo `empleado`) |
-| `inventario.test` | `empleado` | `perm:commercial-relationship:company_customers:create`<br>`perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>`perm:commercial-relationship:company_products:read`<br>`perm:commercial-relationship:company_suppliers:read`<br>`perm:commercial-relationship:price_list_items:read`<br>`perm:commercial-relationship:price_lists:read` | Igual que `compras.test` (grupo `empleado`) |
+| `admin.sio` | `superadmin` | `perm:all:all:all` | Todo, en las empresas donde es miembro |
+| `admin.dao` | `admin` | `perm:commercial-relationship:all:create`<br>`perm:commercial-relationship:all:delete`<br>`perm:commercial-relationship:all:read`<br>`perm:commercial-relationship:all:update`<br>`perm:commercial-relationship:automatic_price_applications:resolve` | Todo en las empresas donde es miembro (grupo `admin`): adoptar, incorporar, modificar, inactivar, bloquear, administrar políticas de ganancia y resolver actualizaciones automáticas |
+| `operario.dao` | `empleado` | `perm:commercial-relationship:company_customers:create`<br>`perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>`perm:commercial-relationship:company_products:read`<br>`perm:commercial-relationship:company_suppliers:read`<br>`perm:commercial-relationship:price_list_items:read`<br>`perm:commercial-relationship:price_lists:read` | Consultar (sin políticas de ganancia ni actualizaciones automáticas) e incorporar clientes |
 
 ## Cómo obtener el token de cada usuario
 
@@ -36,7 +34,7 @@ Cambie `username` por el usuario que quiera probar:
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=ventas.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
+  -d username=operario.dao -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
   | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 ```
 
@@ -44,7 +42,7 @@ En **PowerShell** (Windows):
 
 ```powershell
 $body = @{ grant_type = 'password'; client_id = 'sio-web'; scope = 'openid'
-           username = 'ventas.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }
+           username = 'operario.dao'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }
 $TOKEN = (Invoke-RestMethod -Method Post -Uri 'http://localhost:8081/realms/sio/protocol/openid-connect/token' -Body $body).access_token
 Invoke-RestMethod -Uri 'http://localhost:8005/api/v1/companies/<EMPRESA>/company-products' `
   -Headers @{ Authorization = "Bearer $TOKEN" }
@@ -62,65 +60,65 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 
 ✅ = tiene el permiso · ❌ = recibe `403`. 🔒 = además exige membresía en la empresa (si no, `404`). Columna *Ejercicios*: en cuáles se usa la URL.
 
-| Método y URL | Permiso requerido | admin | supervisor | compras | ventas | inventario | Ejercicios |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `GET http://localhost:8004/api/v1/me/operational-context` | `perm:operational-context:application_users:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 |
-| `GET http://localhost:8003/api/v1/products/by-identifier/7707355056876` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 4, 5, 6, 7, 8, 9, 10 |
-| `GET http://localhost:8003/api/v1/products/by-identifier/7706634002856` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 4, 10 |
-| `GET http://localhost:8003/api/v1/products/by-identifier/7701021118264` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
-| `GET http://localhost:8003/api/v1/products` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
-| `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 4, 5, 6, 7, 8, 9, 10 |
-| `PUT /api/v1/company-products/{id}` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 1 |
-| `GET /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
-| `POST /api/v1/company-products/batch-lookup` | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
-| `POST /api/v1/company-products/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_products:delete` | ✅ | ✅ | ❌ | ❌ | ❌ | 1 |
-| `POST /api/v1/company-products/{id}/reactivate` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 1 |
-| `GET /api/v1/company-summaries` | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
-| `GET http://localhost:8002/api/v1/organization-identities` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 2, 3, 5 |
-| `GET http://localhost:8002/api/v1/person-identities` | `perm:party-identity:person_identities:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 2 |
-| `GET http://localhost:8002/api/v1/organization-identities/{id}/contact-persons` | `perm:party-identity:organization_contact_persons:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 2 |
-| `POST /api/v1/companies/{id}/company-customers` 🔒 | `perm:commercial-relationship:company_customers:create` | ✅ | ✅ | ✅ | ✅ | ✅ | 2, 3 |
-| `PUT /api/v1/company-customers/{id}` 🔒 | `perm:commercial-relationship:company_customers:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 2 |
-| `POST /api/v1/company-customers/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_customers:delete` | ✅ | ✅ | ❌ | ❌ | ❌ | 2 |
-| `POST /api/v1/company-customers/{id}/reactivate` 🔒 | `perm:commercial-relationship:company_customers:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 2 |
-| `GET /api/v1/companies/{id}/company-customers` 🔒 | `perm:commercial-relationship:company_customers:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 2 |
-| `POST /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 3, 5 |
-| `POST /api/v1/company-suppliers/{id}/block` 🔒 | `perm:commercial-relationship:company_suppliers:delete` | ✅ | ✅ | ❌ | ❌ | ❌ | 3 |
-| `POST /api/v1/company-suppliers/{id}/reactivate` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 3 |
-| `PUT /api/v1/company-suppliers/{id}` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 3 |
-| `POST /api/v1/company-suppliers/{id}/unblock` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 3 |
-| `POST /api/v1/company-suppliers/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_suppliers:delete` | ✅ | ✅ | ❌ | ❌ | ❌ | 3 |
-| `GET /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 3 |
-| `GET http://localhost:8003/api/v1/products/{id}/presentations` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 4, 5, 6, 7, 9, 10 |
-| `POST /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 4, 5, 6, 7, 9, 10 |
-| `GET /api/v1/company-product-presentations/{id}` 🔒 | `perm:commercial-relationship:company_product_presentations:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 4 |
-| `POST /api/v1/company-product-presentations/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_product_presentations:delete` | ✅ | ✅ | ❌ | ❌ | ❌ | 4 |
-| `GET /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 4 |
-| `GET http://localhost:8003/api/v1/products/{id}` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 5 |
-| `GET http://localhost:8105/global-payment-condition-types` | `perm:payment-reference:global_payment_condition_types:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 5 |
-| `POST /api/v1/companies/{id}/supplier-products` 🔒 | `perm:commercial-relationship:supplier_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 5 |
-| `POST /api/v1/companies/{id}/supplier-payment-conditions` 🔒 | `perm:commercial-relationship:supplier_payment_conditions:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 5 |
-| `GET http://localhost:8003/api/v1/products/by-identifier/7702057716226` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 6, 7, 8, 10 |
-| `POST /api/v1/companies/{id}/price-lists` 🔒 | `perm:commercial-relationship:price_lists:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 6, 7, 9 |
-| `POST /api/v1/companies/{id}/price-list-items` 🔒 | `perm:commercial-relationship:price_list_items:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 6 |
-| `PUT /api/v1/price-list-items/{id}` 🔒 | `perm:commercial-relationship:price_list_items:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 6 |
-| `POST /api/v1/price-list-items/{id}/change-price` 🔒 | `perm:commercial-relationship:price_list_items:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 6 |
-| `POST /api/v1/companies/{id}/applicable-prices/resolve` 🔒 | `perm:commercial-relationship:price_list_items:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 6 |
-| `POST /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 7, 9 |
-| `GET /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:read` | ✅ | ✅ | ❌ | ❌ | ❌ | 7 |
-| `POST /api/v1/pricing-policies/{id}/percentage` 🔒 | `perm:commercial-relationship:pricing_policies:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 7 |
-| `GET /api/v1/pricing-policies/{id}/terms` 🔒 | `perm:commercial-relationship:pricing_policies:read` | ✅ | ✅ | ❌ | ❌ | ❌ | 7 |
-| `POST /api/v1/pricing-policies/{id}/presentations/remove` 🔒 | `perm:commercial-relationship:pricing_policies:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 7 |
-| `POST /api/v1/pricing-policies/{id}/deactivate` 🔒 | `perm:commercial-relationship:pricing_policies:delete` | ✅ | ✅ | ❌ | ❌ | ❌ | 7 |
-| `PUT /api/v1/company-products/{id}/purchase-tax` 🔒 | `perm:commercial-relationship:company_product_purchase_taxes:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 8 |
-| `POST /api/v1/companies/{id}/company-products/purchase-taxes/batch` 🔒 | `perm:commercial-relationship:company_product_purchase_taxes:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 8 |
-| `POST /api/v1/companies/{id}/pricing-policies/coverage` 🔒 | `perm:commercial-relationship:pricing_policy_coverage:read` | ✅ | ✅ | ❌ | ❌ | ❌ | 9 |
-| `GET /api/v1/companies/{id}/automatic-price-applications` 🔒 | `perm:commercial-relationship:automatic_price_applications:read` | ✅ | ✅ | ❌ | ❌ | ❌ | 9 |
-| `GET /api/v1/companies/{id}/automatic-price-applications/{id}` 🔒 | `perm:commercial-relationship:automatic_price_applications:read` | ✅ | ✅ | ❌ | ❌ | ❌ | 9 |
-| `POST /api/v1/companies/{id}/automatic-price-applications/{id}/resolution` 🔒 | `perm:commercial-relationship:automatic_price_applications:resolve` | ✅ | ✅ | ❌ | ❌ | ❌ | 9 |
-| `GET /api/v1/companies/{id}/price-list-items` 🔒 | `perm:commercial-relationship:price_list_items:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 9 |
-| `POST /api/v1/companies/{id}/company-products/search` 🔒 | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 10 |
-| `POST /api/v1/companies/{id}/company-product-presentations/by-products` 🔒 | `perm:commercial-relationship:company_product_presentations:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 10 |
+| Método y URL | Permiso requerido | admin.sio | admin.dao | operario.dao | Ejercicios |
+| --- | --- | --- | --- | --- | --- |
+| `GET http://localhost:8004/api/v1/me/operational-context` | `perm:operational-context:application_users:read` | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 |
+| `GET http://localhost:8003/api/v1/products/by-identifier/7707355056876` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 1, 4, 5, 6, 7, 8, 9, 10 |
+| `GET http://localhost:8003/api/v1/products/by-identifier/7706634002856` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 1, 4, 10 |
+| `GET http://localhost:8003/api/v1/products/by-identifier/7701021118264` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 1 |
+| `GET http://localhost:8003/api/v1/products` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 1 |
+| `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ | 1, 4, 5, 6, 7, 8, 9, 10 |
+| `PUT /api/v1/company-products/{id}` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | 1 |
+| `GET /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | 1 |
+| `POST /api/v1/company-products/batch-lookup` | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | 1 |
+| `POST /api/v1/company-products/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_products:delete` | ✅ | ✅ | ❌ | 1 |
+| `POST /api/v1/company-products/{id}/reactivate` 🔒 | `perm:commercial-relationship:company_products:update` | ✅ | ✅ | ❌ | 1 |
+| `GET /api/v1/company-summaries` | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | 1 |
+| `GET http://localhost:8002/api/v1/organization-identities` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ | 2, 3, 5 |
+| `GET http://localhost:8002/api/v1/person-identities` | `perm:party-identity:person_identities:read` | ✅ | ✅ | ✅ | 2 |
+| `GET http://localhost:8002/api/v1/organization-identities/{id}/contact-persons` | `perm:party-identity:organization_contact_persons:read` | ✅ | ✅ | ✅ | 2 |
+| `POST /api/v1/companies/{id}/company-customers` 🔒 | `perm:commercial-relationship:company_customers:create` | ✅ | ✅ | ✅ | 2, 3 |
+| `PUT /api/v1/company-customers/{id}` 🔒 | `perm:commercial-relationship:company_customers:update` | ✅ | ✅ | ❌ | 2 |
+| `POST /api/v1/company-customers/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_customers:delete` | ✅ | ✅ | ❌ | 2 |
+| `POST /api/v1/company-customers/{id}/reactivate` 🔒 | `perm:commercial-relationship:company_customers:update` | ✅ | ✅ | ❌ | 2 |
+| `GET /api/v1/companies/{id}/company-customers` 🔒 | `perm:commercial-relationship:company_customers:read` | ✅ | ✅ | ✅ | 2 |
+| `POST /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:create` | ✅ | ✅ | ❌ | 3, 5 |
+| `POST /api/v1/company-suppliers/{id}/block` 🔒 | `perm:commercial-relationship:company_suppliers:delete` | ✅ | ✅ | ❌ | 3 |
+| `POST /api/v1/company-suppliers/{id}/reactivate` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ | 3 |
+| `PUT /api/v1/company-suppliers/{id}` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ | 3 |
+| `POST /api/v1/company-suppliers/{id}/unblock` 🔒 | `perm:commercial-relationship:company_suppliers:update` | ✅ | ✅ | ❌ | 3 |
+| `POST /api/v1/company-suppliers/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_suppliers:delete` | ✅ | ✅ | ❌ | 3 |
+| `GET /api/v1/companies/{id}/company-suppliers` 🔒 | `perm:commercial-relationship:company_suppliers:read` | ✅ | ✅ | ✅ | 3 |
+| `GET http://localhost:8003/api/v1/products/{id}/presentations` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 4, 5, 6, 7, 9, 10 |
+| `POST /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:create` | ✅ | ✅ | ❌ | 4, 5, 6, 7, 9, 10 |
+| `GET /api/v1/company-product-presentations/{id}` 🔒 | `perm:commercial-relationship:company_product_presentations:read` | ✅ | ✅ | ✅ | 4 |
+| `POST /api/v1/company-product-presentations/{id}/deactivate` 🔒 | `perm:commercial-relationship:company_product_presentations:delete` | ✅ | ✅ | ❌ | 4 |
+| `GET /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:read` | ✅ | ✅ | ✅ | 4 |
+| `GET http://localhost:8003/api/v1/products/{id}` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 5 |
+| `GET http://localhost:8105/global-payment-condition-types` | `perm:payment-reference:global_payment_condition_types:read` | ✅ | ✅ | ✅ | 5 |
+| `POST /api/v1/companies/{id}/supplier-products` 🔒 | `perm:commercial-relationship:supplier_products:create` | ✅ | ✅ | ❌ | 5 |
+| `POST /api/v1/companies/{id}/supplier-payment-conditions` 🔒 | `perm:commercial-relationship:supplier_payment_conditions:create` | ✅ | ✅ | ❌ | 5 |
+| `GET http://localhost:8003/api/v1/products/by-identifier/7702057716226` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 6, 7, 8, 10 |
+| `POST /api/v1/companies/{id}/price-lists` 🔒 | `perm:commercial-relationship:price_lists:create` | ✅ | ✅ | ❌ | 6, 7, 9 |
+| `POST /api/v1/companies/{id}/price-list-items` 🔒 | `perm:commercial-relationship:price_list_items:create` | ✅ | ✅ | ❌ | 6 |
+| `PUT /api/v1/price-list-items/{id}` 🔒 | `perm:commercial-relationship:price_list_items:update` | ✅ | ✅ | ❌ | 6 |
+| `POST /api/v1/price-list-items/{id}/change-price` 🔒 | `perm:commercial-relationship:price_list_items:update` | ✅ | ✅ | ❌ | 6 |
+| `POST /api/v1/companies/{id}/applicable-prices/resolve` 🔒 | `perm:commercial-relationship:price_list_items:read` | ✅ | ✅ | ✅ | 6 |
+| `POST /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:create` | ✅ | ✅ | ❌ | 7, 9 |
+| `GET /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:read` | ✅ | ✅ | ❌ | 7 |
+| `POST /api/v1/pricing-policies/{id}/percentage` 🔒 | `perm:commercial-relationship:pricing_policies:update` | ✅ | ✅ | ❌ | 7 |
+| `GET /api/v1/pricing-policies/{id}/terms` 🔒 | `perm:commercial-relationship:pricing_policies:read` | ✅ | ✅ | ❌ | 7 |
+| `POST /api/v1/pricing-policies/{id}/presentations/remove` 🔒 | `perm:commercial-relationship:pricing_policies:update` | ✅ | ✅ | ❌ | 7 |
+| `POST /api/v1/pricing-policies/{id}/deactivate` 🔒 | `perm:commercial-relationship:pricing_policies:delete` | ✅ | ✅ | ❌ | 7 |
+| `PUT /api/v1/company-products/{id}/purchase-tax` 🔒 | `perm:commercial-relationship:company_product_purchase_taxes:update` | ✅ | ✅ | ❌ | 8 |
+| `POST /api/v1/companies/{id}/company-products/purchase-taxes/batch` 🔒 | `perm:commercial-relationship:company_product_purchase_taxes:update` | ✅ | ✅ | ❌ | 8 |
+| `POST /api/v1/companies/{id}/pricing-policies/coverage` 🔒 | `perm:commercial-relationship:pricing_policy_coverage:read` | ✅ | ✅ | ❌ | 9 |
+| `GET /api/v1/companies/{id}/automatic-price-applications` 🔒 | `perm:commercial-relationship:automatic_price_applications:read` | ✅ | ✅ | ❌ | 9 |
+| `GET /api/v1/companies/{id}/automatic-price-applications/{id}` 🔒 | `perm:commercial-relationship:automatic_price_applications:read` | ✅ | ✅ | ❌ | 9 |
+| `POST /api/v1/companies/{id}/automatic-price-applications/{id}/resolution` 🔒 | `perm:commercial-relationship:automatic_price_applications:resolve` | ✅ | ✅ | ❌ | 9 |
+| `GET /api/v1/companies/{id}/price-list-items` 🔒 | `perm:commercial-relationship:price_list_items:read` | ✅ | ✅ | ✅ | 9 |
+| `POST /api/v1/companies/{id}/company-products/search` 🔒 | `perm:commercial-relationship:company_products:read` | ✅ | ✅ | ✅ | 10 |
+| `POST /api/v1/companies/{id}/company-product-presentations/by-products` 🔒 | `perm:commercial-relationship:company_product_presentations:read` | ✅ | ✅ | ✅ | 10 |
 
 ## Permisos que no son obvios
 
@@ -135,7 +133,7 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 
 | Para… | Usuario |
 | --- | --- |
-| Hacer los ejercicios completos | `admin.test` (con membresía en la empresa) |
-| Lo mismo como gerente de la empresa | `supervisor.test` (grupo `admin`, con membresía) |
-| Verificar lo cargado | `ventas.test`, `compras.test` o `inventario.test` (grupo `empleado`, con membresía) |
-| Probar rechazos por falta de permiso | `ventas.test` en adoptar, modificar, inactivar o bloquear y en políticas de ganancia |
+| Hacer los ejercicios completos | `admin.sio` (con membresía en la empresa) |
+| Lo mismo como gerente de la empresa | `admin.dao` (grupo `admin`, con membresía) |
+| Verificar lo cargado | `operario.dao` (grupo `empleado`, con membresía) |
+| Probar rechazos por falta de permiso | `operario.dao` en adoptar, modificar, inactivar o bloquear y en políticas de ganancia |

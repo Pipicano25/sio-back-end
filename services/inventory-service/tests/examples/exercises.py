@@ -352,7 +352,7 @@ EXERCISES = [
             {
                 "file": "03-saldo-de-un-producto.md",
                 "title": "Saldo del arroz en la sucursal",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{BASE}/balances/{ARROZ}",
@@ -362,7 +362,7 @@ EXERCISES = [
             {
                 "file": "04-stock-de-la-sucursal.md",
                 "title": "Stock de la sucursal (solo con existencias)",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{BASE}/balances?in_stock_only=true",
@@ -372,7 +372,7 @@ EXERCISES = [
             {
                 "file": "05-saldos-por-lote.md",
                 "title": "Saldos de varios productos en una llamada",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "POST",
                 "path": f"{BASE}/balances/lookup",
@@ -383,7 +383,7 @@ EXERCISES = [
             {
                 "file": "06-kardex.md",
                 "title": "Kardex del arroz",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{BASE}/kardex/{ARROZ}",
@@ -393,7 +393,7 @@ EXERCISES = [
             {
                 "file": "07-operacion-por-clave.md",
                 "title": "Operación por su clave",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/companies/{COMPANY}/inventory-operations/by-key/{uid('01', 1)}",
@@ -403,7 +403,7 @@ EXERCISES = [
             {
                 "file": "08-empresa-sin-membresia.md",
                 "title": "Consultar una empresa sin membresía",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/companies/{OTHER_COMPANY}/branches/{BRANCH}/balances",
@@ -474,7 +474,7 @@ EXERCISES += [
             {
                 "file": "02-ajuste-negativo.md",
                 "title": "Ajuste negativo de 3 unidades dañadas",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-adjustments",
@@ -490,7 +490,7 @@ EXERCISES += [
             {
                 "file": "03-ajuste-positivo.md",
                 "title": "Ajuste positivo con el costo de la capa más reciente",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-adjustments",
@@ -501,7 +501,7 @@ EXERCISES += [
             {
                 "file": "04-ajuste-positivo-sin-capas.md",
                 "title": "Ajuste positivo de un producto sin capas, sin costo",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-adjustments",
@@ -515,7 +515,7 @@ EXERCISES += [
             {
                 "file": "05-ajuste-positivo-con-costo.md",
                 "title": "El mismo ajuste con su costo",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-adjustments",
@@ -526,7 +526,7 @@ EXERCISES += [
             {
                 "file": "06-sucursal-no-asignada.md",
                 "title": "Ajuste en una sucursal no asignada",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-adjustments",
@@ -540,7 +540,7 @@ EXERCISES += [
             {
                 "file": "07-consultar-el-ajuste.md",
                 "title": "Consultar el ajuste con su movimiento",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{COMPANY_BASE}/inventory-adjustments/<AJUSTE>",
@@ -573,7 +573,7 @@ EXERCISES += [
             {
                 "file": "02-crear-conteo.md",
                 "title": "Crear el conteo de la sucursal",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-counts",
@@ -585,7 +585,7 @@ EXERCISES += [
             {
                 "file": "03-iniciar.md",
                 "title": "Iniciar el conteo",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO>/start",
@@ -596,7 +596,7 @@ EXERCISES += [
             {
                 "file": "04-contar-arroz.md",
                 "title": "Registrar 8 arroces contados",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "PUT",
                 "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO>/details/{ARROZ}",
@@ -607,7 +607,7 @@ EXERCISES += [
             {
                 "file": "05-contar-aceite.md",
                 "title": "Registrar 6 aceites contados",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "PUT",
                 "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO>/details/{ACEITE}",
@@ -618,7 +618,7 @@ EXERCISES += [
             {
                 "file": "06-completar.md",
                 "title": "Completar el conteo",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO>/complete",
@@ -633,7 +633,7 @@ EXERCISES += [
             {
                 "file": "07-consultar.md",
                 "title": "Consultar el conteo completado",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO>",
@@ -643,7 +643,7 @@ EXERCISES += [
             {
                 "file": "08-segundo-conteo.md",
                 "title": "Crear un segundo conteo",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-counts",
@@ -655,7 +655,7 @@ EXERCISES += [
             {
                 "file": "09-iniciar-segundo.md",
                 "title": "Iniciar el segundo conteo",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO_2>/start",
@@ -666,7 +666,7 @@ EXERCISES += [
             {
                 "file": "10-contar-arroz-cero.md",
                 "title": "Registrar 0 arroces contados",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "PUT",
                 "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO_2>/details/{ARROZ}",
@@ -688,7 +688,7 @@ EXERCISES += [
             {
                 "file": "12-completar-con-saldo-insuficiente.md",
                 "title": "Completar el segundo conteo",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO_2>/complete",
@@ -702,7 +702,7 @@ EXERCISES += [
             {
                 "file": "13-cancelar.md",
                 "title": "Cancelar el segundo conteo",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-counts/<CONTEO_2>/cancel",
@@ -764,7 +764,7 @@ EXERCISES += [
             {
                 "file": "04-valor-de-la-sucursal.md",
                 "title": "Valor del inventario de la sucursal",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{BASE}/valuation",
@@ -774,7 +774,7 @@ EXERCISES += [
             {
                 "file": "05-capas.md",
                 "title": "Capas del arroz, incluidas las cerradas",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{BASE}/valuation/{ARROZ}/layers?include_closed=true",
@@ -784,7 +784,7 @@ EXERCISES += [
             {
                 "file": "06-consumos-de-la-salida.md",
                 "title": "Consumos que explican el costo de la salida",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{COMPANY_BASE}/inventory-movements/<MOV_SALIDA>/cost-consumptions",
@@ -844,7 +844,7 @@ EXERCISES += [
             {
                 "file": "01-politica-por-defecto.md",
                 "title": "Consultar la política sin registrarla",
-                "actor": "admin.test",
+                "actor": "admin.sio",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{COMPANY_BASE}/inventory-policy",
@@ -854,7 +854,7 @@ EXERCISES += [
             {
                 "file": "02-registrar-politica.md",
                 "title": "Registrar la política de la empresa",
-                "actor": "admin.test",
+                "actor": "admin.sio",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-policy",
@@ -865,7 +865,7 @@ EXERCISES += [
             {
                 "file": "03-cambiar-a-jit.md",
                 "title": "Cambiar la estrategia de reposición",
-                "actor": "admin.test",
+                "actor": "admin.sio",
                 "kind": ACCION,
                 "method": "PUT",
                 "path": f"{COMPANY_BASE}/inventory-policy",
@@ -876,7 +876,7 @@ EXERCISES += [
             {
                 "file": "04-otro-metodo-de-valoracion.md",
                 "title": "Pedir promedio ponderado",
-                "actor": "admin.test",
+                "actor": "admin.sio",
                 "kind": ACCION,
                 "method": "PUT",
                 "path": f"{COMPANY_BASE}/inventory-policy",
@@ -892,7 +892,7 @@ EXERCISES += [
             {
                 "file": "05-politica-de-producto.md",
                 "title": "Niveles de reposición del arroz en la sucursal",
-                "actor": "admin.test",
+                "actor": "admin.sio",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-policies",
@@ -914,7 +914,7 @@ EXERCISES += [
             {
                 "file": "06-politica-duplicada.md",
                 "title": "Otra política activa para el mismo producto",
-                "actor": "admin.test",
+                "actor": "admin.sio",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-policies",
@@ -931,7 +931,7 @@ EXERCISES += [
             {
                 "file": "07-inactivar.md",
                 "title": "Inactivar la política del arroz",
-                "actor": "admin.test",
+                "actor": "admin.sio",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-policies/<POLITICA>/deactivate",
@@ -942,7 +942,7 @@ EXERCISES += [
             {
                 "file": "08-consultar-politicas.md",
                 "title": "Consultar las políticas de la sucursal",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"{COMPANY_BASE}/inventory-policies?branch_id={BRANCH}",
@@ -952,7 +952,7 @@ EXERCISES += [
             {
                 "file": "09-nueva-politica-del-arroz.md",
                 "title": "Registrar otra vez el mínimo del arroz",
-                "actor": "admin.test",
+                "actor": "admin.sio",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-policies",
@@ -969,7 +969,7 @@ EXERCISES += [
             {
                 "file": "10-politicas-por-lote.md",
                 "title": "Política activa de varios productos (spec 022)",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "POST",
                 "path": f"{BASE}/inventory-policies/lookup",
@@ -983,7 +983,7 @@ EXERCISES += [
             {
                 "file": "11-pares-bajo-minimo.md",
                 "title": "Productos bajo el mínimo en la sucursal (spec 022)",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-product-sets",
@@ -998,7 +998,7 @@ EXERCISES += [
             {
                 "file": "12-resumen.md",
                 "title": "Indicadores de la sucursal (spec 022)",
-                "actor": "inventario.test",
+                "actor": "operario.dao",
                 "kind": CONSULTA,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-summary",

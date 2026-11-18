@@ -87,3 +87,11 @@ def test_sales_service_client_and_account() -> None:
     assert set(account["clientRoles"]["sio-api"]) == SALES_CLIENT_ROLES
     assert not evaluate_permission(account["clientRoles"]["sio-api"], SioPermission("sales", "sales", "create"))
     assert not evaluate_permission(account["clientRoles"]["sio-api"], PROFITABILITY)
+
+
+def test_test_users_and_who_sees_profitability() -> None:
+    """`admin.sio` (superadmin) y `admin.dao` (admin) ven la rentabilidad; `operario.dao` (empleado) no."""
+    users = {user["username"]: user["groups"] for user in DATA["users"] if user.get("groups")}
+    assert users == {"admin.sio": ["/superadmin"], "admin.dao": ["/admin"], "operario.dao": ["/empleado"]}
+    sees = {name: evaluate_permission(GROUPS[groups[0].strip("/")], PROFITABILITY) for name, groups in users.items()}
+    assert sees == {"admin.sio": True, "admin.dao": True, "operario.dao": False}

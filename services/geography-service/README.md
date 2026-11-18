@@ -1088,7 +1088,7 @@ python -m pytest -v
 (base de pruebas) verifican el `503`, la salud y la recuperación sin reiniciar.
 
 Validación contra el entorno integrado (detiene `sio-geography-db` temporalmente; solo lecturas con
-`admin.test` y `KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
+`admin.sio` y `KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
 
 ```powershell
 python -m pytest -m integration -o addopts="" tests/integration/test_database_outage_recovery.py

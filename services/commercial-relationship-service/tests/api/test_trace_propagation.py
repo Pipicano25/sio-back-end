@@ -24,7 +24,7 @@ def test_valid_traceparent_fixes_trace_id_and_reaches_providers(as_user, company
     caplog.set_level(logging.INFO, logger="commercial_relationship_service")
     product = fake_catalog.add(uuid4())
 
-    response = as_user("admin.test").post(
+    response = as_user("admin.sio").post(
         f"/api/v1/companies/{company}/company-products",
         json=product_body(product),
         headers={"traceparent": TRACEPARENT},
@@ -36,7 +36,7 @@ def test_valid_traceparent_fixes_trace_id_and_reaches_providers(as_user, company
 
 
 def test_invalid_traceparent_generates_new_trace_id(as_user, company):
-    response = as_user("admin.test").get(
+    response = as_user("admin.sio").get(
         f"/api/v1/companies/{company}/company-products", headers={"traceparent": "garbage"}
     )
     assert response.status_code == 200
@@ -47,7 +47,7 @@ def test_invalid_traceparent_generates_new_trace_id(as_user, company):
 def test_trace_id_in_logs(as_user, company, fake_oc, caplog):
     caplog.set_level(logging.WARNING, logger="commercial_relationship_service")
     fake_oc.access_unavailable = True
-    response = as_user("admin.test").get(
+    response = as_user("admin.sio").get(
         f"/api/v1/companies/{company}/company-products", headers={"traceparent": TRACEPARENT}
     )
     assert response.status_code == 503

@@ -77,11 +77,11 @@ def test_queries_and_operation_p95(as_user, operator, world, fake_oc, test_engin
     with test_engine.connect() as connection:
         assert connection.execute(text("SELECT count(*) FROM inventory_movements")).scalar_one() >= 1_000_000
 
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     durations: dict[str, list[float]] = {"balance": [], "kardex": [], "stock": []}
 
     for company, branch, product in keys[:SAMPLES]:
-        fake_oc.add_member("sub-inventario.test", UUID(company))
+        fake_oc.add_member("sub-operario.dao", UUID(company))
         base = f"/api/v1/companies/{company}/branches/{branch}"
         for name, url in (("balance", f"{base}/balances/{product}"), ("kardex", f"{base}/kardex/{product}"), ("stock", f"{base}/balances")):
             started = time.perf_counter()

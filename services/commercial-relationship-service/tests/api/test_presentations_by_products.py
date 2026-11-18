@@ -12,7 +12,7 @@ READ = "perm:commercial-relationship:company_product_presentations:read"
 
 
 def test_returns_all_presentations_of_the_products_in_stable_order(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     first = adopt(client, company, fake_catalog, internal_code="P1")
     second = adopt(client, company, fake_catalog, internal_code="P2")
     other = adopt(client, company, fake_catalog, internal_code="P3")
@@ -36,7 +36,7 @@ def test_returns_all_presentations_of_the_products_in_stable_order(as_user, comp
 
 
 def test_status_filter(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog, internal_code="P1")
     active = adopt_presentation(client, company, fake_catalog, product, sku="S-A")
     inactive = adopt_presentation(client, company, fake_catalog, product, sku="S-I")
@@ -52,10 +52,10 @@ def test_status_filter(as_user, company, fake_catalog) -> None:
 
 
 def test_products_of_another_company_are_absent(as_user, fake_oc, company, other_company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     from tests.conftest import user_sub
 
-    fake_oc.add_member(user_sub("admin.test"), other_company)
+    fake_oc.add_member(user_sub("admin.sio"), other_company)
     foreign = adopt(client, other_company, fake_catalog, internal_code="F1")
     adopt_presentation(client, other_company, fake_catalog, foreign, sku="S-F")
 
@@ -65,7 +65,7 @@ def test_products_of_another_company_are_absent(as_user, fake_oc, company, other
 
 
 def test_limits_and_permissions(as_user, as_token, service_token, company, other_company) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     url = URL.format(company=company)
     assert client.post(url, json={"company_product_ids": [str(uuid4()) for _ in range(101)]}).status_code == 422
     assert client.post(url, json={"company_product_ids": []}).status_code == 422

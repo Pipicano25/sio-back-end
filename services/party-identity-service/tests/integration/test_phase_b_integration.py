@@ -41,7 +41,7 @@ PARTY_IDENTITY = os.environ.get("PARTY_IDENTITY_INTEGRATION_BASE_URL", "http://l
 OPERATIONAL_CONTEXT = os.environ.get("OPERATIONAL_CONTEXT_INTEGRATION_BASE_URL", "http://localhost:8004").rstrip("/")
 GEOGRAPHY = os.environ.get("GEOGRAPHY_SERVICE_BASE_URL", "http://localhost:8000").rstrip("/")
 TOKEN_URL = os.environ.get("KEYCLOAK_TOKEN_URL", "http://localhost:8081/realms/sio/protocol/openid-connect/token")
-CANDIDATE_USERS = ("supervisor.test", "admin.test")
+CANDIDATE_USERS = ("admin.dao", "admin.sio")
 RUN_ID = secrets.token_hex(4).upper()
 
 
@@ -199,7 +199,7 @@ def test_incoherent_real_geography_is_rejected(context, geography, organization_
 def test_company_without_membership_is_rejected(context, geography, organization_id) -> None:
     admin = context["http"].post(TOKEN_URL, data={
         "grant_type": "password", "client_id": "sio-web", "scope": "openid",
-        "username": "admin.test", "password": context["password"],
+        "username": "admin.sio", "password": context["password"],
     }).json()["access_token"]
     companies = context["http"].get(
         f"{OPERATIONAL_CONTEXT}/api/v1/companies", params={"page_size": 100},
@@ -226,7 +226,7 @@ def test_company_without_membership_is_rejected(context, geography, organization
 def test_reads_with_least_privilege_groups(context, organization_id) -> None:
     """Q-C1 con tokens reales (spec 026): un empleado y un Admin leen el perfil de contacto."""
     statuses = {}
-    for username in ("compras.test", "supervisor.test"):
+    for username in ("operario.dao", "admin.dao"):
         try:
             token = _token(context["http"], username, context["password"])
         except (httpx.HTTPError, KeyError):
@@ -236,4 +236,4 @@ def test_reads_with_least_privilege_groups(context, organization_id) -> None:
             headers={"Authorization": f"Bearer {token}"},
         ).status_code
 
-    assert statuses == {"compras.test": 200, "supervisor.test": 200}
+    assert statuses == {"operario.dao": 200, "admin.dao": 200}

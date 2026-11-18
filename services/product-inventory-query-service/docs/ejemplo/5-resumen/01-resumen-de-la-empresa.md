@@ -6,7 +6,7 @@ Ejercicio 5: Resumen de inventario.
 
 `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/inventory-summary`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `operario.dao`.
 
 ### Por qué
 
@@ -22,11 +22,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_summary:read` |
-| `compras.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_summary:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_summary:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_summary:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:product-inventory-query:inventory_summary:read` |
+| `operario.dao` | Sí | `200` | tiene `perm:product-inventory-query:inventory_summary:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

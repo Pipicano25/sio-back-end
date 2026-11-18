@@ -33,7 +33,7 @@ def body(world, product=None, **overrides):
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 def actions(test_engine) -> list[str]:
@@ -136,17 +136,17 @@ def test_list_filters_and_get(admin, world) -> None:
 
 
 def test_permissions(as_user, as_token, service_token, world) -> None:
-    for username in ("inventario.test", "compras.test"):
+    for username in ("operario.dao",):
         assert as_user(username).post(url(world), json=body(world)).status_code == 403
     assert as_token(service_token("perm:all:all:all")).post(url(world), json=body(world)).status_code == 403
-    assert as_user("inventario.test").get(url(world)).status_code == 200
+    assert as_user("operario.dao").get(url(world)).status_code == 200
     assert as_user("sin-permisos.test").get(url(world)).status_code == 403
 
 
 def test_simultaneous_creations_keep_one_active_policy(app, user_token, world) -> None:
     def send(_):
         client = TestClient(app, raise_server_exceptions=False)
-        return client.post(url(world), json=body(world), headers={"Authorization": f"Bearer {user_token('admin.test')}"}).status_code
+        return client.post(url(world), json=body(world), headers={"Authorization": f"Bearer {user_token('admin.sio')}"}).status_code
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         statuses = list(pool.map(send, range(8)))

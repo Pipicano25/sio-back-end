@@ -6,7 +6,7 @@ Ejercicio 4 — Ventas con precio por presentación (lista indicada y predetermi
 
 ## 1. Registrar la venta V0 en borrador
 
-Paso `V-00.V0-borrador` · usuario **`ventas.test`** · ítems de la FASE 10: 13
+Paso `V-00.V0-borrador` · usuario **`operario.dao`** · ítems de la FASE 10: 13
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
@@ -29,7 +29,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 **Permiso que exige la URL:** `perm:sales:sales:create` + `perm:sales:sale_details:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:create`), `ventas.test` (por `perm:sales:all:create`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:create`)
 
 **Por qué se hace así**
 
@@ -43,7 +43,7 @@ POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales
 
 ## 2. Confirmar la venta V0 (rechazada)
 
-Paso `V-00.V0` · usuario **`ventas.test`** · ítems de la FASE 10: 14, 15
+Paso `V-00.V0` · usuario **`operario.dao`** · ítems de la FASE 10: 14, 15
 
 ```http
 POST http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_0>/confirmation
@@ -59,6 +59,6 @@ X-Correlation-Id: <UUID de la corrida y el paso>
 
 **Permiso que exige la URL:** `perm:sales:sales:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:update`), `ventas.test` (por `perm:sales:all:update`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:update`)
 
 **Respuesta esperada:** `409`

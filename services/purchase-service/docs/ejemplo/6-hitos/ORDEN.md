@@ -8,18 +8,18 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchase-sequences` | `compras.test` | `201` |
-| 2 | [02-crear-la-compra.md](02-crear-la-compra.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `201` |
-| 3 | [03-pedido.md](03-pedido.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
-| 4 | [04-llegada-fuera-de-orden.md](04-llegada-fuera-de-orden.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `422` |
-| 5 | [05-despacho.md](05-despacho.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
-| 6 | [06-llegada.md](06-llegada.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
-| 7 | [07-confirmar.md](07-confirmar.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `compras.test` | `200` |
-| 8 | [07a-hito-sin-recepcion.md](07a-hito-sin-recepcion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `409` |
-| 9 | [07b-recibir.md](07b-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `compras.test` | `200` |
-| 10 | [08-recepcion.md](08-recepcion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
-| 11 | [09-disponible.md](09-disponible.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `201` |
-| 12 | [10-linea-de-tiempo.md](10-linea-de-tiempo.md) | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `compras.test` | `200` |
+| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchase-sequences` | `operario.dao` | `201` |
+| 2 | [02-crear-la-compra.md](02-crear-la-compra.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `201` |
+| 3 | [03-pedido.md](03-pedido.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `operario.dao` | `201` |
+| 4 | [04-llegada-fuera-de-orden.md](04-llegada-fuera-de-orden.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `operario.dao` | `422` |
+| 5 | [05-despacho.md](05-despacho.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `operario.dao` | `201` |
+| 6 | [06-llegada.md](06-llegada.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `operario.dao` | `201` |
+| 7 | [07-confirmar.md](07-confirmar.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/confirmation` | `operario.dao` | `200` |
+| 8 | [07a-hito-sin-recepcion.md](07a-hito-sin-recepcion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `operario.dao` | `409` |
+| 9 | [07b-recibir.md](07b-recibir.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/receipt` | `operario.dao` | `200` |
+| 10 | [08-recepcion.md](08-recepcion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `operario.dao` | `201` |
+| 11 | [09-disponible.md](09-disponible.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `operario.dao` | `201` |
+| 12 | [10-linea-de-tiempo.md](10-linea-de-tiempo.md) | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/lifecycle-events` | `operario.dao` | `200` |
 
 ## Por qué este orden
 

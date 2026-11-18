@@ -1,7 +1,7 @@
 """Entrega real de la auditoría de Operational Context (feature 016; SC-007; RC-04; T032).
 
 Exige el entorno integrado con `operational-context-audit-outbox-worker` y Audit en ejecución.
-`admin.test` se registra como usuario de la empresa ficticia para poder leer su historial en Audit
+`admin.sio` se registra como usuario de la empresa ficticia para poder leer su historial en Audit
 (la consulta por empresa exige membresía `ACTIVE`). Datos ficticios de validación.
 """
 
@@ -45,7 +45,7 @@ def _wait(client, company: str, entity_type: str, entity_id: str, actions: list[
 @pytest.fixture(scope="module")
 def member(client, company_id, person_id):
     response = client.post(f"{OPERATIONAL_CONTEXT}/api/v1/companies/{company_id}/application-users", json={
-        "username": "admin.test",
+        "username": "admin.sio",
         "person_identity_id": person_id,
         "display_name": f"Auditoría {RUN_ID} (dato ficticio)",
     })

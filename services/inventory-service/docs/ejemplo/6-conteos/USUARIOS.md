@@ -3,11 +3,9 @@
 | Usuario | Paso 1 | Paso 2 | Paso 3 | Paso 4 | Paso 5 | Paso 6 | Paso 7 | Paso 8 | Paso 9 | Paso 10 | Paso 11 | Paso 12 | Paso 13 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `inventory-test-operator` | `201` | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | — (no consulta) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `403` (cuenta de servicio) | `201` | `403` (cuenta de servicio) | `403` (cuenta de servicio) |
-| `admin.test` | `403` | `—` | `—` | `—` | `—` | `—` | `200` | `—` | `—` | `—` | `403` | `—` | `—` |
-| `supervisor.test` | `403` | `—` | `—` | `—` | `—` | `—` | `200` | `—` | `—` | `—` | `403` | `—` | `—` |
-| `compras.test` | `403` | `—` | `—` | `—` | `—` | `—` | `200` | `—` | `—` | `—` | `403` | `—` | `—` |
-| `ventas.test` | `403` | `—` | `—` | `—` | `—` | `—` | `200` | `—` | `—` | `—` | `403` | `—` | `—` |
-| `inventario.test` | `403` | `201` | `200` | `200` | `200` | `200` | `200` | `201` | `200` | `200` | `403` | `409` | `200` |
+| `admin.sio` | `403` | `—` | `—` | `—` | `—` | `—` | `200` | `—` | `—` | `—` | `403` | `—` | `—` |
+| `admin.dao` | `403` | `—` | `—` | `—` | `—` | `—` | `200` | `—` | `—` | `—` | `403` | `—` | `—` |
+| `operario.dao` | `403` | `201` | `200` | `200` | `200` | `200` | `200` | `201` | `200` | `200` | `403` | `409` | `200` |
 
 ## Permiso por URL
 
@@ -29,5 +27,5 @@
 
 ## Ejemplos
 
-- Puede: `admin.test` (SuperAdmin), `supervisor.test` (Admin) y los usuarios del grupo `empleado` (`inventario.test`, `compras.test`, `ventas.test`) consultan inventario de las empresas donde son miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.test` y `supervisor.test` configuran políticas.
-- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.test`, que tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; el grupo `empleado` recibe `403` al configurar políticas.
+- Puede: `admin.sio` (SuperAdmin), `admin.dao` (Admin) y el usuario del grupo `empleado` (`operario.dao`) consultan inventario de las empresas donde son miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.sio` y `admin.dao` configuran políticas.
+- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.sio`, que tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; el grupo `empleado` recibe `403` al configurar políticas.

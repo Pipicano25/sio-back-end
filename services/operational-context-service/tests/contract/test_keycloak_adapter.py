@@ -96,7 +96,7 @@ def directory(stub, clock):
 
 
 def _user(**overrides):
-    body = {"id": SUB, "username": "compras.test", "enabled": True}
+    body = {"id": SUB, "username": "operario.dao", "enabled": True}
     body.update(overrides)
     return body
 
@@ -106,7 +106,7 @@ def test_get_account_uses_client_credentials_token(stub, directory):
 
     account = directory.get_account(SUB)
 
-    assert account.sub == SUB and account.username == "compras.test"
+    assert account.sub == SUB and account.username == "operario.dao"
     assert account.enabled is True and account.is_service_account is False
     assert stub.calls[0].headers["authorization"] == "Bearer tok-1"
 
@@ -141,7 +141,7 @@ def test_disabled_and_service_accounts_are_reported(stub, directory):
 
 def _search_route(results):
     def handler(request):
-        assert request.url.params["username"] == "compras.test"
+        assert request.url.params["username"] == "operario.dao"
         assert request.url.params["exact"] == "true"
         return httpx.Response(200, json=results)
 
@@ -151,7 +151,7 @@ def _search_route(results):
 def test_find_by_username_is_exact_and_normalized(stub, directory):
     stub.routes["/admin/realms/sio/users"] = _search_route([_user()])
 
-    account = directory.find_account_by_username("  Compras.Test ")
+    account = directory.find_account_by_username("  Operario.DAO ")
 
     assert account.sub == SUB
 
@@ -159,14 +159,14 @@ def test_find_by_username_is_exact_and_normalized(stub, directory):
 def test_find_by_username_without_results_is_none(stub, directory):
     stub.routes["/admin/realms/sio/users"] = _search_route([])
 
-    assert directory.find_account_by_username("compras.test") is None
+    assert directory.find_account_by_username("operario.dao") is None
 
 
 def test_find_by_username_ambiguous_is_unavailable(stub, directory):
     stub.routes["/admin/realms/sio/users"] = _search_route([_user(), _user(id="otro")])
 
     with pytest.raises(DependencyUnavailableError) as error:
-        directory.find_account_by_username("compras.test")
+        directory.find_account_by_username("operario.dao")
 
     assert error.value.provider == "keycloak"
     assert error.value.cause == "KEYCLOAK_AMBIGUOUS_USERNAME"

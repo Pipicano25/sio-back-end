@@ -66,7 +66,7 @@ def audit_result(world, clients, journal, settings, realm, report_dir, timer):
         Absence("COMPANY", company, "Sale", world[f"venta_{number}"], "CONFIRM_SALE") for number in ("4", "5", "7")
     ]
     checker = AuditChecker(
-        HttpAuditSource(clients.user("admin.test")),
+        HttpAuditSource(clients.user("admin.sio")),
         subjects=subjects(realm),
         protected_values=journal.protected_values,
         wait_seconds=settings.audit_wait_seconds,

@@ -42,7 +42,7 @@ def test_branch_routes_against_company_routes(users, profile) -> None:
         pytest.skip(f"Siembre el perfil {profile} con validation/isolated-stack/synthetic.py")
     data = json.loads(path.read_text(encoding="utf-8"))
     company, branch = data["company"], data["branches"][0]
-    client = users("supervisor.test")
+    client = users("admin.dao")
     results, failures = [], []
     for endpoint, threshold in THRESHOLDS.items():
         variants = {

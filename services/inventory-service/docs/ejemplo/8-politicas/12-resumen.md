@@ -6,7 +6,7 @@ Ejercicio 8: Políticas de inventario.
 
 `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-summary`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `operario.dao`.
 
 ### Solicitud
 
@@ -31,11 +31,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa y tener `perm:operat
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:inventory:balances:read` |
-| `compras.test` | Sí | `200` | tiene `perm:inventory:balances:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:inventory:balances:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:inventory:balances:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:inventory:balances:read` |
+| `operario.dao` | Sí | `200` | tiene `perm:inventory:balances:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

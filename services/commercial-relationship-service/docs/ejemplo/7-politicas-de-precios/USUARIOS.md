@@ -6,53 +6,51 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 
 ## Resumen por usuario
 
-- **`admin.test`**: puede ejecutar **todo el ejercicio** (con membresía en la empresa).
-- **`supervisor.test`**: puede ejecutar **todo el ejercicio** (con membresía en la empresa).
-- **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el acetaminofén (fila 40)*): sobre `company_products` solo tiene `read`; le falta `create`. No tiene ningún permiso de Commercial Relationship: todas sus llamadas a este servicio responden `403`.
-- **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el acetaminofén (fila 40)*): sobre `company_products` solo tiene `read`; le falta `create`. No tiene ningún permiso de Commercial Relationship: todas sus llamadas a este servicio responden `403`.
-- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el acetaminofén (fila 40)*): sobre `company_products` solo tiene `read`; le falta `create`. No tiene ningún permiso de Commercial Relationship: todas sus llamadas a este servicio responden `403`.
+- **`admin.sio`**: puede ejecutar **todo el ejercicio** (con membresía en la empresa).
+- **`admin.dao`**: puede ejecutar **todo el ejercicio** (con membresía en la empresa).
+- **`operario.dao`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Adoptar el acetaminofén (fila 40)*): sobre `company_products` solo tiene `read`; le falta `create`. No tiene ningún permiso de Commercial Relationship: todas sus llamadas a este servicio responden `403`.
 
-**Para hacer el ejercicio completo use `admin.test`**, siempre que tenga membresía `ACTIVE` en la empresa: en Commercial Relationship ni siquiera `perm:all:all:all` exime de la membresía (DS-03). `supervisor.test` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios del grupo `empleado` consultan e incorporan clientes, pero no adoptan, modifican, inactivan ni bloquean.
+**Para hacer el ejercicio completo use `admin.sio`**, siempre que tenga membresía `ACTIVE` en la empresa: en Commercial Relationship ni siquiera `perm:all:all:all` exime de la membresía (DS-03). `admin.dao` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios del grupo `empleado` consultan e incorporan clientes, pero no adoptan, modifican, inactivan ni bloquean.
 
 ## Permiso por URL
 
 ✅ = el usuario tiene el permiso de la llamada · ❌ = recibe `403 Forbidden`. Tener el permiso no basta en las URL con 🔒: sin membresía en la empresa el usuario recibe `404`.
 
-| Paso | Llamada | Método y URL | Permiso requerido | admin | supervisor | compras | ventas | inventario |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| [01](01-consultar-datos.md) | 1. Consultar la empresa DROGUERÍA POLÍTICAS FICTICIA S.A.S. en Operational Context | `GET http://localhost:8004/api/v1/me/operational-context` | `perm:operational-context:application_users:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [01](01-consultar-datos.md) | 2. Consultar el producto global ACETAMINOFEN (ADOREM) 500MG TABLETA CAJAX100 SIEGFRIED en Product Catalog | `GET http://localhost:8003/api/v1/products/by-identifier/7707355056876` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [01](01-consultar-datos.md) | 3. Consultar el producto global IRBESARTAN+HIDROCLOROTIAZIDA (IRBESARTAN/HCT) 150+12.5MG TABLETA CAJAX30MK en Product Catalog | `GET http://localhost:8003/api/v1/products/by-identifier/7702057716226` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [01](01-consultar-datos.md) | 4. Consultar la presentación global caja x100 del acetaminofén en Product Catalog | `GET http://localhost:8003/api/v1/products/{id}/presentations` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [01](01-consultar-datos.md) | 5. Consultar la presentación global sobre x10 del acetaminofén en Product Catalog | `GET http://localhost:8003/api/v1/products/{id}/presentations` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [01](01-consultar-datos.md) | 6. Consultar la presentación global caja x30 del irbesartán en Product Catalog | `GET http://localhost:8003/api/v1/products/{id}/presentations` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [02](02-preparar-la-lista.md) | 1. Adoptar el acetaminofén (fila 40) | `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [02](02-preparar-la-lista.md) | 2. Adoptar el irbesartán (fila 16577) | `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [02](02-preparar-la-lista.md) | 3. Adoptar la caja x100 del acetaminofén | `POST /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [02](02-preparar-la-lista.md) | 4. Adoptar el sobre x10 del acetaminofén | `POST /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [02](02-preparar-la-lista.md) | 5. Adoptar la caja x30 del irbesartán | `POST /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [02](02-preparar-la-lista.md) | 6. Crear la lista PUBLICO en COP | `POST /api/v1/companies/{id}/price-lists` 🔒 | `perm:commercial-relationship:price_lists:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [03](03-crear-politicas.md) | 1. Crear la política Alimentos (15 %) con la caja y el sobre | `POST /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [03](03-crear-politicas.md) | 2. Crear la política Especiales (50 %) con la caja (rechazado) | `POST /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [03](03-crear-politicas.md) | 3. Crear la política Especiales (50 %) con el irbesartán | `POST /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [03](03-crear-politicas.md) | 4. Crear una política con 1000,0001 % (rechazado) | `POST /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [03](03-crear-politicas.md) | 5. Listar las políticas de la lista | `GET /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:read` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [04](04-modificar-politicas.md) | 1. Cambiar Alimentos a 20 % | `POST /api/v1/pricing-policies/{id}/percentage` 🔒 | `perm:commercial-relationship:pricing_policies:update` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [04](04-modificar-politicas.md) | 2. Consultar el historial de porcentajes | `GET /api/v1/pricing-policies/{id}/terms` 🔒 | `perm:commercial-relationship:pricing_policies:read` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [04](04-modificar-politicas.md) | 3. Retirar el sobre de Alimentos | `POST /api/v1/pricing-policies/{id}/presentations/remove` 🔒 | `perm:commercial-relationship:pricing_policies:update` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [04](04-modificar-politicas.md) | 4. Inactivar Especiales | `POST /api/v1/pricing-policies/{id}/deactivate` 🔒 | `perm:commercial-relationship:pricing_policies:delete` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [04](04-modificar-politicas.md) | 5. Cambiar el porcentaje de la política inactiva (rechazado) | `POST /api/v1/pricing-policies/{id}/percentage` 🔒 | `perm:commercial-relationship:pricing_policies:update` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Paso | Llamada | Método y URL | Permiso requerido | admin.sio | admin.dao | operario.dao |
+| --- | --- | --- | --- | --- | --- | --- |
+| [01](01-consultar-datos.md) | 1. Consultar la empresa DROGUERÍA POLÍTICAS FICTICIA S.A.S. en Operational Context | `GET http://localhost:8004/api/v1/me/operational-context` | `perm:operational-context:application_users:read` | ✅ | ✅ | ✅ |
+| [01](01-consultar-datos.md) | 2. Consultar el producto global ACETAMINOFEN (ADOREM) 500MG TABLETA CAJAX100 SIEGFRIED en Product Catalog | `GET http://localhost:8003/api/v1/products/by-identifier/7707355056876` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ |
+| [01](01-consultar-datos.md) | 3. Consultar el producto global IRBESARTAN+HIDROCLOROTIAZIDA (IRBESARTAN/HCT) 150+12.5MG TABLETA CAJAX30MK en Product Catalog | `GET http://localhost:8003/api/v1/products/by-identifier/7702057716226` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ |
+| [01](01-consultar-datos.md) | 4. Consultar la presentación global caja x100 del acetaminofén en Product Catalog | `GET http://localhost:8003/api/v1/products/{id}/presentations` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ |
+| [01](01-consultar-datos.md) | 5. Consultar la presentación global sobre x10 del acetaminofén en Product Catalog | `GET http://localhost:8003/api/v1/products/{id}/presentations` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ |
+| [01](01-consultar-datos.md) | 6. Consultar la presentación global caja x30 del irbesartán en Product Catalog | `GET http://localhost:8003/api/v1/products/{id}/presentations` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ |
+| [02](02-preparar-la-lista.md) | 1. Adoptar el acetaminofén (fila 40) | `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ |
+| [02](02-preparar-la-lista.md) | 2. Adoptar el irbesartán (fila 16577) | `POST /api/v1/companies/{id}/company-products` 🔒 | `perm:commercial-relationship:company_products:create` | ✅ | ✅ | ❌ |
+| [02](02-preparar-la-lista.md) | 3. Adoptar la caja x100 del acetaminofén | `POST /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:create` | ✅ | ✅ | ❌ |
+| [02](02-preparar-la-lista.md) | 4. Adoptar el sobre x10 del acetaminofén | `POST /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:create` | ✅ | ✅ | ❌ |
+| [02](02-preparar-la-lista.md) | 5. Adoptar la caja x30 del irbesartán | `POST /api/v1/companies/{id}/company-product-presentations` 🔒 | `perm:commercial-relationship:company_product_presentations:create` | ✅ | ✅ | ❌ |
+| [02](02-preparar-la-lista.md) | 6. Crear la lista PUBLICO en COP | `POST /api/v1/companies/{id}/price-lists` 🔒 | `perm:commercial-relationship:price_lists:create` | ✅ | ✅ | ❌ |
+| [03](03-crear-politicas.md) | 1. Crear la política Alimentos (15 %) con la caja y el sobre | `POST /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:create` | ✅ | ✅ | ❌ |
+| [03](03-crear-politicas.md) | 2. Crear la política Especiales (50 %) con la caja (rechazado) | `POST /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:create` | ✅ | ✅ | ❌ |
+| [03](03-crear-politicas.md) | 3. Crear la política Especiales (50 %) con el irbesartán | `POST /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:create` | ✅ | ✅ | ❌ |
+| [03](03-crear-politicas.md) | 4. Crear una política con 1000,0001 % (rechazado) | `POST /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:create` | ✅ | ✅ | ❌ |
+| [03](03-crear-politicas.md) | 5. Listar las políticas de la lista | `GET /api/v1/companies/{id}/price-lists/{id}/pricing-policies` 🔒 | `perm:commercial-relationship:pricing_policies:read` | ✅ | ✅ | ❌ |
+| [04](04-modificar-politicas.md) | 1. Cambiar Alimentos a 20 % | `POST /api/v1/pricing-policies/{id}/percentage` 🔒 | `perm:commercial-relationship:pricing_policies:update` | ✅ | ✅ | ❌ |
+| [04](04-modificar-politicas.md) | 2. Consultar el historial de porcentajes | `GET /api/v1/pricing-policies/{id}/terms` 🔒 | `perm:commercial-relationship:pricing_policies:read` | ✅ | ✅ | ❌ |
+| [04](04-modificar-politicas.md) | 3. Retirar el sobre de Alimentos | `POST /api/v1/pricing-policies/{id}/presentations/remove` 🔒 | `perm:commercial-relationship:pricing_policies:update` | ✅ | ✅ | ❌ |
+| [04](04-modificar-politicas.md) | 4. Inactivar Especiales | `POST /api/v1/pricing-policies/{id}/deactivate` 🔒 | `perm:commercial-relationship:pricing_policies:delete` | ✅ | ✅ | ❌ |
+| [04](04-modificar-politicas.md) | 5. Cambiar el porcentaje de la política inactiva (rechazado) | `POST /api/v1/pricing-policies/{id}/percentage` 🔒 | `perm:commercial-relationship:pricing_policies:update` | ✅ | ✅ | ❌ |
 
 ## Ejemplos de uso con los usuarios
 
 La contraseña de todos los usuarios de prueba es la variable `KEYCLOAK_TEST_USER_PASSWORD` de `infrastructure/.env`. Cárguela en la terminal antes de pedir tokens.
 
-### 1. Ejecutar el ejercicio con `admin.test`
+### 1. Ejecutar el ejercicio con `admin.sio`
 
 ```bash
 TOKEN_ADMIN=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=admin.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
+  -d username=admin.sio -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
   | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 ```
 
@@ -65,14 +63,14 @@ curl -s -X POST "http://localhost:8005/api/v1/companies/<EMPRESA>/company-produc
   -d '{"global_product_id": "<GP_ACETAMINOFEN>", "internal_code": "000045", "display_name": "ACETAMINOFEN (ADOREM) 500MG TABLETA CAJAX100 SIEGFRIED", "currency_code": "COP"}'
 ```
 
-Responde `201 Created` si `admin.test` es miembro de la empresa: `perm:all:all:all` cubre `perm:commercial-relationship:company_products:create`. Reemplace las variables `<…>` por los `id` guardados.
+Responde `201 Created` si `admin.sio` es miembro de la empresa: `perm:all:all:all` cubre `perm:commercial-relationship:company_products:create`. Reemplace las variables `<…>` por los `id` guardados.
 
-### 2. `ventas.test` (Empleado) intenta escribir (rechazado)
+### 2. `operario.dao` (Empleado) intenta escribir (rechazado)
 
 ```bash
 TOKEN_EMPLEADO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=ventas.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
+  -d username=operario.dao -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
   | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 ```
 
@@ -101,7 +99,7 @@ Respuesta `403 Forbidden`:
 
 En Commercial Relationship el grupo `empleado` consulta e incorpora clientes, pero la URL exige `perm:commercial-relationship:company_products:create`. El servicio no ejecuta nada: ni siquiera consulta Operational Context ni valida el cuerpo.
 
-### 3. `ventas.test` (Empleado) intenta inactivar (rechazado)
+### 3. `operario.dao` (Empleado) intenta inactivar (rechazado)
 
 ```bash
 curl -s -X POST "http://localhost:8005/api/v1/pricing-policies/<ESPECIALES>/deactivate" \
@@ -124,7 +122,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-El grupo `empleado` no tiene `delete` en Commercial Relationship. Inactivar queda para `admin.test` (SuperAdmin) y `supervisor.test` (Admin), siempre con membresía en la empresa.
+El grupo `empleado` no tiene `delete` en Commercial Relationship. Inactivar queda para `admin.sio` (SuperAdmin) y `admin.dao` (Admin), siempre con membresía en la empresa.
 
 ### 4. Sin token (rechazado)
 

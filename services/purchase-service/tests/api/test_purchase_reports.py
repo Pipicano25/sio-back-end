@@ -84,9 +84,9 @@ def test_validation(buyer, world) -> None:
 def test_other_company_and_permissions(as_user, make_token, as_token, world, fakes, make_sequence, make_draft, confirm,
                                        receive, cancel) -> None:
     seed(world, make_sequence, make_draft, confirm, receive, cancel)
-    assert as_user("compras.test").get(f"/api/v1/companies/{world.other_company}/purchase-reports/period",
+    assert as_user("operario.dao").get(f"/api/v1/companies/{world.other_company}/purchase-reports/period",
                                        params=PERIOD).status_code == 404
-    fakes.oc.members.pop((user_sub("compras.test"), world.company))
-    assert period(as_user("compras.test"), world).status_code == 404
+    fakes.oc.members.pop((user_sub("operario.dao"), world.company))
+    assert period(as_user("operario.dao"), world).status_code == 404
     unrelated = as_token(make_token("perm:sales:all:all", sub="sin-permiso-" + uuid4().hex))
     assert period(unrelated, world).status_code == 403

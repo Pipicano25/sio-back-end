@@ -31,7 +31,7 @@ def _statements(client, world) -> list[str]:
 
 
 def test_single_aggregate_query_regardless_of_volume(as_user, world, test_engine) -> None:
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     assert len(_statements(reader, world)) == 1
 
     for _ in range(40):

@@ -31,7 +31,7 @@ EX8 = dict(
     focus=(
         "Establecer el **primer** representante `PRIMARY` con `set-primary`, ver el `409` al registrar otro `PRIMARY` "
         "por el alta ordinaria, **sustituirlo** con `set-primary` (cierra el anterior y crea el nuevo), registrar un "
-        "suplente con su **referencia documental** y cerrarlo. Es un dato sensible: `compras.test` recibe `403`."
+        "suplente con su **referencia documental** y cerrarlo. Es un dato sensible: `operario.dao` recibe `403`."
     ),
     data=[
         ("Organización", "INVERSIONES REPRESENTACION FICTICIA S.A.S. — NIT `900000008-8` (**ficticios**)"),

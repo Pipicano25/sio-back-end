@@ -6,7 +6,7 @@ Ejercicio 5: Ajustes de inventario.
 
 `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `operario.dao`.
 
 ### Solicitud
 
@@ -36,11 +36,9 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `—` | tiene `perm:all:all:all`; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:inventory:adjustments:create`; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `—` | tiene `perm:inventory:adjustments:create`; no se repite (cambiaría el estado) |
-| `ventas.test` | Sí | `—` | tiene `perm:inventory:adjustments:create`; no se repite (cambiaría el estado) |
-| `inventario.test` | Sí | `201` | tiene `perm:inventory:adjustments:create` |
+| `admin.sio` | Sí | `—` | tiene `perm:all:all:all`; no se repite (cambiaría el estado) |
+| `admin.dao` | Sí | `—` | tiene `perm:inventory:adjustments:create`; no se repite (cambiaría el estado) |
+| `operario.dao` | Sí | `201` | tiene `perm:inventory:adjustments:create` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -76,9 +74,9 @@ Estado `201`.
   "unit_cost": "2500.5000",
   "adjustment_value": "7501.50",
   "inventory_count_id": null,
-  "application_user_id": "d44c0000-0000-4000-8000-000000000105",
+  "application_user_id": "d44c0000-0000-4000-8000-000000000103",
   "created_at": "<asignado por Inventory>",
-  "created_by": "inventario.test",
+  "created_by": "operario.dao",
   "movement": {
     "id": "<asignado por Inventory>",
     "line_index": 0,

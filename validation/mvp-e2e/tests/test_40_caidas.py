@@ -106,7 +106,7 @@ def sale_body(world) -> dict:
 
 
 def balance_a(clients, world, step_id) -> Decimal:
-    response = clients.user("supervisor.test").get(
+    response = clients.user("admin.sio").get(
         "inventory", f"/companies/{world['empresa_a']}/branches/{world['sucursal_a1']}/balances/{world['producto_empresa_a']}", step_id=step_id
     )
     assert response.status == 200, f"{step_id}: saldo → {response.status}"
@@ -114,7 +114,7 @@ def balance_a(clients, world, step_id) -> Decimal:
 
 
 def movements_for(clients, world, origin_id, step_id) -> list[dict]:
-    response = clients.user("supervisor.test").get(
+    response = clients.user("admin.sio").get(
         "inventory",
         f"/companies/{world['empresa_a']}/branches/{world['sucursal_a1']}/kardex/{world['producto_empresa_a']}",
         step_id=step_id,
@@ -125,7 +125,7 @@ def movements_for(clients, world, origin_id, step_id) -> list[dict]:
 
 
 def by_key(clients, world, operation_key, step_id) -> int:
-    response = clients.user("supervisor.test").get(
+    response = clients.user("admin.sio").get(
         "inventory", f"/companies/{world['empresa_a']}/inventory-operations/by-key/{operation_key}", step_id=step_id
     )
     return response.status
@@ -134,7 +134,7 @@ def by_key(clients, world, operation_key, step_id) -> int:
 def audit_once(env, expectations: list[ExpectedAudit]) -> None:
     subjects = {name: user["id"] for name, user in env["realm"].users.items()}
     checker = AuditChecker(
-        HttpAuditSource(env["clients"].user("admin.test"), step_prefix="O-auditoria"),
+        HttpAuditSource(env["clients"].user("admin.sio"), step_prefix="O-auditoria"),
         subjects=subjects,
         protected_values=env["journal"].protected_values,
         wait_seconds=env["settings"].audit_wait_seconds,
@@ -176,7 +176,7 @@ def outbox_count(env, service: str, action: str, company: str, since: str, *, en
 def test_o1_inventory_down_on_purchase_confirmation(case_env, timer):
     env, world, clients, docker, journal = case_env, case_env["world"], case_env["clients"], case_env["docker"], case_env["journal"]
     ctx = world.runner.context
-    compras = clients.user("compras.test")
+    compras = clients.user("operario.dao")
     case = Case("O1", "sio-inventory-service")
     draft = compras.post("purchase", f"/companies/{world['empresa_a']}/purchases", step_id="O1", json_body=purchase_body(world, "O1", "2", "1000"))
     assert draft.status == 201
@@ -197,7 +197,7 @@ def test_o1_inventory_down_on_purchase_confirmation(case_env, timer):
 
     with timer.measure("caidas.O1"):
         run_outage(case, docker, "sio-inventory-service",
-                   lambda: ready(clients, "inventory") and http_ok(clients, "supervisor.test", "inventory", f"/companies/{world['empresa_a']}/branches/{world['sucursal_a1']}/balances", "O1-restauracion"),
+                   lambda: ready(clients, "inventory") and http_ok(clients, "admin.sio", "inventory", f"/companies/{world['empresa_a']}/branches/{world['sucursal_a1']}/balances", "O1-restauracion"),
                    during)
     case["response_during_outage"] = outcome["response"]
     assert outcome["response"] == {"status": 503, "dependency": "inventory"}, f"O1: respuesta durante la caída {outcome['response']}"
@@ -213,8 +213,8 @@ def test_o1_inventory_down_on_purchase_confirmation(case_env, timer):
     assert by_key(clients, world, outcome["operation_id"], "O1") == 200, "O1: Inventory no tiene la operación por clave"
     assert balance_a(clients, world, "O1") == before + 2
     audit_once(env, [
-        expected("O1", "purchase", "CONFIRM_PURCHASE", "Purchase", purchase_id, world["empresa_a"], "compras.test"),
-        expected("O1", "inventory", "APPLY_INVENTORY_ENTRY", "InventoryOperation", retry.body["inventory_operation_id"], world["empresa_a"], "compras.test"),
+        expected("O1", "purchase", "CONFIRM_PURCHASE", "Purchase", purchase_id, world["empresa_a"], "operario.dao"),
+        expected("O1", "inventory", "APPLY_INVENTORY_ENTRY", "InventoryOperation", retry.body["inventory_operation_id"], world["empresa_a"], "operario.dao"),
     ])
 
 
@@ -224,7 +224,7 @@ def test_o1_inventory_down_on_purchase_confirmation(case_env, timer):
 def test_o2_inventory_down_on_sale_confirmation_and_reconciler(case_env, timer):
     env, world, clients, docker, settings = case_env, case_env["world"], case_env["clients"], case_env["docker"], case_env["settings"]
     ctx = world.runner.context
-    ventas = clients.user("ventas.test")
+    ventas = clients.user("operario.dao")
     case = Case("O2", "sio-inventory-service")
     sales = {}
     for name in ("reintento", "conciliador"):
@@ -248,7 +248,7 @@ def test_o2_inventory_down_on_sale_confirmation_and_reconciler(case_env, timer):
 
     with timer.measure("caidas.O2"):
         run_outage(case, docker, "sio-inventory-service",
-                   lambda: ready(clients, "inventory") and http_ok(clients, "supervisor.test", "inventory", f"/companies/{world['empresa_a']}/branches/{world['sucursal_a1']}/balances", "O2-restauracion"),
+                   lambda: ready(clients, "inventory") and http_ok(clients, "admin.sio", "inventory", f"/companies/{world['empresa_a']}/branches/{world['sucursal_a1']}/balances", "O2-restauracion"),
                    during)
         case["response_during_outage"] = outcome
         for name in ("reintento", "conciliador"):
@@ -277,8 +277,8 @@ def test_o2_inventory_down_on_sale_confirmation_and_reconciler(case_env, timer):
     assert balance_a(clients, world, "O2") == before - 1
     case["after_recovery"] = {"retry_status": "CONFIRMED", "reconciled_sale": pending_sale["status"]}
     audit_once(env, [
-        expected("O2", "sales", "CONFIRM_SALE", "Sale", sales["reintento"]["id"], world["empresa_a"], "ventas.test"),
-        expected("O2", "inventory", "APPLY_INVENTORY_OUTPUT", "InventoryOperation", retry.body["inventory_operation_id"], world["empresa_a"], "ventas.test"),
+        expected("O2", "sales", "CONFIRM_SALE", "Sale", sales["reintento"]["id"], world["empresa_a"], "operario.dao"),
+        expected("O2", "inventory", "APPLY_INVENTORY_OUTPUT", "InventoryOperation", retry.body["inventory_operation_id"], world["empresa_a"], "operario.dao"),
     ])
 
 
@@ -287,7 +287,7 @@ def test_o2_inventory_down_on_sale_confirmation_and_reconciler(case_env, timer):
 @pytest.mark.evidence("O3", "outages.json")
 def test_o3_commercial_relationship_down(case_env, timer):
     world, clients, docker = case_env["world"], case_env["clients"], case_env["docker"]
-    ventas = clients.user("ventas.test")
+    ventas = clients.user("operario.dao")
     case = Case("O3", "sio-commercial-relationship-service")
     draft = ventas.post("sales", f"/companies/{world['empresa_a']}/sales", step_id="O3", json_body=sale_body(world))
     assert draft.status == 201
@@ -306,7 +306,7 @@ def test_o3_commercial_relationship_down(case_env, timer):
 
     with timer.measure("caidas.O3"):
         run_outage(case, docker, "sio-commercial-relationship-service",
-                   lambda: ready(clients, "commercial-relationship") and http_ok(clients, "admin.test", "commercial-relationship", f"/company-products/{world['producto_empresa_a']}", "O3-restauracion"),
+                   lambda: ready(clients, "commercial-relationship") and http_ok(clients, "admin.sio", "commercial-relationship", f"/company-products/{world['producto_empresa_a']}", "O3-restauracion"),
                    during)
     case["response_during_outage"] = outcome
     assert outcome["create"] == {"status": 503, "dependency": "commercial-relationship"}, f"O3 alta: {outcome['create']}"
@@ -322,7 +322,7 @@ def test_o3_commercial_relationship_down(case_env, timer):
 def new_person(world, journal, label: str) -> str:
     from sio_mvp.identities import conforming_number
 
-    admin = world.runner.clients.user("admin.test")
+    admin = world.runner.clients.user("admin.sio")
     for attempt in range(1, 6):
         number = conforming_number(world["patron_cc"], world.runner.context, label, attempt)
         journal.protect(number)
@@ -341,7 +341,7 @@ def new_person(world, journal, label: str) -> str:
 @pytest.mark.evidence("O4a", "outages.json")
 def test_o4a_party_identity_down_on_customer(case_env, timer):
     env, world, clients, docker, journal = case_env, case_env["world"], case_env["clients"], case_env["docker"], case_env["journal"]
-    admin = clients.user("admin.test")
+    admin = clients.user("admin.sio")
     case = Case("O4a", "sio-party-identity-service")
     person = new_person(world, journal, "O4a-persona")
     body = {"customer_kind": "PERSON", "person_identity_id": person, "internal_code": f"O4A-{world['run']}", "display_name": f"Cliente O4a {world['run']} (dato ficticio)"}
@@ -357,7 +357,7 @@ def test_o4a_party_identity_down_on_customer(case_env, timer):
 
     with timer.measure("caidas.O4a"):
         run_outage(case, docker, "sio-party-identity-service",
-                   lambda: ready(clients, "party-identity") and http_ok(clients, "admin.test", "party-identity", f"/person-identities/{person}", "O4a-restauracion"),
+                   lambda: ready(clients, "party-identity") and http_ok(clients, "admin.sio", "party-identity", f"/person-identities/{person}", "O4a-restauracion"),
                    during)
     case["response_during_outage"] = outcome
     assert outcome["create"] == {"status": 503, "dependency": "party-identity"}, f"O4a: {outcome['create']}"
@@ -369,7 +369,7 @@ def test_o4a_party_identity_down_on_customer(case_env, timer):
     count_final = admin.get("commercial-relationship", path, step_id="O4a", params={"page_size": 1, "status": "ALL"}).body["total_records"]
     assert count_final == count_before + 1, "O4a: el alta no quedó una sola vez"
     case["after_recovery"] = {"status": created.status}
-    audit_once(env, [expected("O4a", "commercial-relationship", "CREATE_COMPANY_CUSTOMER", "CompanyCustomer", created.body["id"], world["empresa_a"], "admin.test")])
+    audit_once(env, [expected("O4a", "commercial-relationship", "CREATE_COMPANY_CUSTOMER", "CompanyCustomer", created.body["id"], world["empresa_a"], "admin.sio")])
 
 
 # --- O4b: solo Operational Context detenido (después de O4a restaurado) ---------------------------------
@@ -378,11 +378,11 @@ def test_o4a_party_identity_down_on_customer(case_env, timer):
 def test_o4b_operational_context_down_on_purchase_draft(case_env, timer):
     env, world, clients, docker = case_env, case_env["world"], case_env["clients"], case_env["docker"]
     assert STATE["outages"] and STATE["outages"][-1]["case"] == "O4a" and STATE["outages"][-1]["restored"], "O4b solo después de restaurar O4a"
-    compras = clients.user("compras.test")
+    compras = clients.user("operario.dao")
     case = Case("O4b", "sio-operational-context-service")
     path = f"/companies/{world['empresa_a']}/purchases"
     body = purchase_body(world, "O4b", "1", "1000")
-    count_before = clients.user("admin.test").get("purchase", path, step_id="O4b", params={"page_size": 1}).body["total_records"]
+    count_before = clients.user("admin.sio").get("purchase", path, step_id="O4b", params={"page_size": 1}).body["total_records"]
     since = now_iso()
     outcome = {}
 
@@ -393,19 +393,19 @@ def test_o4b_operational_context_down_on_purchase_draft(case_env, timer):
 
     with timer.measure("caidas.O4b"):
         run_outage(case, docker, "sio-operational-context-service",
-                   lambda: ready(clients, "operational-context") and http_ok(clients, "admin.test", "operational-context", f"/companies/{world['empresa_a']}", "O4b-restauracion"),
+                   lambda: ready(clients, "operational-context") and http_ok(clients, "admin.sio", "operational-context", f"/companies/{world['empresa_a']}", "O4b-restauracion"),
                    during)
     case["response_during_outage"] = outcome
     assert outcome["create"] == {"status": 503, "dependency": "operational-context"}, f"O4b: {outcome['create']}"
-    count_after = clients.user("admin.test").get("purchase", path, step_id="O4b", params={"page_size": 1}).body["total_records"]
+    count_after = clients.user("admin.sio").get("purchase", path, step_id="O4b", params={"page_size": 1}).body["total_records"]
     assert count_after == count_before, "O4b: se creó una compra durante la caída"
     assert outbox_count(env, "purchase", "CREATE_PURCHASE", world["empresa_a"], since) == 0, "O4b: evento en la outbox de Purchase"
     created = compras.post("purchase", path, step_id="O4b", json_body=body)
     assert created.status == 201, f"O4b: el borrador tras restaurar → {created.status}"
-    count_final = clients.user("admin.test").get("purchase", path, step_id="O4b", params={"page_size": 1}).body["total_records"]
+    count_final = clients.user("admin.sio").get("purchase", path, step_id="O4b", params={"page_size": 1}).body["total_records"]
     assert count_final == count_before + 1, "O4b: el borrador no quedó una sola vez"
     case["after_recovery"] = {"status": created.status}
-    audit_once(env, [expected("O4b", "purchase", "CREATE_PURCHASE", "Purchase", created.body["id"], world["empresa_a"], "compras.test")])
+    audit_once(env, [expected("O4b", "purchase", "CREATE_PURCHASE", "Purchase", created.body["id"], world["empresa_a"], "operario.dao")])
 
 
 # --- O5: Audit detenido ----------------------------------------------------------------------------------
@@ -414,7 +414,7 @@ def test_o4b_operational_context_down_on_purchase_draft(case_env, timer):
 def test_o5_audit_down_events_delivered_once(case_env, timer):
     env, world, clients, docker = case_env, case_env["world"], case_env["clients"], case_env["docker"]
     ctx = world.runner.context
-    compras, ventas = clients.user("compras.test"), clients.user("ventas.test")
+    compras, ventas = clients.user("operario.dao"), clients.user("operario.dao")
     case = Case("O5", "sio-audit-service")
     purchase = compras.post("purchase", f"/companies/{world['empresa_a']}/purchases", step_id="O5", json_body=purchase_body(world, "O5", "1", "1000")).body
     sale = ventas.post("sales", f"/companies/{world['empresa_a']}/sales", step_id="O5", json_body=sale_body(world)).body
@@ -441,17 +441,17 @@ def test_o5_audit_down_events_delivered_once(case_env, timer):
 
     with timer.measure("caidas.O5"):
         run_outage(case, docker, "sio-audit-service",
-                   lambda: ready(clients, "audit") and http_ok(clients, "admin.test", "audit", f"/companies/{world['empresa_a']}/audit-events", "O5-restauracion"),
+                   lambda: ready(clients, "audit") and http_ok(clients, "admin.sio", "audit", f"/companies/{world['empresa_a']}/audit-events", "O5-restauracion"),
                    during)
     case["response_during_outage"] = {key: outcome[key] for key in ("purchase", "sale", "pending")}
     assert (outcome["purchase"], outcome["sale"]) == (200, 200), f"O5: confirmaciones durante la caída {outcome}"
     assert all(count == 1 for count in outcome["pending"].values()), f"O5: eventos PENDING en las outbox {outcome['pending']}"
     with timer.measure("caidas.O5.entrega"):
         audit_once(env, [
-            expected("O5", "purchase", "CONFIRM_PURCHASE", "Purchase", purchase["id"], world["empresa_a"], "compras.test"),
-            expected("O5", "sales", "CONFIRM_SALE", "Sale", sale["id"], world["empresa_a"], "ventas.test"),
-            expected("O5", "inventory", "APPLY_INVENTORY_ENTRY", "InventoryOperation", outcome["purchase_operation"], world["empresa_a"], "compras.test"),
-            expected("O5", "inventory", "APPLY_INVENTORY_OUTPUT", "InventoryOperation", outcome["sale_operation"], world["empresa_a"], "ventas.test"),
+            expected("O5", "purchase", "CONFIRM_PURCHASE", "Purchase", purchase["id"], world["empresa_a"], "operario.dao"),
+            expected("O5", "sales", "CONFIRM_SALE", "Sale", sale["id"], world["empresa_a"], "operario.dao"),
+            expected("O5", "inventory", "APPLY_INVENTORY_ENTRY", "InventoryOperation", outcome["purchase_operation"], world["empresa_a"], "operario.dao"),
+            expected("O5", "inventory", "APPLY_INVENTORY_OUTPUT", "InventoryOperation", outcome["sale_operation"], world["empresa_a"], "operario.dao"),
         ])
     case["after_recovery"] = {"delivered_once": True}
 
@@ -461,7 +461,7 @@ def test_o5_audit_down_events_delivered_once(case_env, timer):
 @pytest.mark.evidence("O6", "outages.json")
 def test_o6_sales_database_down_recovers_without_restart(case_env, timer):
     world, clients, docker = case_env["world"], case_env["clients"], case_env["docker"]
-    ventas = clients.user("ventas.test")
+    ventas = clients.user("operario.dao")
     case = Case("O6", "sio-sales-db")
     started_before = docker.inspect("sio-sales-service").started_at
     path = f"/companies/{world['empresa_a']}/sales"

@@ -6,7 +6,7 @@ Ejercicio 3: Inventario multisucursal.
 
 `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/inventory-overviews?branch_id=d22b0000-0000-4000-8000-000000000099`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `operario.dao`.
 
 ### Por qué
 
@@ -20,11 +20,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `404` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `404` | tiene `perm:product-inventory-query:inventory_overviews:read` |
-| `compras.test` | Sí | `404` | tiene `perm:product-inventory-query:inventory_overviews:read` |
-| `ventas.test` | Sí | `404` | tiene `perm:product-inventory-query:inventory_overviews:read` |
-| `inventario.test` | Sí | `404` | tiene `perm:product-inventory-query:inventory_overviews:read` |
+| `admin.sio` | Sí | `404` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `404` | tiene `perm:product-inventory-query:inventory_overviews:read` |
+| `operario.dao` | Sí | `404` | tiene `perm:product-inventory-query:inventory_overviews:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

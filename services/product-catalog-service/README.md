@@ -141,7 +141,7 @@ pytest -m performance -o addopts=""     # volumen: 500 000 productos (SC-002, SC
   (`infrastructure/`): Product Catalog `8103`, Party Identity `8101`, Geography `8102`, Keycloak
   `8081`; se cambian con `PRODUCT_CATALOG_INTEGRATION_BASE_URL`,
   `PARTY_IDENTITY_INTEGRATION_BASE_URL` (con `/api/v1`), `GEOGRAPHY_INTEGRATION_BASE_URL` y
-  `KEYCLOAK_TOKEN_URL`. La contraseña de `admin.test` se lee de `KEYCLOAK_TEST_USER_PASSWORD` o de
+  `KEYCLOAK_TOKEN_URL`. La contraseña de `admin.sio` se lee de `KEYCLOAK_TEST_USER_PASSWORD` o de
   `infrastructure/.env`. Es repetible: cada ejecución crea organizaciones y un producto ficticios
   de validación. La caída del proveedor (`503 DEPENDENCY_UNAVAILABLE`) se verifica a mano
   deteniendo `sio-party-identity-service`.
@@ -188,7 +188,7 @@ Regla de la Constitución 2.4.0 (Principio X), feature 009:
 - En Docker la base `sio-product-catalog-db` tiene `healthcheck` y `restart: unless-stopped`, y la aplicación
   arranca cuando la base está sana (`infrastructure/services/product-catalog-service.yaml`).
 
-Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.test` y
+Validación en el entorno integrado (detiene la base temporalmente; solo lecturas con `admin.sio` y
 `KEYCLOAK_TEST_USER_PASSWORD` del entorno o de `infrastructure/.env`):
 
 ```bash

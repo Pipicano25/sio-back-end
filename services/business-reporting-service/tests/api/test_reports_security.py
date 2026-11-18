@@ -15,13 +15,11 @@ from tests.conftest import USER_ROLES
 
 REPORTS = ("top-selling-products", "sales-by-branch", "purchases", "stock-evolution")
 MATRIX = {
-    "admin.test": (200, 200, 200, 200),
-    "supervisor.test": (200, 200, 200, 200),
-    # Spec 026: los tres usuarios del grupo `empleado` tienen la unión de ventas, compras e inventario (sin el reporte
-    # de ventas por sucursal, que era de `reportes` y hoy es de `admin`).
-    "ventas.test": (200, 403, 200, 200),
-    "compras.test": (200, 403, 200, 200),
-    "inventario.test": (200, 403, 200, 200),
+    "admin.sio": (200, 200, 200, 200),
+    "admin.dao": (200, 200, 200, 200),
+    # `operario.dao` (grupo `empleado`) tiene la unión de ventas, compras e inventario, sin el reporte de ventas por
+    # sucursal (es de `admin`).
+    "operario.dao": (200, 403, 200, 200),
 }
 
 
@@ -50,7 +48,7 @@ def test_matrix_per_group_with_template_roles(as_user, seeded, username) -> None
 def test_empleado_reads_stock_evolution_with_its_own_permission() -> None:
     """El grupo `empleado` lee la evolución con el permiso explícito (DR-11); que el kardex solo no la abre lo prueba
     `test_kardex_permission_alone_does_not_open_stock_evolution`."""
-    roles = USER_ROLES["inventario.test"]
+    roles = USER_ROLES["operario.dao"]
     assert "perm:inventory:stock_evolution:read" in roles
     assert "perm:business-reporting:stock_evolution:read" in roles
 
@@ -58,7 +56,7 @@ def test_empleado_reads_stock_evolution_with_its_own_permission() -> None:
 def test_owner_permission_is_required_too(as_user, as_token, make_token, seeded) -> None:
     """Con el permiso del reporte pero sin el del propietario: `403` genérico (DR-07)."""
     only_report = as_token(make_token("perm:business-reporting:all:read", "perm:operational-context:all:read",
-                                      sub="sub-supervisor.test"))
+                                      sub="sub-admin.dao"))
     for report in REPORTS:
         response = only_report.get(url(seeded, report), params=PERIOD)
         assert response.status_code == 403, (report, response.text)
@@ -68,7 +66,7 @@ def test_owner_permission_is_required_too(as_user, as_token, make_token, seeded)
 def test_kardex_permission_alone_does_not_open_stock_evolution(as_token, make_token, seeded) -> None:
     token = as_token(make_token("perm:business-reporting:stock_evolution:read", "perm:inventory:movements:read",
                                 "perm:commercial-relationship:company_products:read",
-                                "perm:product-catalog:products:read", sub="sub-inventario.test"))
+                                "perm:product-catalog:products:read", sub="sub-operario.dao"))
     assert token.get(url(seeded, "stock-evolution"), params=PERIOD).status_code == 403
 
 
@@ -79,15 +77,15 @@ def test_anonymous_is_401(as_token, seeded) -> None:
 
 
 def test_non_member_other_company_and_foreign_branch_are_404_before_owners(as_user, seeded) -> None:
-    seeded.members.discard("sub-supervisor.test")
+    seeded.members.discard("sub-admin.dao")
     for report in REPORTS:
-        assert as_user("supervisor.test").get(url(seeded, report), params=PERIOD).status_code == 404
-    seeded.members.add("sub-supervisor.test")
+        assert as_user("admin.dao").get(url(seeded, report), params=PERIOD).status_code == 404
+    seeded.members.add("sub-admin.dao")
     other = f"/api/v1/companies/{uuid4()}/reports/top-selling-products"
-    assert as_user("supervisor.test").get(other, params=PERIOD).status_code == 404
+    assert as_user("admin.dao").get(other, params=PERIOD).status_code == 404
     foreign = f"/api/v1/companies/{seeded.company.id}/branches/{uuid4()}/reports/stock-evolution"
-    assert as_user("supervisor.test").get(foreign, params=PERIOD).status_code == 404
-    assert as_user("supervisor.test").get(f"{base(seeded)}/purchases",
+    assert as_user("admin.dao").get(foreign, params=PERIOD).status_code == 404
+    assert as_user("admin.dao").get(f"{base(seeded)}/purchases",
                                         params={**PERIOD, "branch_id": str(uuid4())}).status_code == 404
     owners = {"sales_by_product", "sales_by_branch", "purchase_period", "stock_evolution", "company_products_search"}
     assert not owners & set(seeded.log.names())
@@ -95,7 +93,7 @@ def test_non_member_other_company_and_foreign_branch_are_404_before_owners(as_us
 
 def test_inactive_branch_can_be_named_explicitly(as_user, seeded) -> None:
     closed = seeded.branches[2]
-    response = as_user("supervisor.test").get(f"{base(seeded)}/sales-by-branch",
+    response = as_user("admin.dao").get(f"{base(seeded)}/sales-by-branch",
                                             params={**PERIOD, "branch_id": str(closed.id)})
     assert response.status_code == 200
     assert [row["branch_code"] for row in response.json()["items"]] == ["CERRADA"]
@@ -112,19 +110,19 @@ def test_inactive_branch_can_be_named_explicitly(as_user, seeded) -> None:
     {**PERIOD, "desconocido": "x"},
 ])
 def test_invalid_parameters_are_422(as_user, seeded, params) -> None:
-    response = as_user("supervisor.test").get(f"{base(seeded)}/top-selling-products", params=params)
+    response = as_user("admin.dao").get(f"{base(seeded)}/top-selling-products", params=params)
     assert response.status_code == 422, response.text
     assert response.json()["code"] == "BUSINESS_REPORTING.VALIDATION_ERROR"
 
 
 def test_branch_or_scope_in_query_of_stock_evolution_is_422(as_user, seeded) -> None:
     for extra in ({"branch_id": str(seeded.branches[1].id)}, {"scope": "COMPANY"}):
-        assert as_user("inventario.test").get(url(seeded, "stock-evolution"),
+        assert as_user("operario.dao").get(url(seeded, "stock-evolution"),
                                               params={**PERIOD, **extra}).status_code == 422
 
 
 def test_dependency_failure_is_503_without_naming_it(as_user, seeded) -> None:
     seeded.fail.add("sales_by_product")
-    response = as_user("supervisor.test").get(f"{base(seeded)}/top-selling-products", params=PERIOD)
+    response = as_user("admin.dao").get(f"{base(seeded)}/top-selling-products", params=PERIOD)
     assert response.status_code == 503
     assert "sales" not in response.json()["detail"].lower()

@@ -6,7 +6,7 @@ Ejercicio 6 — Auditoría del recorrido · [Orden del ejercicio](ORDEN.md)
 
 ## 1. Historial de auditoría de una entidad de la empresa A
 
-Paso `U-01.empresa` · usuario **`admin.test`** · ítems de la FASE 10: 19
+Paso `U-01.empresa` · usuario **`admin.sio`** · ítems de la FASE 10: 19
 
 ```http
 GET http://127.0.0.1:8110/api/v1/companies/<EMPRESA_A>/entity-history/<TIPO_ENTIDAD>/<ID_ENTIDAD>
@@ -14,7 +14,7 @@ GET http://127.0.0.1:8110/api/v1/companies/<EMPRESA_A>/entity-history/<TIPO_ENTI
 
 **Permiso que exige la URL:** `perm:audit:audit-events:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:audit:audit-events:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:audit:audit-events:read`)
 
 **Por qué se hace así**
 
@@ -24,7 +24,7 @@ GET http://127.0.0.1:8110/api/v1/companies/<EMPRESA_A>/entity-history/<TIPO_ENTI
 
 ## 2. Historial de auditoría de una entidad de plataforma
 
-Paso `U-01.plataforma` · usuario **`admin.test`** · ítems de la FASE 10: 19
+Paso `U-01.plataforma` · usuario **`admin.sio`** · ítems de la FASE 10: 19
 
 ```http
 GET http://127.0.0.1:8110/api/v1/platform-entity-history/<TIPO_ENTIDAD>/<ID_ENTIDAD>
@@ -32,7 +32,7 @@ GET http://127.0.0.1:8110/api/v1/platform-entity-history/<TIPO_ENTIDAD>/<ID_ENTI
 
 **Permiso que exige la URL:** `perm:audit:platform-events:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
 
 **Por qué se hace así**
 

@@ -19,7 +19,7 @@ def _count(test_engine) -> int:
 
 
 def test_created_with_identity_from_token(emitter, test_engine) -> None:
-    body = event_body(username_snapshot="admin.test", reason=None)
+    body = event_body(username_snapshot="admin.sio", reason=None)
     response = emitter.post(URL, json=body)
 
     assert response.status_code == 201, response.text
@@ -137,8 +137,8 @@ def test_failure_without_reason_is_accepted(emitter, test_engine) -> None:
 
 
 def test_texts_are_trimmed(emitter) -> None:
-    response = emitter.post(URL, json=event_body(username_snapshot="  admin.test ", reason=" motivo  "))
-    assert response.json()["username_snapshot"] == "admin.test"
+    response = emitter.post(URL, json=event_body(username_snapshot="  admin.sio ", reason=" motivo  "))
+    assert response.json()["username_snapshot"] == "admin.sio"
     assert response.json()["reason"] == "motivo"
 
 

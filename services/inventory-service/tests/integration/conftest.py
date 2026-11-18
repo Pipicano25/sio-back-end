@@ -10,7 +10,7 @@ from tests.integration.support import RealWorld, build_world, operator_client, r
 @pytest.fixture(scope="session")
 def admin():
     require_inventory()
-    with user_client("admin.test") as client:
+    with user_client("admin.sio") as client:
         yield client
 
 

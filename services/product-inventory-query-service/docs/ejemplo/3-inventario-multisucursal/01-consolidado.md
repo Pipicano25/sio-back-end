@@ -6,14 +6,14 @@ Ejercicio 3: Inventario multisucursal.
 
 `GET /api/v1/companies/d22a0000-0000-4000-8000-000000000001/inventory-overviews?search=Loratadina`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `operario.dao`.
 
 ### Por qué
 
 - Sin `branch_id` el alcance es `COMPANY`: las tres sucursales activas.
 - 120 tabletas con la «Caja x 10» son 12 cajas y resto 0: la existencia no se repite por presentación.
 - NORTE tiene un saldo registrado en 0 (`REGISTERED`); SUR nunca tuvo saldo (`NOT_REGISTERED`).
-- `inventario.test` ve los mínimos: PPAL está bajo su mínimo de 150.
+- `operario.dao` ve los mínimos: PPAL está bajo su mínimo de 150.
 
 ## Permiso
 
@@ -23,11 +23,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa (lo verifica Operati
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read` |
-| `compras.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read` |
+| `operario.dao` | Sí | `200` | tiene `perm:product-inventory-query:inventory_overviews:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

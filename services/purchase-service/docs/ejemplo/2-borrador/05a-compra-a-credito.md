@@ -6,7 +6,7 @@ Ejercicio 2: Compra en borrador.
 
 `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases`
 
-Ejecuta: `compras.test`.
+Ejecuta: `operario.dao`.
 
 ### Solicitud
 
@@ -40,11 +40,9 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:purchase:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `409` | tiene `perm:purchase:purchases:create` y asignación a la sucursal |
-| `ventas.test` | Sí | `—` | tiene `perm:purchase:purchases:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `inventario.test` | Sí | `—` | tiene `perm:purchase:purchases:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `admin.sio` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `admin.dao` | Sí | `—` | tiene `perm:purchase:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `operario.dao` | Sí | `409` | tiene `perm:purchase:purchases:create` y asignación a la sucursal |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

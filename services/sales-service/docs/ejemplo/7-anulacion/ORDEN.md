@@ -8,12 +8,12 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `ventas.test` | `201` |
-| 2 | [02-borrador-a-anular.md](02-borrador-a-anular.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales` | `ventas.test` | `201` |
-| 3 | [03-anular-el-borrador.md](03-anular-el-borrador.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<BORRADOR>/cancellation` | `ventas.test` | `200` |
-| 4 | [04-venta-a-anular.md](04-venta-a-anular.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales` | `ventas.test` | `201` |
-| 5 | [05-confirmar.md](05-confirmar.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `ventas.test` | `200` |
-| 6 | [06-anular-la-venta-confirmada.md](06-anular-la-venta-confirmada.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/cancellation` | `ventas.test` | `200` |
+| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sale-sequences` | `operario.dao` | `201` |
+| 2 | [02-borrador-a-anular.md](02-borrador-a-anular.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales` | `operario.dao` | `201` |
+| 3 | [03-anular-el-borrador.md](03-anular-el-borrador.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<BORRADOR>/cancellation` | `operario.dao` | `200` |
+| 4 | [04-venta-a-anular.md](04-venta-a-anular.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales` | `operario.dao` | `201` |
+| 5 | [05-confirmar.md](05-confirmar.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation` | `operario.dao` | `200` |
+| 6 | [06-anular-la-venta-confirmada.md](06-anular-la-venta-confirmada.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/cancellation` | `operario.dao` | `200` |
 
 ## Por qué este orden
 

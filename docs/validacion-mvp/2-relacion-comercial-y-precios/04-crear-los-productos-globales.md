@@ -6,7 +6,7 @@ Ejercicio 2 — Relación comercial y precios: proveedor, cliente, productos, ad
 
 ## 1. Crear la categoría global de los productos
 
-Paso `C-10.categoria` · usuario **`admin.test`** · ítems de la FASE 10: 6
+Paso `C-10.categoria` · usuario **`admin.sio`** · ítems de la FASE 10: 6
 
 ```http
 POST http://127.0.0.1:8103/api/v1/categories
@@ -21,7 +21,7 @@ POST http://127.0.0.1:8103/api/v1/categories
 
 **Permiso que exige la URL:** `perm:product-catalog:categories:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:create`)
 
 **Por qué se hace así**
 
@@ -35,7 +35,7 @@ POST http://127.0.0.1:8103/api/v1/categories
 
 ## 2. Crear el producto global A
 
-Paso `C-10.producto_a` · usuario **`admin.test`** · ítems de la FASE 10: 6
+Paso `C-10.producto_a` · usuario **`admin.sio`** · ítems de la FASE 10: 6
 
 ```http
 POST http://127.0.0.1:8103/api/v1/products
@@ -51,7 +51,7 @@ POST http://127.0.0.1:8103/api/v1/products
 
 **Permiso que exige la URL:** `perm:product-catalog:products:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -61,7 +61,7 @@ POST http://127.0.0.1:8103/api/v1/products
 
 ## 3. Clasificar el producto A
 
-Paso `C-10.categoria_a` · usuario **`admin.test`** · ítems de la FASE 10: 6
+Paso `C-10.categoria_a` · usuario **`admin.sio`** · ítems de la FASE 10: 6
 
 ```http
 POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/categories
@@ -75,7 +75,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/categories
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:update`)
 
 **Respuesta esperada:** `201`
 
@@ -85,7 +85,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/categories
 
 ## 4. Crear la presentación base (unidad) del producto A
 
-Paso `C-10.base_a` · usuario **`admin.test`** · ítems de la FASE 10: 7
+Paso `C-10.base_a` · usuario **`admin.sio`** · ítems de la FASE 10: 7
 
 ```http
 POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/presentations
@@ -103,7 +103,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/presentations
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:update`)
 
 **Respuesta esperada:** `201`
 
@@ -113,7 +113,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/presentations
 
 ## 5. Crear la presentación "Caja × 12" del producto A
 
-Paso `C-10.caja_a` · usuario **`admin.test`** · ítems de la FASE 10: 7
+Paso `C-10.caja_a` · usuario **`admin.sio`** · ítems de la FASE 10: 7
 
 ```http
 POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/presentations
@@ -131,7 +131,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/presentations
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:update`)
 
 **Por qué se hace así**
 
@@ -145,7 +145,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_A>/presentations
 
 ## 6. Crear el producto global B
 
-Paso `C-10.producto_b` · usuario **`admin.test`** · ítems de la FASE 10: 6
+Paso `C-10.producto_b` · usuario **`admin.sio`** · ítems de la FASE 10: 6
 
 ```http
 POST http://127.0.0.1:8103/api/v1/products
@@ -161,7 +161,7 @@ POST http://127.0.0.1:8103/api/v1/products
 
 **Permiso que exige la URL:** `perm:product-catalog:products:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -171,7 +171,7 @@ POST http://127.0.0.1:8103/api/v1/products
 
 ## 7. Clasificar el producto B
 
-Paso `C-10.categoria_b` · usuario **`admin.test`** · ítems de la FASE 10: 6
+Paso `C-10.categoria_b` · usuario **`admin.sio`** · ítems de la FASE 10: 6
 
 ```http
 POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_B>/categories
@@ -185,7 +185,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_B>/categories
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:update`)
 
 **Respuesta esperada:** `201`
 
@@ -195,7 +195,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_B>/categories
 
 ## 8. Crear la presentación base (unidad) del producto B
 
-Paso `C-10.base_b` · usuario **`admin.test`** · ítems de la FASE 10: 7
+Paso `C-10.base_b` · usuario **`admin.sio`** · ítems de la FASE 10: 7
 
 ```http
 POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_B>/presentations
@@ -213,7 +213,7 @@ POST http://127.0.0.1:8103/api/v1/products/<PRODUCTO_B>/presentations
 
 **Permiso que exige la URL:** `perm:product-catalog:products:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:product-catalog:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:product-catalog:all:update`)
 
 **Respuesta esperada:** `201`
 

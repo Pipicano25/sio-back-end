@@ -243,7 +243,7 @@ class Fakes:
 
 TABLET = UnitInfo(UUID("00000000-0000-4000-8000-0000000000a1"), "TAB", "Tableta")
 MILLILITER = UnitInfo(UUID("00000000-0000-4000-8000-0000000000a2"), "ML", "Mililitro")
-USERS = ("admin.test", "supervisor.test", "compras.test", "ventas.test", "inventario.test")
+USERS = ("admin.sio", "admin.dao", "operario.dao")
 
 
 def build_fakes() -> Fakes:

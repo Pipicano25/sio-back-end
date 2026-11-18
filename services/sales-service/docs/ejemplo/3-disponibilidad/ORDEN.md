@@ -8,8 +8,8 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-crear-el-borrador.md](01-crear-el-borrador.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales` | `ventas.test` | `201` |
-| 2 | [02-consultar-la-disponibilidad.md](02-consultar-la-disponibilidad.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/availability` | `ventas.test` | `200` |
+| 1 | [01-crear-el-borrador.md](01-crear-el-borrador.md) | `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales` | `operario.dao` | `201` |
+| 2 | [02-consultar-la-disponibilidad.md](02-consultar-la-disponibilidad.md) | `GET /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/availability` | `operario.dao` | `200` |
 
 ## Por qué este orden
 

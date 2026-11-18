@@ -29,7 +29,7 @@ def event(number: int, **fields) -> dict:
         "event_id": ev(number),
         "company_id": COMPANY,
         "keycloak_user_id": ADMIN_SUB,
-        "username_snapshot": "admin.test",
+        "username_snapshot": "admin.sio",
         "action": "CHANGE_PRICE",
         "entity_type": "PriceListItem",
         "entity_id": PRICE_ITEM,
@@ -58,7 +58,7 @@ EXERCISES = [
         "data": [
             ("Empresa", COMPANY, "Empresa ficticia de los eventos."),
             ("Precio de lista", PRICE_ITEM, "Entidad afectada (`PriceListItem`)."),
-            ("Actor", ADMIN_SUB, "`sub` de `admin.test`, el usuario que originó la acción en el emisor."),
+            ("Actor", ADMIN_SUB, "`sub` de `admin.sio`, el usuario que originó la acción en el emisor."),
             ("Emisor", "audit-test-emitter", "Cuenta de servicio de pruebas; Audit fija `source_service` con su `client_id`."),
         ],
         "steps": [
@@ -212,7 +212,7 @@ EXERCISES = [
             {
                 "file": "02-listar-eventos-de-la-empresa.md",
                 "title": "Listar los eventos de la empresa",
-                "actor": "supervisor.test",
+                "actor": "admin.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/companies/{COMPANY}/audit-events",
@@ -225,7 +225,7 @@ EXERCISES = [
             {
                 "file": "03-filtrar-intentos-fallidos.md",
                 "title": "Filtrar los intentos fallidos",
-                "actor": "supervisor.test",
+                "actor": "admin.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/companies/{COMPANY}/audit-events?result=FAILURE&entity_type=PriceListItem",
@@ -235,7 +235,7 @@ EXERCISES = [
             {
                 "file": "04-consultar-un-evento.md",
                 "title": "Consultar un evento por `id`",
-                "actor": "supervisor.test",
+                "actor": "admin.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/companies/{COMPANY}/audit-events/<AUDIT_ID_CREACION>",
@@ -245,7 +245,7 @@ EXERCISES = [
             {
                 "file": "05-historial-de-la-entidad.md",
                 "title": "Historial del precio de lista",
-                "actor": "supervisor.test",
+                "actor": "admin.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/companies/{COMPANY}/entity-history/PriceListItem/{PRICE_ITEM}",
@@ -255,7 +255,7 @@ EXERCISES = [
             {
                 "file": "06-empresa-sin-membresia.md",
                 "title": "Consultar una empresa donde no es miembro",
-                "actor": "supervisor.test",
+                "actor": "admin.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/companies/{OTHER_COMPANY}/audit-events",
@@ -301,7 +301,7 @@ EXERCISES = [
             {
                 "file": "02-listar-eventos-de-plataforma.md",
                 "title": "Listar los eventos de plataforma",
-                "actor": "admin.test",
+                "actor": "admin.sio",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": "/api/v1/platform-audit-events",
@@ -311,7 +311,7 @@ EXERCISES = [
             {
                 "file": "03-historial-del-producto-global.md",
                 "title": "Historial del producto global",
-                "actor": "admin.test",
+                "actor": "admin.sio",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/platform-entity-history/GlobalProduct/{GLOBAL_PRODUCT}",
@@ -321,7 +321,7 @@ EXERCISES = [
             {
                 "file": "04-evento-de-plataforma-por-ruta-de-empresa.md",
                 "title": "Pedir el evento de plataforma por la ruta de empresa",
-                "actor": "supervisor.test",
+                "actor": "admin.dao",
                 "kind": CONSULTA,
                 "method": "GET",
                 "path": f"/api/v1/companies/{COMPANY}/audit-events/<AUDIT_ID_PLATAFORMA>",

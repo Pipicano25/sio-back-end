@@ -9,12 +9,12 @@ URL = "/api/v1/companies/{company}/company-product-presentations"
 
 
 def test_two_simultaneous_adoptions_of_the_same_presentation(app, user_token, as_user, company, fake_catalog):
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     product = adopt(admin, company, fake_catalog)
     presentation = str(global_presentation(fake_catalog, product))
     body = {"company_product_id": product["id"], "global_product_presentation_id": presentation}
 
-    results = race(app, user_token("admin.test"), [("POST", URL.format(company=company), body)] * 2)
+    results = race(app, user_token("admin.sio"), [("POST", URL.format(company=company), body)] * 2)
 
     assert sorted(response.status_code for response in results) == [201, 409], [r.text for r in results]
     conflict = next(response for response in results if response.status_code == 409)
@@ -26,14 +26,14 @@ def test_two_simultaneous_adoptions_of_the_same_presentation(app, user_token, as
 
 
 def test_two_simultaneous_default_marks_leave_exactly_one(app, user_token, as_user, company, fake_catalog):
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     product = adopt(admin, company, fake_catalog)
     first = adopt_presentation(admin, company, fake_catalog, product)
     second = adopt_presentation(admin, company, fake_catalog, product)
 
     results = race(
         app,
-        user_token("admin.test"),
+        user_token("admin.sio"),
         [
             ("PUT", f"/api/v1/company-product-presentations/{row['id']}", presentation_update_body(row, is_default_purchase=True))
             for row in (first, second)

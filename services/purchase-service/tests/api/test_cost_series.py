@@ -64,7 +64,7 @@ def test_first_receipt_writes_sequence_one_with_the_paid_line_total(buyer, world
 
 def test_cp05_series_is_per_company_across_branches(as_user, buyer, world, make_sequence, confirm, receive, test_engine) -> None:
     make_sequence()
-    admin = as_user("admin.test")  # miembro de las sucursales A y B
+    admin = as_user("admin.sio")  # miembro de las sucursales A y B
     first = _confirmed(buyer, world, confirm, _arroz(world))
     receive(first)
     make_sequence_b = admin.post(f"{base(world)}/purchase-sequences", json={
@@ -148,7 +148,7 @@ def test_cp64_first_receipt_after_deploy_uses_the_previous_received_line(buyer, 
     assert payload["previous_line_total"] == "285600.00" and payload["previous_quantity"] == "2.0000"
 
 
-def _receive_in_threads(test_client, user_token, world, purchases, username="admin.test"):
+def _receive_in_threads(test_client, user_token, world, purchases, username="admin.sio"):
     barrier = threading.Barrier(len(purchases))
     statuses = []
     lock = threading.Lock()
@@ -173,7 +173,7 @@ def _receive_in_threads(test_client, user_token, world, purchases, username="adm
 
 def test_cp46_simultaneous_receipts_get_consecutive_sequences(test_client, user_token, as_user, world, fakes, make_sequence, confirm, test_engine) -> None:
     make_sequence()
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     purchases = [_confirmed(admin, world, confirm, _arroz(world, "1", str(1000 + index))) for index in range(4)]
     fakes.inventory.availability.latency = 0.05
     assert _receive_in_threads(test_client, user_token, world, purchases) == [200] * 4
@@ -186,7 +186,7 @@ def test_cp46_simultaneous_receipts_get_consecutive_sequences(test_client, user_
 
 def test_cpt01_crossed_presentations_do_not_deadlock(test_client, user_token, as_user, world, fakes, make_sequence, confirm, test_engine) -> None:
     make_sequence()
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     first = _confirmed(admin, world, confirm, _arroz(world), line(world.product_2, "1", "1000"))
     second = _confirmed(admin, world, confirm, line(world.product_2, "2", "1000"), _arroz(world, "1", "1000"))
     assert _receive_in_threads(test_client, user_token, world, [first, second]) == [200, 200]

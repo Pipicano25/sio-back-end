@@ -816,10 +816,10 @@ Cuerpo (`ApplicationUserCreate`):
 
 ```json
 {
-  "username": "ventas.test",
+  "username": "operario.dao",
   "person_identity_id": "a0e1d2c3-b4a5-4968-8776-655443322110",
   "display_name": "Ana Pérez",
-  "reference_email": "ventas.test@ejemplo.test"
+  "reference_email": "operario.dao@ejemplo.test"
 }
 ```
 
@@ -830,10 +830,10 @@ curl -sS -X POST 'https://sio-operational-context-dev.onrender.com/api/v1/compan
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
-    "username": "ventas.test",
+    "username": "operario.dao",
     "person_identity_id": "a0e1d2c3-b4a5-4968-8776-655443322110",
     "display_name": "Ana Pérez",
-    "reference_email": "ventas.test@ejemplo.test"
+    "reference_email": "operario.dao@ejemplo.test"
   }'
 ```
 

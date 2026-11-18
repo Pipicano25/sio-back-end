@@ -124,7 +124,7 @@ def test_e07_reconcilers_running_and_check(docker, journal, container):
 
 
 def test_e08_seeds_loaded(clients):
-    admin = clients.user("admin.test")
+    admin = clients.user("admin.sio")
     references = reference.load(admin, "E-08")
     for item in (references.person_rule, references.organization_rule):
         assert item["number_pattern"], "Regla de identificación sin patrón (E-08)"
@@ -134,7 +134,7 @@ def test_e08_seeds_loaded(clients):
 
 def test_e09_operational_context_admin_api(clients, run_context, journal):
     """Registro de un usuario operativo en una empresa propia del preflight (Admin API de Keycloak)."""
-    admin = clients.user("admin.test")
+    admin = clients.user("admin.sio")
     references = reference.load(admin, "E-09-ref")
     label = run_context.label("PREFLIGHT SIO MVP")
     organization = None
@@ -186,7 +186,7 @@ def test_e09_operational_context_admin_api(clients, run_context, journal):
         f"/companies/{company.body['id']}/application-users",
         step_id="E-09",
         json_body={
-            "username": "ventas.test",
+            "username": "operario.dao",
             "person_identity_id": person,
             "display_name": run_context.label("Preflight consulta"),
         },

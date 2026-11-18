@@ -17,9 +17,9 @@ pytestmark = pytest.mark.e2e
 A_DATA = (
     "empresa_a", "sucursal_a1", "org_empresa_a", "compra_1", "venta_2", "cliente", "proveedor",
     "producto_empresa_a", "producto_empresa_b", "lista_general", "lista_mayorista", "item_general",
-    "usuario_admin", "usuario_compras", "usuario_ventas",
+    "usuario_admin", "usuario_operario",
 )
-B_DATA = ("empresa_b", "sucursal_b1", "org_empresa_b", "usuario_inventario")
+B_DATA = ("empresa_b", "sucursal_b1", "org_empresa_b", "usuario_admin_dao")
 
 
 def without_instance(body):
@@ -35,7 +35,7 @@ def leaked(world, journal, body, names) -> list[str]:
 
 
 def counts(world, clients, step_id: str) -> dict:
-    admin = clients.user("admin.test")
+    admin = clients.user("admin.sio")
     company = world["empresa_a"]
     result = {}
     for service, path in (("purchase", f"/companies/{company}/purchases"), ("sales", f"/companies/{company}/sales")):
@@ -85,8 +85,8 @@ def test_s07_cost_and_margin_only_with_profitability(world, journal):
     seller = world.run("V-06.vendedor").body
     supervisor = world.run("V-06.supervisor").body
     for field in ("unit_cost_snapshot", "cost_total", "cost_known", "gross_margin_amount", "gross_margin_percentage"):
-        assert field not in seller["lines"][0], f"S-07: ventas.test recibe {field}"
-        assert field in supervisor["lines"][0], f"S-07: supervisor.test no recibe {field}"
+        assert field not in seller["lines"][0], f"S-07: operario.dao recibe {field}"
+        assert field in supervisor["lines"][0], f"S-07: admin.sio no recibe {field}"
 
 
 @pytest.mark.items(21)

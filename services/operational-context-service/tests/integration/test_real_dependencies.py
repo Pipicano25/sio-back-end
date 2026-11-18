@@ -77,10 +77,10 @@ def client():
         try:
             token = http.post(TOKEN_URL, data={
                 "grant_type": "password", "client_id": "sio-web", "scope": "openid",
-                "username": "admin.test", "password": password,
+                "username": "admin.sio", "password": password,
             }).raise_for_status().json()["access_token"]
         except (httpx.HTTPError, KeyError):
-            pytest.skip("No fue posible obtener el token de admin.test en Keycloak.")
+            pytest.skip("No fue posible obtener el token de admin.sio en Keycloak.")
 
         http.headers["Authorization"] = f"Bearer {token}"
         yield http
@@ -247,7 +247,7 @@ def company_id(client, organization_id):
 
 def test_register_member_by_username_against_real_keycloak(client, company_id, person_id):
     response = client.post(f"{OPERATIONAL_CONTEXT}/api/v1/companies/{company_id}/application-users", json={
-        "username": "compras.test",
+        "username": "operario.dao",
         "person_identity_id": person_id,
         "display_name": f"Validación {RUN_ID} (dato ficticio)",
     })
@@ -255,7 +255,7 @@ def test_register_member_by_username_against_real_keycloak(client, company_id, p
     if response.status_code == 503 and response.json().get("dependency") == "keycloak":
         pytest.skip("Keycloak Admin no disponible: renderice e importe el realm con operational-context-service.")
     assert response.status_code == 201, response.text
-    assert response.json()["keycloak_user_id"] != "compras.test"  # se guarda el `sub`, no el username
+    assert response.json()["keycloak_user_id"] != "operario.dao"  # se guarda el `sub`, no el username
 
 
 def test_unknown_username_is_422_against_real_keycloak(client, company_id):
@@ -271,7 +271,7 @@ def test_unknown_username_is_422_against_real_keycloak(client, company_id):
 
 
 def test_technical_access_evaluates_real_roles(client, company_id):
-    """`admin.test` tiene `platform:lookup` por `perm:all:all:all`; se evalúan los roles de compras.test."""
+    """`admin.sio` tiene `platform:lookup` por `perm:all:all:all`; se evalúan los roles de operario.dao."""
     members = client.get(
         f"{OPERATIONAL_CONTEXT}/api/v1/companies/{company_id}/application-users",
     ).json()["items"]

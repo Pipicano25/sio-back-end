@@ -15,7 +15,7 @@ def base(company) -> str:
 
 @pytest.fixture
 def count(as_user, world):
-    response = as_user("inventario.test").post(base(world.company), json={"branch_id": str(world.branch)})
+    response = as_user("operario.dao").post(base(world.company), json={"branch_id": str(world.branch)})
     assert response.status_code == 201, response.text
     return response.json()
 
@@ -45,19 +45,19 @@ def test_users_without_permission_are_forbidden(as_user, world, count) -> None:
 
 
 def test_user_not_assigned_to_the_branch(as_user, world, fake_oc, count) -> None:
-    fake_oc.assign(user_sub("inventario.test"), world.branch, status="INACTIVE")
+    fake_oc.assign(user_sub("operario.dao"), world.branch, status="INACTIVE")
     for method, url, body in calls(world, count):
-        response = as_user("inventario.test").request(method, url, json=body)
+        response = as_user("operario.dao").request(method, url, json=body)
         assert (response.status_code, response.json()["code"]) == (403, "INVENTORY.BRANCH_ACCESS_DENIED"), url
 
 
 def test_non_member_gets_not_found(as_user, world, fake_oc, count) -> None:
-    fake_oc.add_member(user_sub("inventario.test"), world.company, status="INACTIVE")
+    fake_oc.add_member(user_sub("operario.dao"), world.company, status="INACTIVE")
     for method, url, body in calls(world, count):
-        assert as_user("inventario.test").request(method, url, json=body).status_code == 404, url
+        assert as_user("operario.dao").request(method, url, json=body).status_code == 404, url
 
 
 def test_count_of_another_company_is_not_found(as_user, world, count) -> None:
     other = f"{base(world.other_company)}/{count['id']}/start"
-    assert as_user("inventario.test").post(other, json={"version": 1}).status_code == 404
-    assert as_user("inventario.test").post(f"{base(world.company)}/{uuid4()}/start", json={"version": 1}).status_code == 404
+    assert as_user("operario.dao").post(other, json={"version": 1}).status_code == 404
+    assert as_user("operario.dao").post(f"{base(world.company)}/{uuid4()}/start", json={"version": 1}).status_code == 404

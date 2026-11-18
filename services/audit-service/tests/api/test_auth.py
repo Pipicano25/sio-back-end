@@ -28,7 +28,7 @@ def test_invalid_token_401(as_token, method: str, path: str, permission: str) ->
 def test_without_permission_403_does_not_reveal_it(
     as_user, method: str, path: str, permission: str
 ) -> None:
-    response = as_user("inventario.test").request(method, path, json={})
+    response = as_user("operario.dao").request(method, path, json={})
     assert response.status_code == 403
     assert response.json()["code"] == "AUDIT.FORBIDDEN"
     assert not any(marker in response.text for marker in NOT_REVEALED)

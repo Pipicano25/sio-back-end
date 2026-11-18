@@ -194,7 +194,7 @@ def test_product_appears_once_and_walk_has_no_duplicates(world, as_user) -> None
 def test_no_cost_fields(world, as_user) -> None:
     item = world.product("Arroz")
     world.stock(item, "3")
-    for user in ("vendedor.sintetico", "bodeguero.sintetico", "supervisor.test"):
+    for user in ("vendedor.sintetico", "bodeguero.sintetico", "admin.dao"):
         keys = keys_in(overviews(world, as_user(user)))
         assert not {key for key in keys if any(word in key for word in COST_WORDS)}
         assert "inventory_value" not in keys

@@ -100,7 +100,7 @@ def test_valuation_at_volume(as_user, operator, world, fake_oc, test_engine) -> 
         assert connection.execute(text("SELECT count(*) FROM inventory_cost_layers WHERE status = 'OPEN'")).scalar_one() >= 100_000
 
     # Valor de una sucursal (SC-007).
-    reader = as_user("inventario.test")
+    reader = as_user("operario.dao")
     durations = []
     for branch in branches[:SAMPLES]:
         started = time.perf_counter()
@@ -127,9 +127,9 @@ def test_valuation_at_volume(as_user, operator, world, fake_oc, test_engine) -> 
 
 
 def _count_branch(test_engine, fake_oc, company: UUID) -> UUID:
-    """Sucursal con 500 saldos de 10 unidades (una capa cada uno) asignada a `inventario.test`."""
+    """Sucursal con 500 saldos de 10 unidades (una capa cada uno) asignada a `operario.dao`."""
     branch = fake_oc.add_branch(company)
-    fake_oc.assign(user_sub("inventario.test"), branch)
+    fake_oc.assign(user_sub("operario.dao"), branch)
     with test_engine.begin() as connection:
         connection.execute(
             text(
@@ -153,7 +153,7 @@ def _count_branch(test_engine, fake_oc, company: UUID) -> UUID:
 
 def test_count_of_500_products_completes_within_five_seconds(as_user, world, fake_oc, test_engine) -> None:
     """SC-002: completar un conteo de 500 productos aplica todo o nada en < 5 s (p95)."""
-    clerk = as_user("inventario.test")
+    clerk = as_user("operario.dao")
     durations = []
     for _ in range(COUNT_SAMPLES):
         branch = _count_branch(test_engine, fake_oc, world.company)

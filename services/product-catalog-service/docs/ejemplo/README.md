@@ -36,7 +36,7 @@ vez que se usa algo. Pero cualquiera se puede ejecutar solo.
 Para saber en qué servicio va cada columna del Excel, vea [mapeo-campos-excel.md](mapeo-campos-excel.md).
 
 Para saber con qué usuario ejecutar cada URL, vea [usuarios-y-permisos.md](usuarios-y-permisos.md).
-Resumen: **`admin.test` puede hacer todos los ejercicios completos**; `supervisor.test` puede todo
+Resumen: **`admin.sio` puede hacer todos los ejercicios completos**; `admin.dao` puede todo
 menos inactivar (paso 12 del ejercicio 5); los demás usuarios de prueba solo pueden consultar.
 
 ## Antes de empezar
@@ -64,7 +64,7 @@ menos inactivar (paso 12 del ejercicio 5); los demás usuarios de prueba solo pu
    [usuarios-y-permisos.md](usuarios-y-permisos.md#cómo-obtener-el-token-de-cada-usuario). El usuario debe tener
    `perm:product-catalog:all:all`, lectura y creación de organizaciones en Party Identity
    (`perm:party-identity:organization_identities:read` y `:create`) y lectura de países en Geography
-   (`perm:geography:global_countries:read`). El usuario de pruebas `admin.test` ya los tiene.
+   (`perm:geography:global_countries:read`). El usuario de pruebas `admin.sio` ya los tiene.
    En los archivos de cada paso el encabezado se omite para acortar.
 
 4. **Fabricantes en Party Identity:** el paso 01 de cada ejercicio busca su fabricante (Siegfried,

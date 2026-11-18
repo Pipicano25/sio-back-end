@@ -64,7 +64,7 @@ def _timed(call):
 def reader():
     if shutil.which("docker") is None:
         pytest.skip("Docker no está disponible.")
-    with user_client("inventario.test") as client:
+    with user_client("operario.dao") as client:
         yield client
 
 

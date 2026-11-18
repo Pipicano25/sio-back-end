@@ -15,12 +15,12 @@ URL = "/api/v1/companies/{company}/supplier-products"
 
 
 def test_two_simultaneous_identical_relations(app, user_token, as_user, company, fake_catalog, fake_party):
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     product = adopt(admin, company, fake_catalog)
     provider = supplier(admin, company, fake_party)
     body = supplier_product_body(provider, product, fake_catalog)
 
-    results = race(app, user_token("admin.test"), [("POST", URL.format(company=company), body)] * 2)
+    results = race(app, user_token("admin.sio"), [("POST", URL.format(company=company), body)] * 2)
 
     assert sorted(response.status_code for response in results) == [201, 409], [r.text for r in results]
     conflict = next(response for response in results if response.status_code == 409)
@@ -28,7 +28,7 @@ def test_two_simultaneous_identical_relations(app, user_token, as_user, company,
 
 
 def test_two_simultaneous_preferred_marks_leave_exactly_one(app, user_token, as_user, company, fake_catalog, fake_party):
-    admin = as_user("admin.test")
+    admin = as_user("admin.sio")
     product = adopt(admin, company, fake_catalog)
     rows = [
         create_supplier_product(admin, company, supplier(admin, company, fake_party, internal_code=f"PRV-{i}"), product, fake_catalog)
@@ -37,7 +37,7 @@ def test_two_simultaneous_preferred_marks_leave_exactly_one(app, user_token, as_
 
     results = race(
         app,
-        user_token("admin.test"),
+        user_token("admin.sio"),
         [("PUT", f"/api/v1/supplier-products/{row['id']}", supplier_product_update_body(row, is_preferred=True)) for row in rows],
     )
 

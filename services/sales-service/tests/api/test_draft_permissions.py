@@ -24,15 +24,15 @@ def test_creating_with_lines_requires_detail_permission(make_token, as_token, wo
 
 
 def test_wildcard_does_not_replace_branch_assignment(as_user, world, fakes) -> None:
-    fakes.oc.assignments.discard((user_sub("supervisor.test"), world.branch))
-    response = as_user("supervisor.test").post(f"{base(world)}/sales", json=sale_body(world))
+    fakes.oc.assignments.discard((user_sub("admin.dao"), world.branch))
+    response = as_user("admin.dao").post(f"{base(world)}/sales", json=sale_body(world))
     assert response.status_code == 403
     assert response.json()["code"] == "SALES.BRANCH_ACCESS_DENIED"
 
 
 def test_non_member_gets_404(as_user, world, fakes) -> None:
-    fakes.oc.members.pop((user_sub("ventas.test"), world.company))
-    response = as_user("ventas.test").post(f"{base(world)}/sales", json=sale_body(world))
+    fakes.oc.members.pop((user_sub("operario.dao"), world.company))
+    response = as_user("operario.dao").post(f"{base(world)}/sales", json=sale_body(world))
     assert response.status_code == 404
     assert response.json()["code"] == "SALES.NOT_FOUND"
 
@@ -48,7 +48,7 @@ def test_seller_does_not_see_profitability(seller, world) -> None:
 
 
 def test_operational_context_denial(seller, world, fakes) -> None:
-    fakes.oc.access_forbidden.add(user_sub("ventas.test"))
+    fakes.oc.access_forbidden.add(user_sub("operario.dao"))
     response = seller.post(f"{base(world)}/sales", json=sale_body(world))
     assert response.status_code == 403
     assert response.json()["code"] == "SALES.OPERATIONAL_ACCESS_DENIED"
@@ -60,5 +60,5 @@ def test_access_uses_the_user_token(seller, world, fakes) -> None:
     seller.post(f"{base(world)}/sales", json=sale_body(world))
     authorization, kind, target = fakes.oc.access_calls[0]
     # Se compara el `sub` del token propagado (el JWT completo cambia con su `iat`): es el del usuario.
-    assert subject_of(authorization) == user_sub("ventas.test")
+    assert subject_of(authorization) == user_sub("operario.dao")
     assert kind == "branch" and target == world.branch

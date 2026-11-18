@@ -46,7 +46,7 @@ def test_coherent_service_account_is_technical():
         {"client_id": "x"},  # sin preferred_username
         {"client_id": "", "preferred_username": "service-account-"},
         {"azp": "x", "preferred_username": "service-account-x"},  # azp no sustituye a client_id
-        {"preferred_username": "admin.test", "sid": "s"},
+        {"preferred_username": "admin.sio", "sid": "s"},
     ],
 )
 def test_not_technical(claims):
@@ -65,7 +65,7 @@ def test_sid_does_not_change_the_result(sid):
 
 
 def test_human_with_all_all_all_has_no_exemption():
-    identity = _identity(["perm:all:all:all"], preferred_username="admin.test", sid="s")
+    identity = _identity(["perm:all:all:all"], preferred_username="admin.sio", sid="s")
     assert identity.technical_lookup is False
 
 

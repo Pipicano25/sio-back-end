@@ -125,8 +125,8 @@ def test_stale_version_and_invalid_effective_at(api, primary, fake_persons):
 
 def test_requires_create_and_delete(api_as, primary, make_member, fake_persons):
     company, current = primary
-    make_member(company["id"], "supervisor.test")
-    supervisor = api_as(*SUPERVISOR, sub="supervisor.test")
+    make_member(company["id"], "admin.dao")
+    supervisor = api_as(*SUPERVISOR, sub="admin.dao")
 
     response = _change(supervisor, company, current, fake_persons.add())
 

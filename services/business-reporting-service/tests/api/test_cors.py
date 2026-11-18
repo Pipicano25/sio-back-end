@@ -65,7 +65,7 @@ def authorized_get(fakes, user_token) -> tuple[str, str]:
     """Lectura que el usuario autorizado puede hacer sin datos previos: ruta y token."""
     return (
         f"/api/v1/companies/{fakes.company.id}/reports/purchases?date_from=2026-10-01&date_to=2026-10-18",
-        user_token("admin.test"),
+        user_token("admin.sio"),
     )
 
 

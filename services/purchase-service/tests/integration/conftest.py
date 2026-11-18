@@ -17,13 +17,13 @@ from tests.integration.support import (
 @pytest.fixture(scope="session")
 def admin():
     require_services()
-    with user_client("admin.test") as client:
+    with user_client("admin.sio") as client:
         yield client
 
 
 @pytest.fixture(scope="session")
 def buyer():
-    with user_client("compras.test") as client:
+    with user_client("operario.dao") as client:
         yield client
 
 

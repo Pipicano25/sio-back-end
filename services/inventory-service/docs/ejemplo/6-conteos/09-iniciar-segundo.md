@@ -6,7 +6,7 @@ Ejercicio 6: Conteos físicos.
 
 `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-counts/<CONTEO_2>/start`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `operario.dao`.
 
 ### Solicitud
 
@@ -28,11 +28,9 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `—` | tiene `perm:all:all:all`; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
-| `ventas.test` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
-| `inventario.test` | Sí | `200` | tiene `perm:inventory:counts:create` |
+| `admin.sio` | Sí | `—` | tiene `perm:all:all:all`; no se repite (cambiaría el estado) |
+| `admin.dao` | Sí | `—` | tiene `perm:inventory:counts:create`; no se repite (cambiaría el estado) |
+| `operario.dao` | Sí | `200` | tiene `perm:inventory:counts:create` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -58,7 +56,7 @@ Estado `200`.
   "company_id": "d44a0000-0000-4000-8000-000000000001",
   "branch_id": "d44b0000-0000-4000-8000-000000000001",
   "status": "IN_PROGRESS",
-  "started_by_user_id": "d44c0000-0000-4000-8000-000000000105",
+  "started_by_user_id": "d44c0000-0000-4000-8000-000000000103",
   "started_at": "<asignado por Inventory>",
   "completed_by_user_id": null,
   "completed_at": null,
@@ -69,9 +67,9 @@ Estado `200`.
   "observations": null,
   "version": 2,
   "created_at": "<asignado por Inventory>",
-  "created_by": "inventario.test",
+  "created_by": "operario.dao",
   "updated_at": "<asignado por Inventory>",
-  "updated_by": "inventario.test",
+  "updated_by": "operario.dao",
   "details": [],
   "adjustments": []
 }

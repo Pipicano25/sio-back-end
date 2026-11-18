@@ -134,7 +134,7 @@ def _token(make_token, user):
 
 @pytest.fixture
 def api(test_client, make_token):
-    admin = next(user for user in USERS if user["username"] == "admin.test")
+    admin = next(user for user in USERS if user["username"] == "admin.sio")
     return ApiClient(test_client, _token(make_token, admin))
 
 
@@ -194,7 +194,7 @@ def test_exercise_runs_and_matches_documentation(api, test_client, make_token, p
 
     for record in records:
         if "access" in record:
-            assert record["access"]["admin.test"], "admin.test debe poder ejecutar todo el ejercicio."
+            assert record["access"]["admin.sio"], "admin.sio debe poder ejecutar todo el ejercicio."
 
     _check_documents(render_exercise(exercise, ctx, records))
 

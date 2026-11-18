@@ -2,13 +2,13 @@
 
 [← Todos los ejercicios](../README.md)
 
-**Qué enseña:** Establecer el **primer** representante `PRIMARY` con `set-primary`, ver el `409` al registrar otro `PRIMARY` por el alta ordinaria, **sustituirlo** con `set-primary` (cierra el anterior y crea el nuevo), registrar un suplente con su **referencia documental** y cerrarlo. Es un dato sensible: `compras.test` recibe `403`.
+**Qué enseña:** Establecer el **primer** representante `PRIMARY` con `set-primary`, ver el `409` al registrar otro `PRIMARY` por el alta ordinaria, **sustituirlo** con `set-primary` (cierra el anterior y crea el nuevo), registrar un suplente con su **referencia documental** y cerrarlo. Es un dato sensible: `operario.dao` recibe `403`.
 
 **Datos:** **ficticios** — detalle y decisiones en [00-datos-ficticios.md](00-datos-ficticios.md).
 
 Antes de empezar revise los [requisitos comunes](../README.md#antes-de-empezar).
 
-**Usuarios:** ejecútelo con `admin.test`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
+**Usuarios:** ejecútelo con `admin.sio`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
 
 ## Orden de ejecución
 

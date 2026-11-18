@@ -78,7 +78,7 @@ def test_100_lines_under_one_second_with_at_most_three_queries(test_engine, app,
     products = _load(test_engine, company)
     lines = [{"company_product_id": str(product["id"]), "company_product_presentation_id": str(product["presentation"])}
              for product in products[4_950:5_050]]
-    client = as_user("ventas.test")
+    client = as_user("operario.dao")
     url = f"/api/v1/companies/{company}/applicable-prices/resolve"
     body = {"lines": lines, "at": "2026-10-05T12:00:00Z"}
 

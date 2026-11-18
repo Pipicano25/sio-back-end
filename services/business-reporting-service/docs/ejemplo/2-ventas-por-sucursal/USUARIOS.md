@@ -6,8 +6,6 @@ Permiso: `perm:business-reporting:sales_by_branch:read`.
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` y los permisos de lectura del propietario |
-| `supervisor.test` | Sí | `200` | tiene `perm:business-reporting:sales_by_branch:read` y los permisos de lectura del propietario |
-| `compras.test` | No | `403` | no tiene `perm:business-reporting:sales_by_branch:read` |
-| `ventas.test` | No | `403` | no tiene `perm:business-reporting:sales_by_branch:read` |
-| `inventario.test` | No | `403` | no tiene `perm:business-reporting:sales_by_branch:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` y los permisos de lectura del propietario |
+| `admin.dao` | Sí | `200` | tiene `perm:business-reporting:sales_by_branch:read` y los permisos de lectura del propietario |
+| `operario.dao` | No | `403` | no tiene `perm:business-reporting:sales_by_branch:read` |

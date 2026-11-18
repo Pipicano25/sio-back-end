@@ -110,7 +110,7 @@ def test_stock_block_only_with_stock_permission_and_without_minimums_for_ventas(
     hidden = by_id(overviews(world, as_token(make_token(*without_stock))))[item.id]
     assert "stock" not in hidden
 
-    with_minimums = by_id(overviews(world, as_user("supervisor.test")))[item.id]
+    with_minimums = by_id(overviews(world, as_user("admin.dao")))[item.id]
     branch = next(b for b in with_minimums["stock"]["branches"] if b["branch_id"] == str(world.branches[0]))
     assert (branch["minimum_stock"], branch["minimum_state"]) == ("10.0000", "BELOW_MINIMUM")
 
@@ -186,7 +186,7 @@ def test_any_dependency_failure_during_enrichment_is_503(world, as_user) -> None
 def test_no_cost_fields_in_the_response(world, as_user) -> None:
     item = world.product("Arroz")
     world.stock(item, "3")
-    for user in ("vendedor.sintetico", "bodeguero.sintetico", "supervisor.test"):
+    for user in ("vendedor.sintetico", "bodeguero.sintetico", "admin.dao"):
         keys = keys_in(overviews(world, as_user(user)))
         assert not {key for key in keys if any(word in key for word in COST_WORDS)}
         assert "inventory_value" not in keys

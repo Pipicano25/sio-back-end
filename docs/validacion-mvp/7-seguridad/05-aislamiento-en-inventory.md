@@ -4,9 +4,9 @@ Ejercicio 7 — Seguridad entre empresas y permisos · [Orden del ejercicio](ORD
 
 ---
 
-## 1. inventario.test consulta los saldos de A1
+## 1. admin.dao consulta los saldos de A1
 
-Paso `I-05.saldos` · usuario **`inventario.test`** · ítems de la FASE 10: 21
+Paso `I-05.saldos` · usuario **`admin.dao`** · ítems de la FASE 10: 21
 
 ```http
 GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/balances
@@ -14,7 +14,7 @@ GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/ba
 
 **Permiso que exige la URL:** `perm:inventory:balances:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:inventory:balances:read`), `ventas.test` (por `perm:inventory:balances:read`), `supervisor.test` (por `perm:inventory:balances:read`), `inventario.test` (por `perm:inventory:balances:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:inventory:balances:read`), `operario.dao` (por `perm:inventory:balances:read`)
 
 **Por qué se hace así**
 
@@ -22,9 +22,9 @@ GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/ba
 
 **Respuesta esperada:** `404`
 
-## 2. inventario.test consulta el kardex del producto A en A1
+## 2. admin.dao consulta el kardex del producto A en A1
 
-Paso `I-05.kardex` · usuario **`inventario.test`** · ítems de la FASE 10: 21
+Paso `I-05.kardex` · usuario **`admin.dao`** · ítems de la FASE 10: 21
 
 ```http
 GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/kardex/<PRODUCTO_EMPRESA_A>
@@ -32,7 +32,7 @@ GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/ka
 
 **Permiso que exige la URL:** `perm:inventory:movements:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:inventory:movements:read`), `ventas.test` (por `perm:inventory:movements:read`), `supervisor.test` (por `perm:inventory:movements:read`), `inventario.test` (por `perm:inventory:movements:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:inventory:movements:read`), `operario.dao` (por `perm:inventory:movements:read`)
 
 **Por qué se hace así**
 
@@ -40,9 +40,9 @@ GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/ka
 
 **Respuesta esperada:** `404`
 
-## 3. inventario.test consulta la valoración de A1
+## 3. admin.dao consulta la valoración de A1
 
-Paso `I-05.valoracion` · usuario **`inventario.test`** · ítems de la FASE 10: 21
+Paso `I-05.valoracion` · usuario **`admin.dao`** · ítems de la FASE 10: 21
 
 ```http
 GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/valuation
@@ -50,7 +50,7 @@ GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/va
 
 **Permiso que exige la URL:** `perm:inventory:valuation:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:inventory:valuation:read`), `ventas.test` (por `perm:inventory:valuation:read`), `supervisor.test` (por `perm:inventory:valuation:read`), `inventario.test` (por `perm:inventory:valuation:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:inventory:valuation:read`), `operario.dao` (por `perm:inventory:valuation:read`)
 
 **Por qué se hace así**
 
@@ -58,9 +58,9 @@ GET http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/branches/<SUCURSAL_A1>/va
 
 **Respuesta esperada:** `404`
 
-## 4. inventario.test intenta un ajuste en A1
+## 4. admin.dao intenta un ajuste en A1
 
-Paso `I-05.ajuste` · usuario **`inventario.test`** · ítems de la FASE 10: 21
+Paso `I-05.ajuste` · usuario **`admin.dao`** · ítems de la FASE 10: 21
 
 ```http
 POST http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/inventory-adjustments
@@ -79,7 +79,7 @@ POST http://127.0.0.1:8109/api/v1/companies/<EMPRESA_A>/inventory-adjustments
 
 **Permiso que exige la URL:** `perm:inventory:adjustments:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:inventory:adjustments:create`), `ventas.test` (por `perm:inventory:adjustments:create`), `supervisor.test` (por `perm:inventory:adjustments:create`), `inventario.test` (por `perm:inventory:adjustments:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:inventory:adjustments:create`), `operario.dao` (por `perm:inventory:adjustments:create`)
 
 **Por qué se hace así**
 

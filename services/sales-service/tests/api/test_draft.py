@@ -26,8 +26,8 @@ def test_create_draft_with_resolved_prices(seller, world, fakes, clock) -> None:
     sale = response.json()
     assert sale["status"] == "DRAFT" and sale["number"] is None and sale["inventory_operation_id"] is None
     assert sale["version"] == 1 and sale["currency_code"] == "COP"
-    assert sale["created_by"] == user_sub("ventas.test")
-    assert sale["created_by_user_id"] == str(fakes.oc.members[(user_sub("ventas.test"), world.company)])
+    assert sale["created_by"] == user_sub("operario.dao")
+    assert sale["created_by_user_id"] == str(fakes.oc.members[(user_sub("operario.dao"), world.company)])
     # DP-01: solo contado; fecha de negocio = hoy en la zona de la sucursal (R-12).
     assert sale["customer_payment_condition_id"] is None
     assert (sale["payment_condition_code_snapshot"], sale["payment_terms_days_snapshot"]) == ("CASH", 0)
@@ -55,13 +55,13 @@ def test_create_draft_with_resolved_prices(seller, world, fakes, clock) -> None:
     assert (sale["subtotal"], sale["discount_total"], sale["tax_total"], sale["total"]) == (
         "61250.00", "0.00", "0.00", "61250.00",
     )
-    # ventas.test no tiene read-profitability: los campos se omiten (no se envían como null).
+    # operario.dao no tiene read-profitability: los campos se omiten (no se envían como null).
     assert "has_unknown_cost" not in sale
     assert not any(name in item for item in sale["lines"] for name in PROFITABILITY)
 
 
 def test_supervisor_sees_profitability_fields_empty_in_draft(supervisor, world, fakes) -> None:
-    fakes.oc.add_member(user_sub("supervisor.test"), world.company, branches=(world.branch,))
+    fakes.oc.add_member(user_sub("admin.dao"), world.company, branches=(world.branch,))
     response = supervisor.post(f"{base(world)}/sales", json=sale_body(world, line(world.product)))
     assert response.status_code == 201, response.text
     sale = response.json()

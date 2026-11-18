@@ -81,7 +81,7 @@ def save(path: Path, variables: dict[str, Any]) -> None:
 
 def _protect_identities(runner: Runner) -> None:
     """Registra en el diario los números de identificación del mundo (leídos de Party Identity)."""
-    admin = runner.clients.user("admin.test")
+    admin = runner.clients.user("admin.sio")
     for name in (org for org, _ in catalogue.ORGANIZATIONS):
         identity = runner.vars.get(f"org_{name}")
         if identity:

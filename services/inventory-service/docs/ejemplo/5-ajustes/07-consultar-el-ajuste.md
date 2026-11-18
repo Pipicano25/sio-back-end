@@ -6,7 +6,7 @@ Ejercicio 5: Ajustes de inventario.
 
 `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments/<AJUSTE>`
 
-Ejecuta: `inventario.test`.
+Ejecuta: `operario.dao`.
 
 ### Por qué
 
@@ -20,11 +20,9 @@ Además, el usuario debe ser miembro `ACTIVE` de la empresa y tener `perm:operat
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `200` | tiene `perm:all:all:all` |
-| `supervisor.test` | Sí | `200` | tiene `perm:inventory:adjustments:read` |
-| `compras.test` | Sí | `200` | tiene `perm:inventory:adjustments:read` |
-| `ventas.test` | Sí | `200` | tiene `perm:inventory:adjustments:read` |
-| `inventario.test` | Sí | `200` | tiene `perm:inventory:adjustments:read` |
+| `admin.sio` | Sí | `200` | tiene `perm:all:all:all` |
+| `admin.dao` | Sí | `200` | tiene `perm:inventory:adjustments:read` |
+| `operario.dao` | Sí | `200` | tiene `perm:inventory:adjustments:read` |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -60,9 +58,9 @@ Estado `200`.
   "unit_cost": "2500.5000",
   "adjustment_value": "7501.50",
   "inventory_count_id": null,
-  "application_user_id": "d44c0000-0000-4000-8000-000000000105",
+  "application_user_id": "d44c0000-0000-4000-8000-000000000103",
   "created_at": "<asignado por Inventory>",
-  "created_by": "inventario.test",
+  "created_by": "operario.dao",
   "movement": {
     "id": "<asignado por Inventory>",
     "line_index": 0,

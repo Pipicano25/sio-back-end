@@ -15,11 +15,9 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 
 | Usuario | Grupo | Registrar y confirmar | Anular | Secuencias | Consultar | Ve rentabilidad |
 | --- | --- | --- | --- | --- | --- | --- |
-| `admin.test` | `superadmin` | Sí | Sí | Sí | Sí | Sí |
-| `supervisor.test` | `admin` | Sí | Sí | Sí | Sí | Sí |
-| `compras.test` | `empleado` | Sí | Sí | Sí | Sí | No |
-| `ventas.test` | `empleado` | Sí | Sí | Sí | Sí | No |
-| `inventario.test` | `empleado` | Sí | Sí | Sí | Sí | No |
+| `admin.sio` | `superadmin` | Sí | Sí | Sí | Sí | Sí |
+| `admin.dao` | `admin` | Sí | Sí | Sí | Sí | Sí |
+| `operario.dao` | `empleado` | Sí | Sí | Sí | Sí | No |
 
 Las escrituras requieren además la asignación a la sucursal.
 
@@ -30,7 +28,7 @@ Usuarios (contraseña en la variable `KEYCLOAK_TEST_USER_PASSWORD`, nunca en est
 ```bash
 curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=ventas.test -d password="$KEYCLOAK_TEST_USER_PASSWORD"
+  -d username=operario.dao -d password="$KEYCLOAK_TEST_USER_PASSWORD"
 ```
 
 ## Matriz de URL

@@ -67,4 +67,4 @@ def admin_member_company(admin: httpx.Client) -> UUID:
     for membership in body["memberships"]:
         if membership["status"] == "ACTIVE" and membership["company_status"] == "ACTIVE":
             return UUID(membership["company_id"])
-    pytest.skip("admin.test no tiene membresías ACTIVE en Operational Context.")
+    pytest.skip("admin.sio no tiene membresías ACTIVE en Operational Context.")

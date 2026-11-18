@@ -39,9 +39,9 @@ def new_count(clerk, world) -> dict:
 
 
 def test_two_simultaneous_starts_in_the_same_branch(app, as_user, user_token, world) -> None:
-    clerk = as_user("inventario.test")
+    clerk = as_user("operario.dao")
     counts = [new_count(clerk, world) for _ in range(6)]
-    token = user_token("inventario.test")
+    token = user_token("operario.dao")
     results = send_all(app, [("POST", f"{base(world)}/{c['id']}/start", {"version": 1}, token) for c in counts])
     statuses = [status for status, _ in results]
     assert statuses.count(200) == 1
@@ -49,14 +49,14 @@ def test_two_simultaneous_starts_in_the_same_branch(app, as_user, user_token, wo
 
 
 def test_complete_and_cancel_at_the_same_time(app, as_user, operator, user_token, world, test_engine) -> None:
-    clerk = as_user("inventario.test")
+    clerk = as_user("operario.dao")
     product = world.products[0]
     assert operator.post(ENTRIES, json=operation_body(world, line(product, "10", unit_cost="5"))).status_code == 201
     for _ in range(5):
         count = new_count(clerk, world)
         started = clerk.post(f"{base(world)}/{count['id']}/start", json={"version": 1}).json()
         clerk.request("PUT", f"{base(world)}/{count['id']}/details/{product}", json={"counted_quantity": "9"})
-        token = user_token("inventario.test")
+        token = user_token("operario.dao")
         results = send_all(
             app,
             [
@@ -74,7 +74,7 @@ def test_complete_and_cancel_at_the_same_time(app, as_user, operator, user_token
 
 
 def test_completion_concurrent_with_outputs_is_all_or_nothing(app, as_user, operator, service_token, user_token, world, test_engine) -> None:
-    clerk = as_user("inventario.test")
+    clerk = as_user("operario.dao")
     a, b, c = world.products
     body = operation_body(world, *[line(p, "20", unit_cost=str(i + 1)) for i, p in enumerate((a, b, c))])
     assert operator.post(ENTRIES, json=body).status_code == 201
@@ -89,7 +89,7 @@ def test_completion_concurrent_with_outputs_is_all_or_nothing(app, as_user, oper
         ("POST", OUTPUTS, operation_body(world, *[line(p, "1") for p in order], origin_type="SALE"), sales_token)
         for order in ([a, b, c], [c, b, a], [b, a, c], [c, a, b]) * 3
     ]
-    requests.insert(6, ("POST", f"{base(world)}/{count['id']}/complete", {"completion_key": str(uuid4()), "version": started["version"]}, user_token("inventario.test")))
+    requests.insert(6, ("POST", f"{base(world)}/{count['id']}/complete", {"completion_key": str(uuid4()), "version": started["version"]}, user_token("operario.dao")))
     results = send_all(app, requests, workers=13)
     statuses = [status for status, _ in results]
     assert 500 not in statuses and 503 not in statuses
@@ -106,7 +106,7 @@ def test_completion_concurrent_with_outputs_is_all_or_nothing(app, as_user, oper
 
 
 def test_failure_during_completion_leaves_nothing(as_user, operator, world, test_engine, monkeypatch) -> None:
-    clerk = as_user("inventario.test")
+    clerk = as_user("operario.dao")
     a, b, _ = world.products
     assert operator.post(ENTRIES, json=operation_body(world, line(a, "10", unit_cost="2"), line(b, "10", unit_cost="3"))).status_code == 201
     count = new_count(clerk, world)

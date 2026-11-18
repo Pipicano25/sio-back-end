@@ -8,15 +8,15 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-crear-el-borrador.md](01-crear-el-borrador.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `201` |
-| 2 | [02-agregar-una-linea.md](02-agregar-una-linea.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `compras.test` | `201` |
-| 3 | [03-version-vieja.md](03-version-vieja.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `compras.test` | `409` |
-| 4 | [04-producto-sin-control-de-inventario.md](04-producto-sin-control-de-inventario.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `compras.test` | `409` |
-| 5 | [05-proveedor-inexistente.md](05-proveedor-inexistente.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `422` |
-| 6 | [05a-compra-a-credito.md](05a-compra-a-credito.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `409` |
-| 7 | [05b-linea-sin-presentacion.md](05b-linea-sin-presentacion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `422` |
-| 8 | [05c-costo-cero.md](05c-costo-cero.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `422` |
-| 9 | [06-consultar-el-borrador.md](06-consultar-el-borrador.md) | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>` | `compras.test` | `200` |
+| 1 | [01-crear-el-borrador.md](01-crear-el-borrador.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `201` |
+| 2 | [02-agregar-una-linea.md](02-agregar-una-linea.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `operario.dao` | `201` |
+| 3 | [03-version-vieja.md](03-version-vieja.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `operario.dao` | `409` |
+| 4 | [04-producto-sin-control-de-inventario.md](04-producto-sin-control-de-inventario.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>/details` | `operario.dao` | `409` |
+| 5 | [05-proveedor-inexistente.md](05-proveedor-inexistente.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `422` |
+| 6 | [05a-compra-a-credito.md](05a-compra-a-credito.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `409` |
+| 7 | [05b-linea-sin-presentacion.md](05b-linea-sin-presentacion.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `422` |
+| 8 | [05c-costo-cero.md](05c-costo-cero.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `422` |
+| 9 | [06-consultar-el-borrador.md](06-consultar-el-borrador.md) | `GET /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<COMPRA>` | `operario.dao` | `200` |
 
 ## Por qué este orden
 

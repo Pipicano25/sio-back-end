@@ -20,11 +20,9 @@ Todos comparten la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD` (`in
 
 | Usuario | Grupo | Permisos del grupo | En el catálogo puede |
 | --- | --- | --- | --- |
-| `admin.test` | `superadmin` | `perm:all:all:all` | Todo, incluido inactivar |
-| `supervisor.test` | `admin` | 49 permisos explícitos; en el catálogo: `perm:commercial-relationship:all:create`<br>`perm:commercial-relationship:all:delete`<br>`perm:commercial-relationship:all:read`<br>`perm:commercial-relationship:all:update`<br>`perm:geography:all:create`<br>`perm:geography:all:read`<br>`perm:geography:all:update`<br>`perm:operational-context:all:create`<br>`perm:operational-context:all:delete`<br>`perm:operational-context:all:read`<br>`perm:operational-context:all:update`<br>`perm:party-identity:all:create`<br>`perm:party-identity:all:read`<br>`perm:party-identity:all:update`<br>`perm:payment-reference:all:create`<br>`perm:payment-reference:all:read`<br>`perm:payment-reference:all:update`<br>`perm:product-catalog:all:create`<br>`perm:product-catalog:all:read`<br>`perm:product-catalog:all:update`<br>`perm:product-catalog:first-use:register-manual`<br>`perm:purchase:all:all`<br>`perm:sales:all:all` | Consultar, crear y modificar. **No** inactivar ni eliminar |
-| `compras.test` | `empleado` | 80 permisos explícitos; en el catálogo: `perm:geography:all:read`<br>`perm:operational-context:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:sales:all:create`<br>`perm:sales:all:delete`<br>`perm:sales:all:read`<br>`perm:sales:all:update` | Solo consultar |
-| `ventas.test` | `empleado` | 80 permisos explícitos; en el catálogo: `perm:geography:all:read`<br>`perm:operational-context:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:sales:all:create`<br>`perm:sales:all:delete`<br>`perm:sales:all:read`<br>`perm:sales:all:update` | Solo consultar |
-| `inventario.test` | `empleado` | 80 permisos explícitos; en el catálogo: `perm:geography:all:read`<br>`perm:operational-context:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:sales:all:create`<br>`perm:sales:all:delete`<br>`perm:sales:all:read`<br>`perm:sales:all:update` | Solo consultar |
+| `admin.sio` | `superadmin` | `perm:all:all:all` | Todo, incluido inactivar |
+| `admin.dao` | `admin` | 49 permisos explícitos; en el catálogo: `perm:commercial-relationship:all:create`<br>`perm:commercial-relationship:all:delete`<br>`perm:commercial-relationship:all:read`<br>`perm:commercial-relationship:all:update`<br>`perm:geography:all:create`<br>`perm:geography:all:read`<br>`perm:geography:all:update`<br>`perm:operational-context:all:create`<br>`perm:operational-context:all:delete`<br>`perm:operational-context:all:read`<br>`perm:operational-context:all:update`<br>`perm:party-identity:all:create`<br>`perm:party-identity:all:read`<br>`perm:party-identity:all:update`<br>`perm:payment-reference:all:create`<br>`perm:payment-reference:all:read`<br>`perm:payment-reference:all:update`<br>`perm:product-catalog:all:create`<br>`perm:product-catalog:all:read`<br>`perm:product-catalog:all:update`<br>`perm:product-catalog:first-use:register-manual`<br>`perm:purchase:all:all`<br>`perm:sales:all:all` | Consultar, crear y modificar. **No** inactivar ni eliminar |
+| `operario.dao` | `empleado` | 80 permisos explícitos; en el catálogo: `perm:geography:all:read`<br>`perm:operational-context:all:read`<br>`perm:payment-reference:all:read`<br>`perm:product-catalog:all:read`<br>`perm:sales:all:create`<br>`perm:sales:all:delete`<br>`perm:sales:all:read`<br>`perm:sales:all:update` | Solo consultar |
 
 ## Cómo obtener el token de cada usuario
 
@@ -33,7 +31,7 @@ Cambie `username` por el usuario que quiera probar:
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=ventas.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
+  -d username=operario.dao -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
   | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 ```
 
@@ -41,7 +39,7 @@ En **PowerShell** (Windows), donde `curl` no es el curl real:
 
 ```powershell
 $body = @{ grant_type = 'password'; client_id = 'sio-web'; scope = 'openid'
-           username = 'ventas.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }
+           username = 'operario.dao'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }
 $TOKEN = (Invoke-RestMethod -Method Post -Uri 'http://localhost:8081/realms/sio/protocol/openid-connect/token' -Body $body).access_token
 Invoke-RestMethod -Uri 'http://localhost:8003/api/v1/units-of-measure?code=UND' `
   -Headers @{ Authorization = "Bearer $TOKEN" }
@@ -55,50 +53,50 @@ Luego envíe el token en cada llamada:
 Authorization: Bearer <TOKEN>
 ```
 
-Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python services/get_token.py ventas)`) obtiene el token de `<rol>.test`; sin argumento muestra un menú. Lee la contraseña de `KEYCLOAK_TEST_USER_PASSWORD` o de `infrastructure/.env`.
+Atajo: `python services/get_token.py` (menú) obtiene el token de un usuario de prueba. Lee la contraseña de `KEYCLOAK_TEST_USER_PASSWORD` o de `infrastructure/.env`.
 
 ## Permiso de cada URL de los ejercicios
 
 ✅ = puede · ❌ = recibe `403`. Columna *Ejercicios*: en cuáles se usa la URL.
 
-| Método y URL | Permiso requerido | admin | supervisor | compras | ventas | inventario | Ejercicios |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `GET /api/v1/units-of-measure` | `perm:product-catalog:units-of-measure:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
-| `GET /api/v1/packaging-types` | `perm:product-catalog:packaging-types:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
-| `GET /api/v1/group-types` | `perm:product-catalog:group-types:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
-| `GET http://localhost:8002/organization-identities` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
-| `GET http://localhost:8000/global-countries` | `perm:geography:global_countries:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
-| `POST http://localhost:8002/organization-identities` | `perm:party-identity:organization_identities:create` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
-| `POST /api/v1/units-of-measure` | `perm:product-catalog:units-of-measure:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 4 |
-| `POST /api/v1/brands` | `perm:product-catalog:brands:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 5 |
-| `POST /api/v1/categories` | `perm:product-catalog:categories:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 4, 5 |
-| `POST /api/v1/attribute-definitions` | `perm:product-catalog:attribute-definitions:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 4, 5 |
-| `POST /api/v1/attribute-definitions/{id}/options` | `perm:product-catalog:attribute-definitions:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 3, 5 |
-| `POST /api/v1/categories/{id}/attributes` | `perm:product-catalog:categories:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 4, 5 |
-| `POST /api/v1/products` | `perm:product-catalog:products:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 4, 5 |
-| `POST /api/v1/products/{id}/categories` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 4, 5 |
-| `GET /api/v1/products/{id}/applicable-attributes` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
-| `GET /api/v1/products/{id}/completeness` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1 |
-| `PUT /api/v1/products/{id}/attribute-values/{id}` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 4, 5 |
-| `POST /api/v1/products/{id}/presentations` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 4, 5 |
-| `POST /api/v1/products/{id}/identifiers` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 4, 5 |
-| `GET /api/v1/group-types/{id}/groups` | `perm:product-catalog:group-types:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
-| `POST /api/v1/group-types/{id}/groups` | `perm:product-catalog:group-types:create` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 4, 5 |
-| `POST /api/v1/products/{id}/group-assignments` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 1, 2, 3, 4, 5 |
-| `GET /api/v1/products/{id}` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 5 |
-| `GET /api/v1/products/by-identifier/{codigo}` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 4 |
-| `GET /api/v1/products` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
-| `GET /api/v1/products/{id}/identifiers` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 5 |
-| `POST /api/v1/products/{id}/presentations/{id}/assets/upload` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 5 |
-| `GET /api/v1/products/{id}/presentations/{id}/assets` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 5 |
-| `POST /api/v1/products/{id}/presentations/{id}/assets/{id}/deactivate` | `perm:product-catalog:products:deactivate` | ✅ | ❌ | ❌ | ❌ | ❌ | 5 |
-| `POST /api/v1/products/{id}/presentations/{id}/assets/{id}/reactivate` | `perm:product-catalog:products:deactivate` | ✅ | ❌ | ❌ | ❌ | ❌ | 5 |
-| `POST /api/v1/products/{id}/presentations/{id}/assets/{id}/set-primary` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 5 |
-| `POST /api/v1/products/{id}/assets` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | ❌ | ❌ | 5 |
-| `POST /api/v1/products/{id}/deactivate` | `perm:product-catalog:products:deactivate` | ✅ | ❌ | ❌ | ❌ | ❌ | 5 |
-| `POST /api/v1/products/summaries/batch-lookup` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 5 |
-| `POST /api/v1/presentations/batch-lookup` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 5 |
-| `POST /api/v1/products/match` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | ✅ | ✅ | 5 |
+| Método y URL | Permiso requerido | admin.sio | admin.dao | operario.dao | Ejercicios |
+| --- | --- | --- | --- | --- | --- |
+| `GET /api/v1/units-of-measure` | `perm:product-catalog:units-of-measure:read` | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
+| `GET /api/v1/packaging-types` | `perm:product-catalog:packaging-types:read` | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
+| `GET /api/v1/group-types` | `perm:product-catalog:group-types:read` | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
+| `GET http://localhost:8002/organization-identities` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
+| `GET http://localhost:8000/global-countries` | `perm:geography:global_countries:read` | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
+| `POST http://localhost:8002/organization-identities` | `perm:party-identity:organization_identities:create` | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
+| `POST /api/v1/units-of-measure` | `perm:product-catalog:units-of-measure:create` | ✅ | ✅ | ❌ | 1, 4 |
+| `POST /api/v1/brands` | `perm:product-catalog:brands:create` | ✅ | ✅ | ❌ | 1, 2, 3, 5 |
+| `POST /api/v1/categories` | `perm:product-catalog:categories:create` | ✅ | ✅ | ❌ | 1, 2, 3, 4, 5 |
+| `POST /api/v1/attribute-definitions` | `perm:product-catalog:attribute-definitions:create` | ✅ | ✅ | ❌ | 1, 2, 3, 4, 5 |
+| `POST /api/v1/attribute-definitions/{id}/options` | `perm:product-catalog:attribute-definitions:update` | ✅ | ✅ | ❌ | 1, 3, 5 |
+| `POST /api/v1/categories/{id}/attributes` | `perm:product-catalog:categories:update` | ✅ | ✅ | ❌ | 1, 2, 3, 4, 5 |
+| `POST /api/v1/products` | `perm:product-catalog:products:create` | ✅ | ✅ | ❌ | 1, 2, 3, 4, 5 |
+| `POST /api/v1/products/{id}/categories` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | 1, 2, 3, 4, 5 |
+| `GET /api/v1/products/{id}/applicable-attributes` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 1 |
+| `GET /api/v1/products/{id}/completeness` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 1 |
+| `PUT /api/v1/products/{id}/attribute-values/{id}` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | 1, 2, 3, 4, 5 |
+| `POST /api/v1/products/{id}/presentations` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | 1, 2, 3, 4, 5 |
+| `POST /api/v1/products/{id}/identifiers` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | 1, 2, 3, 4, 5 |
+| `GET /api/v1/group-types/{id}/groups` | `perm:product-catalog:group-types:read` | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
+| `POST /api/v1/group-types/{id}/groups` | `perm:product-catalog:group-types:create` | ✅ | ✅ | ❌ | 1, 2, 3, 4, 5 |
+| `POST /api/v1/products/{id}/group-assignments` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | 1, 2, 3, 4, 5 |
+| `GET /api/v1/products/{id}` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 1, 2, 3, 5 |
+| `GET /api/v1/products/by-identifier/{codigo}` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 1, 2, 4 |
+| `GET /api/v1/products` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 1, 2, 3, 4, 5 |
+| `GET /api/v1/products/{id}/identifiers` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 5 |
+| `POST /api/v1/products/{id}/presentations/{id}/assets/upload` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | 5 |
+| `GET /api/v1/products/{id}/presentations/{id}/assets` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 5 |
+| `POST /api/v1/products/{id}/presentations/{id}/assets/{id}/deactivate` | `perm:product-catalog:products:deactivate` | ✅ | ❌ | ❌ | 5 |
+| `POST /api/v1/products/{id}/presentations/{id}/assets/{id}/reactivate` | `perm:product-catalog:products:deactivate` | ✅ | ❌ | ❌ | 5 |
+| `POST /api/v1/products/{id}/presentations/{id}/assets/{id}/set-primary` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | 5 |
+| `POST /api/v1/products/{id}/assets` | `perm:product-catalog:products:update` | ✅ | ✅ | ❌ | 5 |
+| `POST /api/v1/products/{id}/deactivate` | `perm:product-catalog:products:deactivate` | ✅ | ❌ | ❌ | 5 |
+| `POST /api/v1/products/summaries/batch-lookup` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 5 |
+| `POST /api/v1/presentations/batch-lookup` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 5 |
+| `POST /api/v1/products/match` | `perm:product-catalog:products:read` | ✅ | ✅ | ✅ | 5 |
 
 ## Permisos que no son obvios
 
@@ -113,7 +111,7 @@ Atajo: `python services/get_token.py <rol>` (por ejemplo `TOKEN=$(python service
 
 | Para… | Usuario |
 | --- | --- |
-| Hacer los ejercicios completos | `admin.test` |
-| Cargar productos sin poder inactivarlos | `supervisor.test` (Admin; falla en el paso de inactivar del ejercicio 5) |
-| Verificar lo cargado (pasos de consulta y verificación) | `ventas.test`, `compras.test` o `inventario.test` (Empleado) |
-| Probar rechazos por falta de permiso | `ventas.test` en cualquier `POST` o `PUT`; `supervisor.test` al inactivar |
+| Hacer los ejercicios completos | `admin.sio` |
+| Cargar productos sin poder inactivarlos | `admin.dao` (Admin; falla en el paso de inactivar del ejercicio 5) |
+| Verificar lo cargado (pasos de consulta y verificación) | `operario.dao` (Empleado) |
+| Probar rechazos por falta de permiso | `operario.dao` en cualquier `POST` o `PUT`; `admin.dao` al inactivar |

@@ -6,7 +6,7 @@ Ejercicio 2 — Relación comercial y precios: proveedor, cliente, productos, ad
 
 ## 1. Adoptar el producto A en la empresa A
 
-Paso `C-11.producto_a` · usuario **`admin.test`** · ítems de la FASE 10: 6, 8
+Paso `C-11.producto_a` · usuario **`admin.sio`** · ítems de la FASE 10: 6, 8
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
@@ -24,7 +24,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_products:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -38,7 +38,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
 
 ## 2. Adoptar el producto B en la empresa A
 
-Paso `C-11.producto_b` · usuario **`admin.test`** · ítems de la FASE 10: 6, 8
+Paso `C-11.producto_b` · usuario **`admin.sio`** · ítems de la FASE 10: 6, 8
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
@@ -56,7 +56,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_products:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -70,7 +70,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products
 
 ## 3. Adoptar la presentación base (unidad) del producto A
 
-Paso `C-11.base_a` · usuario **`admin.test`** · ítems de la FASE 10: 7
+Paso `C-11.base_a` · usuario **`admin.sio`** · ítems de la FASE 10: 7
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presentations
@@ -86,7 +86,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presenta
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_product_presentations:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -100,7 +100,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presenta
 
 ## 4. Adoptar la presentación base (unidad) del producto B
 
-Paso `C-11.base_b` · usuario **`admin.test`** · ítems de la FASE 10: 7
+Paso `C-11.base_b` · usuario **`admin.sio`** · ítems de la FASE 10: 7
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presentations
@@ -116,7 +116,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presenta
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_product_presentations:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -130,7 +130,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presenta
 
 ## 5. Adoptar la presentación "Caja × 12" del producto A
 
-Paso `C-11.caja_a` · usuario **`admin.test`** · ítems de la FASE 10: 7
+Paso `C-11.caja_a` · usuario **`admin.sio`** · ítems de la FASE 10: 7
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presentations
@@ -146,7 +146,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-product-presenta
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_product_presentations:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 

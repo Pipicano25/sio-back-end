@@ -6,7 +6,7 @@ Ejercicio 1 — Configuración de la empresa: organizaciones, personas, empresas
 
 ## 1. Registrar la empresa A
 
-Paso `C-03.a` · usuario **`admin.test`** · ítems de la FASE 10: 1
+Paso `C-03.a` · usuario **`admin.sio`** · ítems de la FASE 10: 1
 
 ```http
 POST http://127.0.0.1:8104/api/v1/companies
@@ -20,7 +20,7 @@ POST http://127.0.0.1:8104/api/v1/companies
 
 **Permiso que exige la URL:** `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
 
 **Por qué se hace así**
 
@@ -34,7 +34,7 @@ POST http://127.0.0.1:8104/api/v1/companies
 
 ## 2. Registrar la empresa B
 
-Paso `C-03.b` · usuario **`admin.test`** · ítems de la FASE 10: 1
+Paso `C-03.b` · usuario **`admin.sio`** · ítems de la FASE 10: 1
 
 ```http
 POST http://127.0.0.1:8104/api/v1/companies
@@ -48,7 +48,7 @@ POST http://127.0.0.1:8104/api/v1/companies
 
 **Permiso que exige la URL:** `perm:operational-context:companies:create` + `perm:operational-context:platform:administer`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
 
 **Por qué se hace así**
 

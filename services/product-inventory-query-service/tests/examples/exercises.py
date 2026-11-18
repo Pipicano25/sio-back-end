@@ -143,7 +143,7 @@ EXERCISES = [
             "imagen sobre esos candidatos), en páginas de 2 con cursor, con una presentación sin precio."
         ),
         steps=[
-            step("01-primera-pagina.md", "Primera página con imagen", "ventas.test",
+            step("01-primera-pagina.md", "Primera página con imagen", "operario.dao",
                  f"{BASE}/product-overviews?search=Colgate&has_image=true&page_size=2", 200,
                  ["`search` lo evalúa Commercial Relationship y `has_image` Product Catalog, antes de elegir la página.",
                   "De los 4 «Colgate», 3 tienen imagen: la primera página trae 2, en orden `display_name:asc`, y "
@@ -154,15 +154,15 @@ EXERCISES = [
                   "producto tenga imagen (la «Caja x 12» del paso 2).",
                   "`image_url` es la URL directa que construye Product Catalog: se usa sin token en `<img src>`.",
                   "Sin `include_images`, las presentaciones no traen `images`.",
-                  "`ventas.test` (grupo `empleado`) ve precios, existencias y mínimos."],
+                  "`operario.dao` (grupo `empleado`) ve precios, existencias y mínimos."],
                  save={"CURSOR": "next_cursor"}),
-            step("02-segunda-pagina.md", "Página siguiente con el cursor", "ventas.test",
+            step("02-segunda-pagina.md", "Página siguiente con el cursor", "operario.dao",
                  f"{BASE}/product-overviews?search=Colgate&has_image=true&page_size=2&cursor=<CURSOR>", 200,
                  ["El cursor continúa después del último producto entregado: ninguno se repite.",
                   "La «Caja x 12» no tiene precio en la lista: `unit_price = null` con `resolution = NO_PRICE_IN_LIST`; "
                   "nunca se usa el precio de otra lista ni se inventa.",
                   "Es la última página: `has_next = false` y `next_cursor = null`."]),
-            step("03-todas-las-imagenes.md", "Todas las imágenes de cada presentación", "ventas.test",
+            step("03-todas-las-imagenes.md", "Todas las imágenes de cada presentación", "operario.dao",
                  f"{BASE}/product-overviews?search=Colgate&has_image=true&page_size=2&include_images=true", 200,
                  ["`include_images=true` agrega `presentations[].images` con todas las imágenes `ACTIVE` de la "
                   "presentación, la principal primero; una presentación sin imágenes trae `images = []`.",
@@ -180,20 +180,20 @@ EXERCISES = [
             "`422`."
         ),
         steps=[
-            step("01-primera-pagina.md", "Primera página de «Colgate»", "ventas.test",
+            step("01-primera-pagina.md", "Primera página de «Colgate»", "operario.dao",
                  f"{BASE}/product-overviews?search=Colgate&page_size=2", 200,
                  ["Primera página de 2; se guarda el cursor."], save={"CURSOR": "next_cursor"}),
-            step("02-cambio-de-busqueda.md", "Otra búsqueda con el cursor anterior", "ventas.test",
+            step("02-cambio-de-busqueda.md", "Otra búsqueda con el cursor anterior", "operario.dao",
                  f"{BASE}/product-overviews?search=Abrilar&page_size=2&cursor=<CURSOR>", 200,
                  ["La huella de los filtros cambió: primera página de «Abrilar» con `pagination_reset = true` y "
                   "`FILTERS_CHANGED`."]),
-            step("03-cambio-de-tamano.md", "Otro tamaño de página", "ventas.test",
+            step("03-cambio-de-tamano.md", "Otro tamaño de página", "operario.dao",
                  f"{BASE}/product-overviews?search=Colgate&page_size=3&cursor=<CURSOR>", 200,
                  ["`PAGE_SIZE_CHANGED`: primera página de 3."]),
-            step("04-cambio-de-orden.md", "Otro orden", "ventas.test",
+            step("04-cambio-de-orden.md", "Otro orden", "operario.dao",
                  f"{BASE}/product-overviews?search=Colgate&page_size=2&sort=internal_code:desc&cursor=<CURSOR>", 200,
                  ["`SORT_CHANGED`: primera página en el orden pedido, informado en `sort_applied`."]),
-            step("05-cursor-alterado.md", "Cursor alterado", "ventas.test",
+            step("05-cursor-alterado.md", "Cursor alterado", "operario.dao",
                  f"{BASE}/product-overviews?search=Colgate&page_size=2&cursor=v1.eyJ9.firma-alterada", 422,
                  ["La firma no corresponde: `INVALID_CURSOR`, sin resultados y sin decir qué falló."]),
         ],
@@ -207,16 +207,16 @@ EXERCISES = [
             "equivalencias por presentación y diferencia entre saldo cero y sin registro."
         ),
         steps=[
-            step("01-consolidado.md", "Consolidado de la empresa", "inventario.test",
+            step("01-consolidado.md", "Consolidado de la empresa", "operario.dao",
                  f"{BASE}/inventory-overviews?search=Loratadina", 200,
                  ["Sin `branch_id` el alcance es `COMPANY`: las tres sucursales activas.",
                   "120 tabletas con la «Caja x 10» son 12 cajas y resto 0: la existencia no se repite por presentación.",
                   "NORTE tiene un saldo registrado en 0 (`REGISTERED`); SUR nunca tuvo saldo (`NOT_REGISTERED`).",
-                  "`inventario.test` ve los mínimos: PPAL está bajo su mínimo de 150."]),
-            step("02-sucursal-no-asignada.md", "Sucursal sin asignación del usuario", "inventario.test",
+                  "`operario.dao` ve los mínimos: PPAL está bajo su mínimo de 150."]),
+            step("02-sucursal-no-asignada.md", "Sucursal sin asignación del usuario", "operario.dao",
                  f"{BASE}/inventory-overviews?search=Loratadina&branch_id={NORTE}", 200,
                  ["Con membresía `ACTIVE` y permiso de lectura se consulta cualquier sucursal de la empresa (A-08)."]),
-            step("03-sucursal-de-otra-empresa.md", "Sucursal de otra empresa", "inventario.test",
+            step("03-sucursal-de-otra-empresa.md", "Sucursal de otra empresa", "operario.dao",
                  f"{BASE}/inventory-overviews?branch_id={OTHER_BRANCH}", 404,
                  ["La sucursal no es de la empresa de la ruta: `404`, igual que una empresa sin membresía."]),
         ],
@@ -230,12 +230,12 @@ EXERCISES = [
             "al menor. Igual al mínimo, mínimo 0 y sin política no aparecen."
         ),
         steps=[
-            step("01-todas-las-sucursales.md", "Bajo mínimo en la empresa", "inventario.test",
+            step("01-todas-las-sucursales.md", "Bajo mínimo en la empresa", "operario.dao",
                  f"{BASE}/low-stock-products", 200, requires=(STOCK, MINIMUMS), why=
                  ["Loratadina en PPAL (120 < 150, faltante 30) y Acetaminofén en NORTE (3 < 5, faltante 2).",
                   "Acetaminofén en PPAL está en su mínimo (5 = 5) e Ibuprofeno tiene mínimo 0: no aparecen.",
                   "Orden predeterminado `shortfall:desc`."]),
-            step("02-una-sucursal.md", "Bajo mínimo en una sucursal", "inventario.test",
+            step("02-una-sucursal.md", "Bajo mínimo en una sucursal", "operario.dao",
                  f"{BASE}/low-stock-products?branch_id={NORTE}", 200, ["Solo los pares de NORTE."],
                  requires=(STOCK, MINIMUMS)),
         ],
@@ -250,17 +250,17 @@ EXERCISES = [
             "económica (fuera del alcance de la spec 022)."
         ),
         steps=[
-            step("01-resumen-de-la-empresa.md", "Resumen de la empresa", "inventario.test",
+            step("01-resumen-de-la-empresa.md", "Resumen de la empresa", "operario.dao",
                  f"{BASE}/inventory-summary", 200,
                  ["`adopted_products` cuenta los productos `ACTIVE` con control de inventario (8): excluye el "
                   "servicio (sin control) y el producto inactivo.",
                   "Inventory cuenta por saldo: el servicio y el producto inactivo tienen saldo y sí cuentan con saldo "
                   "positivo; un producto sin registro de saldo no cuenta en ningún indicador.",
                   "Ningún indicador se calcula restando datos de Commercial Relationship e Inventory."]),
-            step("02-resumen-de-una-sucursal.md", "Resumen de una sucursal", "supervisor.test",
+            step("02-resumen-de-una-sucursal.md", "Resumen de una sucursal", "admin.dao",
                  f"{BASE}/inventory-summary?branch_id={NORTE}", 200,
                  ["Solo NORTE; `adopted_products` sigue siendo de la empresa.",
-                  "Tampoco `supervisor.test` recibe valoración ni costos: el servicio no los devuelve a nadie."]),
+                  "Tampoco `admin.dao` recibe valoración ni costos: el servicio no los devuelve a nadie."]),
         ],
     ),
     dict(
@@ -273,16 +273,16 @@ EXERCISES = [
             "bloques (lo verifican las pruebas automáticas del servicio con identidades sintéticas)."
         ),
         steps=[
-            step("01-empleado-ve-todos-los-bloques.md", "Productos como empleado", "ventas.test",
+            step("01-empleado-ve-todos-los-bloques.md", "Productos como empleado", "operario.dao",
                  f"{BASE}/product-overviews?search=Loratadina", 200,
-                 ["`ventas.test` (grupo `empleado`) tiene `perm:commercial-relationship:price_list_items:read`, "
+                 ["`operario.dao` (grupo `empleado`) tiene `perm:commercial-relationship:price_list_items:read`, "
                   "`perm:inventory:balances:read` y `perm:inventory:product-policies:read`: ve `price`, existencias, "
                   "`minimum_stock` y `minimum_state`."]),
-            step("02-admin-ve-todos-los-bloques.md", "Productos como Admin", "supervisor.test",
+            step("02-admin-ve-todos-los-bloques.md", "Productos como Admin", "admin.dao",
                  f"{BASE}/product-overviews?search=Loratadina", 200,
-                 ["`supervisor.test` (grupo `admin`) ve los mismos bloques; tampoco recibe costos ni valoración: el "
+                 ["`admin.dao` (grupo `admin`) ve los mismos bloques; tampoco recibe costos ni valoración: el "
                   "servicio no los devuelve a nadie."]),
-            step("03-filtro-de-minimos.md", "Filtro de mínimos", "ventas.test",
+            step("03-filtro-de-minimos.md", "Filtro de mínimos", "operario.dao",
                  f"{BASE}/inventory-overviews?minimum_state=BELOW_MINIMUM", 200,
                  ["`minimum_state` depende del bloque de mínimos: exige además `perm:inventory:product-policies:read`, "
                   "que tienen los tres grupos. Sin ese permiso la respuesta sería `403` sin revelar el permiso."],

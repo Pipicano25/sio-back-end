@@ -4,9 +4,9 @@ Ejercicio 4 — Ventas con precio por presentación (lista indicada y predetermi
 
 ---
 
-## 1. Consultar la venta V2 como vendedor (sin costo ni margen)
+## 1. Consultar la venta V2 como Empleado (sin costo ni margen)
 
-Paso `V-06.vendedor` · usuario **`ventas.test`** · ítems de la FASE 10: 16
+Paso `V-06.vendedor` · usuario **`operario.dao`** · ítems de la FASE 10: 16
 
 ```http
 GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_2>
@@ -14,13 +14,13 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_2>
 
 **Permiso que exige la URL:** `perm:sales:sales:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `compras.test` (por `perm:sales:all:read`), `ventas.test` (por `perm:sales:all:read`), `supervisor.test` (por `perm:sales:all:all`), `inventario.test` (por `perm:sales:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`), `operario.dao` (por `perm:sales:all:read`)
 
 **Respuesta esperada:** `200` — Sin `unit_cost_snapshot`, `cost_total`, `cost_known`, `gross_margin_amount` ni `gross_margin_percentage`
 
-## 2. Consultar la venta V2 como supervisor (con costo y margen)
+## 2. Consultar la venta V2 como SuperAdmin (con costo y margen)
 
-Paso `V-06.supervisor` · usuario **`supervisor.test`** · ítems de la FASE 10: 16
+Paso `V-06.supervisor` · usuario **`admin.sio`** · ítems de la FASE 10: 16
 
 ```http
 GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_2>
@@ -28,6 +28,6 @@ GET http://127.0.0.1:8108/api/v1/companies/<EMPRESA_A>/sales/<VENTA_2>
 
 **Permiso que exige la URL:** `perm:sales:sales:read` + `perm:sales:sales:read-profitability`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:sales:all:all`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:sales:all:all`)
 
 **Respuesta esperada:** `200` — `cost_total` = `21600.00`, `gross_margin_amount` = `8400.00`

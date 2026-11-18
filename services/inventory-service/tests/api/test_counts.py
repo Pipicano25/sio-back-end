@@ -40,7 +40,7 @@ def events(test_engine) -> list[dict]:
 
 @pytest.fixture
 def clerk(as_user):
-    return as_user("inventario.test")
+    return as_user("operario.dao")
 
 
 @pytest.fixture
@@ -81,9 +81,9 @@ def test_lifecycle_and_completion_apply_one_operation(clerk, world, fake_oc, sto
     """Historia 2 escenarios 1, 2 y 4."""
     a, b, c = stocked
     count = create(clerk, world)
-    operator_user = str(world.operator_user(fake_oc, "inventario.test"))
+    operator_user = str(world.operator_user(fake_oc, "operario.dao"))
     assert (count["status"], count["version"], count["started_by_user_id"]) == ("DRAFT", 1, operator_user)
-    assert count["created_by"] == user_sub("inventario.test")
+    assert count["created_by"] == user_sub("operario.dao")
 
     count = start(clerk, world, count)
     assert (count["status"], count["version"]) == ("IN_PROGRESS", 2)

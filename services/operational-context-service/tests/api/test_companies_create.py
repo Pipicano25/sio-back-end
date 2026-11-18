@@ -184,8 +184,8 @@ def test_unknown_fields_are_422(api, fake_organizations, unknown_field):
 
 
 def test_create_requires_platform_scope(api_as, fake_organizations, caplog):
-    """FR-043 (Fase B): `supervisor.test` tiene `companies:create`, pero no `platform:administer`."""
-    supervisor = api_as("perm:all:all:read", "perm:all:all:create", "perm:all:all:update", sub="supervisor.test")
+    """FR-043 (Fase B): `admin.dao` tiene `companies:create`, pero no `platform:administer`."""
+    supervisor = api_as("perm:all:all:read", "perm:all:all:create", "perm:all:all:update", sub="admin.dao")
 
     with caplog.at_level(logging.WARNING, logger=LOGGER_NAME):
         response = supervisor.post(URL, json=company_payload(fake_organizations.add()))

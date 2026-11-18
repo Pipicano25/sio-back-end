@@ -41,7 +41,7 @@ def _walk(client, company, limit: int, **body) -> list[str]:
 
 
 def test_response_has_no_totals_and_carries_position(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog, internal_code="A1", display_name="Alfa")
 
     page = _search(client, company)
@@ -57,7 +57,7 @@ def test_response_has_no_totals_and_carries_position(as_user, company, fake_cata
 
 
 def test_filters_status_default_active_and_flags(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     active = adopt(client, company, fake_catalog, internal_code="A", display_name="Activo")
     inactive = adopt(client, company, fake_catalog, internal_code="I", display_name="Inactivo")
     untracked = adopt(client, company, fake_catalog, internal_code="U", display_name="Sin control", inventory_control_enabled=False)
@@ -70,7 +70,7 @@ def test_filters_status_default_active_and_flags(as_user, company, fake_catalog)
 
 
 def test_search_covers_name_codes_and_presentation_sku_without_duplicates(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     by_name = adopt(client, company, fake_catalog, internal_code="000045", display_name="Crema Colgate 100 ml")
     by_reference = adopt(client, company, fake_catalog, internal_code="000046", display_name="Otro", reference_code="REF-COL")
     by_sku = adopt(client, company, fake_catalog, internal_code="000047", display_name="Cepillo")
@@ -85,7 +85,7 @@ def test_search_covers_name_codes_and_presentation_sku_without_duplicates(as_use
 
 
 def test_internal_code_and_sku_are_exact(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     target = adopt(client, company, fake_catalog, internal_code="ABC-1", display_name="Uno")
     adopt(client, company, fake_catalog, internal_code="ABC-10", display_name="Diez")
     adopt_presentation(client, company, fake_catalog, target, sku="77SKU")
@@ -96,7 +96,7 @@ def test_internal_code_and_sku_are_exact(as_user, company, fake_catalog) -> None
 
 
 def test_keyset_walk_with_ties_has_no_gaps_or_duplicates(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     created = [
         adopt(client, company, fake_catalog, internal_code=f"T{index:02d}", display_name=name)
         for index, name in enumerate(["Beta", "Alfa", "Beta", "Beta", "Gamma", "Alfa", "Delta"])
@@ -111,7 +111,7 @@ def test_keyset_walk_with_ties_has_no_gaps_or_duplicates(as_user, company, fake_
 
 
 def test_sort_by_internal_code_and_created_at(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     created = [adopt(client, company, fake_catalog, internal_code=code, display_name="Igual") for code in ("C", "A", "B")]
 
     by_code = _walk(client, company, 1, sort={"key": "internal_code", "direction": "asc"})
@@ -122,7 +122,7 @@ def test_sort_by_internal_code_and_created_at(as_user, company, fake_catalog) ->
 
 
 def test_evaluator_mode_with_company_or_global_ids(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     a = adopt(client, company, fake_catalog, internal_code="EA", display_name="Alfa")
     b = adopt(client, company, fake_catalog, internal_code="EB", display_name="Beta", is_sellable=False)
     adopt(client, company, fake_catalog, internal_code="EC", display_name="Gamma")
@@ -134,7 +134,7 @@ def test_evaluator_mode_with_company_or_global_ids(as_user, company, fake_catalo
 
 
 def test_validation_errors(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     url = URL.format(company=company)
     ids = [str(uuid4())]
     cases = [
@@ -155,13 +155,13 @@ def test_validation_errors(as_user, company, fake_catalog) -> None:
 
 
 def test_other_company_is_404_and_permission_is_required(as_user, as_token, make_token, company, other_company) -> None:
-    assert as_user("admin.test").post(URL.format(company=other_company), json={"limit": 5}).status_code == 404
+    assert as_user("admin.sio").post(URL.format(company=other_company), json={"limit": 5}).status_code == 404
     assert as_user("sin-permisos.test").post(URL.format(company=company), json={"limit": 5}).status_code == 403
     assert as_token(None).post(URL.format(company=company), json={"limit": 5}).status_code == 401
 
 
 def test_technical_identity_with_platform_lookup(as_user, as_token, service_token, company, fake_catalog) -> None:
-    product = adopt(as_user("admin.test"), company, fake_catalog, internal_code="TEC", display_name="Técnico")
+    product = adopt(as_user("admin.sio"), company, fake_catalog, internal_code="TEC", display_name="Técnico")
     technical = as_token(service_token(READ, LOOKUP, client_id="product-inventory-query-service"))
     response = technical.post(URL.format(company=company), json={"limit": 5})
     assert response.status_code == 200, response.text
@@ -173,7 +173,7 @@ def test_technical_identity_with_platform_lookup(as_user, as_token, service_toke
 
 
 def test_listing_get_is_unchanged(as_user, company, fake_catalog) -> None:
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     adopt(client, company, fake_catalog, internal_code="L1", display_name="Uno")
     page = client.get(f"/api/v1/companies/{company}/company-products").json()
     assert set(page) == {"items", "page", "page_size", "total_records", "total_pages"}

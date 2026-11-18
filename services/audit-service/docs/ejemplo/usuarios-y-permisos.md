@@ -14,11 +14,9 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 
 | Usuario | Grupo | Lectura de empresa | Lectura de plataforma | Registro |
 | --- | --- | --- | --- | --- |
-| `admin.test` | `superadmin` | Sí | Sí | No (no es cuenta de servicio) |
-| `supervisor.test` | `admin` | Sí | No | No (no es cuenta de servicio) |
-| `compras.test` | `empleado` | No | No | No (no es cuenta de servicio) |
-| `ventas.test` | `empleado` | No | No | No (no es cuenta de servicio) |
-| `inventario.test` | `empleado` | No | No | No (no es cuenta de servicio) |
+| `admin.sio` | `superadmin` | Sí | Sí | No (no es cuenta de servicio) |
+| `admin.dao` | `admin` | Sí | No | No (no es cuenta de servicio) |
+| `operario.dao` | `empleado` | No | No | No (no es cuenta de servicio) |
 | `audit-test-emitter` | cuenta de servicio | No | No | Sí (`perm:audit:audit-events:create`) |
 
 ## Cómo obtener los tokens
@@ -28,7 +26,7 @@ Usuarios (contraseña en la variable `KEYCLOAK_TEST_USER_PASSWORD`, nunca en est
 ```bash
 curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=supervisor.test -d password="$KEYCLOAK_TEST_USER_PASSWORD"
+  -d username=admin.dao -d password="$KEYCLOAK_TEST_USER_PASSWORD"
 ```
 
 Cuenta de servicio de pruebas (secreto en `AUDIT_TEST_EMITTER_CLIENT_SECRET`):

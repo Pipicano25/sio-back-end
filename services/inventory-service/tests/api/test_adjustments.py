@@ -58,7 +58,7 @@ def stocked(operator, world):
 
 @pytest.fixture
 def clerk(as_user):
-    return as_user("inventario.test")
+    return as_user("operario.dao")
 
 
 def test_negative_adjustment_consumes_fifo_and_is_recorded(clerk, world, fake_oc, stocked, test_engine) -> None:
@@ -73,8 +73,8 @@ def test_negative_adjustment_consumes_fifo_and_is_recorded(clerk, world, fake_oc
         "7.0000",
     )
     assert (data["unit_cost"], data["adjustment_value"]) == ("1000.0000", "3000.00")
-    assert data["application_user_id"] == str(world.operator_user(fake_oc, "inventario.test"))
-    assert data["created_by"] == user_sub("inventario.test")
+    assert data["application_user_id"] == str(world.operator_user(fake_oc, "operario.dao"))
+    assert data["created_by"] == user_sub("operario.dao")
     assert data["reason"] == "Producto dañado en bodega"
     assert data["inventory_count_id"] is None
     movement = data["movement"]
@@ -92,7 +92,7 @@ def test_negative_adjustment_consumes_fifo_and_is_recorded(clerk, world, fake_oc
     assert (operation.operation_type, operation.origin_type, operation.requested_by_client) == (
         "ADJUSTMENT",
         "ADJUSTMENT",
-        user_sub("inventario.test"),
+        user_sub("operario.dao"),
     )
     assert tuple(consumption) == ("CONSUME", D("3"))
 
@@ -227,7 +227,7 @@ def test_idempotency_by_adjustment_key(clerk, as_user, world, fake_oc, fake_cr, 
     # La clave queda ligada al usuario (`sub`): otro usuario autorizado con la misma solicitud → 409.
     fake_oc.fail_if_called = False
     fake_cr.fail_if_called = False
-    other_user = as_user("supervisor.test").post(url(world), json=body)
+    other_user = as_user("admin.dao").post(url(world), json=body)
     assert other_user.status_code == 409
     assert count_rows(test_engine, "inventory_adjustments") == 1
 
@@ -244,7 +244,7 @@ def test_one_audit_event_per_applied_adjustment(clerk, world, fake_oc, stocked, 
     event = payloads[0]
     assert (event["entity_type"], event["entity_id"]) == ("InventoryAdjustment", response.json()["id"])
     assert (event["company_id"], event["branch_id"]) == (str(world.company), str(world.branch))
-    assert event["application_user_id"] == str(world.operator_user(fake_oc, "inventario.test"))
+    assert event["application_user_id"] == str(world.operator_user(fake_oc, "operario.dao"))
     assert event["reason"] == "Producto dañado en bodega"
     values = event["new_values"]
     assert (values["adjustment_type"], values["quantity"], values["unit_cost"], values["adjustment_value"]) == (

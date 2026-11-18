@@ -18,7 +18,7 @@ LOOKUP = "perm:commercial-relationship:platform:lookup"
 
 @pytest.fixture
 def policy(as_user, company):
-    supervisor = as_user("supervisor.test")
+    supervisor = as_user("admin.dao")
     public = create_price_list(supervisor, company)
     response = supervisor.post(
         LIST_URL.format(company=company, price_list=public["id"]),
@@ -44,7 +44,7 @@ def _calls(company, public, policy):
     ]
 
 
-@pytest.mark.parametrize("username", ["ventas.test", "compras.test", "inventario.test"])
+@pytest.mark.parametrize("username", ["operario.dao"])
 def test_non_supervisors_are_forbidden_without_revealing_the_permission(as_user, company, policy, username) -> None:
     client = as_user(username)
     public, created = policy
@@ -66,8 +66,8 @@ def test_other_company_is_isolated(as_user, other_company, fake_oc) -> None:
     """Una política de otra empresa no existe para quien no es miembro de ella (`404`)."""
     from tests.conftest import user_sub
 
-    admin = as_user("admin.test")
-    fake_oc.add_member(user_sub("admin.test"), other_company)
+    admin = as_user("admin.sio")
+    fake_oc.add_member(user_sub("admin.sio"), other_company)
     foreign_list = create_price_list(admin, other_company)
     created = admin.post(
         LIST_URL.format(company=other_company, price_list=foreign_list["id"]),
@@ -75,6 +75,6 @@ def test_other_company_is_isolated(as_user, other_company, fake_oc) -> None:
     )
     assert created.status_code == 201, created.text
 
-    supervisor = as_user("supervisor.test")  # miembro de `company`, no de `other_company`
+    supervisor = as_user("admin.dao")  # miembro de `company`, no de `other_company`
     assert supervisor.get(URL.format(id=created.json()["id"])).status_code == 404
     assert supervisor.get(LIST_URL.format(company=other_company, price_list=foreign_list["id"])).status_code == 404

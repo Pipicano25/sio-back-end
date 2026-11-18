@@ -42,7 +42,7 @@ SECOND = ("30000.00", "10.0000")  # 3.000 por unidad
 
 @pytest.fixture
 def supervisor(as_user):
-    return as_user("supervisor.test")
+    return as_user("admin.dao")
 
 
 @pytest.fixture
@@ -228,7 +228,7 @@ def test_cpt09_two_workers_do_not_duplicate(supervisor, client, company, fake_ca
 def test_cp06_receipts_of_another_company_never_take_part(supervisor, client, company, other_company, fake_oc, fake_catalog, test_engine) -> None:
     from tests.conftest import user_sub
 
-    fake_oc.add_member(user_sub("supervisor.test"), other_company)
+    fake_oc.add_member(user_sub("admin.dao"), other_company)
     mine = scenario(supervisor, company, fake_catalog)
     theirs = scenario(supervisor, other_company, fake_catalog)
     policy(supervisor, mine, [mine.presentation], markup="30")

@@ -67,7 +67,7 @@ class Pool:
         self.lock = threading.Lock()
         self.tokens = {
             "admin": SharedToken({"grant_type": "password", "client_id": "sio-web", "scope": "openid",
-                                  "username": "admin.test", "password": env["KEYCLOAK_TEST_USER_PASSWORD"]}),
+                                  "username": "admin.sio", "password": env["KEYCLOAK_TEST_USER_PASSWORD"]}),
             "operator": SharedToken({"grant_type": "client_credentials", "client_id": "inventory-test-operator",
                                      "client_secret": env["INVENTORY_TEST_OPERATOR_CLIENT_SECRET"]}),
         }
@@ -201,7 +201,7 @@ def build(profile: str, *, globals_override: int | None, workers: int) -> dict:
         for start in range(0, len(with_stock), 50):
             pool.post(f"{inv}/inventory-entries", {
                 "operation_key": str(uuid4()), "company_id": company, "branch_id": branch, "origin_type": "PURCHASE",
-                "origin_id": str(uuid4()), "application_user_id": members["admin.test"], "correlation_id": str(uuid4()),
+                "origin_id": str(uuid4()), "application_user_id": members["admin.sio"], "correlation_id": str(uuid4()),
                 "lines": [{"origin_detail_id": str(uuid4()), "company_product_id": p["id"],
                            "quantity": str(1 + p["index"] % 40), "unit_cost": "1000"}
                           for p in with_stock[start:start + 50]]}, kind="operator")

@@ -32,7 +32,7 @@ POST /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:organization_contact_profiles:create`), `ventas.test` (por `perm:party-identity:organization_contact_profiles:create`), `inventario.test` (por `perm:party-identity:organization_contact_profiles:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:organization_contact_profiles:create`)
 - ℹ️ Registrar una versión del perfil exige además que el usuario tenga una membresía `ACTIVE` en la empresa indicada (la comprueba Party Identity con su cliente técnico contra Operational Context). El usuario **no** necesita permisos de Operational Context; un administrador de plataforma sin membresía recibe `422 CONFIRMATION_MEMBERSHIP_INVALID`.
 
 **Por qué se hace así**
@@ -78,7 +78,7 @@ POST /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:organization_contact_profiles:create`), `ventas.test` (por `perm:party-identity:organization_contact_profiles:create`), `inventario.test` (por `perm:party-identity:organization_contact_profiles:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:organization_contact_profiles:create`)
 - ℹ️ Registrar una versión del perfil exige además que el usuario tenga una membresía `ACTIVE` en la empresa indicada (la comprueba Party Identity con su cliente técnico contra Operational Context). El usuario **no** necesita permisos de Operational Context; un administrador de plataforma sin membresía recibe `422 CONFIRMATION_MEMBERSHIP_INVALID`.
 
 **Por qué se hace así**
@@ -117,7 +117,7 @@ POST /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:organization_contact_profiles:create`), `ventas.test` (por `perm:party-identity:organization_contact_profiles:create`), `inventario.test` (por `perm:party-identity:organization_contact_profiles:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:organization_contact_profiles:create`)
 - ℹ️ Registrar una versión del perfil exige además que el usuario tenga una membresía `ACTIVE` en la empresa indicada (la comprueba Party Identity con su cliente técnico contra Operational Context). El usuario **no** necesita permisos de Operational Context; un administrador de plataforma sin membresía recibe `422 CONFIRMATION_MEMBERSHIP_INVALID`.
 
 **Por qué se hace así**
@@ -156,7 +156,7 @@ POST /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:create`), `compras.test` (por `perm:party-identity:organization_contact_profiles:create`), `ventas.test` (por `perm:party-identity:organization_contact_profiles:create`), `inventario.test` (por `perm:party-identity:organization_contact_profiles:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:create`), `operario.dao` (por `perm:party-identity:organization_contact_profiles:create`)
 - ℹ️ Registrar una versión del perfil exige además que el usuario tenga una membresía `ACTIVE` en la empresa indicada (la comprueba Party Identity con su cliente técnico contra Operational Context). El usuario **no** necesita permisos de Operational Context; un administrador de plataforma sin membresía recibe `422 CONFIRMATION_MEMBERSHIP_INVALID`.
 
 **Por qué se hace así**
@@ -181,7 +181,7 @@ GET /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile/versions
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_contact_profiles:read`), `ventas.test` (por `perm:party-identity:organization_contact_profiles:read`), `inventario.test` (por `perm:party-identity:organization_contact_profiles:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:organization_contact_profiles:read`)
 
 **Por qué se hace así**
 

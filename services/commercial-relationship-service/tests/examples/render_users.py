@@ -103,7 +103,7 @@ def permission_lines(permissions, c=None):
     if scoped(c):
         out.append("- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la "
                    "empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, "
-                   "**también para `admin.test`** (DS-03).")
+                   "**también para `admin.sio`** (DS-03).")
     out.append("")
     return out
 
@@ -199,9 +199,9 @@ def render_users(ex, records):
 
     out += ["## Resumen por usuario", ""]
     out += user_summary(rows)
-    out += ["", "**Para hacer el ejercicio completo use `admin.test`**, siempre que tenga membresía `ACTIVE` en la "
+    out += ["", "**Para hacer el ejercicio completo use `admin.sio`**, siempre que tenga membresía `ACTIVE` en la "
             "empresa: en Commercial Relationship ni siquiera `perm:all:all:all` exime de la membresía (DS-03). "
-            "`supervisor.test` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios del grupo "
+            "`admin.dao` (grupo `admin`) también puede hacerlo completo en su empresa; los usuarios del grupo "
             "`empleado` consultan e incorporan clientes, pero no adoptan, modifican, inactivan ni bloquean.", ""]
 
     out += ["## Permiso por URL", "",
@@ -221,23 +221,23 @@ def render_users(ex, records):
             "`infrastructure/.env`. Cárguela en la terminal antes de pedir tokens.", ""]
 
     n = 1
-    out += [f"### {n}. Ejecutar el ejercicio con `admin.test`", ""]
-    out += token_command("admin.test", "TOKEN_ADMIN")
+    out += [f"### {n}. Ejecutar el ejercicio con `admin.sio`", ""]
+    out += token_command("admin.sio", "TOKEN_ADMIN")
     create = pick_example(rows, lambda s_i, c, p, r: c["method"] == "POST" and p[0].endswith(":create") and not c["external"])
     if create:
         out += ["", f"Por ejemplo, el paso {create[0] + 1:02d} (*{create[2]['title']}*):", ""]
         out += curl_for(create[3], "TOKEN_ADMIN")
-        out += ["", f"Responde `201 Created` si `admin.test` es miembro de la empresa: `perm:all:all:all` cubre "
+        out += ["", f"Responde `201 Created` si `admin.sio` es miembro de la empresa: `perm:all:all:all` cubre "
                 f"{permission_text(create[4])}. Reemplace las variables `<…>` por los `id` guardados.", ""]
 
     n += 1
-    empleado = next(u for u in USERS if u["username"] == "ventas.test")
+    empleado = next(u for u in USERS if u["username"] == "operario.dao")
     denied = pick_example(rows, lambda s_i, c, p, r: not c["external"] and c["method"] != "GET"
                           and not allowed_all(empleado, p) and not p[0].endswith(":delete"))
     if denied:
         s_i, c_i, s, c, p, r = denied
-        out += [f"### {n}. `ventas.test` (Empleado) intenta escribir (rechazado)", ""]
-        out += token_command("ventas.test", "TOKEN_EMPLEADO")
+        out += [f"### {n}. `operario.dao` (Empleado) intenta escribir (rechazado)", ""]
+        out += token_command("operario.dao", "TOKEN_EMPLEADO")
         out += ["", f"Intenta el paso {s_i + 1:02d} (*{s['title']}*), llamada {c_i + 1}:", ""]
         out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
@@ -251,13 +251,13 @@ def render_users(ex, records):
     if read:
         n += 1
         s_i, c_i, s, c, p, r = read
-        out += [f"### {n}. `ventas.test` (Empleado) consulta", ""]
+        out += [f"### {n}. `operario.dao` (Empleado) consulta", ""]
         if not denied:
-            out += token_command("ventas.test", "TOKEN_EMPLEADO")
+            out += token_command("operario.dao", "TOKEN_EMPLEADO")
             out += [""]
         out += curl_for(c, "TOKEN_EMPLEADO")
-        out += ["", f"Responde `200 OK` con la misma información que ve `admin.test` en el paso {s_i + 1:02d}: "
-                f"`{matching_grant(empleado, as_list(p)[0])}` cubre {permission_text(p)} y `ventas.test` es miembro "
+        out += ["", f"Responde `200 OK` con la misma información que ve `admin.sio` en el paso {s_i + 1:02d}: "
+                f"`{matching_grant(empleado, as_list(p)[0])}` cubre {permission_text(p)} y `operario.dao` es miembro "
                 "de la empresa. Sin membresía respondería `404`.", ""]
 
     deactivate = pick_example(rows, lambda s_i, c, p, r: p[0].endswith(":delete") and not allowed_all(empleado, p))
@@ -265,12 +265,12 @@ def render_users(ex, records):
         n += 1
         s_i, c_i, s, c, p, r = deactivate
         action = "bloquear" if c["path"].endswith("/block") else "inactivar"
-        out += [f"### {n}. `ventas.test` (Empleado) intenta {action} (rechazado)", ""]
+        out += [f"### {n}. `operario.dao` (Empleado) intenta {action} (rechazado)", ""]
         out += curl_for(c, "TOKEN_EMPLEADO")
         out += ["", "Respuesta `403 Forbidden`:", "", "```json",
                 json.dumps(forbidden_body(r, p, c["path"]), ensure_ascii=False, indent=2), "```", ""]
         out += [f"El grupo `empleado` no tiene `delete` en Commercial Relationship. {action.capitalize()} queda para "
-                "`admin.test` (SuperAdmin) y `supervisor.test` (Admin), siempre con membresía en la empresa.", ""]
+                "`admin.sio` (SuperAdmin) y `admin.dao` (Admin), siempre con membresía en la empresa.", ""]
 
     n += 1
     out += [f"### {n}. Sin token (rechazado)", "",
@@ -323,12 +323,10 @@ def render_general(exercises, all_records):
             "Todos comparten la contraseña de la variable `KEYCLOAK_TEST_USER_PASSWORD` (`infrastructure/.env`).", "",
             "| Usuario | Grupo | Permisos del grupo en Commercial Relationship | Puede |", "| --- | --- | --- | --- |"]
     summary = {
-        "admin.test": "Todo, en las empresas donde es miembro",
-        "supervisor.test": "Todo en las empresas donde es miembro (grupo `admin`): adoptar, incorporar, modificar, "
+        "admin.sio": "Todo, en las empresas donde es miembro",
+        "admin.dao": "Todo en las empresas donde es miembro (grupo `admin`): adoptar, incorporar, modificar, "
         "inactivar, bloquear, administrar políticas de ganancia y resolver actualizaciones automáticas",
-        "compras.test": "Consultar (sin políticas de ganancia ni actualizaciones automáticas) e incorporar clientes",
-        "ventas.test": "Igual que `compras.test` (grupo `empleado`)",
-        "inventario.test": "Igual que `compras.test` (grupo `empleado`)",
+        "operario.dao": "Consultar (sin políticas de ganancia ni actualizaciones automáticas) e incorporar clientes",
     }
     for u in USERS:
         own = [p for p in u["perms"] if p.startswith("perm:commercial-relationship:") or p.startswith("perm:all:")]
@@ -341,11 +339,11 @@ def render_general(exercises, all_records):
 
     out += ["## Cómo obtener el token de cada usuario", "",
             "Cambie `username` por el usuario que quiera probar:", ""]
-    out += token_command("ventas.test", "TOKEN")
+    out += token_command("operario.dao", "TOKEN")
     out += ["", "En **PowerShell** (Windows):", "",
             "```powershell",
             "$body = @{ grant_type = 'password'; client_id = 'sio-web'; scope = 'openid'",
-            "           username = 'ventas.test'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
+            "           username = 'operario.dao'; password = $env:KEYCLOAK_TEST_USER_PASSWORD }",
             f"$TOKEN = (Invoke-RestMethod -Method Post -Uri '{KEYCLOAK}' -Body $body).access_token",
             f"Invoke-RestMethod -Uri '{SERVICE_URL}/api/v1/companies/<EMPRESA>/company-products' `",
             "  -Headers @{ Authorization = \"Bearer $TOKEN\" }",
@@ -373,9 +371,9 @@ def render_general(exercises, all_records):
 
     out += ["## Qué usuario usar", "",
             "| Para… | Usuario |", "| --- | --- |",
-            "| Hacer los ejercicios completos | `admin.test` (con membresía en la empresa) |",
-            "| Lo mismo como gerente de la empresa | `supervisor.test` (grupo `admin`, con membresía) |",
-            "| Verificar lo cargado | `ventas.test`, `compras.test` o `inventario.test` (grupo `empleado`, con membresía) |",
-            "| Probar rechazos por falta de permiso | `ventas.test` en adoptar, modificar, inactivar o bloquear y en "
+            "| Hacer los ejercicios completos | `admin.sio` (con membresía en la empresa) |",
+            "| Lo mismo como gerente de la empresa | `admin.dao` (grupo `admin`, con membresía) |",
+            "| Verificar lo cargado | `operario.dao` (grupo `empleado`, con membresía) |",
+            "| Probar rechazos por falta de permiso | `operario.dao` en adoptar, modificar, inactivar o bloquear y en "
             "políticas de ganancia |", ""]
     return "\n".join(out)

@@ -10,7 +10,7 @@ from tests.contract.test_audit_events_products import check
 
 @pytest.fixture
 def admin(as_user):
-    return as_user("admin.test")
+    return as_user("admin.sio")
 
 
 def _customer_body(current: dict, **changes) -> dict:

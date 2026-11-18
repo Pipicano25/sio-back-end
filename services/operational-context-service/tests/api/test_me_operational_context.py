@@ -14,7 +14,7 @@ def test_without_memberships_is_empty(api_as):
 def test_memberships_in_two_companies_with_branch_access(
     api, api_as, create_company, create_branch, fake_accounts, fake_persons
 ):
-    sub = fake_accounts.add("compras.test")
+    sub = fake_accounts.add("operario.dao")
     person = str(fake_persons.add())
     first, second = create_company(), create_company()
     branch_ok = create_branch(first["id"], code="OK")
@@ -55,7 +55,7 @@ def test_memberships_in_two_companies_with_branch_access(
 
 
 def _member_of(api, fake_accounts, fake_persons, company, branch):
-    sub = fake_accounts.add("ventas.test")
+    sub = fake_accounts.add("operario.dao")
     person = str(fake_persons.add())
     user = api.post(
         f"/api/v1/companies/{company['id']}/application-users",

@@ -3,7 +3,7 @@
 Se crea un recurso de cada tipo en una empresa y se recorre cada ruta con un
 usuario con permiso pero sin membresía activa: debe responder `404` con el mismo
 cuerpo que un UUID inexistente, incluso con cuerpo inválido, sin cambios y sin
-llamar a Product Catalog ni a Party Identity. `admin.test` (`perm:all:all:all`)
+llamar a Product Catalog ni a Party Identity. `admin.sio` (`perm:all:all:all`)
 no se exime (DS-03).
 """
 
@@ -29,7 +29,7 @@ from tests.conftest import user_sub
 
 @pytest.fixture
 def resources(as_user, company, fake_catalog, fake_party, fake_payment):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     product = adopt(client, company, fake_catalog)
     customer = person_customer(client, company, fake_party)
     provider = supplier(client, company, fake_party)
@@ -72,7 +72,7 @@ def _call(client, route, url, body, resources=None):
 
 
 def _snapshot(as_user, company):
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     return {
         kind: client.get(f"/api/v1/companies/{company}/company-{kind}", params={"status": "ALL"}).json()["items"]
         for kind in ("products", "customers", "suppliers")
@@ -85,7 +85,7 @@ ISOLATED = [route for route in ROUTES if route.target not in {"batch", "summary"
 
 
 @pytest.mark.parametrize("route", ISOLATED, ids=route_id)
-@pytest.mark.parametrize("username", ["admin.test", "supervisor.test"])
+@pytest.mark.parametrize("username", ["admin.sio", "admin.dao"])
 def test_non_member_gets_404_like_missing_uuid(as_user, company, fake_oc, fake_catalog, fake_party, resources, route, username):
     before = _snapshot(as_user, company)
     fake_oc.deactivate_member(user_sub(username), company)
@@ -96,7 +96,7 @@ def test_non_member_gets_404_like_missing_uuid(as_user, company, fake_oc, fake_c
 
     response = _call(client, route, _url(route, company, resources), {"basura": True})
 
-    # Spec 026: `supervisor.test` (grupo `admin`) también tiene `delete`; sin membresía recibe el mismo `404`.
+    # Spec 026: `admin.dao` (grupo `admin`) también tiene `delete`; sin membresía recibe el mismo `404`.
     assert response.status_code == 404, response.text
     missing = _call(client, route, _url(route, company, resources, missing=True), {"basura": True})
     assert missing.status_code == 404
@@ -108,13 +108,13 @@ def test_non_member_gets_404_like_missing_uuid(as_user, company, fake_oc, fake_c
         lookups, first_uses, party_calls
     )
 
-    fake_oc.add_member(user_sub("admin.test"), company)
+    fake_oc.add_member(user_sub("admin.sio"), company)
     assert _snapshot(as_user, company) == before
 
 
 def test_batch_lookup_hides_foreign_products(as_user, company, fake_oc, resources):
-    fake_oc.deactivate_member(user_sub("supervisor.test"), company)
-    response = as_user("supervisor.test").post(
+    fake_oc.deactivate_member(user_sub("admin.dao"), company)
+    response = as_user("admin.dao").post(
         "/api/v1/company-products/batch-lookup", json={"ids": [resources["product"]["id"]]}
     )
     assert response.status_code == 200
@@ -128,13 +128,13 @@ def test_batch_lookup_hides_foreign_products(as_user, company, fake_oc, resource
 @pytest.mark.parametrize("route", [r for r in ISOLATED if not r.write], ids=route_id)
 def test_inactive_company_allows_reads(as_user, company, fake_oc, resources, route):
     fake_oc.inactive_companies.add(company)
-    response = _call(as_user("supervisor.test"), route, _url(route, company, resources), None, resources)
+    response = _call(as_user("admin.dao"), route, _url(route, company, resources), None, resources)
     assert response.status_code == 200, response.text
 
 
 def test_inactive_company_blocks_writes_except_deactivate(as_user, company, fake_oc, resources):
     fake_oc.inactive_companies.add(company)
-    client = as_user("admin.test")
+    client = as_user("admin.sio")
     for route in (r for r in ISOLATED if r.write):
         response = _call(client, route, _url(route, company, resources), {"version": 1})
         if route.allows_inactive_company:
@@ -148,7 +148,7 @@ def test_inactive_company_blocks_writes_except_deactivate(as_user, company, fake
 @pytest.mark.parametrize("route", ISOLATED, ids=route_id)
 def test_operational_context_unavailable_is_503(as_user, company, fake_oc, resources, route):
     fake_oc.access_unavailable = True
-    response = _call(as_user("admin.test"), route, _url(route, company, resources), {"version": 1})
+    response = _call(as_user("admin.sio"), route, _url(route, company, resources), {"version": 1})
     assert response.status_code == 503
     assert response.json()["dependency"] == "operational-context"
 
@@ -156,18 +156,18 @@ def test_operational_context_unavailable_is_503(as_user, company, fake_oc, resou
 @pytest.mark.parametrize("route", ISOLATED, ids=route_id)
 def test_operational_context_forbidden_is_403(as_user, company, fake_oc, resources, route):
     fake_oc.access_forbidden = True
-    response = _call(as_user("admin.test"), route, _url(route, company, resources), {"version": 1})
+    response = _call(as_user("admin.sio"), route, _url(route, company, resources), {"version": 1})
     assert response.status_code == 403
     assert response.json()["code"] == "COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED"
 
 
 def test_membership_is_evaluated_on_every_request(as_user, company, fake_oc, resources):
-    client = as_user("supervisor.test")
+    client = as_user("admin.dao")
     url = f"/api/v1/company-products/{resources['product']['id']}"
     assert client.get(url).status_code == 200
-    fake_oc.deactivate_member(user_sub("supervisor.test"), company)
+    fake_oc.deactivate_member(user_sub("admin.dao"), company)
     assert client.get(url).status_code == 404
-    fake_oc.add_member(user_sub("supervisor.test"), company)
+    fake_oc.add_member(user_sub("admin.dao"), company)
     assert client.get(url).status_code == 200
 
 
@@ -177,8 +177,8 @@ def test_membership_is_evaluated_on_every_request(as_user, company, fake_oc, res
 
 
 def test_body_references_of_other_company_are_not_found(as_user, company, other_company, fake_oc, fake_catalog, fake_party, fake_payment, resources):
-    admin = as_user("admin.test")
-    fake_oc.add_member(user_sub("admin.test"), other_company)
+    admin = as_user("admin.sio")
+    fake_oc.add_member(user_sub("admin.sio"), other_company)
     foreign_product = adopt(admin, other_company, fake_catalog, internal_code="F-1")
     foreign_supplier = supplier(admin, other_company, fake_party, internal_code="F-S")
     foreign_list = create_price_list(admin, other_company, code="F-L")
@@ -205,8 +205,8 @@ def test_body_references_of_other_company_are_not_found(as_user, company, other_
 
 
 def test_applicable_price_hides_products_of_other_company(as_user, company, other_company, fake_oc, fake_catalog):
-    admin = as_user("admin.test")
-    fake_oc.add_member(user_sub("admin.test"), other_company)
+    admin = as_user("admin.sio")
+    fake_oc.add_member(user_sub("admin.sio"), other_company)
     foreign_product = adopt(admin, other_company, fake_catalog, internal_code="F-1")
 
     response = admin.post(

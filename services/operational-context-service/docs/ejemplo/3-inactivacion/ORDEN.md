@@ -2,13 +2,13 @@
 
 [← Todos los ejercicios](../README.md)
 
-**Qué enseña:** Inactivar una empresa **sin eliminarla ni modificar sus sucursales**, ver cómo la sucursal informa el estado de su empresa, el rechazo al crear sucursales bajo una empresa inactiva, la reactivación y la transición repetida; quién puede cada acción (inactivar y reactivar empresas exige además `platform:administer`: solo `admin.test`).
+**Qué enseña:** Inactivar una empresa **sin eliminarla ni modificar sus sucursales**, ver cómo la sucursal informa el estado de su empresa, el rechazo al crear sucursales bajo una empresa inactiva, la reactivación y la transición repetida; quién puede cada acción (inactivar y reactivar empresas exige además `platform:administer`: solo `admin.sio`).
 
 **Datos:** **ficticios** — detalle y decisiones en [00-datos-ficticios.md](00-datos-ficticios.md).
 
 Antes de empezar revise los [requisitos comunes](../README.md#antes-de-empezar).
 
-**Usuarios:** ejecútelo con `admin.test`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
+**Usuarios:** ejecútelo con `admin.sio`. Qué puede hacer cada usuario de prueba, qué permiso exige cada URL y ejemplos de uso con cada uno: [USUARIOS.md](USUARIOS.md).
 
 ## Orden de ejecución
 

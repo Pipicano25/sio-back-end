@@ -26,7 +26,7 @@ from sio_auth import DENIED_PERMISSION_ATTRIBUTE, LOGGER_NAME
 from tests.examples.users import USERS, allowed_all
 
 PLACEHOLDER = re.compile(r"<([A-Z0-9_]+)>")
-ADMIN = "admin.test"
+ADMIN = "admin.sio"
 NO_PERMISSIONS = "__sin_permisos__"
 
 

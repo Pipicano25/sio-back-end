@@ -10,7 +10,7 @@
 | --- | --- |
 | Empresa | LOGÍSTICA ACCESO FICTICIA S.A.S. (**ficticia**) |
 | Sucursales | `PRI-01` Principal y `SEC-01` Secundaria (**ficticias**) |
-| Usuario | `compras.test` (grupo `compras`: `perm:purchase:all:all`, lecturas) |
+| Usuario | `operario.dao` (grupo `empleado`: ventas, compras e inventario, sin rentabilidad) |
 
 ## Cómo se interpretan
 

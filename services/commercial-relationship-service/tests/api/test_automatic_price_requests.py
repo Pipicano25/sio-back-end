@@ -27,7 +27,7 @@ from tests.api.helpers import code_of, create_price_list
 
 @pytest.fixture
 def supervisor(as_user):
-    return as_user("supervisor.test")
+    return as_user("admin.dao")
 
 
 def test_a1_accepts_the_request_and_expands_per_list_in_policy_mode(supervisor, as_token, service_token, company, fake_catalog, test_engine) -> None:
@@ -132,10 +132,10 @@ def test_invalid_contract_is_rejected(supervisor, as_token, service_token, compa
     assert response.status_code == 422, response.text
 
 
-@pytest.mark.parametrize("username", ["admin.test", "supervisor.test", "compras.test", "ventas.test"])
+@pytest.mark.parametrize("username", ["admin.sio", "admin.dao", "operario.dao"])
 def test_cp55_humans_cannot_submit_even_with_the_permission(as_user, company, fake_catalog, username) -> None:
-    """La ruta exige identidad técnica además del permiso (`admin.test` lo tiene por `perm:all:all:all`)."""
-    supervisor = as_user("supervisor.test")
+    """La ruta exige identidad técnica además del permiso (`admin.sio` lo tiene por `perm:all:all:all`)."""
+    supervisor = as_user("admin.dao")
     world = scenario(supervisor, company, fake_catalog)
     response = as_user(username).post(REQUESTS.format(company=company), json=request_body(world))
     assert response.status_code == 403, response.text

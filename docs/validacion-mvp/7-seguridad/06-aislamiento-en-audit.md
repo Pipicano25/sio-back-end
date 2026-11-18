@@ -4,9 +4,9 @@ Ejercicio 7 — Seguridad entre empresas y permisos · [Orden del ejercicio](ORD
 
 ---
 
-## 1. admin.test consulta los eventos de auditoría de B
+## 1. admin.sio consulta los eventos de auditoría de B
 
-Paso `I-06.eventos` · usuario **`admin.test`** · ítems de la FASE 10: 21
+Paso `I-06.eventos` · usuario **`admin.sio`** · ítems de la FASE 10: 21
 
 ```http
 GET http://127.0.0.1:8110/api/v1/companies/<EMPRESA_B>/audit-events
@@ -14,7 +14,7 @@ GET http://127.0.0.1:8110/api/v1/companies/<EMPRESA_B>/audit-events
 
 **Permiso que exige la URL:** `perm:audit:audit-events:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:audit:audit-events:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:audit:audit-events:read`)
 
 **Por qué se hace así**
 
@@ -22,9 +22,9 @@ GET http://127.0.0.1:8110/api/v1/companies/<EMPRESA_B>/audit-events
 
 **Respuesta esperada:** `404`
 
-## 2. admin.test consulta el historial de la empresa B
+## 2. admin.sio consulta el historial de la empresa B
 
-Paso `I-06.historial` · usuario **`admin.test`** · ítems de la FASE 10: 21
+Paso `I-06.historial` · usuario **`admin.sio`** · ítems de la FASE 10: 21
 
 ```http
 GET http://127.0.0.1:8110/api/v1/companies/<EMPRESA_B>/entity-history/Company/<EMPRESA_B>
@@ -32,7 +32,7 @@ GET http://127.0.0.1:8110/api/v1/companies/<EMPRESA_B>/entity-history/Company/<E
 
 **Permiso que exige la URL:** `perm:audit:audit-events:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:audit:audit-events:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:audit:audit-events:read`)
 
 **Por qué se hace así**
 

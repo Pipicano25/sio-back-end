@@ -6,7 +6,7 @@ Ejercicio 4: Confirmación: precio cambiado e idempotencia.
 
 `POST /api/v1/companies/d15a0000-0000-4000-8000-000000000001/sales/<VENTA>/confirmation`
 
-Ejecuta: `ventas.test`.
+Ejecuta: `operario.dao`.
 
 Cabeceras: `Idempotency-Key: confirmar-venta-0002`.
 
@@ -33,11 +33,9 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:sales:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `—` | tiene `perm:sales:all:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `ventas.test` | Sí | `503` | tiene `perm:sales:all:update` y asignación a la sucursal |
-| `inventario.test` | Sí | `—` | tiene `perm:sales:all:update` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `admin.sio` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `admin.dao` | Sí | `—` | tiene `perm:sales:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `operario.dao` | Sí | `503` | tiene `perm:sales:all:update` y asignación a la sucursal |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 

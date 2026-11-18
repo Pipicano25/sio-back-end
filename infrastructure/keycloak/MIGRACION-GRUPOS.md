@@ -51,12 +51,12 @@ read -rs KC_ADMIN_PASSWORD && export KC_ADMIN_PASSWORD
    Mientras el usuario siga también en su grupo anterior, sus permisos son la suma de ambos.
 
 3. **Comprobar.** Pida un token de un usuario de cada grupo nuevo y revise `resource_access.sio-api.roles`. Por
-   ejemplo, con un usuario de prueba (en un entorno de desarrollo):
+   ejemplo, con un usuario de prueba (en un entorno de desarrollo; en un realm migrado use sus usuarios `*.test`):
 
    ```bash
    TOKEN=$(curl -s -X POST "$KC_URL/realms/$KC_REALM/protocol/openid-connect/token" \
      -d grant_type=password -d client_id=sio-web -d scope=openid \
-     -d username=ventas.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
+     -d username=operario.dao -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
      | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
    python -c "import sys, json, base64; p = sys.argv[1].split('.')[1]; p += '=' * (-len(p) % 4); \
    print(sorted(json.loads(base64.urlsafe_b64decode(p))['resource_access']['sio-api']['roles']))" "$TOKEN"
@@ -73,9 +73,12 @@ read -rs KC_ADMIN_PASSWORD && export KC_ADMIN_PASSWORD
    python infrastructure/keycloak/migrar_grupos_026.py retirar
    ```
 
-5. **Usuarios de prueba eliminados.** En un entorno de desarrollo creado con la plantilla anterior existen
-   `reportes.test` y `consulta.test`. El paso 2 los pasa a `empleado`; si no se usan, elimínelos desde la consola
-   (*Users* → usuario → *Delete*).
+5. **Usuarios de prueba.** La plantilla vigente trae solo `admin.sio` (SuperAdmin), `admin.dao` (Admin) y
+   `operario.dao` (Empleado). Un entorno de desarrollo creado con una plantilla anterior conserva sus usuarios
+   genéricos (`admin.test`, `supervisor.test`, `ventas.test`, `compras.test`, `inventario.test`, `reportes.test`,
+   `consulta.test`): el paso 2 los pasa a su grupo nuevo, pero el script no crea ni renombra usuarios. Si los quiere
+   como en la plantilla, recree el realm (realm de desarrollo sin usuarios propios) o cree los tres en la consola y elimine los genéricos
+   (la plantilla no permite editar el nombre de usuario: `editUsernameAllowed: false`).
 
 Los permisos nuevos aparecen en el siguiente token de cada usuario (a lo sumo 300 s después, o al renovar).
 

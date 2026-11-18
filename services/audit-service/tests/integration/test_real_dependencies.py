@@ -54,7 +54,7 @@ def emitter():
 
 @pytest.fixture(scope="module")
 def admin():
-    with user_client("admin.test") as client:
+    with user_client("admin.sio") as client:
         yield client
 
 
@@ -81,7 +81,7 @@ def test_register_with_real_technical_identity(emitter, admin, company) -> None:
     assert [item["id"] for item in listed.json()["items"]] == [data["id"]]
 
 
-@pytest.mark.parametrize("username", ["admin.test", "supervisor.test"])
+@pytest.mark.parametrize("username", ["admin.sio", "admin.dao"])
 def test_real_humans_cannot_register(username) -> None:
     require_audit()
     with user_client(username) as client:
@@ -97,7 +97,7 @@ def test_non_member_company_is_404(admin) -> None:
 
 def test_user_without_audit_permission_is_403(company) -> None:
     require_audit()
-    with user_client("inventario.test") as client:
+    with user_client("operario.dao") as client:
         assert client.get(f"{AUDIT}/companies/{company}/audit-events").status_code == 403
 
 
@@ -105,7 +105,7 @@ def test_platform_events_with_superadmin(emitter) -> None:
     platform = emitter.post(f"{AUDIT}/audit-events", json=_event(entity_type="GlobalProduct"))
     assert platform.status_code == 201
 
-    with user_client("admin.test") as superadmin:  # spec 026: solo `superadmin` lee la auditoría de plataforma
+    with user_client("admin.sio") as superadmin:  # spec 026: solo `superadmin` lee la auditoría de plataforma
         response = superadmin.get(f"{AUDIT}/platform-audit-events/{platform.json()['id']}")
     assert response.status_code == 200
     assert response.json()["company_id"] is None

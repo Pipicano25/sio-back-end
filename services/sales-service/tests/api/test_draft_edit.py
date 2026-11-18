@@ -88,7 +88,7 @@ def test_changing_branch_requires_both_assignments_and_recomputes_the_date(as_us
     fakes.oc.branches[world.branch_b] = fakes.oc.branches[world.branch_b].__class__(
         world.branch_b, world.company, "ACTIVE", "Europe/Madrid"
     )
-    moved = as_user("admin.test").put(url(world, draft), json=header(world, draft, branch_id=world.branch_b))
+    moved = as_user("admin.sio").put(url(world, draft), json=header(world, draft, branch_id=world.branch_b))
     assert moved.status_code == 200, moved.text
     assert moved.json()["operation_date"] == "2026-10-08" and moved.json()["due_date"] == "2026-10-08"
 

@@ -80,7 +80,7 @@ def _renew_token(client) -> None:
             if name.strip() == "KEYCLOAK_TEST_USER_PASSWORD":
                 password = value.strip()
     token = httpx.post(TOKEN_URL, data={"grant_type": "password", "client_id": "sio-web", "scope": "openid",
-                                        "username": "admin.test", "password": password}, timeout=15).json()["access_token"]
+                                        "username": "admin.sio", "password": password}, timeout=15).json()["access_token"]
     client.headers["Authorization"] = f"Bearer {token}"
 
 

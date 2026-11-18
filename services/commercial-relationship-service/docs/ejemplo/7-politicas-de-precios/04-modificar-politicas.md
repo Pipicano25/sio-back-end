@@ -23,9 +23,9 @@ POST /api/v1/pricing-policies/<ALIMENTOS>/percentage
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — no tiene ningún permiso sobre `pricing_policies` de `commercial-relationship`
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 
@@ -53,9 +53,9 @@ GET /api/v1/pricing-policies/<ALIMENTOS>/terms
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:read`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:read`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — no tiene ningún permiso sobre `pricing_policies` de `commercial-relationship`
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 
@@ -93,9 +93,9 @@ POST /api/v1/pricing-policies/<ALIMENTOS>/presentations/remove
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — no tiene ningún permiso sobre `pricing_policies` de `commercial-relationship`
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 
@@ -130,9 +130,9 @@ POST /api/v1/pricing-policies/<ESPECIALES>/deactivate
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:delete`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:delete`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — no tiene ningún permiso sobre `pricing_policies` de `commercial-relationship`
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 
@@ -167,9 +167,9 @@ POST /api/v1/pricing-policies/<ESPECIALES>/percentage
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — no tienen ningún permiso sobre `pricing_policies` de `commercial-relationship`
-- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.test`** (DS-03).
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — no tiene ningún permiso sobre `pricing_policies` de `commercial-relationship`
+- 🔒 Aislamiento por empresa: además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa (según Operational Context). Si no, la URL responde `404`, igual que un `id` inexistente, **también para `admin.sio`** (DS-03).
 
 **Por qué se hace así**
 

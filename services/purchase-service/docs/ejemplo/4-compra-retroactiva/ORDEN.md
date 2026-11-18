@@ -8,11 +8,11 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 
 | Paso | Archivo | Llamada | Ejecuta | Estado |
 | --- | --- | --- | --- | --- |
-| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchase-sequences` | `compras.test` | `201` |
-| 2 | [02-compra-de-noviembre.md](02-compra-de-noviembre.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `201` |
-| 3 | [03-confirmar-noviembre.md](03-confirmar-noviembre.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<NOVIEMBRE>/confirmation` | `compras.test` | `200` |
-| 4 | [04-compra-de-octubre.md](04-compra-de-octubre.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `compras.test` | `201` |
-| 5 | [05-confirmar-octubre.md](05-confirmar-octubre.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<OCTUBRE>/confirmation` | `compras.test` | `200` |
+| 1 | [01-crear-la-secuencia.md](01-crear-la-secuencia.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchase-sequences` | `operario.dao` | `201` |
+| 2 | [02-compra-de-noviembre.md](02-compra-de-noviembre.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `201` |
+| 3 | [03-confirmar-noviembre.md](03-confirmar-noviembre.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<NOVIEMBRE>/confirmation` | `operario.dao` | `200` |
+| 4 | [04-compra-de-octubre.md](04-compra-de-octubre.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases` | `operario.dao` | `201` |
+| 5 | [05-confirmar-octubre.md](05-confirmar-octubre.md) | `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchases/<OCTUBRE>/confirmation` | `operario.dao` | `200` |
 
 ## Por qué este orden
 

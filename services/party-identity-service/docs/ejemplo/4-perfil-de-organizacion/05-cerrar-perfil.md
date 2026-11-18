@@ -22,8 +22,8 @@ POST /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile:close
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao`, `operario.dao` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
 - ℹ️ Cerrar el perfil (`POST .../contact-profile:close`) exige `delete`, aunque no elimina: la versión queda en el historial.
 
 **Por qué se hace así**
@@ -59,8 +59,8 @@ POST /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile:close
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`)
-- ❌ **No pueden (responde `403`):** `supervisor.test`, `compras.test`, `ventas.test`, `inventario.test` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
+- ❌ **No pueden (responde `403`):** `admin.dao`, `operario.dao` — sobre `party-identity` solo tienen `create`, `read`, `update`; les falta `delete`
 - ℹ️ Cerrar el perfil (`POST .../contact-profile:close`) exige `delete`, aunque no elimina: la versión queda en el historial.
 
 **Por qué se hace así**
@@ -84,7 +84,7 @@ GET /api/v1/organization-identities/<ORG_PROVEEDOR>/contact-profile
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_profiles:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:party-identity:all:read`), `compras.test` (por `perm:party-identity:organization_contact_profiles:read`), `ventas.test` (por `perm:party-identity:organization_contact_profiles:read`), `inventario.test` (por `perm:party-identity:organization_contact_profiles:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:read`), `operario.dao` (por `perm:party-identity:organization_contact_profiles:read`)
 
 **Por qué se hace así**
 

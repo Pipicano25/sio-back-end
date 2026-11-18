@@ -1,9 +1,9 @@
 """Obtiene un token de Keycloak para los usuarios de prueba o los clientes técnicos de SIO.
 
 Uso:
-    python services/get_token.py              # menú: rol de prueba o usuario de una empresa (opción 8)
-    python services/get_token.py ventas       # rol directo (también acepta el número o `ventas.test`)
-    TOKEN=$(python services/get_token.py admin)
+    python services/get_token.py              # menú: usuario de prueba o usuario de una empresa (opción 8)
+    python services/get_token.py operario     # usuario directo (también el número, `operario.dao` o `empleado`)
+    TOKEN=$(python services/get_token.py admin.sio)
     TOKEN=$(python services/get_token.py --cliente sio-data-importer)   # cliente técnico (client_credentials)
     TOKEN=$(python services/get_token.py --usuario santiago.rodriguez)  # usuario nominal (contraseña en el entorno)
 
@@ -56,13 +56,19 @@ CREDENCIALES_LOCALES = Path(
 ).expanduser()
 HOSTS_LOCALES = {"localhost", "127.0.0.1", "::1"}
 
+# Usuarios de prueba del realm (plantilla): número del menú → usuario.
 ROLES = {
-    "1": "admin",
-    "2": "supervisor",
-    "3": "compras",
-    "4": "ventas",
-    "5": "inventario",
+    "1": "admin.sio",
+    "2": "admin.dao",
+    "3": "operario.dao",
 }
+# Atajos aceptados además del número y del usuario completo.
+ALIAS = {
+    "superadmin": "admin.sio", "sio": "admin.sio",
+    "admin": "admin.dao", "dao": "admin.dao",
+    "empleado": "operario.dao", "operario": "operario.dao",
+}
+GRUPOS = {"admin.sio": "SuperAdmin", "admin.dao": "Admin", "operario.dao": "Empleado"}
 
 
 def mensaje(texto: str = "") -> None:
@@ -102,12 +108,12 @@ def variable_secreto_cliente(client_id: str) -> str:
 
 
 def normalizar_rol(opcion: str) -> str | None:
-    opcion = opcion.strip().lower().removesuffix(".test")
+    opcion = opcion.strip().lower()
     if opcion in ROLES:
         return ROLES[opcion]
     if opcion in ROLES.values():
         return opcion
-    return None
+    return ALIAS.get(opcion)
 
 
 class CredencialesInvalidas(Exception):
@@ -115,15 +121,15 @@ class CredencialesInvalidas(Exception):
 
 
 def elegir_rol() -> str | None:
-    """Menú principal: un rol de prueba (`<rol>.test`) o `OPCION_EMPRESAS` para un usuario de empresa."""
+    """Menú principal: un usuario de prueba o `OPCION_EMPRESAS` para un usuario de empresa."""
     while True:
         mensaje("\nSeleccione un rol:")
         for numero, rol in ROLES.items():
-            mensaje(f"{numero}. {rol.capitalize()}")
+            mensaje(f"{numero}. {rol} ({GRUPOS[rol]})")
         mensaje(f"{OPCION_EMPRESAS}. Usuarios de empresas")
         mensaje("0. Salir")
 
-        mensaje("\nIngrese el número o nombre del rol: ")
+        mensaje("\nIngrese el número o el usuario: ")
         opcion = input().strip().lower()
 
         if opcion in ("0", "salir", "exit"):
@@ -283,7 +289,7 @@ def obtener_token(rol: str) -> str:
     payload = {
         "grant_type": "password",
         "client_id": "sio-web",
-        "username": f"{rol}.test",
+        "username": rol,
         "password": leer_contrasena(),
         "scope": "openid",
     }
@@ -293,7 +299,7 @@ def obtener_token(rol: str) -> str:
 
 
 def obtener_token_usuario(username: str) -> str:
-    """Token de un usuario nominal del realm (no `*.test`) con su contraseña del entorno."""
+    """Token de un usuario nominal del realm (no de prueba) con su contraseña del entorno."""
     payload = {
         "grant_type": "password",
         "client_id": "sio-web",
@@ -363,7 +369,7 @@ def main() -> int:
     if len(sys.argv) > 1:
         rol = normalizar_rol(sys.argv[1])
         if rol is None:
-            mensaje(f"Rol no válido: {sys.argv[1]}. Opciones: {', '.join(ROLES.values())}.")
+            mensaje(f"Rol no válido: {sys.argv[1]}. Opciones: {', '.join(ROLES.values())} (o superadmin, admin, empleado).")
             return 1
     else:
         token = menu()

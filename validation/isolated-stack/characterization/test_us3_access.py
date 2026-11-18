@@ -31,7 +31,7 @@ ACCESS = ("operational-context GET /api/v1/operational-access",)
 
 @pytest.fixture(scope="module")
 def world(seed, users, run_id):
-    admin = users("admin.test")
+    admin = users("admin.sio")
     colombia = expect(admin.get(f"{URLS['geography']}/global-countries", params={"iso3_code": "COL"}))["items"][0]["id"]
 
     def branch(company_id: str, code: str) -> dict:
@@ -47,11 +47,11 @@ def world(seed, users, run_id):
     c = seed.company(admin, colombia, f"US3C{run_id}")
     d = seed.company(admin, colombia, f"US3D{run_id}")
     e = seed.company(admin, colombia, f"US3E{run_id}")
-    admin_c = seed.member(admin, colombia, c, "admin.test")
-    supervisor_c = seed.member(admin, colombia, c, "supervisor.test")
-    admin_d = seed.member(admin, colombia, d, "admin.test")
-    seed.member(admin, colombia, e, "admin.test")
-    supervisor_e = seed.member(admin, colombia, e, "supervisor.test")
+    admin_c = seed.member(admin, colombia, c, "admin.sio")
+    supervisor_c = seed.member(admin, colombia, c, "admin.dao")
+    admin_d = seed.member(admin, colombia, d, "admin.sio")
+    seed.member(admin, colombia, e, "admin.sio")
+    supervisor_e = seed.member(admin, colombia, e, "admin.dao")
 
     b1, b2, b3, b4 = (branch(c, code) for code in ("B1", "B2", "B3", "B4"))
     d1, e1 = branch(d, "D1"), branch(e, "E1")
@@ -105,19 +105,19 @@ CONSUMERS = {
 
 # (nombre, usuario, empresa, sucursal o None, causa en Operational Context)
 MATRIX = [
-    ("permitido_empresa", "admin.test", "C", None, "allowed"),
-    ("permitido_sucursal", "admin.test", "C", "B1", "allowed"),
-    ("no_miembro_empresa_inexistente", "admin.test", "NUEVA", None, "USER_NOT_MEMBER"),
-    ("no_miembro_sucursal_inexistente", "admin.test", "C", "NUEVA", "USER_NOT_MEMBER"),
-    ("no_miembro_empresa_ajena", "supervisor.test", "D", None, "USER_NOT_MEMBER"),
-    ("no_miembro_sucursal_ajena", "supervisor.test", "D", "D1", "USER_NOT_MEMBER"),
-    ("membresia_inactiva_empresa", "supervisor.test", "E", None, "USER_MEMBERSHIP_INACTIVE"),
-    ("membresia_inactiva_sucursal", "supervisor.test", "E", "E1", "USER_MEMBERSHIP_INACTIVE"),
-    ("empresa_inactiva_lectura", "admin.test", "D", None, "COMPANY_INACTIVE"),
-    ("empresa_inactiva_sucursal", "admin.test", "D", "D1", "COMPANY_INACTIVE"),
-    ("sucursal_inactiva", "admin.test", "C", "B3", "BRANCH_INACTIVE"),
-    ("sucursal_no_asignada", "admin.test", "C", "B2", "BRANCH_NOT_ASSIGNED"),
-    ("asignacion_inactiva", "supervisor.test", "C", "B1", "USER_BRANCH_INACTIVE"),
+    ("permitido_empresa", "admin.sio", "C", None, "allowed"),
+    ("permitido_sucursal", "admin.sio", "C", "B1", "allowed"),
+    ("no_miembro_empresa_inexistente", "admin.sio", "NUEVA", None, "USER_NOT_MEMBER"),
+    ("no_miembro_sucursal_inexistente", "admin.sio", "C", "NUEVA", "USER_NOT_MEMBER"),
+    ("no_miembro_empresa_ajena", "admin.dao", "D", None, "USER_NOT_MEMBER"),
+    ("no_miembro_sucursal_ajena", "admin.dao", "D", "D1", "USER_NOT_MEMBER"),
+    ("membresia_inactiva_empresa", "admin.dao", "E", None, "USER_MEMBERSHIP_INACTIVE"),
+    ("membresia_inactiva_sucursal", "admin.dao", "E", "E1", "USER_MEMBERSHIP_INACTIVE"),
+    ("empresa_inactiva_lectura", "admin.sio", "D", None, "COMPANY_INACTIVE"),
+    ("empresa_inactiva_sucursal", "admin.sio", "D", "D1", "COMPANY_INACTIVE"),
+    ("sucursal_inactiva", "admin.sio", "C", "B3", "BRANCH_INACTIVE"),
+    ("sucursal_no_asignada", "admin.sio", "C", "B2", "BRANCH_NOT_ASSIGNED"),
+    ("asignacion_inactiva", "admin.dao", "C", "B1", "USER_BRANCH_INACTIVE"),
 ]
 
 
@@ -158,7 +158,7 @@ def test_access_matrix(world, users, book, reads, consumer, name, username, comp
 @pytest.mark.parametrize("consumer", sorted(CONSUMERS))
 def test_branch_deactivation_blocks_immediately(world, users, book, consumer, run_id, seed):
     """Se permite en B4; se inactiva B4; la petición siguiente ya se rechaza (sin caché, FR-034)."""
-    admin = users("admin.test")
+    admin = users("admin.sio")
     target = expect(admin.post(f"{OC}/companies/{world['C']}/branches", json={
         "code": f"B4{consumer[:3].upper()}{run_id}", "name": f"Sucursal ficticia bloqueo {consumer} {run_id}"}))
     expect(admin.post(f"{OC}/application-users/{world['admin_C']}/user-branches", json={"branch_id": target["id"]}))
@@ -178,7 +178,7 @@ def test_branch_deactivation_blocks_immediately(world, users, book, consumer, ru
 def test_caida_de_operational_context(world, users, outage_book):
     """T079: con la base de Operational Context caída, cada consumidor que verifica el acceso del usuario responde el
     503 de hoy, a tiempo: Sales, Inventory, Commercial Relationship y Audit (los demás, en sus historias)."""
-    admin = users("admin.test")
+    admin = users("admin.sio")
     company = world["C"]
     checks = {
         "sales": lambda: sales_company(admin, company),

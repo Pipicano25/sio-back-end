@@ -7,11 +7,11 @@ from sio_mvp.journal import ExpectedAudit
 
 pytestmark = pytest.mark.unit
 
-SUBS = {"admin.test": "sub-admin", "compras.test": "sub-compras", "service-account-commercial-relationship-service": "sub-cr"}
+SUBS = {"admin.sio": "sub-admin", "operario.dao": "sub-compras", "service-account-commercial-relationship-service": "sub-cr"}
 COMPANY = "c-1"
 
 
-def expected(action, entity_id="e-1", *, entity_type="Purchase", scope="COMPANY", actor="compras.test", correlation=None, step="P-01", result="SUCCESS"):
+def expected(action, entity_id="e-1", *, entity_type="Purchase", scope="COMPANY", actor="operario.dao", correlation=None, step="P-01", result="SUCCESS"):
     return ExpectedAudit(step, "purchase", action, entity_type, entity_id, scope, COMPANY if scope == "COMPANY" else None, actor, correlation, result)
 
 
@@ -139,7 +139,7 @@ def test_detects_protected_values_and_cost_fields():
     )
     result = checker(fake, protected_values={"1023456789"}).check(
         [
-            expected("CREATE_PERSON_IDENTITY", "x", entity_type="PersonIdentity", scope="PLATFORM", actor="admin.test"),
+            expected("CREATE_PERSON_IDENTITY", "x", entity_type="PersonIdentity", scope="PLATFORM", actor="admin.sio"),
             expected("CONFIRM_SALE", "s", entity_type="Sale"),
         ]
     )
@@ -151,7 +151,7 @@ def test_detects_protected_values_and_cost_fields():
 def test_markers_are_not_protected_values():
     fake = FakeAudit({("PersonIdentity", "x"): [event("CREATE_PERSON_IDENTITY", "x", entity_type="PersonIdentity", company=None, sub="sub-admin", new={"identification_number": "<registrado>"})]})
     result = checker(fake, protected_values={"1023456789"}).check(
-        [expected("CREATE_PERSON_IDENTITY", "x", entity_type="PersonIdentity", scope="PLATFORM", actor="admin.test")]
+        [expected("CREATE_PERSON_IDENTITY", "x", entity_type="PersonIdentity", scope="PLATFORM", actor="admin.sio")]
     )
     assert result.ok
 
@@ -192,10 +192,10 @@ def test_report_has_one_entry_per_entity(tmp_path):
 def test_actor_by_application_user_when_no_keycloak_sub():
     """Purchase y Sales identifican al autor con `application_user_id` (usuario operativo de la empresa)."""
     fake = FakeAudit({("Purchase", "e-1"): [dict(event("CREATE_PURCHASE", sub=None), application_user_id="au-compras")]})
-    ok = checker(fake, application_users={"compras.test": "au-compras"}).check([expected("CREATE_PURCHASE")])
+    ok = checker(fake, application_users={"operario.dao": "au-compras"}).check([expected("CREATE_PURCHASE")])
     assert ok.ok
     other = FakeAudit({("Purchase", "e-1"): [dict(event("CREATE_PURCHASE", sub=None), application_user_id="au-otro")]})
-    wrong = checker(other, application_users={"compras.test": "au-compras"}).check([expected("CREATE_PURCHASE")])
+    wrong = checker(other, application_users={"operario.dao": "au-compras"}).check([expected("CREATE_PURCHASE")])
     assert wrong.summary["wrong_actor"] == 1
     missing_actor = FakeAudit({("Purchase", "e-1"): [event("CREATE_PURCHASE", sub=None)]})
     assert checker(missing_actor).check([expected("CREATE_PURCHASE")]).summary["wrong_actor"] == 1

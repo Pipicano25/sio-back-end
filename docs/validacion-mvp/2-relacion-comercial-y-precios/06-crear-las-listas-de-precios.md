@@ -6,7 +6,7 @@ Ejercicio 2 — Relación comercial y precios: proveedor, cliente, productos, ad
 
 ## 1. Crear la lista de precios GENERAL
 
-Paso `C-12.lista_general` · usuario **`admin.test`** · ítems de la FASE 10: 8
+Paso `C-12.lista_general` · usuario **`admin.sio`** · ítems de la FASE 10: 8
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists
@@ -23,7 +23,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists
 
 **Permiso que exige la URL:** `perm:commercial-relationship:price_lists:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -37,7 +37,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists
 
 ## 2. Crear la lista de precios MAYORISTA
 
-Paso `C-12.lista_mayorista` · usuario **`admin.test`** · ítems de la FASE 10: 8
+Paso `C-12.lista_mayorista` · usuario **`admin.sio`** · ítems de la FASE 10: 8
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists
@@ -54,7 +54,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists
 
 **Permiso que exige la URL:** `perm:commercial-relationship:price_lists:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -68,7 +68,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists
 
 ## 3. Precio de la unidad del producto A en GENERAL
 
-Paso `C-12.item_general` · usuario **`admin.test`** · ítems de la FASE 10: 8
+Paso `C-12.item_general` · usuario **`admin.sio`** · ítems de la FASE 10: 8
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
@@ -85,7 +85,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
 
 **Permiso que exige la URL:** `perm:commercial-relationship:price_list_items:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -99,7 +99,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
 
 ## 4. Precio de la unidad del producto B en GENERAL
 
-Paso `C-12.item_b` · usuario **`admin.test`** · ítems de la FASE 10: 8
+Paso `C-12.item_b` · usuario **`admin.sio`** · ítems de la FASE 10: 8
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
@@ -116,7 +116,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
 
 **Permiso que exige la URL:** `perm:commercial-relationship:price_list_items:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -126,7 +126,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
 
 ## 5. Precio de la caja del producto A en MAYORISTA
 
-Paso `C-12.item_mayorista` · usuario **`admin.test`** · ítems de la FASE 10: 8
+Paso `C-12.item_mayorista` · usuario **`admin.sio`** · ítems de la FASE 10: 8
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
@@ -143,7 +143,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
 
 **Permiso que exige la URL:** `perm:commercial-relationship:price_list_items:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Respuesta esperada:** `201`
 
@@ -153,7 +153,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-list-items
 
 ## 6. Configurar la tasa de impuesto de compra de los productos A y B (0 %)
 
-Paso `C-12.tasas` · usuario **`admin.test`** · ítems de la FASE 10: 8
+Paso `C-12.tasas` · usuario **`admin.sio`** · ítems de la FASE 10: 8
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products/purchase-taxes/batch
@@ -178,7 +178,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products/purchas
 
 **Permiso que exige la URL:** `perm:commercial-relationship:company_product_purchase_taxes:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:update`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:update`)
 
 **Por qué se hace así**
 
@@ -192,7 +192,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/company-products/purchas
 
 ## 7. Crear la lista de precios AUTOMATICA
 
-Paso `C-12.lista_automatica` · usuario **`admin.test`** · ítems de la FASE 10: 8
+Paso `C-12.lista_automatica` · usuario **`admin.sio`** · ítems de la FASE 10: 8
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists
@@ -209,7 +209,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists
 
 **Permiso que exige la URL:** `perm:commercial-relationship:price_lists:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 
@@ -223,7 +223,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists
 
 ## 8. Crear la política de ganancia (30 %) con las presentaciones que se compran
 
-Paso `C-12.politica` · usuario **`admin.test`** · ítems de la FASE 10: 8
+Paso `C-12.politica` · usuario **`admin.sio`** · ítems de la FASE 10: 8
 
 ```http
 POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists/<LISTA_AUTOMATICA>/pricing-policies
@@ -243,7 +243,7 @@ POST http://127.0.0.1:8106/api/v1/companies/<EMPRESA_A>/price-lists/<LISTA_AUTOM
 
 **Permiso que exige la URL:** `perm:commercial-relationship:pricing_policies:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:commercial-relationship:all:create`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:commercial-relationship:all:create`)
 
 **Por qué se hace así**
 

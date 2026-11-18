@@ -6,7 +6,7 @@ Ejercicio 5: Anulación.
 
 `POST /api/v1/companies/d14a0000-0000-4000-8000-000000000001/purchase-sequences`
 
-Ejecuta: `compras.test`.
+Ejecuta: `operario.dao`.
 
 ### Solicitud
 
@@ -34,11 +34,9 @@ Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque 
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
-| `admin.test` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `supervisor.test` | Sí | `—` | tiene `perm:purchase:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `compras.test` | Sí | `201` | tiene `perm:purchase:purchase_sequences:create` y asignación a la sucursal |
-| `ventas.test` | Sí | `—` | tiene `perm:purchase:purchase_sequences:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
-| `inventario.test` | Sí | `—` | tiene `perm:purchase:purchase_sequences:create` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `admin.sio` | Sí | `—` | tiene `perm:all:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `admin.dao` | Sí | `—` | tiene `perm:purchase:all:all` y asignación a la sucursal; no se repite (cambiaría el estado) |
+| `operario.dao` | Sí | `201` | tiene `perm:purchase:purchase_sequences:create` y asignación a la sucursal |
 
 Respuesta sin permiso (`403`), que no revela el permiso exigido:
 
@@ -75,8 +73,8 @@ Estado `201`.
   "version": 1,
   "created_at": "<asignado por el servicio>",
   "updated_at": "<asignado por el servicio>",
-  "created_by": "compras.test",
-  "updated_by": "compras.test",
+  "created_by": "operario.dao",
+  "updated_by": "operario.dao",
   "counters": []
 }
 ```

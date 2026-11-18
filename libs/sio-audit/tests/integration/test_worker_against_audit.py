@@ -6,7 +6,7 @@ Se ejecuta con `pytest -m integration` y exige el entorno integrado:
   contenedor `sio-audit-service` (la prueba lo detiene y lo vuelve a iniciar);
 - Keycloak con el cliente `audit-test-emitter` (secreto en `AUDIT_TEST_EMITTER_CLIENT_SECRET` o en
   `infrastructure/.env`) y la contraseña de los usuarios de prueba (`KEYCLOAK_TEST_USER_PASSWORD`);
-- Operational Context con alguna membresía `ACTIVE` de `admin.test` (la crean las pruebas de
+- Operational Context con alguna membresía `ACTIVE` de `admin.sio` (la crean las pruebas de
   integración de los servicios anteriores).
 
 La base del "emisor" es la base de pruebas de la librería (`audit_outbox`). Los datos son ficticios.
@@ -97,7 +97,7 @@ def admin_http():
     token = httpx.post(
         TOKEN_URL,
         data={"grant_type": "password", "client_id": "sio-web", "scope": "openid",
-              "username": "admin.test", "password": password},
+              "username": "admin.sio", "password": password},
         timeout=15,
     ).raise_for_status().json()["access_token"]
     with httpx.Client(headers={"Authorization": f"Bearer {token}"}, timeout=15) as client:
@@ -106,12 +106,12 @@ def admin_http():
 
 @pytest.fixture(scope="module")
 def company(admin_http) -> UUID:
-    """Empresa real donde `admin.test` es miembro `ACTIVE` (Operational Context)."""
+    """Empresa real donde `admin.sio` es miembro `ACTIVE` (Operational Context)."""
     body = admin_http.get(f"{OPERATIONAL_CONTEXT}/me/operational-context").raise_for_status().json()
     for membership in body["memberships"]:
         if membership["status"] == "ACTIVE" and membership["company_status"] == "ACTIVE":
             return UUID(membership["company_id"])
-    pytest.skip("admin.test no tiene membresías ACTIVE en Operational Context.")
+    pytest.skip("admin.sio no tiene membresías ACTIVE en Operational Context.")
 
 
 def _event(company: UUID, **changes) -> AuditEvent:

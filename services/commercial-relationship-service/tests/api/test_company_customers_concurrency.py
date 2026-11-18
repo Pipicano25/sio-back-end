@@ -20,7 +20,7 @@ def test_two_simultaneous_customers_with_the_same_identity(app, user_token, comp
         with TestClient(app, raise_server_exceptions=False) as client:
             barrier.wait()
             results.append(
-                ApiClient(client, user_token("admin.test")).post(
+                ApiClient(client, user_token("admin.sio")).post(
                     f"/api/v1/companies/{company}/company-customers",
                     json={"customer_kind": "PERSON", "person_identity_id": str(person),
                           "internal_code": code, "display_name": "Cliente"},

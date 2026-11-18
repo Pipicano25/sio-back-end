@@ -20,7 +20,7 @@ EX3 = dict(
     data_file="00-datos-ficticios.md",
     focus=(
         "Seleccionar **proveedores**, usar la **misma organización como cliente y proveedor**, **bloquear** con motivo "
-        "(solo `admin.test`), ver la **transición inválida** de un proveedor bloqueado, **modificarlo sin desbloquearlo** "
+        "(solo `admin.sio`), ver la **transición inválida** de un proveedor bloqueado, **modificarlo sin desbloquearlo** "
         "y **desbloquearlo**."
     ),
     data=[

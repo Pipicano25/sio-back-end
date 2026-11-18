@@ -6,42 +6,40 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 
 ## Resumen por usuario
 
-- **`admin.test`**: puede ejecutar **todo el ejercicio**.
-- **`supervisor.test`**: **no puede completar el ejercicio**. Se detiene en el paso 05 (*Retirar la versión vigente*): sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`. Sí puede hacer las consultas (`GET`) de los pasos 01, 04.
-- **`compras.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la regla `PASSPORT` (`PA`)*): sobre `party-identity` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 04.
-- **`ventas.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la regla `PASSPORT` (`PA`)*): sobre `party-identity` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 04.
-- **`inventario.test`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la regla `PASSPORT` (`PA`)*): sobre `party-identity` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 04.
+- **`admin.sio`**: puede ejecutar **todo el ejercicio**.
+- **`admin.dao`**: **no puede completar el ejercicio**. Se detiene en el paso 05 (*Retirar la versión vigente*): sobre `party-identity` solo tiene `create`, `read`, `update`; le falta `delete`. Sí puede hacer las consultas (`GET`) de los pasos 01, 04.
+- **`operario.dao`**: **no puede completar el ejercicio**. Se detiene en el paso 02 (*Crear la regla `PASSPORT` (`PA`)*): sobre `party-identity` solo tiene `read`; le falta `create`. Sí puede hacer las consultas (`GET`) de los pasos 01, 04.
 
-**Para hacer el ejercicio completo use `admin.test`.** `supervisor.test` puede crear, modificar y reactivar, pero no inactivar ni retirar.
+**Para hacer el ejercicio completo use `admin.sio`.** `admin.dao` puede crear, modificar y reactivar, pero no inactivar ni retirar.
 
 ## Permiso por URL
 
 ✅ = el usuario puede ejecutar la llamada · ❌ = recibe `403 Forbidden`.
 
-| Paso | Llamada | Método y URL | Permiso requerido | admin | supervisor | compras | ventas | inventario |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| [01](01-consultar-pais-y-reglas.md) | 1. Consultar el país Colombia en Geography Service | `GET http://localhost:8000/global-countries` | `perm:geography:global_countries:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [01](01-consultar-pais-y-reglas.md) | 2. Consultar las reglas activas de cédula (`CC`) de Colombia | `GET /api/v1/identification-type-rules` | `perm:party-identity:identification_type_rules:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [02](02-crear-regla.md) | 1. Crear la regla `PASSPORT` (`PA`) | `POST /api/v1/identification-type-rules` | `perm:party-identity:identification_type_rules:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [02](02-crear-regla.md) | 2. Intentar crear otra regla activa igual (rechazado) | `POST /api/v1/identification-type-rules` | `perm:party-identity:identification_type_rules:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [02](02-crear-regla.md) | 3. Intentar crear una regla con un patrón inválido (rechazado) | `POST /api/v1/identification-type-rules` | `perm:party-identity:identification_type_rules:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [03](03-corregir-descripcion.md) | 1. Corregir la descripción y el ejemplo | `PUT /api/v1/identification-type-rules/{id}` | `perm:party-identity:identification_type_rules:update` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [03](03-corregir-descripcion.md) | 2. Intentar cambiar el patrón con `PUT` (rechazado) | `PUT /api/v1/identification-type-rules/{id}` | `perm:party-identity:identification_type_rules:update` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [04](04-nueva-version.md) | 1. Crear la nueva versión con el patrón corregido | `POST /api/v1/identification-type-rules/{id}/versions` | `perm:party-identity:identification_type_rules:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| [04](04-nueva-version.md) | 2. Consultar la regla anterior | `GET /api/v1/identification-type-rules/{id}` | `perm:party-identity:identification_type_rules:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| [05](05-retirar-regla.md) | 1. Retirar la versión vigente | `POST /api/v1/identification-type-rules/{id}/deactivate` | `perm:party-identity:identification_type_rules:delete` | ✅ | ❌ | ❌ | ❌ | ❌ |
-| [05](05-retirar-regla.md) | 2. Intentar retirarla otra vez (rechazado) | `POST /api/v1/identification-type-rules/{id}/deactivate` | `perm:party-identity:identification_type_rules:delete` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Paso | Llamada | Método y URL | Permiso requerido | admin.sio | admin.dao | operario.dao |
+| --- | --- | --- | --- | --- | --- | --- |
+| [01](01-consultar-pais-y-reglas.md) | 1. Consultar el país Colombia en Geography Service | `GET http://localhost:8000/global-countries` | `perm:geography:global_countries:read` | ✅ | ✅ | ✅ |
+| [01](01-consultar-pais-y-reglas.md) | 2. Consultar las reglas activas de cédula (`CC`) de Colombia | `GET /api/v1/identification-type-rules` | `perm:party-identity:identification_type_rules:read` | ✅ | ✅ | ✅ |
+| [02](02-crear-regla.md) | 1. Crear la regla `PASSPORT` (`PA`) | `POST /api/v1/identification-type-rules` | `perm:party-identity:identification_type_rules:create` | ✅ | ✅ | ❌ |
+| [02](02-crear-regla.md) | 2. Intentar crear otra regla activa igual (rechazado) | `POST /api/v1/identification-type-rules` | `perm:party-identity:identification_type_rules:create` | ✅ | ✅ | ❌ |
+| [02](02-crear-regla.md) | 3. Intentar crear una regla con un patrón inválido (rechazado) | `POST /api/v1/identification-type-rules` | `perm:party-identity:identification_type_rules:create` | ✅ | ✅ | ❌ |
+| [03](03-corregir-descripcion.md) | 1. Corregir la descripción y el ejemplo | `PUT /api/v1/identification-type-rules/{id}` | `perm:party-identity:identification_type_rules:update` | ✅ | ✅ | ❌ |
+| [03](03-corregir-descripcion.md) | 2. Intentar cambiar el patrón con `PUT` (rechazado) | `PUT /api/v1/identification-type-rules/{id}` | `perm:party-identity:identification_type_rules:update` | ✅ | ✅ | ❌ |
+| [04](04-nueva-version.md) | 1. Crear la nueva versión con el patrón corregido | `POST /api/v1/identification-type-rules/{id}/versions` | `perm:party-identity:identification_type_rules:create` | ✅ | ✅ | ❌ |
+| [04](04-nueva-version.md) | 2. Consultar la regla anterior | `GET /api/v1/identification-type-rules/{id}` | `perm:party-identity:identification_type_rules:read` | ✅ | ✅ | ✅ |
+| [05](05-retirar-regla.md) | 1. Retirar la versión vigente | `POST /api/v1/identification-type-rules/{id}/deactivate` | `perm:party-identity:identification_type_rules:delete` | ✅ | ❌ | ❌ |
+| [05](05-retirar-regla.md) | 2. Intentar retirarla otra vez (rechazado) | `POST /api/v1/identification-type-rules/{id}/deactivate` | `perm:party-identity:identification_type_rules:delete` | ✅ | ❌ | ❌ |
 
 ## Ejemplos de uso con los usuarios
 
 La contraseña de todos los usuarios de prueba es la variable `KEYCLOAK_TEST_USER_PASSWORD` de `infrastructure/.env`. Cárguela en la terminal antes de pedir tokens.
 
-### 1. Ejecutar el ejercicio con `admin.test`
+### 1. Ejecutar el ejercicio con `admin.sio`
 
 ```bash
-TOKEN_ADMIN=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
+TOKEN_ADMIN_SIO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=admin.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
+  -d username=admin.sio -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
   | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 ```
 
@@ -49,19 +47,19 @@ Por ejemplo, el paso 02 (*Crear la regla de pasaporte*):
 
 ```bash
 curl -s -X POST "http://localhost:8002/api/v1/identification-type-rules" \
-  -H "Authorization: Bearer $TOKEN_ADMIN" \
+  -H "Authorization: Bearer $TOKEN_ADMIN_SIO" \
   -H "Content-Type: application/json" \
   -d '{"party_kind": "PERSON", "country_id": "<PAIS_CO>", "identification_type": "PASSPORT", "sigla": "PA", "number_pattern": "^[A-Z0-9]{6,9}$", "number_pattern_description": "Pasaporte: 6 a 9 letras o dígitos.", "example_value": "AB123456"}'
 ```
 
-Responde `201 Created`: `admin.test` tiene `perm:all:all:all`, que cubre `perm:party-identity:identification_type_rules:create`. Reemplace las variables `<…>` por los `id` guardados.
+Responde `201 Created`: `admin.sio` tiene `perm:all:all:all`, que cubre `perm:party-identity:identification_type_rules:create`. Reemplace las variables `<…>` por los `id` guardados.
 
-### 2. `ventas.test` (Empleado) intenta una acción reservada (rechazado)
+### 2. `operario.dao` (Empleado) intenta una acción reservada (rechazado)
 
 ```bash
 TOKEN_EMPLEADO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=ventas.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
+  -d username=operario.dao -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
   | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 ```
 
@@ -88,29 +86,29 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-`ventas.test` sobre `party-identity` solo tiene `read`; le falta `create`: el grupo `empleado` crea, consulta y modifica personas, organizaciones y sus contactos, pero la URL exige `perm:party-identity:identification_type_rules:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
+`operario.dao` sobre `party-identity` solo tiene `read`; le falta `create`: el grupo `empleado` crea, consulta y modifica personas, organizaciones y sus contactos, pero la URL exige `perm:party-identity:identification_type_rules:create`. El servicio no ejecuta nada: ni siquiera valida el cuerpo.
 
-### 3. `ventas.test` (Empleado) consulta (permitido)
+### 3. `operario.dao` (Empleado) consulta (permitido)
 
 ```bash
 curl -s -X GET "http://localhost:8002/api/v1/identification-type-rules?country_id=<PAIS_CO>&sigla=CC&is_active=true" \
   -H "Authorization: Bearer $TOKEN_EMPLEADO"
 ```
 
-Responde `200 OK` con la misma información que ve `admin.test` en el paso 01: `perm:party-identity:identification_type_rules:read` cubre `perm:party-identity:identification_type_rules:read`. También pueden: `supervisor.test`, `compras.test`, `inventario.test`.
+Responde `200 OK` con la misma información que ve `admin.sio` en el paso 01: `perm:party-identity:identification_type_rules:read` cubre `perm:party-identity:identification_type_rules:read`. También pueden: `admin.dao`.
 
-### 4. `supervisor.test` intenta inactivar o retirar (rechazado)
+### 4. `admin.dao` intenta inactivar o retirar (rechazado)
 
 ```bash
-TOKEN_SUPERVISOR=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
+TOKEN_ADMIN_DAO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/openid-connect/token \
   -d grant_type=password -d client_id=sio-web -d scope=openid \
-  -d username=supervisor.test -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
+  -d username=admin.dao -d "password=$KEYCLOAK_TEST_USER_PASSWORD" \
   | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 ```
 
 ```bash
 curl -s -X POST "http://localhost:8002/api/v1/identification-type-rules/<REGLA_PA_V2>/deactivate" \
-  -H "Authorization: Bearer $TOKEN_SUPERVISOR" \
+  -H "Authorization: Bearer $TOKEN_ADMIN_DAO" \
   -H "Content-Type: application/json" \
   -d '{"version": 1}'
 ```
@@ -129,7 +127,7 @@ Respuesta `403 Forbidden`:
 }
 ```
 
-`supervisor.test` (grupo `admin`) tiene `perm:party-identity:all:read`, `:all:create` y `:all:update`, pero **no** `delete`. Inactivar o retirar queda para `admin.test` (grupo `superadmin`). El grupo `empleado` tampoco puede.
+`admin.dao` (grupo `admin`) tiene `perm:party-identity:all:read`, `:all:create` y `:all:update`, pero **no** `delete`. Inactivar o retirar queda para `admin.sio` (grupo `superadmin`). El grupo `empleado` tampoco puede.
 
 ### 5. Sin token (rechazado)
 

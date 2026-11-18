@@ -30,7 +30,7 @@ Permisos, usuarios y cómo obtener los tokens: [usuarios-y-permisos.md](usuarios
   `INVENTORY_TEST_OPERATOR_CLIENT_SECRET`. Nunca se escriben contraseñas ni tokens en estos documentos.
 - Purchase y Sales todavía no existen: las operaciones las aplica la cuenta de servicio de pruebas.
 - Ajustes y conteos (013): el usuario debe estar asignado a la sucursal en Operational Context; las
-  políticas solo las configuran `admin.test` y `supervisor.test`.
+  políticas solo las configuran `admin.sio` y `admin.dao`.
 
 ## Convenciones
 

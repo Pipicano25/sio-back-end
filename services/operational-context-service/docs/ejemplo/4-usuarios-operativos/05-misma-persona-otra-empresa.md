@@ -2,7 +2,7 @@
 
 Ejercicio 4 — Usuarios operativos de una empresa · [← Paso anterior](04-consultar-usuarios.md) · [Orden del ejercicio](ORDEN.md)
 
-**Objetivo:** Registrar a `compras.test` también en la empresa B y retirarlo solo de esa empresa.
+**Objetivo:** Registrar a `operario.dao` también en la empresa B y retirarlo solo de esa empresa.
 
 **Necesita (de pasos anteriores):** `<EMPRESA_B>`, `<PERSONA_COMPRADOR>`, `<USR_COMPRADOR_A>` — pasos [01](01-consultar-personas.md), [02](02-registrar-empresas.md), [03](03-registrar-usuarios.md)
 
@@ -10,7 +10,7 @@ Ejercicio 4 — Usuarios operativos de una empresa · [← Paso anterior](04-con
 
 ---
 
-## 1. Registrar a compras.test en la empresa B
+## 1. Registrar a operario.dao en la empresa B
 
 ```http
 POST /api/v1/companies/<EMPRESA_B>/application-users
@@ -18,7 +18,7 @@ POST /api/v1/companies/<EMPRESA_B>/application-users
 
 ```json
 {
-  "username": "compras.test",
+  "username": "operario.dao",
   "person_identity_id": "<PERSONA_COMPRADOR>",
   "display_name": "Comprador (ficticio)"
 }
@@ -26,8 +26,8 @@ POST /api/v1/companies/<EMPRESA_B>/application-users
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:create`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:create`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `create`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:create`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `operational-context` solo tiene `read`; le falta `create`
 - ℹ️ Para registrar un usuario operativo el token debe poder leer `person_identities` en Party Identity (el servicio valida la persona con ese token); la cuenta de Keycloak la verifica el servicio con su propia identidad técnica.
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
@@ -41,7 +41,7 @@ POST /api/v1/companies/<EMPRESA_B>/application-users
 {
   "id": "<USR_COMPRADOR_B>",
   "company_id": "<EMPRESA_B>",
-  "keycloak_user_id": "compras.test",
+  "keycloak_user_id": "operario.dao",
   "person_identity_id": "<PERSONA_COMPRADOR>",
   "display_name": "Comprador (ficticio)",
   "status": "ACTIVE",
@@ -65,8 +65,8 @@ POST /api/v1/application-users/<USR_COMPRADOR_B>/deactivate
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:delete`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:delete`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `delete`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:delete`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `operational-context` solo tiene `read`; le falta `delete`
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
@@ -90,7 +90,7 @@ GET /api/v1/application-users/<USR_COMPRADOR_A>
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:read`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:read`), `compras.test` (por `perm:operational-context:all:read`), `ventas.test` (por `perm:operational-context:all:read`), `inventario.test` (por `perm:operational-context:all:read`)
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:read`), `operario.dao` (por `perm:operational-context:all:read`)
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**
@@ -121,8 +121,8 @@ POST /api/v1/application-users/<USR_COMPRADOR_B>/reactivate
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:update`
 
-- ✅ **Pueden:** `admin.test` (por `perm:all:all:all`), `supervisor.test` (por `perm:operational-context:all:update`)
-- ❌ **No pueden (responde `403`):** `compras.test`, `ventas.test`, `inventario.test` — sobre `operational-context` solo tienen `read`; les falta `update`
+- ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:update`)
+- ❌ **No pueden (responde `403`):** `operario.dao` — sobre `operational-context` solo tiene `read`; le falta `update`
 - 🔒 Aislamiento por empresa (Fase B): además del permiso, el usuario debe tener membresía `ACTIVE` en la empresa o `platform:administer`; si no, la URL responde `404`, igual que un `id` inexistente.
 
 **Por qué se hace así**

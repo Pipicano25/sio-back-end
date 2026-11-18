@@ -174,7 +174,7 @@ evaluate_permission(roles, required)  # True
 
 ## Pruebas reales contra Keycloak
 
-`tests/validar_token_env.py` obtiene un token real de `admin.test` y lo valida con
+`tests/validar_token_env.py` obtiene un token real de `admin.sio` y lo valida con
 `sio-auth`. No se ejecuta con la suite ordinaria (no sigue el patrón `test_*.py`):
 
 ```bash

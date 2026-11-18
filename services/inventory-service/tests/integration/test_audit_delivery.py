@@ -88,7 +88,7 @@ def test_adjustment_and_count_completion_reach_audit_once(admin, operator, real_
     """013 (R-11; quickstart 21): `CREATE_INVENTORY_ADJUSTMENT` y `COMPLETE_INVENTORY_COUNT` llegan una vez."""
     product = real_world.products[0]
     assert operator.post(f"{INVENTORY}/inventory-entries", json=operation(real_world, (product, "6"), unit_cost="40")).status_code == 201
-    with user_client("inventario.test") as inventario:
+    with user_client("operario.dao") as inventario:
         adjustment = inventario.post(
             f"{INVENTORY}/companies/{real_world.company}/inventory-adjustments",
             json={

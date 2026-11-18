@@ -55,7 +55,7 @@ def test_indicators_by_owner_with_categories_a_to_e(world, as_user) -> None:
     assert other["products_with_positive_balance"] == other["products_with_zero_balance"] == 0
 
 
-@pytest.mark.parametrize("user", ["bodeguero.sintetico", "supervisor.test"])
+@pytest.mark.parametrize("user", ["bodeguero.sintetico", "admin.dao"])
 def test_at_most_four_calls_and_no_balance_walks(world, as_user, user) -> None:
     """FR-022-57 y CP-149: OC (2), CR (conteo) e INV-3; los dobles fallan si se recorren saldos o productos."""
     seed_categories(world)
@@ -81,7 +81,7 @@ def test_branch_scope(world, as_user) -> None:
 def test_no_quantities_by_unit_no_out_of_stock_and_no_costs(world, as_user) -> None:
     """CP-147, CP-153 y D-022-10."""
     seed_categories(world)
-    for user in ("bodeguero.sintetico", "supervisor.test"):
+    for user in ("bodeguero.sintetico", "admin.dao"):
         keys = keys_in(summary(world, as_user(user)))
         assert "quantities_by_base_unit" not in keys and "products_out_of_stock" not in keys
         assert not {key for key in keys if any(word in key for word in COST_WORDS)}
@@ -90,7 +90,7 @@ def test_no_quantities_by_unit_no_out_of_stock_and_no_costs(world, as_user) -> N
 def test_summary_is_operational_only_for_every_user(world, as_user) -> None:
     """La valoración está fuera de la spec 022: ni `supervisor` ni `admin` la reciben; INV-3 no la recibe pedida."""
     seed_categories(world)
-    for user in ("bodeguero.sintetico", "supervisor.test", "admin.test"):
+    for user in ("bodeguero.sintetico", "admin.dao", "admin.sio"):
         body = summary(world, as_user(user))
         assert set(body) == {"company_id", "resolved_at", "adopted_products", "branches", "consolidated"}
         assert "inventory_value" not in keys_in(body) and "currency_code" not in keys_in(body)
