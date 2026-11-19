@@ -16,6 +16,9 @@ from party_identity_service.infrastructure.identification_type_rule_repository i
 from party_identity_service.infrastructure.models import IdentificationTypeRuleModel
 from tests.conftest import COLOMBIA_ID
 
+# Crea sus propias reglas: arranca sin las de Colombia (DS-03, enmienda 2026-11-18).
+pytestmark = pytest.mark.empty_rules
+
 
 @pytest.fixture
 def repository(db_session) -> SQLAlchemyIdentificationTypeRuleRepository:

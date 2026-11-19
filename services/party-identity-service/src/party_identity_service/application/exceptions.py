@@ -112,6 +112,17 @@ class InvalidIdentificationNumberError(PartyIdentityError):
     )
 
 
+class UnsupportedIdentificationTypeError(PartyIdentityError):
+    """La sigla no tiene una regla activa para el tipo de parte y el país."""
+
+    code = "UNSUPPORTED_IDENTIFICATION_TYPE"
+    title = "Tipo de identificación no permitido"
+    default_message = (
+        "El tipo de identificación no tiene una regla activa para el país "
+        "indicado. Consulte las siglas permitidas en identification-type-rules."
+    )
+
+
 class BirthDateRequiredError(PartyIdentityError):
     """La regla aplicable exige fecha de nacimiento."""
 

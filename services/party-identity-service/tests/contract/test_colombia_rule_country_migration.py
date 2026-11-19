@@ -24,6 +24,17 @@ from tests.contract.test_migrations import reset_schema
 
 VARIABLE = "PARTY_IDENTITY_SEED_COUNTRY_ID"
 PREVIOUS = "0019_audit_outbox"
+# Estas pruebas verifican 0020 sola: 0023 cambia después el patrón del NIT (enmienda 2026-11-18).
+TARGET = "0020_fix_co_rule_country"
+# Patrón y textos del NIT de la época de la 017, antes de 0023.
+HISTORIC_NIT = {
+    "number_pattern": "^[A-Z0-9]{4,11}-[0-9]$",
+    "example_value": "900123456-7",
+    "PERSON": "Numero de Identificacion Tributaria: base alfanumerica de 4 a 11 caracteres, guion y "
+    "digito de verificacion.",
+    "ORGANIZATION": "Numero de Identificacion Tributaria de organizacion: base alfanumerica de 4 a 11 "
+    "caracteres, guion y digito de verificacion.",
+}
 HISTORIC_COUNTRY = "cf160c2d-b6de-4ef5-9257-a0a8539058d9"
 CORRECTIONS = "identification_type_rule_country_corrections"
 CONTENT = (
@@ -65,6 +76,18 @@ def _orphans(engine: Engine, existing_countries: set) -> list[dict]:
     return [rule for rule in _rules(engine) if rule["country_id"] not in existing_countries]
 
 
+def _historic(rule: dict) -> dict:
+    """La regla del `seed` como era antes de 0023 (NIT alfanumérico)."""
+    if rule["sigla"] != "NIT":
+        return rule
+    return {
+        **rule,
+        "number_pattern": HISTORIC_NIT["number_pattern"],
+        "number_pattern_description": HISTORIC_NIT[rule["party_kind"]],
+        "example_value": HISTORIC_NIT["example_value"],
+    }
+
+
 def _insert_seed_copies(engine: Engine, country_id=COLOMBIA_ID) -> None:
     """Estado del entorno de la 017: el `seed` creó las 8 reglas con el país real."""
     with engine.begin() as connection:
@@ -78,7 +101,7 @@ def _insert_seed_copies(engine: Engine, country_id=COLOMBIA_ID) -> None:
                     ":number_pattern_description, :example_value, :min_age_years, :max_age_years, true, 1, "
                     ":actor, :actor)"
                 ),
-                {**rule, "country": country_id, "actor": SEED_ACTOR},
+                {**_historic(rule), "country": country_id, "actor": SEED_ACTOR},
             )
 
 
@@ -128,7 +151,7 @@ def test_upgrade_from_previous_keeps_historic_rules_and_retires_seed_copies(sche
     assert len(before) == 16
     assert sum(rule["country_id"] == COLOMBIA_ID for rule in before.values()) == 8
 
-    command.upgrade(build_alembic_config(), "head")
+    command.upgrade(build_alembic_config(), TARGET)
 
     after = {rule["id"]: rule for rule in _rules(schema)}
     assert after.keys() == before.keys()  # nada se borra ni se recrea
@@ -152,7 +175,7 @@ def test_upgrade_from_previous_keeps_historic_rules_and_retires_seed_copies(sche
 def test_downgrade_restores_exactly_and_upgrade_is_deterministic(schema: Engine, monkeypatch) -> None:
     before = _at_previous_with_seed_copies(schema, monkeypatch)
     config = build_alembic_config()
-    command.upgrade(config, "head")
+    command.upgrade(config, TARGET)
     first = _rules(schema)
 
     monkeypatch.delenv(VARIABLE)  # el downgrade no necesita el país
@@ -162,7 +185,7 @@ def test_downgrade_restores_exactly_and_upgrade_is_deterministic(schema: Engine,
     assert CORRECTIONS not in inspect(schema).get_table_names()
 
     monkeypatch.setenv(VARIABLE, str(COLOMBIA_ID))
-    command.upgrade(config, "head")
+    command.upgrade(config, TARGET)
     second = _rules(schema)
     ignore = ("valid_to", "updated_at")
     assert [{k: v for k, v in rule.items() if k not in ignore} for rule in second] == [
@@ -179,7 +202,7 @@ def test_upgrade_without_valid_country_fails_without_writing(schema: Engine, mon
         monkeypatch.setenv(VARIABLE, value)
 
     with pytest.raises(RuntimeError, match=VARIABLE):
-        command.upgrade(build_alembic_config(), "head")
+        command.upgrade(build_alembic_config(), TARGET)
 
     assert _revision(schema) == PREVIOUS
     assert _rules(schema) == before
@@ -191,7 +214,7 @@ def test_upgrade_where_colombia_keeps_historic_uuid_changes_nothing(schema: Engi
     command.upgrade(build_alembic_config(), PREVIOUS)
     before = _rules(schema)
 
-    command.upgrade(build_alembic_config(), "head")
+    command.upgrade(build_alembic_config(), TARGET)
 
     assert _rules(schema) == before
     assert {str(rule["country_id"]) for rule in before} == {HISTORIC_COUNTRY}
@@ -208,7 +231,7 @@ def test_upgrade_refuses_to_retire_a_rule_not_created_by_the_seed(schema: Engine
     before = _rules(schema)
 
     with pytest.raises(RuntimeError, match="no la creó el seed"):
-        command.upgrade(build_alembic_config(), "head")
+        command.upgrade(build_alembic_config(), TARGET)
 
     assert _revision(schema) == PREVIOUS
     assert _rules(schema) == before
@@ -229,7 +252,7 @@ def test_upgrade_refuses_unknown_rules_with_historic_country(schema: Engine, mon
     before = _rules(schema)
 
     with pytest.raises(RuntimeError, match="no son las 8 reglas"):
-        command.upgrade(build_alembic_config(), "head")
+        command.upgrade(build_alembic_config(), TARGET)
 
     assert _rules(schema) == before
 

@@ -34,8 +34,16 @@ Reglas principales de la Fase A:
 
 - País + tipo + número de identificación es único (también frente a identidades inactivas).
 - El número y el tipo se normalizan (sin espacios exteriores, en mayúsculas) y se validan contra las
-  reglas activas de la sigla: basta con cumplir una. Si no hay regla para la sigla se aplican solo
-  validaciones base (obligatorio, máximo 40, unicidad).
+  reglas activas de la sigla: basta con cumplir una. Solo se aceptan siglas con al menos una regla
+  activa para el tipo de parte y el país; si no la hay (sigla mal escrita como `TRPE`, o un país sin
+  reglas), responde `422 UNSUPPORTED_IDENTIFICATION_TYPE` y no guarda nada (DS-03, enmienda del
+  2026-11-18). Hoy, en Colombia: organizaciones `NIT`; personas `CC`, `CE`, `TI`, `RC` y `NIT`. Para
+  habilitar otra sigla u otro país se crean sus reglas en `identification-type-rules`.
+- El `NIT` (persona y organización) es estricto desde la migración `0023` (2026-11-18): base de 6 a 10
+  dígitos, sin letras, guion y dígito de verificación de la DIAN (módulo 11; pesos 3, 7, 13, 17, 19,
+  23, 29, 37, 41, 43, 47… de derecha a izquierda; residuo 0 o 1 es el dígito, si no 11 − residuo). Un
+  dígito que no corresponde responde `422 INVALID_IDENTIFICATION_NUMBER` e indica el esperado. La
+  migración falla sin escribir si queda alguna identidad activa con un `NIT` con letras.
 - Una regla con edades exige `birth_date` y valida la edad (zona operativa `America/Bogota`).
 - Las modificaciones llevan la `version` leída (`409` si está desactualizada). Solo se consulta
   Geography y se revalida el número si cambia el país, el tipo o el número; un `PUT` sin cambios

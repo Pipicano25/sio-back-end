@@ -23,7 +23,8 @@ def test_rejections_record_no_event(audited_api, anonymous, api_as, create_compa
 
     assert anonymous.post("/api/v1/companies", json=company_payload(fake_organizations.add())).status_code == 401
     assert api_as("perm:operational-context:companies:read").put(url, json=update_body(company, timezone="America/Lima")).status_code == 403
-    assert audited_api.put(f"/api/v1/companies/{company['id'][:-1]}0", json=update_body(company)).status_code in (404, 422)
+    other_id = company["id"][:-1] + ("1" if company["id"].endswith("0") else "0")  # nunca el mismo id
+    assert audited_api.put(f"/api/v1/companies/{other_id}", json=update_body(company)).status_code in (404, 422)
     assert audited_api.put(url, json=update_body(company, timezone="America/Lima", version=99)).status_code == 409
     assert audited_api.put(url, json=update_body(company, timezone="Zona/Inexistente")).status_code == 422
     assert audited_api.post("/api/v1/companies", json=company_payload(company["organization_identity_id"])).status_code == 409

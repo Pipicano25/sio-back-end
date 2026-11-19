@@ -48,7 +48,7 @@ Por ejemplo, el paso 02 (*Registrar la organización y la persona*):
 curl -s -X POST "http://localhost:8002/api/v1/organization-identities" \
   -H "Authorization: Bearer $TOKEN_ADMIN_SIO" \
   -H "Content-Type: application/json" \
-  -d '{"country_id": "<PAIS_CO>", "identification_type": "NIT", "identification_number": "900000006-6", "legal_name": "LABORATORIO CONTACTOS FICTICIO S.A.S."}'
+  -d '{"country_id": "<PAIS_CO>", "identification_type": "NIT", "identification_number": "900000006-9", "legal_name": "LABORATORIO CONTACTOS FICTICIO S.A.S."}'
 ```
 
 Responde `201 Created`: `admin.sio` tiene `perm:all:all:all`, que cubre `perm:party-identity:organization_identities:create`. Reemplace las variables `<…>` por los `id` guardados.

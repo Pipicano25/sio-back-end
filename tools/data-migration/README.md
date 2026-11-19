@@ -181,8 +181,11 @@ país y ciudad) se referencian por `*_code` y **no** tienen CSV.
   - se identifican por sus identificadores globales (GTIN, BARCODE, IUM), **nunca por nombre**;
   - no se fusionan productos distintos ni se duplican por diferencias de presentación;
   - un GTIN distinto no implica por sí solo un producto distinto.
-- **Fabricante:** si no hay un fabricante real verificado se usa `ORG-COL-INTERNAL_CODE-GENERIC_MANUFACTURER`
-  (FABRICANTE GENERICO). Nunca se inventan fabricantes.
+- **Fabricante:** solo se registra un fabricante real verificado, con su NIT y el dígito de verificación correcto.
+  Si no lo hay, `manufacturer_organization_ref` queda vacío y el producto se carga sin fabricante. Nunca se
+  inventan fabricantes ni NIT. Desde el 2026-11-18 ya no existe el FABRICANTE GENERICO
+  (`ORG-COL-INTERNAL_CODE-GENERIC_MANUFACTURER`): Party Identity exige un NIT numérico con dígito de verificación
+  de la DIAN, y un fabricante ficticio no tiene uno. En DAO, 1905 productos quedaron sin fabricante.
 - **Precios y costos:** vacío significa dato faltante, **nunca 0**. No se generan valores simulados sin aprobación.
 - **Categorías:** taxonomía global de SIO (principales y subcategorías), no la de un cliente. Las clasificaciones
   originales del cliente (tipos, grupos, líneas) se guardan por registro en `source_classifications.csv` y nunca se

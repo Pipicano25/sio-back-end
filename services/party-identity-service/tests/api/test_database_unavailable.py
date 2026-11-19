@@ -19,6 +19,9 @@ from sqlalchemy.orm import Session, sessionmaker
 from party_identity_service.api.errors import DATABASE_UNAVAILABLE_DETAIL
 from tests.conftest import organization_payload, person_payload, rule_payload
 
+# Crea sus propias reglas: arranca sin las de Colombia (DS-03, enmienda 2026-11-18).
+pytestmark = pytest.mark.empty_rules
+
 UNREACHABLE = "postgresql+psycopg://nadie:nada@127.0.0.1:1/ninguna"
 PERSONS = "/api/v1/person-identities"
 ORGANIZATIONS = "/api/v1/organization-identities"
@@ -35,7 +38,7 @@ def seeded(api) -> dict[str, str]:
         sigla="NIT",
         number_pattern="^[A-Z0-9]{4,11}-[0-9]$",
         number_pattern_description="El NIT lleva guion y dígito de verificación.",
-        example_value="900123456-7",
+        example_value="900123456-8",
         min_age_years=None,
     )
     assert api.post("/api/v1/identification-type-rules", json=nit).status_code == 201

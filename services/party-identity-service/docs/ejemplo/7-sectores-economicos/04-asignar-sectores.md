@@ -20,7 +20,7 @@ POST /api/v1/organization-identities
 {
   "country_id": "<PAIS_CO>",
   "identification_type": "NIT",
-  "identification_number": "900000007-7",
+  "identification_number": "900000007-6",
   "legal_name": "CAFE Y TIENDA FICTICIA S.A.S."
 }
 ```

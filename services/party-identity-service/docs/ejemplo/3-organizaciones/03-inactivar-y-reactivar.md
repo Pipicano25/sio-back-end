@@ -36,7 +36,7 @@ POST /api/v1/organization-identities/<ORG_EJEMPLO>/deactivate
 {
   "id": "<ORG_EJEMPLO>",
   "identification_type": "NIT",
-  "identification_number": "900000001-1",
+  "identification_number": "900000001-2",
   "legal_name": "COMERCIALIZADORA EJEMPLO FICTICIA S.A.S.",
   "registration_status": "ACTIVA",
   "status": "INACTIVE",
@@ -101,7 +101,7 @@ POST /api/v1/organization-identities/<ORG_EJEMPLO>/reactivate
 {
   "id": "<ORG_EJEMPLO>",
   "identification_type": "NIT",
-  "identification_number": "900000001-1",
+  "identification_number": "900000001-2",
   "legal_name": "COMERCIALIZADORA EJEMPLO FICTICIA S.A.S.",
   "registration_status": "ACTIVA",
   "status": "ACTIVE",
@@ -129,7 +129,7 @@ GET /api/v1/organization-identities/<ORG_EJEMPLO>
 {
   "id": "<ORG_EJEMPLO>",
   "identification_type": "NIT",
-  "identification_number": "900000001-1",
+  "identification_number": "900000001-2",
   "legal_name": "COMERCIALIZADORA EJEMPLO FICTICIA S.A.S.",
   "registration_status": "ACTIVA",
   "status": "ACTIVE",

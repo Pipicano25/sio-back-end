@@ -74,8 +74,8 @@ ALIAS = {
     "empleado": "operario.dao", "operario": "operario.dao",
 }
 GRUPOS = {
-    "admin.sio": "superadmin",
-    "admin.dao": "admin",
+    "admin.sio": "superadmin, admin y las tres áreas",
+    "admin.dao": "admin y las tres áreas",
     "operario.dao": "Compras, Ventas e Inventario",
     "alex": "superadmin, admin y las tres áreas",
     "manuel": "admin y las tres áreas",

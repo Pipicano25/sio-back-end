@@ -20,7 +20,7 @@
 | Tema | Decisión |
 | --- | --- |
 | Reglas de Colombia | La carga inicial (`python -m party_identity_service.seed load`) deja 8 reglas activas; se consultan sin modificarlas. |
-| Pasaporte | No existe regla `PA`: sin regla, una persona con esa sigla solo tiene validaciones base (DS-03). Crear la regla hace que se valide el formato. |
+| Pasaporte | No existe regla `PA`: sin regla, una persona con esa sigla se rechaza con `422 UNSUPPORTED_IDENTIFICATION_TYPE` (DS-03). Crear la regla habilita la sigla y valida su formato. |
 | Cambio de patrón | No se hace con `PUT`: se crea una **nueva versión** (`POST .../versions`). La anterior queda histórica (`is_active: false`, `valid_to` informado) para conservar con qué regla se validó cada dato. |
 | Retiro | `POST .../deactivate` deja la regla histórica; nunca se elimina (D7). Una regla histórica no admite cambios. |
 

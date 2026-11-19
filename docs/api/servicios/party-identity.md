@@ -116,7 +116,7 @@ Global: cualquier usuario con el permiso ve todas las identidades, sin membresí
 
 ## Validación de números de identificación
 
-Al crear o modificar una identidad, el servicio busca las **reglas activas** del tipo de parte (`PERSON` u `ORGANIZATION`), el país y la sigla (`identification_type`, normalizado a mayúsculas). Si existen reglas para esa sigla, el número (normalizado) debe cumplir la expresión regular de al menos una; si no, `422 INVALID_IDENTIFICATION_NUMBER` con la descripción de las reglas. Si la regla define edades (`min_age_years`, `max_age_years`), `birth_date` es obligatoria (`422 BIRTH_DATE_REQUIRED`) y debe estar en rango (`422 AGE_OUT_OF_RANGE`); una fecha futura → `422 BIRTH_DATE_IN_FUTURE`. Sin reglas para la sigla solo aplican las validaciones básicas. Un país inexistente en Geography → `422 COUNTRY_NOT_FOUND`. La combinación país + tipo + número es **única** (`409 DUPLICATE_IDENTIFICATION`). Las siglas válidas por país se consultan con la operación 15.
+Al crear o modificar una identidad, el servicio busca las **reglas activas** del tipo de parte (`PERSON` u `ORGANIZATION`), el país y la sigla (`identification_type`, normalizado a mayúsculas). Si existen reglas para esa sigla, el número (normalizado) debe cumplir la expresión regular de al menos una; si no, `422 INVALID_IDENTIFICATION_NUMBER` con la descripción de las reglas. Si la regla define edades (`min_age_years`, `max_age_years`), `birth_date` es obligatoria (`422 BIRTH_DATE_REQUIRED`) y debe estar en rango (`422 AGE_OUT_OF_RANGE`); una fecha futura → `422 BIRTH_DATE_IN_FUTURE`. Con la sigla `NIT` el número debe ser de 6 a 10 dígitos, guion y el dígito de verificación de la DIAN (módulo 11): `817004260-0` se acepta y `817004260-5` responde `422 INVALID_IDENTIFICATION_NUMBER` indicando el dígito esperado. Una sigla sin regla activa para el tipo de parte y el país (por ejemplo `TRPE`, o cualquier sigla en un país sin reglas) → `422 UNSUPPORTED_IDENTIFICATION_TYPE`. Un país inexistente en Geography → `422 COUNTRY_NOT_FOUND`. La combinación país + tipo + número es **única** (`409 DUPLICATE_IDENTIFICATION`). Las siglas válidas por país se consultan con la operación 15.
 
 ## Operaciones
 
@@ -475,7 +475,7 @@ Ejemplo de respuesta `200` (`PaginatedResponse_OrganizationIdentityResponse_`; v
 {
   "country_id": "c0a80101-0000-4000-8000-000000000001",
   "identification_type": "NIT",
-  "identification_number": "900123456-7",
+  "identification_number": "900123456-8",
   "legal_name": "Distribuidora Ejemplo S.A.S.",
   "trade_name": "DistriEjemplo"
 }
@@ -490,7 +490,7 @@ curl -sS -X POST 'https://sio-party-identity-dev.onrender.com/api/v1/organizatio
   -d '{
     "country_id": "c0a80101-0000-4000-8000-000000000001",
     "identification_type": "NIT",
-    "identification_number": "900123456-7",
+    "identification_number": "900123456-8",
     "legal_name": "Distribuidora Ejemplo S.A.S.",
     "trade_name": "DistriEjemplo"
   }'
@@ -894,7 +894,7 @@ Ejemplo de respuesta `201` (`IdentificationTypeRuleResponse`; valores ilustrativ
 
 ### 20. `POST /identification-type-rules/{rule_id}/deactivate`
 
-`HIGH_RISK`: sin regla activa para una sigla solo aplican las validaciones básicas. URL `https://sio-party-identity-dev.onrender.com/api/v1/identification-type-rules/{rule_id}/deactivate`; permiso `identification_type_rules:delete`; cuerpo `{"version": n}`. La regla queda histórica.
+`HIGH_RISK`: sin regla activa, esa sigla deja de aceptarse (`422 UNSUPPORTED_IDENTIFICATION_TYPE`) al crear o cambiar identificaciones. URL `https://sio-party-identity-dev.onrender.com/api/v1/identification-type-rules/{rule_id}/deactivate`; permiso `identification_type_rules:delete`; cuerpo `{"version": n}`. La regla queda histórica.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -2219,7 +2219,8 @@ Ejemplo de respuesta `200` (`LegalRepresentativeResponse`; valores ilustrativos)
 | Respuesta | Causa | Qué hacer |
 |---|---|---|
 | `409 PARTY_IDENTITY.DUPLICATE_IDENTIFICATION` | Ya existe una identidad con ese país, tipo y número | Buscarla (operaciones 3 o 9) y reutilizar su `id` |
-| `422 PARTY_IDENTITY.INVALID_IDENTIFICATION_NUMBER` | El número no cumple la regla activa de la sigla | Mostrar `number_pattern_description` de la regla (operación 15) |
+| `422 PARTY_IDENTITY.INVALID_IDENTIFICATION_NUMBER` | El número no cumple la regla activa de la sigla, o el dígito de verificación del `NIT` no corresponde | Mostrar `number_pattern_description` de la regla (operación 15) |
+| `422 PARTY_IDENTITY.UNSUPPORTED_IDENTIFICATION_TYPE` | La sigla no tiene regla activa para el tipo de parte y el país | Ofrecer solo las siglas de la operación 15 |
 | `422 …BIRTH_DATE_REQUIRED` / `AGE_OUT_OF_RANGE` | La regla exige edad | Pedir fecha de nacimiento |
 | `422 …CONFIRMATION_MEMBERSHIP_INVALID` | El usuario no tiene membresía activa en `confirmed_by_company_id` | Usar la empresa activa del usuario |
 | `422 …PERSON_IDENTITY_INACTIVE` / `ORGANIZATION_IDENTITY_INACTIVE` | Identidad inactiva | Reactivarla (operaciones 8 o 14) si procede |

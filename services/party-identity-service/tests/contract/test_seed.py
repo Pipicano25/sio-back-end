@@ -16,6 +16,9 @@ from party_identity_service.seed.data import COLOMBIAN_RULES
 from party_identity_service.seed.loader import load_seed
 from tests.conftest import COLOMBIA_ID
 
+# Crea sus propias reglas: arranca sin las de Colombia (DS-03, enmienda 2026-11-18).
+pytestmark = pytest.mark.empty_rules
+
 
 def _count(session) -> int:
     return session.scalar(select(func.count()).select_from(IdentificationTypeRuleModel))

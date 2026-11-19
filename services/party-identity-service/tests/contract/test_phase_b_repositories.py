@@ -63,7 +63,7 @@ def _data(email: str = "ana@ejemplo-ficticio.co") -> ContactData:
 @pytest.fixture
 def organization(db_session):
     return SQLAlchemyOrganizationIdentityRepository(db_session).create(
-        country_id=COLOMBIA_ID, identification_type="NIT", identification_number="900000001-1",
+        country_id=COLOMBIA_ID, identification_type="NIT", identification_number="900000001-2",
         legal_name="ORG FICTICIA", trade_name=None, organization_type=None,
         registration_status=None, website=None, actor_id=ACTOR,
     )

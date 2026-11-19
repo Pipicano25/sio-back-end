@@ -30,7 +30,7 @@ def repository(db_session) -> SQLAlchemyOrganizationIdentityRepository:
     return SQLAlchemyOrganizationIdentityRepository(db_session)
 
 
-def _create(repository, number="900000001-1", **overrides):
+def _create(repository, number="900000001-2", **overrides):
     values = {
         "country_id": COLOMBIA_ID,
         "identification_type": "NIT",
@@ -54,7 +54,7 @@ def test_create_persists_organization_without_verification_digit(repository, db_
     organization = _create(repository)
     stored = db_session.get(OrganizationIdentityModel, organization.id)
 
-    assert stored.identification_number == "900000001-1"
+    assert stored.identification_number == "900000001-2"
     assert not hasattr(stored, "verification_digit")
     assert stored.status == "ACTIVE"
     assert stored.created_by == ACTOR_ID
@@ -105,9 +105,9 @@ def test_update_of_missing_organization_is_not_found(repository) -> None:
 
 
 def test_list_defaults_to_active_and_filters(repository) -> None:
-    active = _create(repository, "900000001-1", registration_status="ACTIVA")
-    inactive = _create(repository, "900000002-2")
-    other_country = _create(repository, "900000003-3", country_id=uuid4())
+    active = _create(repository, "900000001-2", registration_status="ACTIVA")
+    inactive = _create(repository, "900000002-1")
+    other_country = _create(repository, "900000003-7", country_id=uuid4())
     repository.set_status(inactive.id, expected_version=1, status="INACTIVE", actor_id=ACTOR_ID)
 
     assert {o.id for o in _list(repository).items} == {active.id, other_country.id}
@@ -117,9 +117,9 @@ def test_list_defaults_to_active_and_filters(repository) -> None:
     assert [o.id for o in _list(repository, identification_type="NIT", country_id=COLOMBIA_ID).items] == [active.id]
 
 
-@pytest.mark.parametrize("term", ["00001-1", "ficticia", "COMERCIAL"])
+@pytest.mark.parametrize("term", ["00001-2", "ficticia", "COMERCIAL"])
 def test_search_by_number_legal_and_trade_name(repository, term) -> None:
-    organization = _create(repository, "900000001-1", trade_name="NOMBRE COMERCIAL")
-    _create(repository, "800000002-2", legal_name="OTRA EMPRESA")
+    organization = _create(repository, "900000001-2", trade_name="NOMBRE COMERCIAL")
+    _create(repository, "800000002-7", legal_name="OTRA EMPRESA")
 
     assert [o.id for o in _list(repository, search=term).items] == [organization.id]

@@ -6,6 +6,7 @@ from uuid import uuid4
 import pytest
 
 from party_identity_service.application.exceptions import (
+    UnsupportedIdentificationTypeError,
     AgeOutOfRangeError,
     VersionConflictError,
 )
@@ -73,7 +74,7 @@ def _org_values(**overrides) -> dict:
     values = {
         "country_id": COLOMBIA_ID,
         "identification_type": "NIT",
-        "identification_number": "900000001-1",
+        "identification_number": "900000001-2",
         "legal_name": "ORGANIZACION FICTICIA S.A.S.",
         "trade_name": None,
         "organization_type": None,
@@ -126,7 +127,9 @@ def test_person_country_change_calls_geography(people, countries) -> None:
     other = uuid4()
     countries.countries[other] = "PER"
 
-    people.update(person.id, expected_version=1, actor_id="editor", **_person_values(identification_country_id=other))
+    # Perú no tiene reglas: se consulta Geography y luego se rechaza la sigla (DS-03, enmienda 2026-11-18).
+    with pytest.raises(UnsupportedIdentificationTypeError):
+        people.update(person.id, expected_version=1, actor_id="editor", **_person_values(identification_country_id=other))
 
     assert countries.calls == [("exists", other)]
 
@@ -195,7 +198,7 @@ def test_organization_identification_change_calls_geography(organizations, count
         organization.id,
         expected_version=1,
         actor_id="editor",
-        **_org_values(identification_number="900000009-9"),
+        **_org_values(identification_number="900000009-0"),
     )
 
     assert countries.exists_calls == 1

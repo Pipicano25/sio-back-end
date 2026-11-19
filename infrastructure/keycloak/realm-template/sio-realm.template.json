@@ -2093,7 +2093,11 @@
       "lastName": "SIO",
       "email": "admin.sio@sio.local",
       "groups": [
-        "/superadmin"
+        "/superadmin",
+        "/admin",
+        "/Compras",
+        "/Ventas",
+        "/Inventario"
       ],
       "clientRoles": {
         "account": [
@@ -2119,7 +2123,10 @@
       "lastName": "DAO",
       "email": "admin.dao@sio.local",
       "groups": [
-        "/admin"
+        "/admin",
+        "/Compras",
+        "/Ventas",
+        "/Inventario"
       ],
       "clientRoles": {
         "account": [

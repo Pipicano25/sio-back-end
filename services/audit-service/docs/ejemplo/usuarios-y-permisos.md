@@ -14,8 +14,8 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 
 | Usuario | Grupo | Lectura de empresa | Lectura de plataforma | Registro |
 | --- | --- | --- | --- | --- |
-| `admin.sio` | `superadmin` | Sí | Sí | No (no es cuenta de servicio) |
-| `admin.dao` | `admin` | Sí | No | No (no es cuenta de servicio) |
+| `admin.sio` | `superadmin, admin, Compras, Ventas, Inventario` | Sí | Sí | No (no es cuenta de servicio) |
+| `admin.dao` | `admin, Compras, Ventas, Inventario` | Sí | No | No (no es cuenta de servicio) |
 | `operario.dao` | `Compras, Ventas, Inventario` | No | No | No (no es cuenta de servicio) |
 | `audit-test-emitter` | cuenta de servicio | No | No | Sí (`perm:audit:audit-events:create`) |
 

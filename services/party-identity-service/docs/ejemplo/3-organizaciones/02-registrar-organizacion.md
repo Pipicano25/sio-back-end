@@ -20,7 +20,7 @@ POST /api/v1/organization-identities
 {
   "country_id": "<PAIS_CO>",
   "identification_type": "NIT",
-  "identification_number": "900000001-1",
+  "identification_number": "900000001-2",
   "legal_name": "COMERCIALIZADORA EJEMPLO FICTICIA S.A.S.",
   "trade_name": "EJEMPLO FICTICIO",
   "organization_type": "SAS",
@@ -43,7 +43,7 @@ POST /api/v1/organization-identities
 {
   "id": "<ORG_EJEMPLO>",
   "identification_type": "NIT",
-  "identification_number": "900000001-1",
+  "identification_number": "900000001-2",
   "legal_name": "COMERCIALIZADORA EJEMPLO FICTICIA S.A.S.",
   "registration_status": "ACTIVA",
   "status": "ACTIVE",
@@ -85,7 +85,7 @@ POST /api/v1/organization-identities
 {
   "status": 422,
   "code": "PARTY_IDENTITY.INVALID_IDENTIFICATION_NUMBER",
-  "detail": "El número de identificación no cumple ninguna regla activa para la sigla indicada. Numero de Identificacion Tributaria de organizacion: base alfanumerica de 4 a 11 caracteres, guion y digito de verificacion."
+  "detail": "El número de identificación no cumple ninguna regla activa para la sigla indicada. Numero de Identificacion Tributaria de organizacion: base de 6 a 10 digitos, guion y digito de verificacion de la DIAN (modulo 11)."
 }
 ```
 
@@ -99,7 +99,7 @@ POST /api/v1/organization-identities
 {
   "country_id": "5e0c0f6e-0000-4000-8000-00000000dead",
   "identification_type": "NIT",
-  "identification_number": "900000002-2",
+  "identification_number": "900000002-1",
   "legal_name": "COMERCIALIZADORA EJEMPLO FICTICIA S.A.S.",
   "trade_name": "EJEMPLO FICTICIO",
   "organization_type": "SAS",

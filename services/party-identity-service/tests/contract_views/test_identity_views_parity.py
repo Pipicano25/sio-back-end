@@ -102,14 +102,14 @@ PERSONS = (
 
 ORGANIZATIONS = (
     # (número, razón social, nombre comercial, activa)
-    ("900000001-1", "ORGANIZACION FICTICIA S.A.S.", None, True),
-    ("900000002-2", "organizacion ficticia s.a.s.", "FICTICIA", True),
-    ("900000003-3", "ALFA LTDA", "ORGANIZACION ALFA", True),
+    ("900000001-2", "ORGANIZACION FICTICIA S.A.S.", None, True),
+    ("900000002-1", "organizacion ficticia s.a.s.", "FICTICIA", True),
+    ("900000003-7", "ALFA LTDA", "ORGANIZACION ALFA", True),
     ("900000004-4", "ALFA LTDA", None, True),  # empata en razón social: decide id
-    ("900000005-5", "BETA S.A.", "BETA", False),  # inactiva
-    ("900000006-6", "ÑANDÚ S.A.", "Ñandu_Comercial", True),
-    ("800000123-0", "GAMMA SAS", "GAMMA 123", True),
-    ("800000124-1", "DELTA SAS", None, True),
+    ("900000005-1", "BETA S.A.", "BETA", False),  # inactiva
+    ("900000006-9", "ÑANDÚ S.A.", "Ñandu_Comercial", True),
+    ("800000123-1", "GAMMA SAS", "GAMMA 123", True),
+    ("800000124-7", "DELTA SAS", None, True),
 )
 
 PERSON_SEARCHES = (None, "", "   ", "ana", "  ANA ", "prueba", "alvarez", "1000000", "123", "ñuñez", "_", "%",

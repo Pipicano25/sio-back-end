@@ -19,15 +19,15 @@ PROFILE_PERMISSIONS = {
 }
 
 
-def create_organization(api, number: str = "900000001-1") -> dict[str, Any]:
+def create_organization(api, number: str = "900000001-2") -> dict[str, Any]:
     response = api.post("/api/v1/organization-identities", json=organization_payload(identification_number=number))
     assert response.status_code == 201, response.text
     return response.json()
 
 
 def create_person(api, number: str = "1000000001") -> dict[str, Any]:
+    # Con la regla CC cargada (DS-03, enmienda 2026-11-18) la fecha de nacimiento es obligatoria.
     payload = person_payload(identification_number=number)
-    payload.pop("birth_date", None)
     response = api.post("/api/v1/person-identities", json=payload)
     assert response.status_code == 201, response.text
     return response.json()

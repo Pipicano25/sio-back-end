@@ -96,8 +96,8 @@ def test_sales_service_client_and_account() -> None:
 def test_test_users_and_who_sees_profitability() -> None:
     """`admin.sio` (superadmin) y `admin.dao` (admin) ven la rentabilidad; `operario.dao` (las tres áreas) no."""
     users = {user["username"]: user["groups"] for user in DATA["users"] if user.get("groups")}
-    assert users["admin.sio"] == ["/superadmin"]
-    assert users["admin.dao"] == ["/admin"]
+    assert users["admin.sio"] == ["/superadmin", "/admin", "/Compras", "/Ventas", "/Inventario"]
+    assert users["admin.dao"] == ["/admin", "/Compras", "/Ventas", "/Inventario"]
     assert users["operario.dao"] == ["/Compras", "/Ventas", "/Inventario"]
 
     def sees(groups: list[str]) -> bool:

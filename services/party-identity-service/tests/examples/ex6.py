@@ -8,7 +8,7 @@ CONTACT_SHOW = ["id", "organization_identity_id", "person_identity_id", "positio
 ORGANIZATION = {
     "country_id": "<PAIS_CO>",
     "identification_type": "NIT",
-    "identification_number": "900000006-6",
+    "identification_number": "900000006-9",
     "legal_name": "LABORATORIO CONTACTOS FICTICIO S.A.S.",
 }
 

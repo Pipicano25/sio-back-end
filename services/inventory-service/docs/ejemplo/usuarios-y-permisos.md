@@ -16,8 +16,8 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 
 | Usuario | Grupo | Stock y kardex | Ajustes y conteos | Políticas | Valoración | Aplicar operaciones |
 | --- | --- | --- | --- | --- | --- | --- |
-| `admin.sio` | `superadmin` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
-| `admin.dao` | `admin` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
+| `admin.sio` | `superadmin, admin, Compras, Ventas, Inventario` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
+| `admin.dao` | `admin, Compras, Ventas, Inventario` | Sí | Sí | Sí | Sí | No (no es cuenta de servicio) |
 | `operario.dao` | `Compras, Ventas, Inventario` | Sí | Sí | No | Sí | No (no es cuenta de servicio) |
 | `inventory-test-operator` | cuenta de servicio | Sí (`platform:lookup`) | No (no es usuario humano) | No (no es usuario humano) | Sí (`platform:lookup`) | Sí (entradas y salidas) |
 

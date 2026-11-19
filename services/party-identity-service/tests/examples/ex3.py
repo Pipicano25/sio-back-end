@@ -8,7 +8,7 @@ ORG_SHOW = ["id", "identification_type", "identification_number", "legal_name", 
 ORGANIZATION = {
     "country_id": "<PAIS_CO>",
     "identification_type": "NIT",
-    "identification_number": "900000001-1",
+    "identification_number": "900000001-2",
     "legal_name": "COMERCIALIZADORA EJEMPLO FICTICIA S.A.S.",
     "trade_name": "EJEMPLO FICTICIO",
     "organization_type": "SAS",
@@ -30,7 +30,7 @@ EX3 = dict(
         ("País inexistente (rechazo)", f"`{UNKNOWN_COUNTRY_ID}` (UUID ficticio que Geography no conoce)"),
     ],
     interpretation=[
-        ("Regla aplicada", "La regla `NIT` de organizaciones exige `^[A-Z0-9]{4,11}-[0-9]$`."),
+        ("Regla aplicada", "La regla `NIT` de organizaciones exige `^[0-9]{6,10}-[0-9]$` y el dígito de verificación de la DIAN."),
         ("País", "Se valida contra Geography: si no existe responde `422 COUNTRY_NOT_FOUND`; si Geography no responde, `503`."),
         ("`registration_status`", "Es el estado legal informativo; **no** controla el uso. El uso lo controla `status`."),
         ("Datos legales", "En un entorno real el NIT y la razón social se toman del RUT o del registro mercantil (RUES); "
@@ -77,7 +77,7 @@ EX3 = dict(
                     "Intentar registrar con un país inexistente (rechazado)",
                     "POST",
                     f"{API}/organization-identities",
-                    body={**ORGANIZATION, "country_id": UNKNOWN_COUNTRY_ID, "identification_number": "900000002-2"},
+                    body={**ORGANIZATION, "country_id": UNKNOWN_COUNTRY_ID, "identification_number": "900000002-1"},
                     why=["Geography responde que el país no existe: `422 COUNTRY_NOT_FOUND`; no se guarda nada."],
                     expect=422,
                     show=["status", "code"],

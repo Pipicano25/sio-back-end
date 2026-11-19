@@ -40,7 +40,7 @@ Respuesta `200` (modelo `PaginatedResponse[OrganizationIdentityResponse]`; valor
       "id": "0f1e2d3c-4b5a-4968-8776-655443322111",
       "country_id": "c0a80101-0000-4000-8000-000000000001",
       "identification_type": "NIT",
-      "identification_number": "900123456-7",
+      "identification_number": "900123456-8",
       "legal_name": "Distribuidora Ejemplo S.A.S.",
       "trade_name": "DistriEjemplo",
       "organization_type": null,

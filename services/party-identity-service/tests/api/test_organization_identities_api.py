@@ -4,6 +4,9 @@ import pytest
 
 from tests.conftest import organization_payload, random_uuid, rule_payload
 
+# Crea sus propias reglas: arranca sin las de Colombia (DS-03, enmienda 2026-11-18).
+pytestmark = pytest.mark.empty_rules
+
 BASE = "/api/v1/organization-identities"
 
 
@@ -15,7 +18,7 @@ def nit_rule(api) -> None:
         sigla="NIT",
         number_pattern="^[A-Z0-9]{4,11}-[0-9]$",
         number_pattern_description="El NIT lleva guion y dígito de verificación.",
-        example_value="900123456-7",
+        example_value="900123456-8",
         min_age_years=None,
     )
     assert api.post("/api/v1/identification-type-rules", json=rule).status_code == 201
@@ -70,7 +73,7 @@ def test_geography_unavailable_is_503(api, fake_countries) -> None:
 
 def test_collection_defaults_to_active(api, nit_rule) -> None:
     created = api.post(BASE, json=organization_payload()).json()
-    other = api.post(BASE, json=organization_payload(identification_number="900000002-2")).json()
+    other = api.post(BASE, json=organization_payload(identification_number="900000002-1")).json()
     api.post(f"{BASE}/{other['id']}/deactivate", json={"version": 1})
 
     assert [item["id"] for item in api.get(BASE).json()["items"]] == [created["id"]]

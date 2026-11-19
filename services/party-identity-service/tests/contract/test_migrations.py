@@ -193,7 +193,7 @@ def test_upgrade_over_phase_a_data_preserves_rows(fresh_schema: Engine) -> None:
         connection.execute(text(
             "INSERT INTO organization_identities (id, country_id, identification_type, "
             "identification_number, legal_name, status, version, created_by, updated_by) "
-            "VALUES (gen_random_uuid(), gen_random_uuid(), 'NIT', '900000999-1', "
+            "VALUES (gen_random_uuid(), gen_random_uuid(), 'NIT', '900000999-7', "
             "'ORGANIZACION FICTICIA', 'ACTIVE', 1, 'user-a', 'user-a')"
         ))
         before = connection.execute(text(

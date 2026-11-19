@@ -39,7 +39,7 @@ def test_close_current_then_repeat_then_never_existed(api, kind) -> None:
 
     # (3) identidad que nunca tuvo perfil
     other = (
-        create_organization(api, number="900000077-7")
+        create_organization(api, number="900000077-1")
         if kind == "organization"
         else create_person(api, number="1000000077")
     )

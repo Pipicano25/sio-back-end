@@ -23,8 +23,8 @@ Generado por `tests/examples/test_examples.py` a partir de la plantilla del real
 
 | Usuario | Grupo | Productos | Inventario | Bajo stock | Resumen | Precios | Existencias | Mínimos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `admin.sio` | `superadmin` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
-| `admin.dao` | `admin` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| `admin.sio` | `superadmin, admin, Compras, Ventas, Inventario` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| `admin.dao` | `admin, Compras, Ventas, Inventario` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
 | `operario.dao` | `Compras, Ventas, Inventario` | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
 
 ## Cómo obtener los tokens

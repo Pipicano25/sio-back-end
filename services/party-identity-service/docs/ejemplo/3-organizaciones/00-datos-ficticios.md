@@ -17,7 +17,7 @@
 
 | Tema | Decisión |
 | --- | --- |
-| Regla aplicada | La regla `NIT` de organizaciones exige `^[A-Z0-9]{4,11}-[0-9]$`. |
+| Regla aplicada | La regla `NIT` de organizaciones exige `^[0-9]{6,10}-[0-9]$` y el dígito de verificación de la DIAN. |
 | País | Se valida contra Geography: si no existe responde `422 COUNTRY_NOT_FOUND`; si Geography no responde, `503`. |
 | `registration_status` | Es el estado legal informativo; **no** controla el uso. El uso lo controla `status`. |
 | Datos legales | En un entorno real el NIT y la razón social se toman del RUT o del registro mercantil (RUES); nunca se inventan: el registro es global. |

@@ -276,4 +276,5 @@ class OrganizationIdentityService:
         match_identification_number(
             rules,
             identification_number,
+            sigla=identification_type,
         )

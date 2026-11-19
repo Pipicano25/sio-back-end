@@ -149,7 +149,7 @@ El realm incluye:
   `audit-test-emitter` e `inventory-test-operator`) y sus roles
 - Grupos `superadmin`, `admin`, `Compras`, `Ventas` e `Inventario` (spec 026, igual al servidor OCI; un usuario puede
   estar en varios y suma sus permisos)
-- Usuarios de prueba `admin.sio` (`superadmin`), `admin.dao` (`admin`) y `operario.dao` (las tres áreas), y los
+- Usuarios de prueba `admin.sio` (los cinco grupos), `admin.dao` (`admin` y las tres áreas) y `operario.dao` (las tres áreas), y los
   usuarios copiados del servidor OCI (`alex`, `manuel`, `pedro`, `tomas`), todos con `id` fijo y la contraseña de
   prueba
 
@@ -477,8 +477,8 @@ Pruebas del script (sin borrar nada): `bash infrastructure/scripts/tests/reset-b
 
 | Usuario | Grupo |
 | --- | --- |
-| `admin.sio` | `/superadmin` |
-| `admin.dao` | `/admin` |
+| `admin.sio` | `/superadmin`, `/admin`, `/Compras`, `/Ventas`, `/Inventario` |
+| `admin.dao` | `/admin`, `/Compras`, `/Ventas`, `/Inventario` |
 | `operario.dao` | `/Compras`, `/Ventas`, `/Inventario` |
 | `alex` | `/superadmin`, `/admin`, `/Compras`, `/Ventas`, `/Inventario` |
 | `manuel` | `/admin`, `/Compras`, `/Ventas`, `/Inventario` |

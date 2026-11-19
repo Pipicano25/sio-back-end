@@ -20,7 +20,7 @@ POST /api/v1/organization-identities
 {
   "country_id": "<PAIS_CO>",
   "identification_type": "NIT",
-  "identification_number": "900000008-8",
+  "identification_number": "900000008-3",
   "legal_name": "INVERSIONES REPRESENTACION FICTICIA S.A.S."
 }
 ```

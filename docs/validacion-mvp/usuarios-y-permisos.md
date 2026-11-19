@@ -16,8 +16,8 @@ empresas recibe `404`.
 
 | Usuario | Grupo | Permisos del grupo |
 | --- | --- | --- |
-| `admin.sio` | `superadmin` | `perm:all:all:all` |
-| `admin.dao` | `admin` | `perm:audit:audit-events:read`<br>`perm:business-reporting:purchases:read`<br>`perm:business-reporting:sales_by_branch:read`<br>`perm:business-reporting:stock_evolution:read`<br>`perm:business-reporting:top_selling_products:read`<br>`perm:commercial-relationship:all:create`<br>… (49 en total) |
+| `admin.sio` | `superadmin`, `admin`, `Compras`, `Ventas`, `Inventario` | `perm:all:all:all`<br>`perm:audit:audit-events:read`<br>`perm:business-reporting:purchases:read`<br>`perm:business-reporting:sales_by_branch:read`<br>`perm:business-reporting:stock_evolution:read`<br>`perm:business-reporting:top_selling_products:read`<br>… (108 en total) |
+| `admin.dao` | `admin`, `Compras`, `Ventas`, `Inventario` | `perm:audit:audit-events:read`<br>`perm:business-reporting:purchases:read`<br>`perm:business-reporting:sales_by_branch:read`<br>`perm:business-reporting:stock_evolution:read`<br>`perm:business-reporting:top_selling_products:read`<br>`perm:commercial-relationship:all:create`<br>… (107 en total) |
 | `operario.dao` | `Compras`, `Ventas`, `Inventario` | `perm:business-reporting:purchases:read`<br>`perm:business-reporting:stock_evolution:read`<br>`perm:business-reporting:top_selling_products:read`<br>`perm:commercial-relationship:company_customers:create`<br>`perm:commercial-relationship:company_customers:read`<br>`perm:commercial-relationship:company_product_presentations:read`<br>… (80 en total) |
 
 ## Cómo obtener el token

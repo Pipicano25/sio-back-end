@@ -15,6 +15,9 @@ import pytest
 
 from tests.conftest import COLOMBIA_ID, rule_payload
 
+# Crea sus propias reglas: arranca sin las de Colombia (DS-03, enmienda 2026-11-18).
+pytestmark = pytest.mark.empty_rules
+
 BASE = "/api/v1/identification-type-rules"
 
 

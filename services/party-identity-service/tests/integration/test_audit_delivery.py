@@ -7,6 +7,7 @@ Datos ficticios de validación con un número que cumple la regla vigente.
 
 from __future__ import annotations
 
+from party_identity_service.application.identification_rules import nit_check_digit
 import os
 import random
 import re
@@ -54,7 +55,7 @@ def _number(pattern: str) -> str:
     regex = re.compile(pattern)
     for _ in range(500):
         base = str(random.randint(1, 9)) + "".join(random.choice("0123456789") for _ in range(random.randint(7, 9)))
-        for candidate in (f"{base}-{random.randint(0, 9)}", base):
+        for candidate in (f"{base}-{nit_check_digit(base)}", base):
             if regex.fullmatch(candidate):
                 return candidate
     pytest.skip(f"No se pudo generar un número para {pattern!r}.")

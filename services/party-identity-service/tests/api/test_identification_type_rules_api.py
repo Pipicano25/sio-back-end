@@ -4,6 +4,9 @@ import pytest
 
 from tests.conftest import COLOMBIA_ID, random_uuid, rule_payload
 
+# Crea sus propias reglas: arranca sin las de Colombia (DS-03, enmienda 2026-11-18).
+pytestmark = pytest.mark.empty_rules
+
 BASE = "/api/v1/identification-type-rules"
 
 
@@ -46,7 +49,7 @@ def test_list_filters(api) -> None:
         identification_type="TAX_ID",
         sigla="NIT",
         number_pattern="^[0-9]{9}-[0-9]$",
-        example_value="900000001-1",
+        example_value="900000001-2",
         min_age_years=None,
     )
 

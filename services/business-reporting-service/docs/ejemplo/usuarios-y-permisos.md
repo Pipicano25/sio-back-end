@@ -9,8 +9,8 @@
 
 | Usuario | Grupo |
 | --- | --- |
-| `admin.sio` | `superadmin` |
-| `admin.dao` | `admin` |
+| `admin.sio` | `superadmin, admin, Compras, Ventas, Inventario` |
+| `admin.dao` | `admin, Compras, Ventas, Inventario` |
 | `operario.dao` | `Compras, Ventas, Inventario` |
 
 ## Cómo obtener el token

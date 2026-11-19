@@ -43,6 +43,7 @@ pythonpath = ["src"]
 addopts = "-ra -m 'not integration'"
 markers = [
     "integration: pruebas opcionales contra Keycloak o Geography reales",
+    "empty_rules: la prueba arranca sin las reglas de identificación de Colombia",
 ]
 
 [tool.hatch.metadata]

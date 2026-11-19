@@ -143,7 +143,7 @@ def test_phase_a_dependency_unavailable_keeps_code_and_adds_dependency(api, fake
         api.post("/api/v1/organization-identities", json={
             "country_id": random_uuid(),
             "identification_type": "NIT",
-            "identification_number": "900000001-1",
+            "identification_number": "900000001-2",
             "legal_name": "ORGANIZACION FICTICIA S.A.S.",
         }),
         503,

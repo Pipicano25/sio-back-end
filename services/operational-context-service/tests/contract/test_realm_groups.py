@@ -422,8 +422,8 @@ GROUP_IDS = {
 }
 
 USERS = {
-    "admin.sio": ("13fb7acf-dac0-4fba-ae39-6759c77c3f97", ["/superadmin"]),
-    "admin.dao": ("c623059e-c281-4bfb-b8ad-e648f6daa104", ["/admin"]),
+    "admin.sio": ("13fb7acf-dac0-4fba-ae39-6759c77c3f97", ["/superadmin", "/admin", "/Compras", "/Ventas", "/Inventario"]),
+    "admin.dao": ("c623059e-c281-4bfb-b8ad-e648f6daa104", ["/admin", "/Compras", "/Ventas", "/Inventario"]),
     "operario.dao": ("7a34c410-ce85-47d9-b897-8acb56e31449", ["/Compras", "/Ventas", "/Inventario"]),
     "alex": ("66730e09-9adf-4a5a-ad8e-f452f7af19fc", ["/Compras", "/Inventario", "/Ventas", "/admin", "/superadmin"]),
     "manuel": ("84a400d4-654f-4ebc-9d81-3dd4d1a567a5", ["/Compras", "/Inventario", "/Ventas", "/admin"]),

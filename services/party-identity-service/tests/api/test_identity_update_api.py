@@ -17,7 +17,7 @@ RESOURCES = {
         "rename": {"legal_name": "RENOMBRADA S.A.S."},
         "country_field": "country_id",
         "number_field": "identification_number",
-        "second_number": "900000099-9",
+        "second_number": "900000099-3",
     },
 }
 

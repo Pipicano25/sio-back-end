@@ -1093,7 +1093,7 @@ Permite que SIO valide documentos como cédula, pasaporte, documento de extranje
 
 La entidad no almacena identificaciones reales de personas u organizaciones; solo define el patrón, descripción y ejemplos necesarios para validar `identification_number`.
 
-Cuando no exista una regla activa para una combinación de tipo, país y tipo de identificación, el servicio aplica únicamente validaciones base como obligatoriedad, longitud máxima y unicidad funcional.
+Cuando no exista una regla activa para una combinación de tipo, país y tipo de identificación, el servicio rechaza la identificación (`422 UNSUPPORTED_IDENTIFICATION_TYPE`; DS-03, enmienda del 2026-11-18). Antes se aplicaban únicamente validaciones base como obligatoriedad, longitud máxima y unicidad funcional.
 
 ### Atributos
 
@@ -1151,8 +1151,13 @@ Reglas sugeridas para Colombia cuando se configure el `country_id` correspondien
 | `PERSON`     | `CITIZEN_ID_MODERN`    | `CC`    | `^[0-9]{10}$`            | 18+        | `1000000000`  |
 | `PERSON`     | `CITIZEN_ID_OLD`       | `CC`    | `^[0-9]{3,8}$`           | 18+        | `12345678`    |
 | `PERSON`     | `FOREIGN_CARD`         | `CE`    | `^[0-9]{3,7}$`           | 7+         | `1234567`     |
-| `PERSON`     | `TAX_ID`               | `NIT`   | `^[A-Z0-9]{4,11}-[0-9]$` | cualquiera | `900123456-7` |
+| `PERSON`     | `TAX_ID`               | `NIT`   | `^[0-9]{6,10}-[0-9]$`    | cualquiera | `900123456-8` |
 | `PERSON`     | `IDENTITY_CARD_OLD`    | `TI`    | `^[0-9]{11}$`            | 7 a 17     | `19991234567` |
+| `ORGANIZATION` | `TAX_ID`             | `NIT`   | `^[0-9]{6,10}-[0-9]$`    | no aplica  | `900123456-8` |
+
+Con la sigla `NIT`, además del patrón, el servicio exige el dígito de verificación de la DIAN (módulo
+11): `817004260-0` se acepta y `817004260-5` se rechaza con `422 INVALID_IDENTIFICATION_NUMBER`
+(enmienda del 2026-11-18, migración `0023`).
 
 ## 4.10 PersonIdentity
 
@@ -1190,7 +1195,7 @@ La entidad solo responde quién es la persona y no almacena relaciones comercial
 
 - La combinación país, tipo y número de identificación es única.
 - Cuando exista una regla activa en `IdentificationTypeRule` para `PERSON`, país y tipo de identificación, `identification_number` debe cumplir el patrón configurado.
-- Si no existe una regla activa, `identification_number` conserva validaciones base: obligatorio, longitud máxima y unicidad funcional.
+- Si no existe una regla activa para la sigla y el país, la identificación se rechaza (`422 UNSUPPORTED_IDENTIFICATION_TYPE`; DS-03, enmienda del 2026-11-18).
 - La identificación debe enmascararse cuando no sea necesario mostrarla completa.
 - No se deben fusionar personas solo por nombre, teléfono o correo.
 - Una persona con historia no se elimina físicamente.
@@ -1290,7 +1295,7 @@ No almacena compras, costos, descuentos, crédito, cartera ni evaluaciones priva
 - `country_id` es una referencia externa a Geography Service y no utiliza llave foránea física entre bases de datos.
 - `country_id` debe existir en Geography Service antes de crear o actualizar organizaciones.
 - Cuando exista una regla activa en `IdentificationTypeRule` para `ORGANIZATION`, país y sigla de identificación, `identification_number` debe cumplir el patrón configurado.
-- Si no existe una regla activa, `identification_number` conserva validaciones base: obligatorio, longitud máxima y unicidad funcional.
+- Si no existe una regla activa para la sigla y el país, la identificación se rechaza (`422 UNSUPPORTED_IDENTIFICATION_TYPE`; DS-03, enmienda del 2026-11-18).
 - No contiene información comercial privada ni saldos de cartera.
 - Una organización con historia no se elimina físicamente.
 

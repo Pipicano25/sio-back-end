@@ -36,8 +36,8 @@ def _create_contact(api, organization: dict, **payload) -> dict:
 
 
 def test_contact_person_view_matches_get(api, test_engine):
-    first = create_organization(api, "900000001-1")
-    second = create_organization(api, "900000002-2")
+    first = create_organization(api, "900000001-2")
+    second = create_organization(api, "900000002-1")
     person = create_person(api, "1000000001")
     contacts = [
         _create_contact(api, first, person_identity_id=person["id"], position="Gerente", is_primary=True),

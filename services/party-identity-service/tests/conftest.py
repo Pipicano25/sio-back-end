@@ -44,6 +44,7 @@ from party_identity_service.application.exceptions import (  # noqa: E402
 )
 from party_identity_service.config import Settings  # noqa: E402
 from party_identity_service.main import create_app  # noqa: E402
+from party_identity_service.seed.loader import load_seed  # noqa: E402
 
 TEST_ISSUER = "https://keycloak.test/realms/sio"
 TEST_AUDIENCE = "sio-api"
@@ -164,9 +165,21 @@ def truncate_all(engine: Engine) -> None:
         )
 
 
+def seed_colombian_rules(engine: Engine) -> None:
+    """Carga las 8 reglas de Colombia del módulo `seed`, como en la base real.
+
+    Desde la enmienda de DS-03 (2026-11-18) una sigla sin regla activa se rechaza,
+    así que crear personas u organizaciones necesita las reglas cargadas.
+    """
+    with Session(engine) as session:
+        load_seed(session, country_id=COLOMBIA_ID)
+
+
 @pytest.fixture
-def clean_database(test_engine: Engine) -> Generator[None, None, None]:
+def clean_database(test_engine: Engine, request: pytest.FixtureRequest) -> Generator[None, None, None]:
     truncate_all(test_engine)
+    if request.node.get_closest_marker("empty_rules") is None:
+        seed_colombian_rules(test_engine)
     yield
     truncate_all(test_engine)
 
@@ -531,7 +544,7 @@ def organization_payload(**overrides: Any) -> dict[str, Any]:
     payload = {
         "country_id": str(COLOMBIA_ID),
         "identification_type": "NIT",
-        "identification_number": "900000001-1",
+        "identification_number": "900000001-2",
         "legal_name": "ORGANIZACION FICTICIA S.A.S.",
     }
     payload.update(overrides)

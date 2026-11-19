@@ -207,8 +207,8 @@ rentabilidad, escritura en Operational Context ni eliminación de datos globales
 
 Se crean usuarios de prueba con los mismos permisos de grupo correspondientes:
 
-- `admin.sio` → grupo `/superadmin`
-- `admin.dao` → grupo `/admin`
+- `admin.sio` → grupos `/superadmin`, `/admin`, `/Compras`, `/Ventas` e `/Inventario`
+- `admin.dao` → grupos `/admin`, `/Compras`, `/Ventas` e `/Inventario`
 - `operario.dao` → grupos `/Compras`, `/Ventas` e `/Inventario`
 
 Además, los usuarios copiados del servidor OCI, con sus mismos `id`:

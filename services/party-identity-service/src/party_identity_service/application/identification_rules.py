@@ -12,6 +12,7 @@ from party_identity_service.application.exceptions import (
     BirthDateInFutureError,
     BirthDateRequiredError,
     InvalidIdentificationNumberError,
+    UnsupportedIdentificationTypeError,
 )
 
 from party_identity_service.domain.identification_type_rule import (
@@ -133,27 +134,89 @@ def operational_today() -> date:
     return datetime.now(OPERATIONAL_TIMEZONE).date()
 
 
+NIT_SIGLA = "NIT"
+
+# Pesos de la DIAN para el dígito de verificación del NIT, de derecha a izquierda.
+NIT_WEIGHTS = (3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71)
+
+
+def nit_check_digit(base: str) -> int:
+    """Calcula el dígito de verificación de un NIT colombiano (módulo 11 de la DIAN).
+
+    Cada dígito de la base, de derecha a izquierda, se multiplica por su peso; se suma y se toma
+    el residuo entre 11. Si el residuo es 0 o 1, ese es el dígito; si no, 11 menos el residuo.
+
+    Args:
+        base: Dígitos del NIT antes del guion (máximo 15).
+
+    Returns:
+        Dígito de verificación esperado.
+    """
+    total = sum(
+        int(digit) * weight
+        for digit, weight in zip(reversed(base), NIT_WEIGHTS)
+    )
+    remainder = total % 11
+    return remainder if remainder < 2 else 11 - remainder
+
+
+def validate_nit_check_digit(identification_number: str) -> None:
+    """Rechaza un NIT `base-dígito` cuyo dígito de verificación no corresponde a la base.
+
+    Raises:
+        InvalidIdentificationNumberError: Si el formato no es `dígitos-dígito` o el dígito no cuadra.
+    """
+    match = re.fullmatch(r"([0-9]{1,15})-([0-9])", identification_number)
+
+    if match is None:
+        raise InvalidIdentificationNumberError(
+            "El NIT debe tener solo dígitos, un guion y el dígito de verificación."
+        )
+
+    base, digit = match.group(1), int(match.group(2))
+    expected = nit_check_digit(base)
+
+    if digit != expected:
+        raise InvalidIdentificationNumberError(
+            f"El dígito de verificación del NIT no es válido: para la base {base} "
+            f"corresponde {expected}, no {digit}."
+        )
+
+
 def match_identification_number(
     rules: list[IdentificationRule],
     identification_number: str,
+    sigla: str | None = None,
 ) -> list[IdentificationRule]:
     """Devuelve las reglas activas de la sigla que el número cumple.
 
-    Sin reglas para la sigla se aplican solo las validaciones base, aunque el
-    país tenga reglas para otras siglas (DS-03).
+    Solo se aceptan siglas con al menos una regla activa para el tipo de parte
+    y el país (DS-03, enmienda del 2026-11-18): sin reglas, la identificación
+    se rechaza, también en un país que no tiene ninguna regla.
 
     Args:
         rules: Reglas activas del tipo de parte, país y sigla.
         identification_number: Número ya normalizado.
+        sigla: Sigla recibida, solo para el mensaje de error.
+
+    Con la sigla `NIT`, además del patrón se exige el dígito de verificación de la DIAN
+    (enmienda del 2026-11-18).
 
     Returns:
-        Reglas cumplidas (lista vacía si no hay reglas para la sigla).
+        Reglas cumplidas (nunca vacía).
 
     Raises:
-        InvalidIdentificationNumberError: Si hay reglas y no cumple ninguna.
+        UnsupportedIdentificationTypeError: Si no hay reglas para la sigla.
+        InvalidIdentificationNumberError: Si hay reglas y no cumple ninguna, o si el dígito de
+            verificación del NIT no corresponde.
     """
     if not rules:
-        return []
+        raise UnsupportedIdentificationTypeError(
+            f"La sigla {sigla!r} no tiene una regla activa para este tipo de parte en el país indicado. "
+            "Consulte las siglas permitidas en identification-type-rules."
+            if sigla
+            else None
+        )
 
     matching = [
         rule
@@ -169,6 +232,9 @@ def match_identification_number(
             "El número de identificación no cumple ninguna regla activa para "
             f"la sigla indicada. {descriptions}".strip()
         )
+
+    if any(rule.sigla == NIT_SIGLA for rule in matching):
+        validate_nit_check_digit(identification_number)
 
     return matching
 

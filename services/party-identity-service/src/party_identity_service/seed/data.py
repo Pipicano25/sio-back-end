@@ -87,12 +87,12 @@ COLOMBIAN_RULES = (
         "party_kind": "PERSON",
         "identification_type": "TAX_ID",
         "sigla": "NIT",
-        "number_pattern": "^[A-Z0-9]{4,11}-[0-9]$",
+        "number_pattern": "^[0-9]{6,10}-[0-9]$",
         "number_pattern_description": (
-            "Numero de Identificacion Tributaria: base alfanumerica de 4 a 11 "
-            "caracteres, guion y digito de verificacion."
+            "Numero de Identificacion Tributaria: base de 6 a 10 digitos, guion "
+            "y digito de verificacion de la DIAN (modulo 11)."
         ),
-        "example_value": "900123456-7",
+        "example_value": "900123456-8",
         "min_age_years": None,
         "max_age_years": None,
     },
@@ -100,12 +100,12 @@ COLOMBIAN_RULES = (
         "party_kind": "ORGANIZATION",
         "identification_type": "TAX_ID",
         "sigla": "NIT",
-        "number_pattern": "^[A-Z0-9]{4,11}-[0-9]$",
+        "number_pattern": "^[0-9]{6,10}-[0-9]$",
         "number_pattern_description": (
-            "Numero de Identificacion Tributaria de organizacion: base "
-            "alfanumerica de 4 a 11 caracteres, guion y digito de verificacion."
+            "Numero de Identificacion Tributaria de organizacion: base de 6 a 10 "
+            "digitos, guion y digito de verificacion de la DIAN (modulo 11)."
         ),
-        "example_value": "900123456-7",
+        "example_value": "900123456-8",
         "min_age_years": None,
         "max_age_years": None,
     },

@@ -7,6 +7,7 @@ from uuid import uuid4
 import pytest
 
 from party_identity_service.application.exceptions import (
+    UnsupportedIdentificationTypeError,
     AgeOutOfRangeError,
     BirthDateInFutureError,
     BirthDateRequiredError,
@@ -107,21 +108,24 @@ def test_number_not_matching_any_rule_is_rejected(service, repository) -> None:
     assert repository.writes == 0
 
 
-def test_sigla_without_rules_in_country_with_rules_uses_base_validation(service) -> None:
-    """DS-03: el país tiene reglas PERSON, pero ninguna para la sigla PA."""
-    person = _create(service, identification_type="PA", identification_number="X-99 libre")
+def test_sigla_without_rules_in_country_with_rules_is_rejected(service, repository) -> None:
+    """DS-03 (enmienda 2026-11-18): el país tiene reglas PERSON, pero ninguna para la sigla PA."""
+    with pytest.raises(UnsupportedIdentificationTypeError) as error:
+        _create(service, identification_type="PA", identification_number="X-99 libre")
 
-    assert person.identification_type == "PA"
+    assert "'PA'" in error.value.message
+    assert repository.writes == 0
 
 
-def test_country_without_rules_uses_base_validation(countries, repository) -> None:
+def test_country_without_rules_is_rejected(countries, repository) -> None:
     other_country = uuid4()
     countries.countries[other_country] = "PER"
     service = PersonIdentityService(repository, InMemoryRuleRepository(COLOMBIAN_RULES), countries)
 
-    person = _create(service, identification_country_id=other_country, identification_number="ABC")
+    with pytest.raises(UnsupportedIdentificationTypeError):
+        _create(service, identification_country_id=other_country, identification_number="ABC")
 
-    assert person.identification_number == "ABC"
+    assert repository.writes == 0
 
 
 def test_rule_with_age_requires_birth_date(service) -> None:
