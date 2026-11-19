@@ -71,7 +71,7 @@ class GlobalPaymentConditionTypeRepository(Protocol):
         self,
         entity: GlobalPaymentConditionType,
         *,
-        expected_version: int,
+        expected_version: int | None,
     ) -> GlobalPaymentConditionType:
         """Persiste los cambios de una condición existente con concurrencia optimista.
 

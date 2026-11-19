@@ -91,8 +91,9 @@ def test_unknown_uuid_is_404(admin, action):
 @pytest.mark.parametrize("action", ["deactivate", "reactivate"])
 @pytest.mark.parametrize(
     "body",
-    [{}, {"version": "uno"}, {"version": 1.5}, {"version": 1, "status": "INACTIVE"}, {"version": 1, "foo": 1}],
-    ids=["sin-version", "no-entera-texto", "no-entera-decimal", "status", "desconocido"],
+    # Sin versión ya no es error (constitución 4.0.0, D10): lo prueba tests/api/test_partial_update.py.
+    [{"version": "uno"}, {"version": 1.5}, {"version": 1, "status": "INACTIVE"}, {"version": 1, "foo": 1}],
+    ids=["no-entera-texto", "no-entera-decimal", "status", "desconocido"],
 )
 def test_invalid_action_body_is_422_without_changes(admin, condition_type, action, body):
     response = admin.post(f"{CONDITION_TYPES}/{condition_type['id']}/{action}", json=body)

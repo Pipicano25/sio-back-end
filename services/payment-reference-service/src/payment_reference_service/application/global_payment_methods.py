@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from payment_reference_service.application.exceptions import (
     GlobalPaymentMethodNotFoundError,
 )
+from payment_reference_service.application.partial_update import UNSET
 from payment_reference_service.application.pagination import PageResult
 from payment_reference_service.application.ports import (
     GlobalPaymentMethodRepository,
@@ -137,11 +138,11 @@ class GlobalPaymentMethodService:
         self,
         *,
         payment_method_id: UUID,
-        code: str,
-        name: str,
-        method_type: PaymentMethodType,
-        requires_reference: bool,
-        status: PaymentMethodStatus,
+        code: str = UNSET,
+        name: str = UNSET,
+        method_type: PaymentMethodType = UNSET,
+        requires_reference: bool = UNSET,
+        status: PaymentMethodStatus = UNSET,
         actor_id: str,
     ) -> GlobalPaymentMethod:
         """Actualiza completamente un método global de pago.
@@ -165,11 +166,12 @@ class GlobalPaymentMethodService:
 
         updated = replace(
             current,
-            code=code,
-            name=name,
-            method_type=method_type,
-            requires_reference=requires_reference,
-            status=status,
+            # D28: un campo no enviado conserva su valor.
+            code=current.code if code is UNSET else code,
+            name=current.name if name is UNSET else name,
+            method_type=current.method_type if method_type is UNSET else method_type,
+            requires_reference=current.requires_reference if requires_reference is UNSET else requires_reference,
+            status=current.status if status is UNSET else status,
             updated_by=actor_id,
             updated_at=datetime.now(timezone.utc),
         )

@@ -15,6 +15,7 @@ from payment_reference_service.application.exceptions import (
     GlobalPaymentConditionTypeNotFoundError,
     GlobalPaymentConditionTypeVersionConflictError,
 )
+from payment_reference_service.application.partial_update import UNSET
 from payment_reference_service.application.pagination import PageResult
 from payment_reference_service.application.ports import (
     GlobalPaymentConditionTypeRepository,
@@ -135,10 +136,10 @@ class GlobalPaymentConditionTypeService:
         self,
         *,
         condition_type_id: UUID,
-        version: int,
-        code: str,
-        name: str,
-        description: str | None,
+        version: int | None = None,
+        code: str = UNSET,
+        name: str = UNSET,
+        description: str | None = UNSET,
         actor_id: str,
     ) -> GlobalPaymentConditionType:
         """Reemplaza los campos modificables sin cambiar el estado (FR-016, FR-016a).
@@ -160,12 +161,15 @@ class GlobalPaymentConditionTypeService:
                 coincide.
         """
         current = self._current(condition_type_id, version)
+        # Sin versión se usa la leída: un cambio simultáneo responde 409 y no se pierde (D9).
+        version = current.version if version is None else version
 
         updated = replace(
             current,
-            code=code,
-            name=name,
-            description=description,
+            # D28: un campo no enviado conserva su valor.
+            code=current.code if code is UNSET else code,
+            name=current.name if name is UNSET else name,
+            description=current.description if description is UNSET else description,
             updated_by=actor_id,
             updated_at=datetime.now(timezone.utc),
         )
@@ -176,7 +180,7 @@ class GlobalPaymentConditionTypeService:
         self,
         condition_type_id: UUID,
         *,
-        version: int,
+        version: int | None,
         actor_id: str,
     ) -> GlobalPaymentConditionType:
         """Inactiva un tipo `ACTIVE` sin borrarlo (FR-012).
@@ -194,7 +198,7 @@ class GlobalPaymentConditionTypeService:
         self,
         condition_type_id: UUID,
         *,
-        version: int,
+        version: int | None,
         actor_id: str,
     ) -> GlobalPaymentConditionType:
         """Reactiva un tipo `INACTIVE` (FR-013).
@@ -208,11 +212,11 @@ class GlobalPaymentConditionTypeService:
         current = self._current(condition_type_id, version)
         return self._change_status(current, reactivated_status(current.status), version, actor_id)
 
-    def _current(self, condition_type_id: UUID, version: int) -> GlobalPaymentConditionType:
+    def _current(self, condition_type_id: UUID, version: int | None) -> GlobalPaymentConditionType:
         """Existencia y versión, en ese orden, antes de cualquier regla de estado."""
         current = self.get_by_id(condition_type_id)
 
-        if current.version != version:
+        if version is not None and current.version != version:
             raise GlobalPaymentConditionTypeVersionConflictError(VERSION_CONFLICT_MESSAGE)
 
         return current
@@ -221,7 +225,7 @@ class GlobalPaymentConditionTypeService:
         self,
         current: GlobalPaymentConditionType,
         status: PaymentConditionStatus,
-        version: int,
+        version: int | None,
         actor_id: str,
     ) -> GlobalPaymentConditionType:
         updated = replace(

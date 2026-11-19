@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import Body, APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sio_auth import CurrentSubject
 
@@ -255,9 +255,7 @@ def update_global_payment_condition_type(
         entity = service.update(
             condition_type_id=condition_type_id,
             version=payload.version,
-            code=payload.code,
-            name=payload.name,
-            description=payload.description,
+            **payload.changes(),
             actor_id=actor_id,
         )
     except GlobalPaymentConditionTypeNotFoundError as exc:
@@ -289,7 +287,7 @@ def update_global_payment_condition_type(
 )
 def deactivate_global_payment_condition_type(
     condition_type_id: UUID,
-    payload: VersionRequest,
+    payload: Annotated[VersionRequest, Body(default_factory=VersionRequest)],
     actor_id: CurrentSubject,
     service: Annotated[GlobalPaymentConditionTypeService, Depends(_get_service)],
 ) -> GlobalPaymentConditionTypeResponse:
@@ -329,7 +327,7 @@ def deactivate_global_payment_condition_type(
 )
 def reactivate_global_payment_condition_type(
     condition_type_id: UUID,
-    payload: VersionRequest,
+    payload: Annotated[VersionRequest, Body(default_factory=VersionRequest)],
     actor_id: CurrentSubject,
     service: Annotated[GlobalPaymentConditionTypeService, Depends(_get_service)],
 ) -> GlobalPaymentConditionTypeResponse:

@@ -157,7 +157,7 @@ class SqlAlchemyGlobalPaymentConditionTypeRepository:
         self,
         entity: GlobalPaymentConditionType,
         *,
-        expected_version: int,
+        expected_version: int | None,
     ) -> GlobalPaymentConditionType:
         """Persiste la actualización completa con concurrencia optimista.
 
@@ -189,7 +189,7 @@ class SqlAlchemyGlobalPaymentConditionTypeRepository:
                 "El tipo de condición de pago solicitado no existe."
             )
 
-        if model.version != expected_version:
+        if expected_version is not None and model.version != expected_version:
             raise GlobalPaymentConditionTypeVersionConflictError(VERSION_CONFLICT_MESSAGE)
 
         model.code = entity.code

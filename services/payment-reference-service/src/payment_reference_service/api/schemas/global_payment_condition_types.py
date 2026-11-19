@@ -10,6 +10,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from payment_reference_service.api.schemas.partial import PartialUpdate
 from payment_reference_service.domain.global_payment_condition_types import (
     PaymentConditionStatus,
 )
@@ -25,23 +26,22 @@ class GlobalPaymentConditionTypeCreate(BaseModel):
     description: str | None = None
 
 
-class GlobalPaymentConditionTypeUpdate(BaseModel):
-    """Payload de reemplazo completo mediante PUT, con la versión leída (FR-016a)."""
+class GlobalPaymentConditionTypeUpdate(PartialUpdate):
+    """`PUT` parcial (D28): solo los campos que cambian; `version` opcional (D9)."""
 
-    model_config = ConfigDict(extra="forbid")
+    not_nullable = frozenset({"code", "name"})
 
-    version: int
-    code: str = Field(max_length=30)
-    name: str = Field(max_length=100)
+    code: str | None = Field(default=None, max_length=30)
+    name: str | None = Field(default=None, max_length=100)
     description: str | None = None
 
 
 class VersionRequest(BaseModel):
-    """Cuerpo de `deactivate` y `reactivate`: solo la versión leída."""
+    """Cuerpo de `deactivate` y `reactivate`: versión opcional; el cuerpo puede omitirse (D10)."""
 
     model_config = ConfigDict(extra="forbid")
 
-    version: int
+    version: int | None = None
 
 
 class GlobalPaymentConditionTypeResponse(BaseModel):

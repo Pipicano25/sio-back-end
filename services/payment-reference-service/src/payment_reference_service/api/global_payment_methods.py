@@ -249,11 +249,7 @@ def update_global_payment_method(
     try:
         entity = service.update(
             payment_method_id=payment_method_id,
-            code=payload.code,
-            name=payload.name,
-            method_type=payload.method_type,
-            requires_reference=payload.requires_reference,
-            status=payload.status,
+            **payload.changes(),
             actor_id=actor_id,
         )
     except GlobalPaymentMethodNotFoundError as exc:

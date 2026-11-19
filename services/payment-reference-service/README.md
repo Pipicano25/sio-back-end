@@ -120,9 +120,10 @@ llamar por HTTP. Las escrituras siguen siendo solo por esta API. Quién lee qué
 - Sin prefijo `/api/v1` (GAP-PR-14). Errores con el cuerpo `{"detail": …}` (RFC 9457 pendiente,
   GAP-PR-15); el `403` nunca revela el permiso exigido.
 - **`/global-payment-condition-types`** (feature 008):
-  - `GET` (listado y por UUID), `POST` (alta, siempre `ACTIVE`, versión 1), `PUT` (reemplazo completo con
-    `version`, `code`, `name`, `description?`; no cambia `status`), `POST /{id}/deactivate` y
-    `POST /{id}/reactivate` (cuerpo `{"version": n}`). **No existe `DELETE`** (`405`).
+  - `GET` (listado y por UUID), `POST` (alta, siempre `ACTIVE`, versión 1), `PUT` parcial (D28: solo
+    los campos que cambian entre `code`, `name`, `description`; `null` borra `description`; `version`
+    opcional; no cambia `status`), `POST /{id}/deactivate` y `POST /{id}/reactivate` (cuerpo opcional
+    `{"version": n}`). **No existe `DELETE`** (`405`).
   - Cuerpos estrictos: un campo no definido (incluido `status` en el alta o el `PUT`) → `422`.
   - Versión desactualizada → `409 {"detail": …, "code": "PAYMENT_REFERENCE.VERSION_CONFLICT"}`; transición
     inválida → `409 {"detail": …, "code": "PAYMENT_REFERENCE.INVALID_STATUS_TRANSITION"}`; código duplicado →

@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from payment_reference_service.api.schemas.partial import PartialUpdate
 from payment_reference_service.domain.global_payment_methods import (
     PaymentMethodStatus,
     PaymentMethodType,
@@ -21,14 +22,16 @@ class GlobalPaymentMethodCreate(BaseModel):
     status: PaymentMethodStatus
 
 
-class GlobalPaymentMethodUpdate(BaseModel):
-    """Payload para actualización completa mediante PUT."""
+class GlobalPaymentMethodUpdate(PartialUpdate):
+    """`PUT` parcial (D28): solo los campos que cambian."""
 
-    code: str = Field(max_length=40)
-    name: str = Field(max_length=120)
-    method_type: PaymentMethodType
-    requires_reference: bool
-    status: PaymentMethodStatus
+    not_nullable = frozenset({"code", "name", "method_type", "requires_reference", "status"})
+
+    code: str | None = Field(default=None, max_length=40)
+    name: str | None = Field(default=None, max_length=120)
+    method_type: PaymentMethodType | None = None
+    requires_reference: bool | None = None
+    status: PaymentMethodStatus | None = None
 
 
 class GlobalPaymentMethodResponse(BaseModel):

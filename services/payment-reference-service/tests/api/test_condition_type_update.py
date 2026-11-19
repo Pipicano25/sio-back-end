@@ -1,4 +1,4 @@
-"""Alta y `PUT` estrictos con versión (US3; FR-016, FR-016a, FR-016b, FR-017; N-03)."""
+"""Alta y `PUT` parcial con versión opcional (US3; FR-016, FR-016a, FR-016b, FR-017; N-03; D28)."""
 
 from __future__ import annotations
 
@@ -36,10 +36,11 @@ def test_put_full_replacement_increments_version(as_roles, admin, condition_type
     assert body["updated_by"] == "sub-editor"
 
 
-def test_put_without_description_leaves_it_null(admin):
+def test_put_with_null_description_clears_it(admin):
+    """D28: omitir un campo ya no lo borra; para borrarlo se envía `null`."""
     created = admin.post(CONDITION_TYPES, json={"code": "CASH", "name": "Contado", "description": "Inmediato"}).json()
 
-    response = _put(admin, created["id"], {"version": 1, "code": "CASH", "name": "Contado"})
+    response = _put(admin, created["id"], {"version": 1, "description": None})
 
     assert response.status_code == 200
     assert response.json()["description"] is None
@@ -59,13 +60,13 @@ def test_put_with_stale_version_is_conflict_without_changes(admin, condition_typ
     [
         {"version": 1, "code": "CREDIT", "name": "Crédito", "status": "INACTIVE"},
         {"version": 1, "code": "CREDIT", "name": "Crédito", "foo": 1},
-        {"code": "CREDIT", "name": "Crédito"},
-        {"version": 1, "name": "Crédito"},
-        {"version": 1, "code": "CREDIT"},
+        {},
+        {"version": 1},
+        {"version": 1, "name": None},
         {"version": 1, "code": "X" * 31, "name": "Crédito"},
         {"version": 1, "code": "CREDIT", "name": "N" * 101},
     ],
-    ids=["status", "desconocido", "sin-version", "sin-code", "sin-name", "code-31", "name-101"],
+    ids=["status", "desconocido", "vacio", "solo-version", "name-null", "code-31", "name-101"],
 )
 def test_invalid_put_body_is_422_without_changes(admin, condition_type, body):
     response = _put(admin, condition_type["id"], body)
