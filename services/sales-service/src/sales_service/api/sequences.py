@@ -6,9 +6,11 @@ empresa (no exige asignación a sucursal).
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from uuid import UUID
 
-from fastapi import APIRouter, status
+from fastapi import Body, APIRouter, status
 from sio_auth import SIOAuth
 
 from sales_service.api.dependencies import ActorDep, ServicesDep
@@ -63,7 +65,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def update_sequence(
         company_id: UUID, sequence_id: UUID, body: SequenceUpdateIn, actor: ActorDep, services: ServicesDep
     ) -> SequenceResponse:
-        view = services.sequence_service().update(company_id, sequence_id, body.to_data(), body.version, actor)
+        view = services.sequence_service().update(company_id, sequence_id, body.changes(), body.version, actor)
         return SequenceResponse.of(view)
 
     @router.post(
@@ -74,7 +76,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         dependencies=[auth.permission(SERVICE, "sale_sequences", "update")],
     )
     def deactivate_sequence(
-        company_id: UUID, sequence_id: UUID, body: VersionIn, actor: ActorDep, services: ServicesDep
+        company_id: UUID, sequence_id: UUID, body: Annotated[VersionIn, Body(default_factory=VersionIn)], actor: ActorDep, services: ServicesDep
     ) -> SequenceResponse:
         return SequenceResponse.of(services.sequence_service().set_active(company_id, sequence_id, False, body.version, actor))
 
@@ -86,7 +88,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         dependencies=[auth.permission(SERVICE, "sale_sequences", "update")],
     )
     def reactivate_sequence(
-        company_id: UUID, sequence_id: UUID, body: VersionIn, actor: ActorDep, services: ServicesDep
+        company_id: UUID, sequence_id: UUID, body: Annotated[VersionIn, Body(default_factory=VersionIn)], actor: ActorDep, services: ServicesDep
     ) -> SequenceResponse:
         return SequenceResponse.of(services.sequence_service().set_active(company_id, sequence_id, True, body.version, actor))
 

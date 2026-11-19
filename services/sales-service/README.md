@@ -21,6 +21,14 @@ factor): **excepción documentada al Principio III** (DS-02). Son provisionales 
 refrescan y **congelan al confirmar**; después no cambian. El precio, el costo y el margen de una venta
 confirmada no se recalculan nunca (RN-04).
 
+## `PUT` parcial y versión opcional (constitución 4.0.0)
+
+- El `PUT` de cabecera, de línea y de secuencias recibe solo los campos que cambian; lo demás queda
+  igual. `null` en un campo obligatorio, un cuerpo vacío o solo con `version` → `422`.
+- `version` es opcional en `PUT`, acciones y `DELETE` de línea (`?version=`); si llega desactualizada →
+  `409`; si no llega se usa la leída, así un cambio simultáneo responde `409` en vez de perderse.
+- `unit_price`, `operation_date` y la condición de pago siguen rechazándose con su código.
+
 ## Reglas de la venta
 
 - **Precio** (R-07): siempre lo resuelve Commercial Relationship (`applicable-prices/resolve`); no hay

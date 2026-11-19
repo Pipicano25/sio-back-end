@@ -21,6 +21,7 @@ from sales_service.api.openapi import READ_RESPONSES, TAG_SALES, WRITE_RESPONSES
 from sales_service.api.profitability import present, present_list
 from sales_service.api.schemas.sales import (
     LineCreateIn,
+    LineUpdateIn,
     SaleCreateIn,
     SaleDetailResponse,
     SalePage,
@@ -110,7 +111,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def update_sale(
         company_id: UUID, sale_id: UUID, body: SaleUpdateIn, request: Request, actor: ActorDep, services: ServicesDep
     ) -> Response:
-        view = services.sales().update_header(company_id, sale_id, body.to_header(), body.version, actor)
+        view = services.sales().update_header(company_id, sale_id, body.changes(), body.version, actor)
         return present(request, SaleResponse.of(view))
 
     @router.post(
@@ -138,12 +139,12 @@ def build_router(auth: SIOAuth) -> APIRouter:
         company_id: UUID,
         sale_id: UUID,
         detail_id: UUID,
-        body: LineCreateIn,
+        body: LineUpdateIn,
         request: Request,
         actor: ActorDep,
         services: ServicesDep,
     ) -> Response:
-        view = services.sales().update_line(company_id, sale_id, detail_id, body.to_data(), body.version, actor)
+        view = services.sales().update_line(company_id, sale_id, detail_id, body.changes(), body.version, actor)
         return present(request, SaleResponse.of(view))
 
     @router.delete(
@@ -157,10 +158,10 @@ def build_router(auth: SIOAuth) -> APIRouter:
         company_id: UUID,
         sale_id: UUID,
         detail_id: UUID,
-        version: Annotated[int, Query(ge=1)],
         request: Request,
         actor: ActorDep,
         services: ServicesDep,
+        version: Annotated[int | None, Query(ge=1)] = None,
     ) -> Response:
         view = services.sales().delete_line(company_id, sale_id, detail_id, version, actor)
         return present(request, SaleResponse.of(view))

@@ -174,7 +174,7 @@ class ConfirmationService:
         self,
         company_id: UUID,
         sale_id: UUID,
-        version: int,
+        version: int | None,
         idempotency_key: str,
         correlation_id: UUID | None,
         actor: Actor,
@@ -194,7 +194,7 @@ class ConfirmationService:
             raise OperationInProgressError(pending.id)
         if sale.status != DRAFT:
             raise InvalidStatusError(sale.status)
-        if sale.version != version:
+        if version is not None and sale.version != version:
             raise VersionConflictError()
         lines = self._repo.lines(sale.id)
         if not lines:
@@ -292,7 +292,7 @@ class ConfirmationService:
                 raise OperationInProgressError(pending.id)
             if locked.status != DRAFT:
                 raise InvalidStatusError(locked.status)
-            if locked.version != version:
+            if version is not None and locked.version != version:
                 raise VersionConflictError()
             current_lines = self._repo.lines(locked.id)
             if [line.id for line in current_lines] != [line.id for line in lines]:

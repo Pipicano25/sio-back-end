@@ -9,7 +9,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 from pydantic_core import PydanticCustomError
 
-from sales_service.api.schemas.sales import StrictModel
+from sales_service.api.schemas.sales import PartialUpdate, StrictModel
 from sales_service.application.sequence_service import SequenceData, SequenceView
 from sales_service.domain.numbering import format_number, max_number_text_length, next_value
 
@@ -44,8 +44,19 @@ class SequenceIn(StrictModel):
         )
 
 
-class SequenceUpdateIn(SequenceIn):
-    version: Annotated[int, Field(ge=1)]
+class SequenceUpdateIn(PartialUpdate):
+    """`PUT` parcial de una secuencia; la coherencia se valida sobre el resultado (D28)."""
+
+    not_nullable = frozenset({"series_code", "prefix", "separator", "initial_number", "number_length", "reset_policy"})
+
+    branch_id: UUID | None = None
+    series_code: Annotated[str, Field(pattern=r"^[A-Z0-9_-]{1,40}$")] | None = None
+    prefix: Annotated[str, Field(pattern=r"^[A-Z0-9]{1,20}$")] | None = None
+    separator: Literal["-", "/", ".", "_", ""] | None = None
+    initial_number: Annotated[int, Field(ge=1, le=10**17)] | None = None
+    maximum_number: Annotated[int, Field(ge=1, le=10**18 - 1)] | None = None
+    number_length: Annotated[int, Field(ge=1, le=18)] | None = None
+    reset_policy: Literal["NEVER", "YEARLY", "MONTHLY"] | None = None
 
 
 class CounterResponse(BaseModel):

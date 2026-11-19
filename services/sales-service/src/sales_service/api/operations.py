@@ -10,9 +10,11 @@ salida ni un segundo reverso en Inventory (RC-01).
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from uuid import UUID
 
-from fastapi import APIRouter, Request, Response
+from fastapi import Body, APIRouter, Request, Response
 from sio_auth import SIOAuth
 
 from sales_service.api.dependencies import ActorDep, CompanyReader, CorrelationId, IdempotencyKey, ServicesDep
@@ -35,7 +37,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def confirm_sale(
         company_id: UUID,
         sale_id: UUID,
-        body: VersionIn,
+        body: Annotated[VersionIn, Body(default_factory=VersionIn)],
         request: Request,
         actor: ActorDep,
         key: IdempotencyKey,

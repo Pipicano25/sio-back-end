@@ -28,9 +28,11 @@ from sales_service.application.exceptions import (
     VersionConflictError,
     field_error,
 )
+from sales_service.application.partial import merge
 from sales_service.application.ports import OperationalContextDirectory
 from sales_service.application.sale_service import Actor
 from sales_service.application.snapshots import touch
+from sales_service.domain.numbering import max_number_text_length
 from sales_service.domain.status import DOCUMENT_KIND
 from sales_service.infrastructure.models import SaleSequence, SaleSequenceCounter
 from sales_service.infrastructure.repository import SaleRepository, violated_constraint
@@ -164,19 +166,25 @@ class SequenceService:
             raise
         return SequenceView(sequence, [])
 
-    def _locked(self, company_id: UUID, sequence_id: UUID, version: int) -> SaleSequence:
+    def _locked(self, company_id: UUID, sequence_id: UUID, version: int | None) -> SaleSequence:
         self._repo.begin()
         sequence = self._sequences.get(company_id, sequence_id, lock=True)
         if sequence is None:
             raise NotFoundError()
-        if sequence.version != version:
+        if version is not None and sequence.version != version:
             raise VersionConflictError()
         return sequence
 
-    def update(self, company_id: UUID, sequence_id: UUID, data: SequenceData, version: int, actor: Actor) -> SequenceView:
+    def update(self, company_id: UUID, sequence_id: UUID, changes: dict, version: int | None, actor: Actor) -> SequenceView:
+        """`PUT` parcial (D28): `changes` trae solo los campos enviados; se valida el resultado."""
         access = require_membership(actor.access, company_id)
-        if self._sequences.get(company_id, sequence_id) is None:
+        stored = self._sequences.get(company_id, sequence_id)
+        if stored is None:
             raise NotFoundError()
+        # Sin versión se usa la leída: un cambio simultáneo responde 409 y no se pierde (D9).
+        version = stored.version if version is None else version
+        data = merge(SequenceData, stored, changes)
+        _check_coherent(data)
         self._repo.end_read()
         self._check_branch(company_id, data.branch_id)
         try:
@@ -216,7 +224,7 @@ class SequenceService:
             self._repo.rollback()
             raise
 
-    def set_active(self, company_id: UUID, sequence_id: UUID, active: bool, version: int, actor: Actor) -> SequenceView:
+    def set_active(self, company_id: UUID, sequence_id: UUID, active: bool, version: int | None, actor: Actor) -> SequenceView:
         access = require_membership(actor.access, company_id)
         try:
             sequence = self._locked(company_id, sequence_id, version)
@@ -254,3 +262,15 @@ class SequenceService:
         sequences = self._sequences.list_for(company_id)
         counters = self._sequences.counters_of([sequence.id for sequence in sequences])
         return [SequenceView(sequence, counters[sequence.id]) for sequence in sequences]
+
+
+def _check_coherent(data: SequenceData) -> None:
+    """Coherencia del registro resultante de un `PUT` parcial (D28)."""
+    if data.maximum_number is not None and data.maximum_number < data.initial_number:
+        raise ValidationFailedError(
+            [field_error("maximum_number", "INVALID_FORMAT", "maximum_number no puede ser menor que initial_number.")]
+        )
+    if max_number_text_length(data.prefix, data.separator, data.number_length) > 80:
+        raise ValidationFailedError(
+            [field_error("number_length", "INVALID_FORMAT", "El número resultante superaría 80 caracteres.")]
+        )

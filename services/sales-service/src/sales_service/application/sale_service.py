@@ -30,6 +30,7 @@ from sales_service.application.exceptions import (
     VersionConflictError,
     field_error,
 )
+from sales_service.application.partial import merge
 from sales_service.application.ports import AccessDirectory, CompanyInfo, CustomerRegistry
 from sales_service.application.reference_validation import (
     HeaderInput,
@@ -201,7 +202,7 @@ class SaleService:
         if version is not None and sale.version != version:
             raise VersionConflictError()
 
-    def _lock_draft(self, company_id: UUID, sale_id: UUID, version: int) -> Sale:
+    def _lock_draft(self, company_id: UUID, sale_id: UUID, version: int | None) -> Sale:
         self._repo.begin()
         sale = self._repo.lock_sale(company_id, sale_id)
         if sale is None:
@@ -304,8 +305,14 @@ class SaleService:
 
     # --------------------------------------------------------------- cabecera
 
-    def update_header(self, company_id: UUID, sale_id: UUID, header: HeaderData, version: int, actor: Actor) -> SaleView:
+    def update_header(
+        self, company_id: UUID, sale_id: UUID, changes: dict, version: int | None, actor: Actor
+    ) -> SaleView:
+        """`PUT` parcial (D28): `changes` trae solo los campos enviados."""
         current = self._existing(company_id, sale_id)
+        # Sin versión se usa la leída: un cambio simultáneo responde 409 y no se pierde (D9).
+        version = current.version if version is None else version
+        header = merge(HeaderData, current, changes, person_identity_id=None, organization_identity_id=None)
         operator = require_branch_access(actor.access, company_id, current.branch_id)
         if header.branch_id != current.branch_id:
             require_branch_access(actor.access, company_id, header.branch_id)
@@ -377,7 +384,7 @@ class SaleService:
         self._repo.commit()
         return SaleView(sale, lines, None)
 
-    def add_line(self, company_id: UUID, sale_id: UUID, line: LineData, version: int, actor: Actor) -> SaleView:
+    def add_line(self, company_id: UUID, sale_id: UUID, line: LineData, version: int | None, actor: Actor) -> SaleView:
         current = self._existing(company_id, sale_id)
         operator = require_branch_access(actor.access, company_id, current.branch_id)
         self._precheck(current, version)
@@ -417,13 +424,22 @@ class SaleService:
             raise
 
     def update_line(
-        self, company_id: UUID, sale_id: UUID, detail_id: UUID, line: LineData, version: int, actor: Actor
+        self, company_id: UUID, sale_id: UUID, detail_id: UUID, changes: dict, version: int | None, actor: Actor
     ) -> SaleView:
+        """`PUT` parcial (D28): `changes` trae solo los campos enviados."""
         current = self._existing(company_id, sale_id)
+        # Sin versión se usa la leída: un cambio simultáneo responde 409 y no se pierde (D9).
+        version = current.version if version is None else version
         operator = require_branch_access(actor.access, company_id, current.branch_id)
         self._precheck(current, version)
-        if not any(item.id == detail_id for item in self._repo.lines(current.id)):
+        stored = next((item for item in self._repo.lines(current.id) if item.id == detail_id), None)
+        if stored is None:
             raise NotFoundError()
+        # La lista guardada solo se conserva si el cliente la pidió; si fue la predeterminada
+        # resuelta, se vuelve a resolver (como al crear la línea).
+        line = merge(
+            LineData, stored, changes, price_list_id=stored.price_list_id if stored.price_list_requested else None
+        )
         self._repo.end_read()
         amount, snapshot = self._resolve_line(current, line)
 
@@ -446,7 +462,7 @@ class SaleService:
             self._repo.rollback()
             raise
 
-    def delete_line(self, company_id: UUID, sale_id: UUID, detail_id: UUID, version: int, actor: Actor) -> SaleView:
+    def delete_line(self, company_id: UUID, sale_id: UUID, detail_id: UUID, version: int | None, actor: Actor) -> SaleView:
         current = self._existing(company_id, sale_id)
         operator = require_branch_access(actor.access, company_id, current.branch_id)
         self._precheck(current, version)
