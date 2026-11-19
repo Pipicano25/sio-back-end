@@ -103,7 +103,7 @@ Prefijos de `code` y base de `type` por servicio:
 | `403` | Token válido sin el permiso de la operación; o acceso operativo denegado en Purchase, Sales, Inventory, Commercial Relationship y Audit | `FORBIDDEN`, `OPERATIONAL_ACCESS_DENIED`, `BRANCH_ACCESS_DENIED` | Mostrar el `detail` y el `trace_id`. No reintentar. Recalcular los permisos de la interfaz |
 | `404` | El recurso de la ruta no existe **o está fuera del alcance** del usuario (empresa o sucursal sin membresía) | `NOT_FOUND` | Revisar el identificador y el contexto operativo ([Permisos §5](permisos.md#5-alcance-de-datos-plataforma-empresa-y-sucursal)) |
 | `405` | Método no permitido en la ruta | `METHOD_NOT_ALLOWED` | Error de programación del cliente |
-| `409` | Conflicto de estado: duplicado, versión desactualizada, transición no permitida, secuencia no configurada, clave de idempotencia reutilizada con otro cuerpo | `VERSION_CONFLICT`, `INVALID_STATUS_TRANSITION`, `DUPLICATE_*`, `IDEMPOTENCY_KEY_CONFLICT`, otros por servicio | Mostrar el `detail`; recargar el recurso y repetir la acción con la versión actual si procede |
+| `409` | Conflicto de estado: duplicado, versión desactualizada, transición no permitida, secuencia no configurada, clave de idempotencia reutilizada con otro cuerpo | `VERSION_CONFLICT`, `INVALID_STATUS_TRANSITION`, `DUPLICATE_*`, `IDEMPOTENCY_KEY_CONFLICT`, otros por servicio | Mostrar el `detail`; recargar el recurso y repetir la acción (con la versión actual si se envía `version`) si procede |
 | `422` | Validación de campos o de reglas de negocio de la entrada, incluidas referencias a recursos inexistentes o inactivos | `VALIDATION_ERROR`, `IMMUTABLE_FIELD`, otros por servicio | Mostrar `errors[].message` junto al campo `errors[].field` |
 | `500` | Error no controlado | `INTERNAL_ERROR` | Mostrar mensaje genérico y el `trace_id`; reportar |
 | `503` | Base de datos del servicio o un servicio dependiente no disponible | `DEPENDENCY_UNAVAILABLE` con `dependency` | Mostrar estado temporal y permitir reintentar tras unos segundos |
@@ -131,7 +131,12 @@ Un campo desconocido en el cuerpo produce `422` en los servicios que rechazan ca
 
 ## 4. Concurrencia y versiones
 
-Varios recursos llevan un campo `version` (entero) que debe enviarse al modificar. Si el recurso cambió desde que se leyó, el servicio responde `409` `VERSION_CONFLICT`. El frontend debe recargar el recurso, mostrar los cambios y repetir la acción con la nueva versión. Las fichas indican qué operaciones exigen `version` y en qué campo (cuerpo o cabecera).
+Varios recursos llevan un campo `version` (entero). En las escrituras (`PUT`, acciones como `deactivate`/`reactivate`, confirmar, anular, y el `?version=` de los `DELETE` de línea) `version` es **opcional**:
+
+- Si se envía y no coincide con la vigente, el servicio responde `409` `VERSION_CONFLICT`. El frontend debe recargar el recurso, mostrar los cambios y repetir la acción (con la nueva versión o sin ella).
+- Si no se envía, el cambio se aplica sobre el registro vigente (gana la última escritura). Enviarla es la forma de detectar cambios simultáneos.
+
+Los `PUT` son **parciales**: el cuerpo lleva solo los campos que cambian; un campo ausente no cambia; `null` borra un campo opcional y en uno obligatorio responde `422`. Un cuerpo vacío `{}` o solo con `version` responde `422`. Las acciones cuyo cuerpo solo llevaba `version` aceptan `{}` o ningún cuerpo. Las fichas indican las excepciones (por ejemplo, operaciones que siguen exigiendo una versión).
 
 ## 5. Trazabilidad
 

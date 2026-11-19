@@ -151,7 +151,7 @@ Cuerpo (modelo `PurchaseCreateIn`; no admite campos adicionales):
 
 La respuesta `201` devuelve la compra con sus líneas (`status` `DRAFT`, `version` `1`, `number` `null`).
 
-**Campo exacto:** `id`. Guárdalo junto con `version`, que se exige en cada escritura posterior.
+**Campo exacto:** `id`. Guárdalo junto con `version`, que puedes enviar (opcional) en las escrituras posteriores para detectar cambios simultáneos.
 
 **Posibles errores al crear:**
 
@@ -168,10 +168,10 @@ La respuesta `201` devuelve la compra con sus líneas (`status` `DRAFT`, `versio
 
 ## Cómo usarlo después
 
-- [Compras, API 5, 6 y 7](../principales/compras.md#5-agregar-una-línea): agregar, modificar o eliminar líneas del borrador (`…/purchases/{purchase_id}/details[/{detail_id}]`, siempre con `version`).
+- [Compras, API 5, 6 y 7](../principales/compras.md#5-agregar-una-línea): agregar, modificar o eliminar líneas del borrador (`…/purchases/{purchase_id}/details[/{detail_id}]`, con `version` opcional).
 - [Compras, API 8](../principales/compras.md#8-consultar-la-compra-con-impuestos-y-totales): consultar la compra con sus líneas, impuestos y totales, y obtener la `version` vigente.
-- [Compras, API 9](../principales/compras.md#9-confirmar-la-compra): confirmar la compra (asigna el número; no mueve inventario), con `{"version": n}` e `Idempotency-Key`.
-- [Compras, API 10](../principales/compras.md#10-registrar-la-recepción-física-completa): registrar la recepción física completa, que ingresa la mercancía al inventario, con `{"version": n, "full_receipt_confirmed": true}` e `Idempotency-Key`.
+- [Compras, API 9](../principales/compras.md#9-confirmar-la-compra): confirmar la compra (asigna el número; no mueve inventario), con `{"version": n}` (`version` opcional) e `Idempotency-Key`.
+- [Compras, API 10](../principales/compras.md#10-registrar-la-recepción-física-completa): registrar la recepción física completa, que ingresa la mercancía al inventario, con `{"version": n, "full_receipt_confirmed": true}` (`version` opcional) e `Idempotency-Key`.
 - [Compras, API 11](../principales/compras.md#11-consultar-el-estado-de-las-operaciones): ver el estado de las operaciones de confirmación, recepción y anulación (`…/purchases/{purchase_id}/operations`).
 - [Compras, API 13](../principales/compras.md#13-anular-una-compra): anular la compra con un motivo e `Idempotency-Key`; si estaba recibida, revierte la entrada en Inventory.
 - Hitos logísticos de la compra: `GET https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases/{purchase_id}/lifecycle-events` (línea de tiempo; ficha [Purchase 17](../servicios/purchase.md#17-get-companiescompany_idpurchasespurchase_idlifecycle-events)).

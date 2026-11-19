@@ -156,8 +156,8 @@ Vigencias del precio: `valid_from` (si se omite, el instante de creación) y `va
 Para que la política produzca precios hace falta una compra **confirmada y recibida** de la presentación, con `unit_cost` real. El flujo completo está en [Registrar una compra](registrar-compra.md); resumido:
 
 1. `POST https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases` con la línea (`company_product_presentation_id`, `quantity`, `unit_cost: "500.00"`).
-2. `POST …/purchases/{purchase_id}/confirmation` con `Idempotency-Key` y `{"version": n}`. La confirmación valida que la presentación tenga política en alguna lista vigente de la moneda (`409 PRICING_POLICY_NOT_CONFIGURED` si no) y que el impuesto de compra esté configurado.
-3. `POST …/purchases/{purchase_id}/receipt` con `Idempotency-Key` y `{"version": n, "full_receipt_confirmed": true}`. La respuesta `200` trae `receipt_status: "RECEIVED"`. En ese momento Purchase envía a Commercial Relationship los costos recibidos (llamada interna, no del frontend).
+2. `POST …/purchases/{purchase_id}/confirmation` con `Idempotency-Key` y `{"version": n}` (`version` opcional). La confirmación valida que la presentación tenga política en alguna lista vigente de la moneda (`409 PRICING_POLICY_NOT_CONFIGURED` si no) y que el impuesto de compra esté configurado.
+3. `POST …/purchases/{purchase_id}/receipt` con `Idempotency-Key` y `{"version": n, "full_receipt_confirmed": true}` (`version` opcional). La respuesta `200` trae `receipt_status: "RECEIVED"`. En ese momento Purchase envía a Commercial Relationship los costos recibidos (llamada interna, no del frontend).
 
 ## 8. Comprobar la aplicación automática y el precio actualizado
 

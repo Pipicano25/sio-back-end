@@ -175,7 +175,7 @@ Errores: `409 SALES.REFERENCES_NOT_ELIGIBLE` con `errors[]` (`PRICE_LIST_NOT_APP
 
 ## 7. Ajustar líneas
 
-Cada línea nueva repite los pasos 3 y 4 (buscar producto, elegir lista) y se envía con la `version` actual de la venta:
+Cada línea nueva repite los pasos 3 y 4 (buscar producto, elegir lista) y puede enviarse con la `version` actual de la venta (opcional; sirve para detectar cambios simultáneos):
 
 - Agregar: `POST …/sales/{sale_id}/details` ([operación 7](../servicios/sales.md#7-post-companiescompany_idsalessale_iddetails)):
 
@@ -192,7 +192,7 @@ Cada línea nueva repite los pasos 3 y 4 (buscar producto, elegir lista) y se en
 ```
 
 - Modificar (también para cambiar de lista): `PUT …/sales/{sale_id}/details/{detail_id}` con el mismo cuerpo completo ([operación 9](../servicios/sales.md#9-put-companiescompany_idsalessale_iddetailsdetail_id)).
-- Eliminar: `DELETE …/sales/{sale_id}/details/{detail_id}?version=n` ([operación 10](../servicios/sales.md#10-delete-companiescompany_idsalessale_iddetailsdetail_id)).
+- Eliminar: `DELETE …/sales/{sale_id}/details/{detail_id}` (con `?version=n` opcional) ([operación 10](../servicios/sales.md#10-delete-companiescompany_idsalessale_iddetailsdetail_id)).
 
 Cada respuesta `200` devuelve la venta completa con la nueva `version`; el frontend reemplaza su copia local.
 
@@ -294,7 +294,7 @@ Manejo de errores habituales:
 
 | Respuesta | Acción |
 |---|---|
-| `409 SALES.PRICES_CHANGED` | Algún precio de la lista elegida cambió desde que se guardó la línea. Recargar la venta (`GET …/sales/{sale_id}`), mostrar en `errors[]` el precio guardado y el vigente, volver a guardar las líneas afectadas (paso 7) y confirmar con la nueva `version` |
+| `409 SALES.PRICES_CHANGED` | Algún precio de la lista elegida cambió desde que se guardó la línea. Recargar la venta (`GET …/sales/{sale_id}`), mostrar en `errors[]` el precio guardado y el vigente, volver a guardar las líneas afectadas (paso 7) y confirmar (con la nueva `version` si se envía) |
 | `409 SALES.INSUFFICIENT_STOCK` | Mostrar faltantes por producto; reducir cantidades |
 | `422 SALES.SALE_WITHOUT_LINES` | La venta no tiene líneas |
 | `409 SALES.SEQUENCE_NOT_CONFIGURED` | Un administrador debe crear la secuencia (`POST …/sale-sequences`, operación 16) |
@@ -303,4 +303,4 @@ Manejo de errores habituales:
 
 ## 10. Anular (si hace falta)
 
-`POST …/sales/{sale_id}/cancellation` con `Idempotency-Key`, `{"version": n, "reason": "…"}` ([operación 12](../servicios/sales.md#12-post-companiescompany_idsalessale_idcancellation)); permiso `perm:sales:sales:delete`. Si estaba confirmada, revierte la salida de inventario y conserva el número.
+`POST …/sales/{sale_id}/cancellation` con `Idempotency-Key`, `{"version": n, "reason": "…"}` (`version` opcional, `reason` obligatorio) ([operación 12](../servicios/sales.md#12-post-companiescompany_idsalessale_idcancellation)); permiso `perm:sales:sales:delete`. Si estaba confirmada, revierte la salida de inventario y conserva el número.

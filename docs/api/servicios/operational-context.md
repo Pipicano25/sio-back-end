@@ -92,12 +92,22 @@ Todos los permisos de la tabla empiezan por `perm:operational-context:`.
 ## Convenciones comunes
 
 - Listas paginadas (`page` ≥ 1, `page_size` 1–100, por defecto 20) con la envoltura `items`, `page`, `page_size`, `total_records`, `total_pages`. Por defecto devuelven solo `status=ACTIVE`; `status=INACTIVE` muestra las inactivas.
-- Escrituras con `version` (≥ 1): `409 OPERATIONAL_CONTEXT.VERSION_CONFLICT` si no coincide. Las operaciones de estado (`deactivate`, `reactivate`) reciben `{"version": n}`.
+- `PUT` es **parcial**: el cuerpo lleva solo los campos que cambian; un campo ausente no cambia; `null` borra un campo opcional y en uno obligatorio responde `422`. Cuerpo vacío `{}` o solo con `version` → `422`. Las validaciones (ubicación, unicidad, identidad) se aplican sobre el registro combinado; si nada cambia, no se escribe ni sube la versión.
+- `version` (≥ 1) es **opcional** en todas las escrituras (`PUT`, `deactivate`, `reactivate`, `close`, `change-primary`): si se envía y no coincide → `409 OPERATIONAL_CONTEXT.VERSION_CONFLICT`; si no se envía, se aplica sobre lo vigente. Las operaciones de estado aceptan `{"version": n}`, cuerpo vacío `{}` o ningún cuerpo.
 - No hay borrado físico: inactivar conserva el registro. Inactivar algo ya inactivo (o reactivar algo activo) → `409 INVALID_STATUS_TRANSITION`.
 - Todos los modelos rechazan campos adicionales (`422`). Las cadenas en blanco en campos opcionales se tratan como `null`.
 - Ubicación (`country_id`, `administrative_division_id`, `city_id`): se valida en Geography sin transacción abierta; valores inexistentes → `422 COUNTRY_NOT_FOUND` / `ADMINISTRATIVE_DIVISION_NOT_FOUND` / `CITY_NOT_FOUND`; inactivos → `422 LOCATION_INACTIVE`; incoherentes entre sí → `422 GEOGRAPHY_INCOHERENT`; división o ciudad sin país → `422 GEOGRAPHY_PARENT_REQUIRED`. `latitude`/`longitude` son decimales (número o texto) y se devuelven como cadenas.
 - `422 IMMUTABLE_FIELD` cuando se envía un campo que no puede cambiar.
 - Formato de 401/403/404/503 como en [Errores](../guias/errores.md); `503 DEPENDENCY_UNAVAILABLE` lleva `dependency` (`database`, `party-identity`, `geography`, `keycloak`).
+
+Ejemplo de `PUT` parcial (solo cambia `phone`, sin `version`):
+
+```bash
+curl -sS -X PUT 'https://sio-operational-context-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"phone": "+57 300 123 4567"}'
+```
 
 ## Operaciones
 
@@ -300,7 +310,7 @@ Ejemplo de respuesta `200` (`CompanyResponse`; valores ilustrativos):
 
 ### 6. `PUT /companies/{company_id}`
 
-`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}`; permiso `companies:update`. Cuerpo (`CompanyUpdate`): los campos de la operación 4 con `timezone` y `default_currency` **obligatorios** más `version`. Reemplazo completo; si nada cambia no escribe ni incrementa la versión. Una empresa `INACTIVE` no se modifica (`422 COMPANY_INACTIVE`). Errores: `409 VERSION_CONFLICT`, `409 DUPLICATE_ORGANIZATION_IDENTITY`, `422` de ubicación e identidad, `404`.
+`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}`; permiso `companies:update`. Cuerpo (`CompanyUpdate`, parcial): los campos de la operación 4, todos opcionales; `organization_identity_id`, `timezone` y `default_currency` no admiten `null`. `version` es opcional. Solo cambian los campos enviados; si nada cambia no escribe ni incrementa la versión. Una empresa `INACTIVE` no se modifica (`422 COMPANY_INACTIVE`). Errores: `409 VERSION_CONFLICT`, `409 DUPLICATE_ORGANIZATION_IDENTITY`, `422` de ubicación e identidad, `404`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -352,7 +362,7 @@ Ejemplo de respuesta `200` (`CompanyResponse`; valores ilustrativos):
 
 ### 7. `POST /companies/{company_id}/deactivate`
 
-`HIGH_RISK`: la empresa deja de ser operable para **todos** sus usuarios (las API de negocio responderán `404`/`403 COMPANY_INACTIVE`). URL `https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}/deactivate`; permisos `companies:delete` + `platform:administer`; cuerpo `{"version": n}`. No elimina ni modifica sus sucursales. 
+`HIGH_RISK`: la empresa deja de ser operable para **todos** sus usuarios (las API de negocio responderán `404`/`403 COMPANY_INACTIVE`). URL `https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}/deactivate`; permisos `companies:delete` + `platform:administer`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). No elimina ni modifica sus sucursales. 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -394,7 +404,7 @@ Ejemplo de respuesta `200` (`CompanyResponse`; valores ilustrativos):
 
 ### 8. `POST /companies/{company_id}/reactivate`
 
-`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}/reactivate`; permisos `companies:update` + `platform:administer`; cuerpo `{"version": n}`. 
+`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}/reactivate`; permisos `companies:update` + `platform:administer`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -602,7 +612,7 @@ Ejemplo de respuesta `200` (`BranchResponse`; valores ilustrativos):
 
 ### 12. `PUT /branches/{branch_id}`
 
-`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}`; permiso `branches:update`. Cuerpo (`BranchUpdate`): los campos de la operación 10 más `version`. La empresa de la sucursal es **inmutable**. Geography solo se consulta si cambia la ubicación. Errores: `409 VERSION_CONFLICT`, `409 DUPLICATE_BRANCH_CODE`, `422`.
+`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}`; permiso `branches:update`. Cuerpo (`BranchUpdate`, parcial): los campos de la operación 10, todos opcionales; `code` y `name` no admiten `null`. `version` es opcional. La empresa de la sucursal es **inmutable**. Geography solo se consulta si cambia la ubicación. Errores: `409 VERSION_CONFLICT`, `409 DUPLICATE_BRANCH_CODE`, `422`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -657,7 +667,7 @@ Ejemplo de respuesta `200` (`BranchResponse`; valores ilustrativos):
 
 ### 13. `POST /branches/{branch_id}/deactivate`
 
-`HIGH_RISK`: los usuarios asignados pierden el acceso (`allowed: false`, `BRANCH_INACTIVE`) y las ventas y compras de la sucursal fallan con `403 BRANCH_ACCESS_DENIED`; las existencias se conservan. URL `https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}/deactivate`; permiso `branches:delete`; cuerpo `{"version": n}`.
+`HIGH_RISK`: los usuarios asignados pierden el acceso (`allowed: false`, `BRANCH_INACTIVE`) y las ventas y compras de la sucursal fallan con `403 BRANCH_ACCESS_DENIED`; las existencias se conservan. URL `https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}/deactivate`; permiso `branches:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -701,7 +711,7 @@ Ejemplo de respuesta `200` (`BranchResponse`; valores ilustrativos):
 
 ### 14. `POST /branches/{branch_id}/reactivate`
 
-`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}/reactivate`; permiso `branches:update`; cuerpo `{"version": n}`. Solo si la empresa está `ACTIVE` (`422 COMPANY_INACTIVE`).
+`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}/reactivate`; permiso `branches:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Solo si la empresa está `ACTIVE` (`422 COMPANY_INACTIVE`).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -892,7 +902,7 @@ Ejemplo de respuesta `200` (`ApplicationUserResponse`; valores ilustrativos):
 
 ### 18. `PUT /application-users/{application_user_id}`
 
-`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}`; permiso `application_users:update`. Cuerpo (`ApplicationUserUpdate`): `display_name` (1–160), `reference_email` (opcional), `version`. Enviar `keycloak_user_id`, `person_identity_id` o `company_id` → `422 IMMUTABLE_FIELD`.
+`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}`; permiso `application_users:update`. Cuerpo (`ApplicationUserUpdate`, parcial): `display_name` (1–160; no admite `null`), `reference_email` (`null` lo borra), `version` (opcional); envíe al menos uno de los dos primeros. Enviar `keycloak_user_id`, `person_identity_id` o `company_id` → `422 IMMUTABLE_FIELD`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -929,7 +939,7 @@ Ejemplo de respuesta `200` (`ApplicationUserResponse`; valores ilustrativos):
 
 ### 19. `POST /application-users/{application_user_id}/deactivate`
 
-`HIGH_RISK`: el usuario pierde el acceso a esa empresa (`USER_MEMBERSHIP_INACTIVE`) en todos los servicios. URL `https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/deactivate`; permiso `application_users:delete`; cuerpo `{"version": n}`. Solo inactiva esta membresía.
+`HIGH_RISK`: el usuario pierde el acceso a esa empresa (`USER_MEMBERSHIP_INACTIVE`) en todos los servicios. URL `https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/deactivate`; permiso `application_users:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Solo inactiva esta membresía.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -964,7 +974,7 @@ Ejemplo de respuesta `200` (`ApplicationUserResponse`; valores ilustrativos):
 
 ### 20. `POST /application-users/{application_user_id}/reactivate`
 
-`HIGH_RISK` (restituye acceso). URL `https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/reactivate`; permiso `application_users:update`; cuerpo `{"version": n}`. Revalida la cuenta en Keycloak y la persona en Party Identity (mismos `422` de la operación 16).
+`HIGH_RISK` (restituye acceso). URL `https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/reactivate`; permiso `application_users:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Revalida la cuenta en Keycloak y la persona en Party Identity (mismos `422` de la operación 16).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1171,7 +1181,7 @@ Ejemplo de respuesta `200` (`UserBranchResponse`; valores ilustrativos):
 
 ### 25. `POST /user-branches/{user_branch_id}/deactivate`
 
-`HIGH_RISK` (retira el acceso a la sucursal: `USER_BRANCH_INACTIVE`). URL `https://sio-operational-context-dev.onrender.com/api/v1/user-branches/{user_branch_id}/deactivate`; permiso `user_branches:delete`; cuerpo `{"version": n}`. 
+`HIGH_RISK` (retira el acceso a la sucursal: `USER_BRANCH_INACTIVE`). URL `https://sio-operational-context-dev.onrender.com/api/v1/user-branches/{user_branch_id}/deactivate`; permiso `user_branches:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1214,7 +1224,7 @@ Ejemplo de respuesta `200` (`UserBranchResponse`; valores ilustrativos):
 
 ### 26. `POST /user-branches/{user_branch_id}/reactivate`
 
-`HIGH_RISK`. URL `https://sio-operational-context-dev.onrender.com/api/v1/user-branches/{user_branch_id}/reactivate`; permiso `user_branches:update`; cuerpo `{"version": n}`. Exige membresía, sucursal y empresa `ACTIVE`.
+`HIGH_RISK`. URL `https://sio-operational-context-dev.onrender.com/api/v1/user-branches/{user_branch_id}/reactivate`; permiso `user_branches:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Exige membresía, sucursal y empresa `ACTIVE`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1367,7 +1377,7 @@ Ejemplo de respuesta `200` (`AdvisorAssignmentResponse`; valores ilustrativos):
 
 ### 30. `POST /advisor-assignments/{assignment_id}/close`
 
-`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/advisor-assignments/{assignment_id}/close`; permiso `company_advisor_assignments:delete`. Cuerpo (`AdvisorCloseRequest`): `version` y `valid_to` (opcional; por defecto ahora; ≥ `valid_from`, si no `422 INVALID_VALIDITY_PERIOD`). Una asignación cerrada es inmutable (no se reabre). 
+`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/advisor-assignments/{assignment_id}/close`; permiso `company_advisor_assignments:delete`. Cuerpo (`AdvisorCloseRequest`, puede omitirse): `version` (opcional) y `valid_to` (opcional; por defecto ahora; ≥ `valid_from`, si no `422 INVALID_VALIDITY_PERIOD`). Una asignación cerrada es inmutable (no se reabre). 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1403,7 +1413,7 @@ Ejemplo de respuesta `200` (`AdvisorAssignmentResponse`; valores ilustrativos):
 
 ### 31. `POST /companies/{company_id}/advisor-assignments/change-primary`
 
-`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}/advisor-assignments/change-primary`; permisos `company_advisor_assignments:create` **y** `delete`. Cuerpo (`ChangePrimaryRequest`): `current_assignment_id` (UUID de la asignación principal vigente), `version` (su versión), `person_identity_id` (nueva persona, `ACTIVE`), `effective_at` (date-time, opcional). Cierra la vigente y crea la nueva en una sola transacción. Errores: `409 NO_ACTIVE_PRIMARY_ADVISOR`, `409 PRIMARY_ADVISOR_MISMATCH` (la indicada no es la principal vigente), `409 VERSION_CONFLICT`, `422`. 
+`WRITE`. URL `https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}/advisor-assignments/change-primary`; permisos `company_advisor_assignments:create` **y** `delete`. Cuerpo (`ChangePrimaryRequest`): `current_assignment_id` (UUID de la asignación principal vigente), `version` (su versión; opcional), `person_identity_id` (nueva persona, `ACTIVE`), `effective_at` (date-time, opcional). Cierra la vigente y crea la nueva en una sola transacción. Errores: `409 NO_ACTIVE_PRIMARY_ADVISOR`, `409 PRIMARY_ADVISOR_MISMATCH` (la indicada no es la principal vigente), `409 VERSION_CONFLICT`, `422`. 
 
 Ejemplo de solicitud (valores ilustrativos):
 

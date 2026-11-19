@@ -41,7 +41,8 @@ Convenciones de todo el módulo:
 - Errores comunes a todas las API de este módulo (no se repiten en cada tabla): `401` con `{"detail": "Se requiere un token de acceso Bearer"}` u otro `detail` cuando el token falta, venció o no es válido (renovar una vez y reintentar; si falla, volver al login); `403` con `code` `PARTY_IDENTITY.FORBIDDEN` o `COMMERCIAL_RELATIONSHIP.FORBIDDEN` cuando el token no tiene el permiso indicado (mostrar que faltan permisos y el `trace_id`); `503` con `code` `…DEPENDENCY_UNAVAILABLE` cuando la base de datos u otro servicio no responde (reintentar más tarde; nada se guarda). Los demás errores llegan en Problem Details (`application/problem+json`) con `code` `PARTY_IDENTITY.…` o `COMMERCIAL_RELATIONSHIP.…` y `trace_id`; ver la [guía de errores](../guias/errores.md).
 - **Alcance.** Las identidades de Party Identity son globales: cualquier usuario con el permiso de lectura las ve. Los clientes de Commercial Relationship solo se ven y modifican con membresía `ACTIVE` en la empresa; fuera de ese alcance la respuesta es `404 COMMERCIAL_RELATIONSHIP.NOT_FOUND`, igual que si no existieran.
 - **Empresa inactiva.** Si la empresa está `INACTIVE`, Commercial Relationship solo permite consultar e inactivar clientes; registrar, actualizar o reactivar responde `422 COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE`.
-- **Control de versión.** Toda modificación envía la `version` actual del recurso; si otra persona lo cambió antes, la API responde `409 …VERSION_CONFLICT` y el frontend debe volver a leer el recurso y repetir con la nueva `version`.
+- **Control de versión.** `version` es **opcional** en toda modificación: si se envía la `version` leída y otra persona cambió el recurso antes, la API responde `409 …VERSION_CONFLICT` y el frontend debe volver a leer el recurso y repetir; si no se envía, el cambio se aplica sobre lo vigente. Se recomienda enviarla para detectar cambios simultáneos.
+- **`PUT` parcial.** El cuerpo de un `PUT` lleva solo los campos que cambian: un campo ausente no cambia, `null` borra un campo opcional y en uno obligatorio responde `422`; un cuerpo vacío `{}` o solo con `version` responde `422`. Inactivar y reactivar aceptan `{}` o ningún cuerpo.
 - Las respuestas traen siempre `created_by`, `updated_by` (el `sub` de Keycloak de quien actuó), `created_at` y `updated_at`.
 - Toda escritura sobre clientes queda registrada en [Audit](../servicios/audit.md) con las acciones `CREATE_COMPANY_CUSTOMER`, `UPDATE_COMPANY_CUSTOMER`, `DEACTIVATE_COMPANY_CUSTOMER` y `REACTIVATE_COMPANY_CUSTOMER` sobre la entidad `CompanyCustomer`; se consultan con la [API 16 de Administración empresarial](administracion-empresarial.md#16-consultar-la-trazabilidad-de-la-empresa-auditoría) (lista los eventos de auditoría de la empresa; sus errores están en esa sección).
 
@@ -133,7 +134,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 | `items[].birth_date` | date \| null | Fecha de nacimiento, si la regla del documento la exige |
 | `items[].verification_status` | `UNVERIFIED` \| `VERIFIED` \| `SUSPENDED` | Grado de verificación de la identidad; informativo |
 | `items[].status` | `ACTIVE` \| `INACTIVE` | Solo una persona `ACTIVE` puede registrarse como cliente |
-| `items[].version` | integer | Valor que debe enviarse en la [API 13](#13-actualizar-la-identidad-de-una-persona) |
+| `items[].version` | integer | Valor que puede enviarse (opcional) en la [API 13](#13-actualizar-la-identidad-de-una-persona) |
 | `page`, `page_size`, `total_records`, `total_pages` | integer | Paginación; `items` vacío y `total_records: 0` cuando no hay coincidencias (no es error) |
 
 ### Posibles errores
@@ -373,7 +374,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 | `items[].trade_name` | string \| null | Nombre comercial |
 | `items[].organization_type`, `registration_status`, `website` | string \| null | Datos informativos de registro |
 | `items[].status` | `ACTIVE` \| `INACTIVE` | Solo una organización `ACTIVE` puede registrarse como cliente |
-| `items[].version` | integer | Valor que debe enviarse en la [API 14](#14-actualizar-la-identidad-de-una-organización) |
+| `items[].version` | integer | Valor que puede enviarse (opcional) en la [API 14](#14-actualizar-la-identidad-de-una-organización) |
 | `page`, `page_size`, `total_records`, `total_pages` | integer | Paginación; `items` vacío cuando no hay coincidencias (no es error) |
 
 ### Posibles errores
@@ -488,7 +489,7 @@ curl -X POST \
 | `409` | `PARTY_IDENTITY.DUPLICATE_IDENTIFICATION` | Ya existe una identidad con el mismo país, tipo y número (en cualquier estado) | No crear otra: buscarla con la [API 3](#3-buscar-la-identidad-de-una-organización) (con `status=INACTIVE` si no aparece) y reutilizar su `id` |
 | `422` | `PARTY_IDENTITY.INVALID_IDENTIFICATION_NUMBER` | El número no cumple ninguna regla activa para la sigla y el país; `detail` incluye el formato esperado | Mostrar `detail` junto al campo número |
 | `422` | `PARTY_IDENTITY.COUNTRY_NOT_FOUND` | `country_id` no existe en Geography | Volver a cargar el selector de país |
-| `422` | `PARTY_IDENTITY.VALIDATION_ERROR` | Campo obligatorio ausente, longitud fuera de rango o campo desconocido | Corregir el formulario; `errors[]` trae `field` y `message` |
+| `422` | `PARTY_IDENTITY.VALIDATION_ERROR` | Cuerpo vacío o solo con `version`, `null` en un campo obligatorio, longitud fuera de rango o campo desconocido | Corregir el formulario; `errors[]` trae `field` y `message` |
 | `400` | `PARTY_IDENTITY.MALFORMED_REQUEST` | El cuerpo no es JSON válido | Error de programación del cliente |
 | `503` | `PARTY_IDENTITY.DEPENDENCY_UNAVAILABLE` | Geography no responde al validar el país (`dependency: "geography"`) | Reintentar más tarde; nada se guardó |
 
@@ -867,7 +868,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 | `items[].internal_code`, `display_name` | string | Lo que se muestra en el selector de cliente de la venta |
 | `items[].preferred_contact_person_id` | UUID \| null | Contacto preferido (solo organizaciones) |
 | `items[].status` | `ACTIVE` \| `INACTIVE` | Solo los `ACTIVE` se pueden usar en ventas |
-| `items[].version` | integer | Valor que debe enviarse en las API 12, 15 y 16 |
+| `items[].version` | integer | Valor que puede enviarse (opcional) en las API 12, 15 y 16 |
 | `page`, `page_size`, `total_records`, `total_pages` | integer | Paginación; `items` vacío cuando no hay coincidencias (no es error) |
 
 ### Posibles errores
@@ -887,7 +888,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 ### ¿Qué hace esta API?
 
-Devuelve la ficha completa de un cliente, en cualquier estado, si pertenece a una empresa en la que el usuario tiene membresía `ACTIVE`. Se usa para abrir el detalle del cliente y para leer su `version` antes de modificarlo, inactivarlo o reactivarlo. Para mostrar documento, nombres completos o razón social hay que encadenar la [API 9](#9-consultar-los-datos-de-identidad-de-una-persona) o la [API 10](#10-consultar-los-datos-de-identidad-de-una-organización) con la identidad que devuelve, y la [API 11](#11-consultar-los-datos-de-contacto-vigentes-del-cliente) para correo, teléfono y dirección.
+Devuelve la ficha completa de un cliente, en cualquier estado, si pertenece a una empresa en la que el usuario tiene membresía `ACTIVE`. Se usa para abrir el detalle del cliente y para leer su `version` (opcional, recomendable para detectar cambios simultáneos) antes de modificarlo, inactivarlo o reactivarlo. Para mostrar documento, nombres completos o razón social hay que encadenar la [API 9](#9-consultar-los-datos-de-identidad-de-una-persona) o la [API 10](#10-consultar-los-datos-de-identidad-de-una-organización) con la identidad que devuelve, y la [API 11](#11-consultar-los-datos-de-contacto-vigentes-del-cliente) para correo, teléfono y dirección.
 
 Antes necesita: el `company_customer_id`.
 
@@ -941,7 +942,7 @@ curl -X GET \
 |---|---|---|
 | `customer_kind`, `person_identity_id`, `organization_identity_id` | — | Con ellos se decide si consultar la [API 9](#9-consultar-los-datos-de-identidad-de-una-persona) o la [API 10](#10-consultar-los-datos-de-identidad-de-una-organización) |
 | `status` | `ACTIVE` \| `INACTIVE` | Un cliente `INACTIVE` se consulta pero no se usa en ventas |
-| `version` | integer | Valor que debe enviarse en las API 12, 15 y 16 |
+| `version` | integer | Valor que puede enviarse (opcional) en las API 12, 15 y 16 |
 
 ### Posibles errores
 
@@ -960,7 +961,7 @@ curl -X GET \
 
 ### ¿Qué hace esta API?
 
-Devuelve la identidad completa de una persona natural, en cualquier estado: documento, nombres, fecha de nacimiento y estado de verificación. Se encadena después de la [API 8](#8-consultar-un-cliente) para mostrar la ficha de un cliente `PERSON`, y antes de la [API 13](#13-actualizar-la-identidad-de-una-persona) para leer la `version` vigente.
+Devuelve la identidad completa de una persona natural, en cualquier estado: documento, nombres, fecha de nacimiento y estado de verificación. Se encadena después de la [API 8](#8-consultar-un-cliente) para mostrar la ficha de un cliente `PERSON`, y antes de la [API 13](#13-actualizar-la-identidad-de-una-persona) para mostrar los valores actuales y leer la `version` vigente (opcional).
 
 Antes necesita: el `person_identity_id` del cliente.
 
@@ -1017,7 +1018,7 @@ curl -X GET \
 | `identification_type`, `identification_number` | string | Documento para mostrar en la ficha y en el comprobante de venta |
 | `first_name` … `second_last_name` | string \| null | Nombre completo |
 | `status` | `ACTIVE` \| `INACTIVE` | Si está `INACTIVE`, el cliente no podrá reactivarse ([API 16](#16-reactivar-un-cliente)) |
-| `version` | integer | Valor que debe enviarse en la [API 13](#13-actualizar-la-identidad-de-una-persona) |
+| `version` | integer | Valor que puede enviarse (opcional) en la [API 13](#13-actualizar-la-identidad-de-una-persona) |
 
 ### Posibles errores
 
@@ -1034,7 +1035,7 @@ curl -X GET \
 
 ### ¿Qué hace esta API?
 
-Devuelve la identidad completa de una organización, en cualquier estado: NIT, razón social, nombre comercial y datos de registro. Se encadena después de la [API 8](#8-consultar-un-cliente) para mostrar la ficha de un cliente `ORGANIZATION`, y antes de la [API 14](#14-actualizar-la-identidad-de-una-organización) para leer la `version` vigente.
+Devuelve la identidad completa de una organización, en cualquier estado: NIT, razón social, nombre comercial y datos de registro. Se encadena después de la [API 8](#8-consultar-un-cliente) para mostrar la ficha de un cliente `ORGANIZATION`, y antes de la [API 14](#14-actualizar-la-identidad-de-una-organización) para mostrar los valores actuales y leer la `version` vigente (opcional).
 
 Antes necesita: el `organization_identity_id` del cliente.
 
@@ -1090,7 +1091,7 @@ curl -X GET \
 | `identification_type`, `identification_number` | string | Identificación tributaria para la ficha y el comprobante |
 | `legal_name`, `trade_name` | string, string \| null | Razón social y nombre comercial |
 | `status` | `ACTIVE` \| `INACTIVE` | Si está `INACTIVE`, el cliente no podrá reactivarse ([API 16](#16-reactivar-un-cliente)) |
-| `version` | integer | Valor que debe enviarse en la [API 14](#14-actualizar-la-identidad-de-una-organización) |
+| `version` | integer | Valor que puede enviarse (opcional) en la [API 14](#14-actualizar-la-identidad-de-una-organización) |
 
 ### Posibles errores
 
@@ -1212,11 +1213,11 @@ Ejemplo de `404` sin perfil vigente:
 
 ### ¿Qué hace esta API?
 
-Modifica los datos propios de la relación comercial: código interno, nombre con que la empresa muestra al cliente y persona de contacto preferida. Es un reemplazo completo: se envían los tres campos con sus valores finales más la `version` vigente. El tipo de cliente y su identidad (`customer_kind`, `person_identity_id`, `organization_identity_id`), la empresa y el `status` son **inmutables**: para cambiar la identidad hay que inactivar el cliente ([API 15](#15-inactivar-un-cliente)) y registrar otro ([API 6](#6-registrar-un-cliente-de-la-empresa)); los datos legales se corrigen en Party Identity con la [API 13](#13-actualizar-la-identidad-de-una-persona) o la [API 14](#14-actualizar-la-identidad-de-una-organización).
+Modifica los datos propios de la relación comercial: código interno, nombre con que la empresa muestra al cliente y persona de contacto preferida. Es un `PUT` parcial: se envían solo los campos que cambian (un campo ausente no cambia; `null` en `preferred_contact_person_id` lo borra) y, opcionalmente, la `version` vigente. El tipo de cliente y su identidad (`customer_kind`, `person_identity_id`, `organization_identity_id`), la empresa y el `status` son **inmutables**: para cambiar la identidad hay que inactivar el cliente ([API 15](#15-inactivar-un-cliente)) y registrar otro ([API 6](#6-registrar-un-cliente-de-la-empresa)); los datos legales se corrigen en Party Identity con la [API 13](#13-actualizar-la-identidad-de-una-persona) o la [API 14](#14-actualizar-la-identidad-de-una-organización).
 
 Efectos verificados en el código: funciona sobre clientes en cualquier estado; si no hay cambios no escribe ni incrementa `version`; si cambia `preferred_contact_person_id` lo revalida en Party Identity; registra `UPDATE_COMPANY_CUSTOMER` en Audit.
 
-Antes necesita: la `version` actual ([API 8](#8-consultar-un-cliente)) y empresa `ACTIVE`.
+Antes necesita: empresa `ACTIVE`. Recomendado: la `version` actual ([API 8](#8-consultar-un-cliente)) para detectar cambios simultáneos.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1260,10 +1261,10 @@ curl -X PUT \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente del cliente | `1` | `version` de la [API 8](#8-consultar-un-cliente) (devuelve la ficha del cliente; errores en §8) |
-| `internal_code` | string (1–60) | Sí | Código interno final; único en la empresa sin distinguir mayúsculas | `CLI-0001` | Formulario (repetir el actual si no cambia) |
-| `display_name` | string (1–200) | Sí | Nombre final para mostrar | `Ana María Pérez` | Formulario |
-| `preferred_contact_person_id` | UUID \| null | Sí (acepta `null`); solo con valor en clientes `ORGANIZATION` | Contacto preferido final; debe ser un contacto activo de la organización del cliente | `null` | `items[].id` de `GET https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}/contact-persons?is_active=true` (lista las personas de contacto de la organización; permiso `perm:party-identity:organization_contact_persons:read`; errores `404 PARTY_IDENTITY.NOT_FOUND` y `422 VALIDATION_ERROR`; ficha [PI 31](../servicios/party-identity.md#31-get-organization-identitiesorganization_identity_idcontact-persons)) |
+| `version` | integer ≥ 1 | No | Versión vigente del cliente; opcional: si se envía y no coincide → `409 VERSION_CONFLICT` | `1` | `version` de la [API 8](#8-consultar-un-cliente) (devuelve la ficha del cliente; errores en §8) |
+| `internal_code` | string (1–60) | No; no admite `null` | Código interno final; único en la empresa sin distinguir mayúsculas | `CLI-0001` | Formulario (omitir si no cambia) |
+| `display_name` | string (1–200) | No; no admite `null` | Nombre final para mostrar | `Ana María Pérez` | Formulario |
+| `preferred_contact_person_id` | UUID \| null | No; acepta `null` (lo borra); solo con valor en clientes `ORGANIZATION` | Contacto preferido; debe ser un contacto activo de la organización del cliente | `null` | `items[].id` de `GET https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}/contact-persons?is_active=true` (lista las personas de contacto de la organización; permiso `perm:party-identity:organization_contact_persons:read`; errores `404 PARTY_IDENTITY.NOT_FOUND` y `422 VALIDATION_ERROR`; ficha [PI 31](../servicios/party-identity.md#31-get-organization-identitiesorganization_identity_idcontact-persons)) |
 
 No se admiten en el cuerpo `customer_kind`, `person_identity_id`, `organization_identity_id`, `company_id` ni `status`: su presencia responde `422 IMMUTABLE_FIELD`.
 
@@ -1292,7 +1293,7 @@ No se admiten en el cuerpo `customer_kind`, `person_identity_id`, `organization_
 
 | Campo | Tipo | Significado para el frontend |
 |---|---|---|
-| `version` | integer | Nueva versión; es la que debe enviarse en la siguiente modificación. Si no hubo cambios se mantiene |
+| `version` | integer | Nueva versión; es la que se envía (si se usa) en la siguiente modificación. Si no hubo cambios se mantiene |
 | `updated_by`, `updated_at` | UUID, fecha | Quién y cuándo modificó |
 
 ### Posibles errores
@@ -1306,7 +1307,7 @@ No se admiten en el cuerpo `customer_kind`, `person_identity_id`, `organization_
 | `422` | `COMMERCIAL_RELATIONSHIP.CONTACT_PERSON_NOT_ALLOWED` | `preferred_contact_person_id` con valor en un cliente `PERSON` | Enviar `null` |
 | `422` | `COMMERCIAL_RELATIONSHIP.CONTACT_PERSON_INVALID` | El contacto no existe, está inactivo o es de otra organización | Volver a cargar los contactos activos (PI 31) |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden modificar clientes en ella |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1, `internal_code` vacío o > 60, `display_name` vacío o > 200, campo faltante o desconocido | Corregir el formulario |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Cuerpo vacío o solo con `version`; `version` < 1; `internal_code` o `display_name` en `null`, vacíos o demasiado largos (> 60 / > 200); campo desconocido | Corregir el formulario |
 | `403` | `COMMERCIAL_RELATIONSHIP.PARTY_IDENTITY_ACCESS_DENIED` | Sin permiso en Party Identity para validar el contacto | Pedir `perm:party-identity:organization_contact_persons:read` |
 | `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Sin permiso en Operational Context para consultar el acceso operativo | Pedir `perm:operational-context:application_users:read` |
 | `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Party Identity u Operational Context no responden | Reintentar más tarde; nada se guardó |
@@ -1333,11 +1334,11 @@ Ejemplo de `409` por versión:
 
 ### ¿Qué hace esta API?
 
-Corrige los datos legales de una persona natural: documento, nombres, fecha de nacimiento y estado de verificación. Es un reemplazo completo: se envían **todos** los campos con sus valores finales (incluido `verification_status`, obligatorio aquí) más la `version` vigente. Como la identidad es global, el cambio lo ven todas las empresas que la tengan como cliente, proveedor o usuario.
+Corrige los datos legales de una persona natural: documento, nombres, fecha de nacimiento y estado de verificación. Es un `PUT` parcial: se envían solo los campos que cambian (un campo ausente no cambia; `null` borra un dato opcional) y, opcionalmente, la `version` vigente. Como la identidad es global, el cambio lo ven todas las empresas que la tengan como cliente, proveedor o usuario.
 
-Efectos verificados en el código: comprueba la existencia y la `version`; si no hay cambios devuelve el registro actual sin escribir; si cambian país, tipo o número vuelve a validar la regla del documento y la unicidad; si cambia `birth_date` revalida el rango de edad.
+Efectos verificados en el código: comprueba la existencia y, si se envía, la `version`; si no hay cambios devuelve el registro actual sin escribir; si cambian país, tipo o número vuelve a validar la regla del documento y la unicidad; si cambia `birth_date` revalida el rango de edad.
 
-Antes necesita: la ficha actual con su `version` ([API 9](#9-consultar-los-datos-de-identidad-de-una-persona)).
+Antes necesita: el `person_identity_id`. Recomendado: la ficha actual con su `version` ([API 9](#9-consultar-los-datos-de-identidad-de-una-persona)).
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1393,14 +1394,14 @@ curl -X PUT \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente de la identidad | `1` | `version` de la [API 9](#9-consultar-los-datos-de-identidad-de-una-persona) (devuelve la identidad de la persona; errores en §9) |
-| `identification_country_id` | UUID | Sí | País del documento (repetir el actual si no cambia) | `c0a80101-0000-4000-8000-000000000001` | `identification_country_id` de la [API 9](#9-consultar-los-datos-de-identidad-de-una-persona), o `items[].id` de `GET https://sio-geography-dev.onrender.com/global-countries` si cambia (lista los países) · guía [country_id](../parametros/country-id.md#cómo-obtener-country_id) |
-| `identification_type` | string (1–40) | Sí | Sigla del tipo de documento | `CC` | `identification_type` de la [API 9](#9-consultar-los-datos-de-identidad-de-una-persona), o `items[].sigla` de la [API 5](#5-consultar-los-tipos-de-identificación-admitidos-por-país) si cambia (lista los tipos de identificación; errores en §5) |
-| `identification_number` | string (1–40) | Sí | Número del documento | `1012345678` | Formulario (validar con `number_pattern` de la [API 5](#5-consultar-los-tipos-de-identificación-admitidos-por-país)) |
-| `first_name`, `last_name` | string (1–100) | Sí | Primer nombre y primer apellido | `Ana`, `Pérez` | Formulario |
+| `version` | integer ≥ 1 | No | Versión vigente de la identidad; opcional: si se envía y no coincide → `409 VERSION_CONFLICT` | `1` | `version` de la [API 9](#9-consultar-los-datos-de-identidad-de-una-persona) (devuelve la identidad de la persona; errores en §9) |
+| `identification_country_id` | UUID | No; no admite `null` | País del documento (omitir si no cambia) | `c0a80101-0000-4000-8000-000000000001` | `identification_country_id` de la [API 9](#9-consultar-los-datos-de-identidad-de-una-persona), o `items[].id` de `GET https://sio-geography-dev.onrender.com/global-countries` si cambia (lista los países) · guía [country_id](../parametros/country-id.md#cómo-obtener-country_id) |
+| `identification_type` | string (1–40) | No; no admite `null` | Sigla del tipo de documento | `CC` | `identification_type` de la [API 9](#9-consultar-los-datos-de-identidad-de-una-persona), o `items[].sigla` de la [API 5](#5-consultar-los-tipos-de-identificación-admitidos-por-país) si cambia (lista los tipos de identificación; errores en §5) |
+| `identification_number` | string (1–40) | No; no admite `null` | Número del documento | `1012345678` | Formulario (validar con `number_pattern` de la [API 5](#5-consultar-los-tipos-de-identificación-admitidos-por-país)) |
+| `first_name`, `last_name` | string (1–100) | No; no admite `null` | Primer nombre y primer apellido | `Ana`, `Pérez` | Formulario |
 | `middle_name`, `second_last_name` | string (≤ 100) \| null | No; aceptan `null` | Segundo nombre y segundo apellido | `María`, `Gómez` | Formulario |
 | `birth_date` | date \| null | Según la regla del documento | Fecha de nacimiento, no futura | `1990-05-20` | Formulario |
-| `verification_status` | `UNVERIFIED` \| `VERIFIED` \| `SUSPENDED` | **Sí** (a diferencia de la creación) | Estado de verificación final | `VERIFIED` | Formulario; repetir el actual de la [API 9](#9-consultar-los-datos-de-identidad-de-una-persona) si no cambia |
+| `verification_status` | `UNVERIFIED` \| `VERIFIED` \| `SUSPENDED` | No; no admite `null` | Estado de verificación | `VERIFIED` | Formulario; omitir si no cambia |
 
 ### Respuesta exitosa
 
@@ -1442,7 +1443,7 @@ curl -X PUT \
 | `422` | `PARTY_IDENTITY.INVALID_IDENTIFICATION_NUMBER` | El número no cumple la regla de la sigla | Mostrar `detail` junto al número |
 | `422` | `PARTY_IDENTITY.BIRTH_DATE_REQUIRED` / `AGE_OUT_OF_RANGE` / `BIRTH_DATE_IN_FUTURE` | Fecha de nacimiento ausente, fuera del rango de edad o futura | Corregir la fecha |
 | `422` | `PARTY_IDENTITY.COUNTRY_NOT_FOUND` | El país no existe en Geography | Volver a cargar el selector de país |
-| `422` | `PARTY_IDENTITY.VALIDATION_ERROR` | Campo obligatorio ausente (incluido `verification_status`), longitud fuera de rango o campo desconocido | Corregir el formulario |
+| `422` | `PARTY_IDENTITY.VALIDATION_ERROR` | Cuerpo vacío o solo con `version`, `null` en un campo obligatorio, longitud fuera de rango o campo desconocido | Corregir el formulario |
 | `503` | `PARTY_IDENTITY.DEPENDENCY_UNAVAILABLE` | Geography no responde al validar el país | Reintentar más tarde |
 
 Ejemplo de `409` por versión:
@@ -1467,11 +1468,11 @@ Ejemplo de `409` por versión:
 
 ### ¿Qué hace esta API?
 
-Corrige los datos legales de una organización: identificación, razón social, nombre comercial y datos de registro. Reemplazo completo con `version`. Como la identidad es global, el cambio lo ven todas las empresas que la tengan como cliente o proveedor y, si la organización es una empresa de SIO, también la [Administración empresarial](administracion-empresarial.md).
+Corrige los datos legales de una organización: identificación, razón social, nombre comercial y datos de registro. Es un `PUT` parcial: se envían solo los campos que cambian y, opcionalmente, la `version`. Como la identidad es global, el cambio lo ven todas las empresas que la tengan como cliente o proveedor y, si la organización es una empresa de SIO, también la [Administración empresarial](administracion-empresarial.md).
 
-Efectos verificados en el código: comprueba existencia y `version`; sin cambios devuelve el registro actual sin escribir; si cambian país, tipo o número revalida la regla y la unicidad.
+Efectos verificados en el código: comprueba existencia y, si se envía, `version`; sin cambios devuelve el registro actual sin escribir; si cambian país, tipo o número revalida la regla y la unicidad.
 
-Antes necesita: la ficha actual con su `version` ([API 10](#10-consultar-los-datos-de-identidad-de-una-organización)).
+Antes necesita: el `organization_identity_id`. Recomendado: la ficha actual con su `version` ([API 10](#10-consultar-los-datos-de-identidad-de-una-organización)).
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1525,11 +1526,11 @@ curl -X PUT \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente de la identidad | `1` | `version` de la [API 10](#10-consultar-los-datos-de-identidad-de-una-organización) (devuelve la identidad de la organización; errores en §10) |
-| `country_id` | UUID | Sí | País de registro (repetir el actual si no cambia) | `c0a80101-0000-4000-8000-000000000001` | `country_id` de la [API 10](#10-consultar-los-datos-de-identidad-de-una-organización), o `items[].id` de `GET https://sio-geography-dev.onrender.com/global-countries` si cambia (lista los países) · guía [country_id](../parametros/country-id.md#cómo-obtener-country_id) |
-| `identification_type` | string (1–40) | Sí | Sigla del tipo de identificación | `NIT` | `identification_type` de la [API 10](#10-consultar-los-datos-de-identidad-de-una-organización), o `items[].sigla` de la [API 5](#5-consultar-los-tipos-de-identificación-admitidos-por-país) con `party_kind=ORGANIZATION` si cambia |
-| `identification_number` | string (1–40) | Sí | Número de identificación | `900123456` | Formulario (validar con `number_pattern` de la [API 5](#5-consultar-los-tipos-de-identificación-admitidos-por-país)) |
-| `legal_name` | string (1–200) | Sí | Razón social final | `Droguería La Economía S.A.S.` | Formulario |
+| `version` | integer ≥ 1 | No | Versión vigente de la identidad; opcional: si se envía y no coincide → `409 VERSION_CONFLICT` | `1` | `version` de la [API 10](#10-consultar-los-datos-de-identidad-de-una-organización) (devuelve la identidad de la organización; errores en §10) |
+| `country_id` | UUID | No; no admite `null` | País de registro (omitir si no cambia) | `c0a80101-0000-4000-8000-000000000001` | `country_id` de la [API 10](#10-consultar-los-datos-de-identidad-de-una-organización), o `items[].id` de `GET https://sio-geography-dev.onrender.com/global-countries` si cambia (lista los países) · guía [country_id](../parametros/country-id.md#cómo-obtener-country_id) |
+| `identification_type` | string (1–40) | No; no admite `null` | Sigla del tipo de identificación | `NIT` | `identification_type` de la [API 10](#10-consultar-los-datos-de-identidad-de-una-organización), o `items[].sigla` de la [API 5](#5-consultar-los-tipos-de-identificación-admitidos-por-país) con `party_kind=ORGANIZATION` si cambia |
+| `identification_number` | string (1–40) | No; no admite `null` | Número de identificación | `900123456` | Formulario (validar con `number_pattern` de la [API 5](#5-consultar-los-tipos-de-identificación-admitidos-por-país)) |
+| `legal_name` | string (1–200) | No; no admite `null` | Razón social final | `Droguería La Economía S.A.S.` | Formulario |
 | `trade_name` | string (≤ 200) \| null | No; acepta `null` | Nombre comercial | `La Economía` | Formulario |
 | `organization_type` | string (≤ 40) \| null | No; acepta `null` | Tipo societario | `SAS` | Formulario |
 | `registration_status` | string (≤ 30) \| null | No; acepta `null` | Estado del registro mercantil | `VIGENTE` | Formulario |
@@ -1573,7 +1574,7 @@ curl -X PUT \
 | `409` | `PARTY_IDENTITY.DUPLICATE_IDENTIFICATION` | El nuevo país + tipo + número ya pertenece a otra identidad | Informar |
 | `422` | `PARTY_IDENTITY.INVALID_IDENTIFICATION_NUMBER` | El número no cumple la regla de la sigla | Mostrar `detail` junto al número |
 | `422` | `PARTY_IDENTITY.COUNTRY_NOT_FOUND` | El país no existe en Geography | Volver a cargar el selector de país |
-| `422` | `PARTY_IDENTITY.VALIDATION_ERROR` | Campo obligatorio ausente, longitud fuera de rango o campo desconocido | Corregir el formulario |
+| `422` | `PARTY_IDENTITY.VALIDATION_ERROR` | Cuerpo vacío o solo con `version`, `null` en un campo obligatorio, longitud fuera de rango o campo desconocido | Corregir el formulario |
 | `503` | `PARTY_IDENTITY.DEPENDENCY_UNAVAILABLE` | Geography no responde al validar el país | Reintentar más tarde |
 
 ## 15. Inactivar un cliente
@@ -1586,7 +1587,7 @@ curl -X PUT \
 
 Pasa el cliente a `INACTIVE` sin borrarlo ni borrar su historial. Desde ese momento [Ventas](ventas.md) rechaza nuevas ventas a ese cliente con `409 SALES.REFERENCES_NOT_ELIGIBLE`; las ventas ya registradas no cambian. La identidad en Party Identity no se toca. Es la única escritura permitida cuando la empresa está `INACTIVE`. Registra `DEACTIVATE_COMPANY_CUSTOMER` en Audit.
 
-Antes necesita: la `version` actual ([API 8](#8-consultar-un-cliente)). Conviene pedir confirmación al usuario.
+Antes necesita: el `company_customer_id`; la `version` actual ([API 8](#8-consultar-un-cliente)) es opcional (el cuerpo puede ser `{}` o ninguno). Conviene pedir confirmación al usuario.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1624,7 +1625,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente del cliente | `2` | `version` de la [API 8](#8-consultar-un-cliente) (devuelve la ficha del cliente; errores en §8) |
+| `version` | integer ≥ 1 | No | Versión vigente del cliente; opcional: si se envía y no coincide → `409 VERSION_CONFLICT` | `2` | `version` de la [API 8](#8-consultar-un-cliente) (devuelve la ficha del cliente; errores en §8) |
 
 ### Respuesta exitosa
 
@@ -1652,7 +1653,7 @@ curl -X POST \
 | Campo | Tipo | Significado para el frontend |
 |---|---|---|
 | `status` | `INACTIVE` | El cliente deja de aparecer en la lista por defecto de la [API 7](#7-buscar-y-listar-los-clientes-de-la-empresa) (usar `status=INACTIVE` o `ALL`) |
-| `version` | integer | Valor que debe enviarse en la [API 16](#16-reactivar-un-cliente) |
+| `version` | integer | Valor que puede enviarse (opcional) en la [API 16](#16-reactivar-un-cliente) |
 
 ### Posibles errores
 
@@ -1661,7 +1662,7 @@ curl -X POST \
 | `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | El cliente no existe o es de una empresa sin membresía `ACTIVE` | Volver a la lista |
 | `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer con la [API 8](#8-consultar-un-cliente) y repetir |
 | `409` | `COMMERCIAL_RELATIONSHIP.INVALID_STATUS_TRANSITION` | El cliente ya está `INACTIVE` | Refrescar la ficha; no es necesario repetir |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` ausente, < 1 o campo desconocido | Corregir la solicitud |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1 o campo desconocido | Corregir la solicitud |
 | `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Sin permiso en Operational Context para consultar el acceso operativo | Pedir `perm:operational-context:application_users:read` |
 | `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Operational Context no responde | Reintentar más tarde |
 
@@ -1691,7 +1692,7 @@ Devuelve un cliente `INACTIVE` a `ACTIVE` conservando su `id`, su código y su h
 
 Efectos verificados en el código: antes de reactivar vuelve a comprobar en Party Identity que la identidad exista y esté `ACTIVE` (no revalida la persona de contacto); exige empresa `ACTIVE`; registra `REACTIVATE_COMPANY_CUSTOMER` en Audit.
 
-Antes necesita: la `version` actual ([API 8](#8-consultar-un-cliente)) y permisos de lectura en Party Identity (`perm:party-identity:person_identities:read` u `organization_identities:read`) para la revalidación.
+Antes necesita: el `company_customer_id` (la `version` de la [API 8](#8-consultar-un-cliente) es opcional; el cuerpo puede ser `{}` o ninguno) y permisos de lectura en Party Identity (`perm:party-identity:person_identities:read` u `organization_identities:read`) para la revalidación.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1729,7 +1730,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente del cliente | `3` | `version` de la [API 8](#8-consultar-un-cliente) (devuelve la ficha del cliente; errores en §8) |
+| `version` | integer ≥ 1 | No | Versión vigente del cliente; opcional: si se envía y no coincide → `409 VERSION_CONFLICT` | `3` | `version` de la [API 8](#8-consultar-un-cliente) (devuelve la ficha del cliente; errores en §8) |
 
 ### Respuesta exitosa
 
@@ -1769,7 +1770,7 @@ curl -X POST \
 | `422` | `COMMERCIAL_RELATIONSHIP.PERSON_IDENTITY_NOT_FOUND` / `ORGANIZATION_IDENTITY_NOT_FOUND` | La identidad ya no existe en Party Identity | Informar; registrar un cliente nuevo con otra identidad |
 | `422` | `COMMERCIAL_RELATIONSHIP.PERSON_IDENTITY_INACTIVE` / `ORGANIZATION_IDENTITY_INACTIVE` | La identidad está `INACTIVE` en Party Identity | Reactivar primero la identidad (PI 8 / PI 14) |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden reactivar clientes en ella |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` ausente, < 1 o campo desconocido | Corregir la solicitud |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1 o campo desconocido | Corregir la solicitud |
 | `403` | `COMMERCIAL_RELATIONSHIP.PARTY_IDENTITY_ACCESS_DENIED` | Sin permiso en Party Identity para revalidar la identidad | Pedir el permiso de lectura correspondiente |
 | `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Sin permiso en Operational Context para consultar el acceso operativo | Pedir `perm:operational-context:application_users:read` |
 | `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Party Identity u Operational Context no responden | Reintentar más tarde; nada se guardó |

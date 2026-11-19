@@ -55,7 +55,8 @@ Convenciones de todo el módulo:
 - **Alcance.** El catálogo de Product Catalog es global: cualquier usuario con el permiso lo ve y no exige membresía. Los recursos de Commercial Relationship solo se ven y modifican con membresía `ACTIVE` en la empresa, que el servicio verifica en Operational Context; fuera de ese alcance la respuesta es `404 COMMERCIAL_RELATIONSHIP.NOT_FOUND`, igual que si no existieran. Si Operational Context rechaza la consulta de membresía la respuesta es `403 COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` (pedir `perm:operational-context:application_users:read`) y si no responde, `503 COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE`; estos dos casos aplican a todas las API de Commercial Relationship y no se repiten.
 - **Empresa inactiva.** Si la empresa está `INACTIVE`, Commercial Relationship solo permite consultar e inactivar; crear, modificar o reactivar responde `422 COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE`.
 - **Producto global inactivo.** Sobre un producto global `INACTIVE` solo se consultan o inactivan sus elementos: crear categorías, presentaciones o identificadores responde `422 PRODUCT_CATALOG.PRODUCT_INACTIVE`.
-- **Control de versión.** Toda modificación envía la `version` actual del recurso; si otra persona lo cambió antes, la API responde `409 …VERSION_CONFLICT` y el frontend debe volver a leer el recurso y repetir con la nueva `version`.
+- **Control de versión.** `version` es **opcional** en toda escritura (modificaciones y acciones). Si se envía y otra persona cambió el recurso antes, la API responde `409 …VERSION_CONFLICT` y el frontend debe volver a leer el recurso y repetir; si no se envía, el cambio se aplica sobre lo vigente. Enviarla se recomienda para detectar cambios simultáneos.
+- **`PUT` parcial.** El cuerpo de un `PUT` lleva solo los campos que cambian: un campo ausente no cambia, `null` borra un campo opcional y en uno obligatorio responde `422`; un cuerpo vacío `{}` o solo con `version` responde `422 …VALIDATION_ERROR`. Las validaciones (vigencias, unicidad, predeterminada) se hacen sobre el registro combinado y, si nada cambia, no se escribe ni sube la versión. Excepción: el `PUT` del impuesto de compra ([API 13](#13-configurar-el-impuesto-de-compra-del-producto)) exige `purchase_tax_percentage`.
 - **Importes y porcentajes.** Commercial Relationship devuelve los importes como texto decimal con los decimales de la moneda (`"8500.00"` en COP, `"8500"` en CLP) y los porcentajes con 4 decimales (`"19.0000"`). Las monedas admitidas son una lista cerrada ISO 4217 (por ejemplo `COP`, `USD`, `EUR`, `MXN`, `PEN`, `CLP`); otra responde `422 CURRENCY_NOT_SUPPORTED`. Las fechas con hora deben llevar zona horaria (`2026-10-19T15:04:05Z`); sin zona responden `422 VALIDATION_ERROR`.
 - Las respuestas traen siempre `created_by`, `updated_by` (el `sub` de Keycloak de quien actuó), `created_at` y `updated_at`.
 - Toda escritura queda registrada en [Audit](../servicios/audit.md). Acciones de Product Catalog: `CREATE_PRODUCT`, `ADD_PRODUCT_CATEGORY`, `CREATE_PRODUCT_PRESENTATION`, `CREATE_PRODUCT_IDENTIFIER`. Acciones de Commercial Relationship: `ADOPT_COMPANY_PRODUCT`, `CREATE_COMPANY_PRODUCT_PRESENTATION`, `UPDATE_COMPANY_PRODUCT_PURCHASE_TAX` (entidad `CompanyProduct`), `CREATE_PRICE_LIST`, `UPDATE_PRICE_LIST`, `CREATE_PRICE_LIST_ITEM`, `UPDATE_PRICE_LIST_ITEM`, `CHANGE_PRICE_LIST_ITEM_PRICE`, `CREATE_PRICING_POLICY`, `CHANGE_PRICING_POLICY_PERCENTAGE`, `ASSIGN_PRICING_POLICY_PRESENTATION`, `UNASSIGN_PRICING_POLICY_PRESENTATION` y, en las operaciones no principales, `DEACTIVATE_PRICING_POLICY`. Los eventos de la empresa se consultan con la [API 16 de Administración empresarial](administracion-empresarial.md#16-consultar-la-trazabilidad-de-la-empresa-auditoría) (lista los eventos de auditoría de la empresa; sus errores están en esa sección).
@@ -1099,7 +1100,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 | `items[].internal_code`, `display_name`, `short_name` | string | Textos para el buscador de productos |
 | `items[].is_purchasable`, `is_sellable` | boolean | Si el producto puede usarse en compras o ventas |
 | `items[].purchase_tax_percentage` | string \| null | Tasa de impuesto de compra con 4 decimales; `null` si está sin configurar |
-| `items[].version` | integer | Valor que debe enviarse en la [API 13](#13-configurar-el-impuesto-de-compra-del-producto) |
+| `items[].version` | integer | Valor que puede enviarse (opcional) en la [API 13](#13-configurar-el-impuesto-de-compra-del-producto) |
 | `page`, `page_size`, `total_records`, `total_pages` | integer | Paginación; `items` vacío cuando no hay coincidencias (no es error) |
 
 ### Posibles errores
@@ -1117,7 +1118,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 ### ¿Qué hace esta API?
 
-Devuelve un producto de la empresa en cualquier estado, si pertenece a una empresa en la que el usuario tiene membresía `ACTIVE`. Se usa para abrir su detalle y para leer la `version` vigente antes de configurar el impuesto de compra ([API 13](#13-configurar-el-impuesto-de-compra-del-producto)).
+Devuelve un producto de la empresa en cualquier estado, si pertenece a una empresa en la que el usuario tiene membresía `ACTIVE`. Se usa para abrir su detalle y para leer la `version` vigente (opcional, para detectar cambios simultáneos) antes de configurar el impuesto de compra ([API 13](#13-configurar-el-impuesto-de-compra-del-producto)).
 
 Antes necesita: el `company_product_id`.
 
@@ -1176,7 +1177,7 @@ curl -X GET \
 | Campo | Tipo | Significado para el frontend |
 |---|---|---|
 | `status` | `ACTIVE` \| `INACTIVE` | Un producto `INACTIVE` se consulta pero no admite nuevas presentaciones ni precios |
-| `version` | integer | Valor que debe enviarse en la [API 13](#13-configurar-el-impuesto-de-compra-del-producto) |
+| `version` | integer | Valor que puede enviarse (opcional) en la [API 13](#13-configurar-el-impuesto-de-compra-del-producto) |
 | `purchase_tax_percentage` | string \| null | `null` indica impuesto sin configurar; Compras no confirmará líneas de este producto sin tasa |
 
 ### Posibles errores
@@ -1443,7 +1444,7 @@ Fija la tasa de impuesto de compra del producto (por ejemplo IVA 19 %, 5 % o 0 %
 
 Reglas verificadas en el código: la tasa va de 0 a 100 con hasta 4 decimales y **no se redondea** (se rechaza); `0` es una tasa válida y distinta de «sin configurar»; una tasa configurada no puede volver a `null` (`422 PURCHASE_TAX_REQUIRED`); si la tasa enviada es igual a la vigente no escribe ni incrementa `version`. Registra `UPDATE_COMPANY_PRODUCT_PURCHASE_TAX` sobre la entidad `CompanyProduct` en Audit. Para configurar hasta 100 productos en una sola operación (todo o nada) existe CR 12.
 
-Antes necesita: la `version` actual del producto ([API 10](#10-consultar-un-producto-de-la-empresa)) y empresa `ACTIVE`.
+Antes necesita: empresa `ACTIVE`. Opcionalmente, la `version` actual del producto ([API 10](#10-consultar-un-producto-de-la-empresa)) para detectar cambios simultáneos.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1483,7 +1484,7 @@ curl -X PUT \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente del producto | `1` | `version` de la [API 10](#10-consultar-un-producto-de-la-empresa) (devuelve el producto de la empresa; errores en §10) |
+| `version` | integer ≥ 1 | No | Versión vigente del producto | `1` | `version` de la [API 10](#10-consultar-un-producto-de-la-empresa) (devuelve el producto de la empresa; errores en §10) |
 | `purchase_tax_percentage` | número o texto decimal (0–100, hasta 4 decimales) | Sí; no admite `null` | Tasa de impuesto de compra; `0` es válido | `19` | Formulario (tasa tributaria del producto) |
 
 ### Respuesta exitosa
@@ -1525,11 +1526,11 @@ curl -X PUT \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | El producto no existe o es de una empresa sin membresía `ACTIVE` | Volver a la lista |
-| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer con la [API 10](#10-consultar-un-producto-de-la-empresa) y repetir |
+| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | Se envió `version` y no es la vigente | Releer con la [API 10](#10-consultar-un-producto-de-la-empresa) y repetir |
 | `422` | `COMMERCIAL_RELATIONSHIP.PURCHASE_TAX_REQUIRED` | Se envió `null` | Enviar una tasa; `0` es válido |
 | `422` | `COMMERCIAL_RELATIONSHIP.TAX_PERCENTAGE_OUT_OF_RANGE` | Tasa negativa, mayor que 100, con más de 4 decimales, no numérica o booleana | Corregir la tasa |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se puede configurar |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` ausente o < 1, campo desconocido | Corregir la solicitud |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1, campo desconocido | Corregir la solicitud |
 
 Ejemplo de `422`:
 
@@ -1771,7 +1772,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 | `items[].currency_code` | string | Moneda de la lista |
 | `items[].is_default` | boolean | Predeterminada de su moneda |
 | `items[].valid_from`, `valid_to` | date-time \| null | Con la hora actual determinan si la lista está vigente |
-| `items[].version` | integer | Valor que debe enviarse en la [API 16](#16-modificar-una-lista-de-precios) |
+| `items[].version` | integer | Valor que puede enviarse (opcional) en la [API 16](#16-modificar-una-lista-de-precios) |
 | `page`, `page_size`, `total_records`, `total_pages` | integer | Paginación |
 
 ### Posibles errores
@@ -1789,11 +1790,11 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 ### ¿Qué hace esta API?
 
-Modifica código, nombre, descripción, vigencia y marca de predeterminada de una lista. Es un reemplazo completo: se envían todos los campos con su valor final; `description`, `valid_from` y `valid_to` omitidos quedan en `null`. Sirve para cerrar una lista de campaña (`valid_to`) o para cambiar la predeterminada. La moneda, la empresa y el `status` son **inmutables**.
+Modifica código, nombre, descripción, vigencia y marca de predeterminada de una lista. Es un `PUT` parcial: se envían solo los campos que cambian (los ausentes no cambian); `description`, `valid_from` y `valid_to` se borran enviándolos en `null`; `code`, `name` e `is_default` no admiten `null`. Sirve para cerrar una lista de campaña (`valid_to`) o para cambiar la predeterminada. La moneda, la empresa y el `status` son **inmutables**.
 
 Efectos verificados en el código: funciona sobre listas en cualquier estado, pero solo una lista `ACTIVE` puede marcarse predeterminada; al marcarla quita la marca a la anterior de la misma moneda; si no hay cambios no escribe ni incrementa `version`; no modifica los precios de la lista; registra `UPDATE_PRICE_LIST` en Audit.
 
-Antes necesita: la `version` actual ([API 15](#15-consultar-las-listas-de-precios-de-la-empresa)) y empresa `ACTIVE`.
+Antes necesita: empresa `ACTIVE`. Opcionalmente, la `version` actual ([API 15](#15-consultar-las-listas-de-precios-de-la-empresa)) para detectar cambios simultáneos.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1843,13 +1844,13 @@ curl -X PUT \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente de la lista | `1` | `items[].version` de la [API 15](#15-consultar-las-listas-de-precios-de-la-empresa) (lista las listas de precios; errores en §15) |
-| `code` | string (1–50) | Sí | Código final; único en la empresa | `MOSTRADOR` | Formulario (repetir el actual si no cambia) |
-| `name` | string (1–120) | Sí | Nombre final | `Precio de mostrador` | Formulario |
-| `description` | string \| null | No; omitirla la deja en `null` | Descripción final | `Lista general de venta al público` | Formulario |
-| `valid_from` | date-time con zona \| null | No; omitirla la deja en `null` | Inicio de vigencia final | `2026-10-01T00:00:00Z` | Formulario |
-| `valid_to` | date-time con zona \| null | No; omitirla la deja en `null` | Fin de vigencia final; posterior a `valid_from` | `2027-01-01T00:00:00Z` | Formulario |
-| `is_default` | boolean | Sí | Predeterminada de su moneda; `true` solo en listas `ACTIVE` | `true` | Formulario |
+| `version` | integer ≥ 1 | No | Versión vigente de la lista | `1` | `items[].version` de la [API 15](#15-consultar-las-listas-de-precios-de-la-empresa) (lista las listas de precios; errores en §15) |
+| `code` | string (1–50) | No; no admite `null` | Código final; único en la empresa | `MOSTRADOR` | Formulario (omitirlo si no cambia) |
+| `name` | string (1–120) | No; no admite `null` | Nombre final | `Precio de mostrador` | Formulario |
+| `description` | string \| null | No; omitirla no la cambia, `null` la borra | Descripción final | `Lista general de venta al público` | Formulario |
+| `valid_from` | date-time con zona \| null | No; omitirla no la cambia, `null` la borra | Inicio de vigencia final | `2026-10-01T00:00:00Z` | Formulario |
+| `valid_to` | date-time con zona \| null | No; omitirla no la cambia, `null` la borra | Fin de vigencia final; posterior a `valid_from` | `2027-01-01T00:00:00Z` | Formulario |
+| `is_default` | boolean | No; no admite `null` | Predeterminada de su moneda; `true` solo en listas `ACTIVE` | `true` | Formulario |
 
 No se admiten en el cuerpo `currency_code`, `company_id` ni `status`: su presencia responde `422 IMMUTABLE_FIELD`.
 
@@ -1887,13 +1888,13 @@ No se admiten en el cuerpo `currency_code`, `company_id` ni `status`: su presenc
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | La lista no existe o es de una empresa sin membresía `ACTIVE` | Volver a la lista de listas |
-| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer con la [API 15](#15-consultar-las-listas-de-precios-de-la-empresa) y repetir |
+| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | Se envió `version` y no es la vigente | Releer con la [API 15](#15-consultar-las-listas-de-precios-de-la-empresa) y repetir |
 | `409` | `COMMERCIAL_RELATIONSHIP.DUPLICATE_PRICE_LIST_CODE` | Otra lista de la empresa ya usa ese código | Pedir otro código |
 | `422` | `COMMERCIAL_RELATIONSHIP.IMMUTABLE_FIELD` | El cuerpo incluye `currency_code`, `company_id` o `status` | Error de programación: no enviar esos campos |
 | `422` | `COMMERCIAL_RELATIONSHIP.DEFAULT_REQUIRES_ACTIVE` | `is_default: true` en una lista `INACTIVE` | Reactivar la lista antes (CR 51) o enviar `false` |
 | `422` | `COMMERCIAL_RELATIONSHIP.VALIDITY_INVALID` | `valid_to` no es posterior a `valid_from` | Corregir las fechas |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden modificar listas |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Campo obligatorio ausente, longitud fuera de rango, fecha sin zona, campo desconocido | Corregir el formulario |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Cuerpo vacío o solo con `version`, `null` en `code`, `name` o `is_default`, longitud fuera de rango, fecha sin zona, campo desconocido | Corregir el formulario |
 
 ## 17. Registrar un precio de venta
 
@@ -2138,9 +2139,9 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 Cambia el valor de un precio que ya está en vigencia: en una sola transacción cierra el precio actual en `effective_from` y crea el precio nuevo desde ese instante hasta el `valid_to` que tenía el anterior. Es la única forma de cambiar el valor de un precio en vigencia; el precio futuro se corrige con la [API 20](#20-corregir-un-precio-futuro-o-cerrar-uno-vigente).
 
-Reglas verificadas en el código, en este orden: (1) la `version` debe ser la vigente; (2) el precio debe estar `ACTIVE`; (3) debe pertenecer a una presentación; (4) la lista, el producto y la presentación deben seguir `ACTIVE`; (5) el nuevo `unit_price` no puede tener más decimales que la moneda; (6) `effective_from` (por defecto el instante del servidor) debe ser actual o futuro, posterior al inicio del precio y anterior a su fin. Devuelve `201` con el precio nuevo y el anterior ya cerrado, la cabecera `Location: /api/v1/price-list-items/{id del nuevo}`, y registra `CHANGE_PRICE_LIST_ITEM_PRICE` en Audit. El precio nuevo es manual (`origin: null`).
+Reglas verificadas en el código, en este orden: (1) si se envía `version`, debe ser la vigente; (2) el precio debe estar `ACTIVE`; (3) debe pertenecer a una presentación; (4) la lista, el producto y la presentación deben seguir `ACTIVE`; (5) el nuevo `unit_price` no puede tener más decimales que la moneda; (6) `effective_from` (por defecto el instante del servidor) debe ser actual o futuro, posterior al inicio del precio y anterior a su fin. Devuelve `201` con el precio nuevo y el anterior ya cerrado, la cabecera `Location: /api/v1/price-list-items/{id del nuevo}`, y registra `CHANGE_PRICE_LIST_ITEM_PRICE` en Audit. El precio nuevo es manual (`origin: null`).
 
-Antes necesita: el `price_list_item_id` y su `version` ([API 18](#18-consultar-los-precios-vigentes)); empresa `ACTIVE`.
+Antes necesita: el `price_list_item_id` (y, opcionalmente, su `version`) de la [API 18](#18-consultar-los-precios-vigentes); empresa `ACTIVE`.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -2184,7 +2185,7 @@ curl -X POST \
 |---|---|---|---|---|---|
 | `unit_price` | número o texto decimal ≥ 0 | Sí | Nuevo precio; como máximo los decimales de la moneda | `9000.00` | Formulario |
 | `effective_from` | date-time con zona \| null | No; por defecto el instante del servidor | Desde cuándo rige el nuevo precio; actual o futuro, dentro de la vigencia del actual | `null` | Formulario |
-| `version` | integer ≥ 1 | Sí | Versión vigente del precio actual | `1` | `items[].version` de la [API 18](#18-consultar-los-precios-vigentes) (lista los precios vigentes; errores en §18) |
+| `version` | integer ≥ 1 | No | Versión vigente del precio actual | `1` | `items[].version` de la [API 18](#18-consultar-los-precios-vigentes) (lista los precios vigentes; errores en §18) |
 
 ### Respuesta exitosa
 
@@ -2245,7 +2246,7 @@ curl -X POST \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | El precio no existe o es de una empresa sin membresía `ACTIVE` | Volver a la lista de precios |
-| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | La `version` enviada no es la vigente (por ejemplo, otra persona o una actualización automática lo cambió) | Releer con la [API 18](#18-consultar-los-precios-vigentes) y repetir |
+| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | Se envió `version` y no es la vigente (por ejemplo, otra persona o una actualización automática lo cambió) | Releer con la [API 18](#18-consultar-los-precios-vigentes) y repetir |
 | `409` | `COMMERCIAL_RELATIONSHIP.INVALID_STATUS_TRANSITION` | El precio está `INACTIVE` | Registrar un precio nuevo con la [API 17](#17-registrar-un-precio-de-venta) |
 | `422` | `COMMERCIAL_RELATIONSHIP.PRICE_CHANGE_OUT_OF_PERIOD` | `effective_from` pasado, no posterior al inicio del precio (precio aún futuro) o no anterior a su fin | Para un precio futuro usar la [API 20](#20-corregir-un-precio-futuro-o-cerrar-uno-vigente); si no, corregir la fecha |
 | `422` | `COMMERCIAL_RELATIONSHIP.PRICE_ITEM_WITHOUT_PRESENTATION` | Precio antiguo sin presentación | Registrar el precio de la presentación con la [API 17](#17-registrar-un-precio-de-venta) |
@@ -2285,11 +2286,11 @@ Ejemplo de `422`:
 
 ### ¿Qué hace esta API?
 
-Modifica un precio. Un precio **futuro** (su `valid_from` aún no llega) admite cambiar valor e inicio y fin de vigencia. Un precio **en vigencia** solo admite cambiar su `valid_to`: adelantarlo o posponerlo a un instante futuro, o dejarlo sin fin; su valor y su inicio no cambian (para eso, [API 19](#19-cambiar-un-precio-vigente)). La lista, el producto, la presentación, la empresa y el `status` son inmutables.
+Modifica un precio con un `PUT` parcial: se envían solo los campos que cambian (`unit_price` y `valid_from` no admiten `null`; `valid_to: null` deja el precio sin fin). Un precio **futuro** (su `valid_from` aún no llega) admite cambiar valor e inicio y fin de vigencia. Un precio **en vigencia** solo admite cambiar su `valid_to`: adelantarlo o posponerlo a un instante futuro, o dejarlo sin fin; su valor y su inicio no cambian (para eso, [API 19](#19-cambiar-un-precio-vigente)). La lista, el producto, la presentación, la empresa y el `status` son inmutables.
 
-Reglas verificadas en el código, en este orden: (1) la `version` debe ser la vigente; (2) un precio cerrado o cancelado por una actualización automática no se modifica; (3) el precio no puede tener más decimales que la moneda; (4) en vigencia, cambiar `unit_price` o `valid_from` responde `422 PRICE_IN_EFFECT_NOT_MODIFIABLE` y el nuevo `valid_to` debe ser futuro y posterior al inicio; en un precio futuro, `valid_to` posterior a `valid_from`; (5) la nueva vigencia no puede cruzarse con otro precio activo. Si no hay cambios no escribe; si los hay registra `UPDATE_PRICE_LIST_ITEM` en Audit.
+Reglas verificadas en el código, en este orden: (1) si se envía `version`, debe ser la vigente; (2) un precio cerrado o cancelado por una actualización automática no se modifica; (3) el precio no puede tener más decimales que la moneda; (4) en vigencia, cambiar `unit_price` o `valid_from` responde `422 PRICE_IN_EFFECT_NOT_MODIFIABLE` y el nuevo `valid_to` debe ser futuro y posterior al inicio; en un precio futuro, `valid_to` posterior a `valid_from`; (5) la nueva vigencia no puede cruzarse con otro precio activo. Si no hay cambios no escribe; si los hay registra `UPDATE_PRICE_LIST_ITEM` en Audit.
 
-Antes necesita: el `price_list_item_id` y su `version` ([API 18](#18-consultar-los-precios-vigentes)); empresa `ACTIVE`.
+Antes necesita: el `price_list_item_id` (y, opcionalmente, su `version`) de la [API 18](#18-consultar-los-precios-vigentes); empresa `ACTIVE`.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -2335,10 +2336,10 @@ curl -X PUT \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente del precio | `1` | `items[].version` de la [API 18](#18-consultar-los-precios-vigentes) (lista los precios; errores en §18) |
-| `unit_price` | número o texto decimal ≥ 0 | Sí | Valor final; en un precio en vigencia debe ser igual al actual | `8500.00` | Formulario (repetir `unit_price` de la [API 18](#18-consultar-los-precios-vigentes) si el precio está en vigencia) |
-| `valid_from` | date-time con zona | Sí | Inicio final; en un precio en vigencia debe ser igual al actual | `2026-10-20T00:00:00Z` | Formulario (repetir `valid_from` de la [API 18](#18-consultar-los-precios-vigentes) si el precio está en vigencia) |
-| `valid_to` | date-time con zona \| null | No; omitirlo lo deja sin fin | Fin final; en un precio en vigencia, futuro | `2026-12-31T23:59:59Z` | Formulario |
+| `version` | integer ≥ 1 | No | Versión vigente del precio | `1` | `items[].version` de la [API 18](#18-consultar-los-precios-vigentes) (lista los precios; errores en §18) |
+| `unit_price` | número o texto decimal ≥ 0 | No; no admite `null` | Valor final; en un precio en vigencia, si se envía, debe ser igual al actual | `8500.00` | Formulario (omitirlo si el precio está en vigencia) |
+| `valid_from` | date-time con zona | No; no admite `null` | Inicio final; en un precio en vigencia, si se envía, debe ser igual al actual | `2026-10-20T00:00:00Z` | Formulario (omitirlo si el precio está en vigencia) |
+| `valid_to` | date-time con zona \| null | No; omitirlo no lo cambia, `null` lo deja sin fin | Fin final; en un precio en vigencia, futuro | `2026-12-31T23:59:59Z` | Formulario |
 
 No se admiten en el cuerpo `price_list_id`, `company_product_id`, `company_product_presentation_id`, `company_id` ni `status`: su presencia responde `422 IMMUTABLE_FIELD`.
 
@@ -2379,7 +2380,7 @@ No se admiten en el cuerpo `price_list_id`, `company_product_id`, `company_produ
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | El precio no existe o es de una empresa sin membresía `ACTIVE` | Volver a la lista de precios |
-| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer con la [API 18](#18-consultar-los-precios-vigentes) y repetir |
+| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | Se envió `version` y no es la vigente | Releer con la [API 18](#18-consultar-los-precios-vigentes) y repetir |
 | `409` | `COMMERCIAL_RELATIONSHIP.PRICE_CLOSED_BY_AUTOMATIC_UPDATE` | El precio fue cerrado o cancelado por una actualización automática | Registrar un precio nuevo con la [API 17](#17-registrar-un-precio-de-venta) si corresponde |
 | `409` | `COMMERCIAL_RELATIONSHIP.PRICE_PERIOD_OVERLAP` | La nueva vigencia se cruza con otro precio activo | Ajustar las fechas |
 | `422` | `COMMERCIAL_RELATIONSHIP.PRICE_IN_EFFECT_NOT_MODIFIABLE` | Se intentó cambiar `unit_price` o `valid_from` de un precio en vigencia | Usar la [API 19](#19-cambiar-un-precio-vigente) |
@@ -2387,7 +2388,7 @@ No se admiten en el cuerpo `price_list_id`, `company_product_id`, `company_produ
 | `422` | `COMMERCIAL_RELATIONSHIP.PRICE_SCALE_NOT_ALLOWED` | El precio tiene más decimales que la moneda | Redondear en la interfaz |
 | `422` | `COMMERCIAL_RELATIONSHIP.IMMUTABLE_FIELD` | El cuerpo incluye un campo inmutable | Error de programación: no enviarlo |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden modificar precios |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Campo obligatorio ausente, precio negativo, fecha sin zona, campo desconocido | Corregir la solicitud |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Cuerpo vacío o solo con `version`, `null` en `unit_price` o `valid_from`, precio negativo, fecha sin zona, campo desconocido | Corregir la solicitud |
 
 Ejemplo de `422`:
 
@@ -2613,7 +2614,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 | `items[].id` | UUID | El [policy_id](../parametros/pricing-policy-id.md) |
 | `items[].markup_percentage` | string \| null | Porcentaje vigente; en una política inactiva, el último que tuvo |
 | `items[].presentation_count` | integer | Presentaciones vigentes de la política |
-| `items[].version` | integer | Valor que deben enviar las API 23, 24 y 25 |
+| `items[].version` | integer | Valor que pueden enviar (opcional) las API 23, 24 y 25 |
 | `page`, `page_size`, `total_records`, `total_pages` | integer | Paginación |
 
 ### Posibles errores
@@ -2633,9 +2634,9 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 Incorpora hasta 100 presentaciones a una política. Las que ya pertenecen a la política se ignoran; si ninguna es nueva no escribe ni incrementa `version`. No modifica precios: desde la siguiente recepción de compra el precio de esas presentaciones en la lista se calcula con el porcentaje de la política.
 
-Reglas verificadas en el código: las presentaciones (sin repetir) deben ser de la empresa, `ACTIVE` y vendibles; la `version` debe ser la vigente; la política debe estar `ACTIVE` (una inactiva es final); ninguna presentación puede estar en otra política de la misma lista. Registra `ASSIGN_PRICING_POLICY_PRESENTATION` en Audit con las presentaciones asignadas.
+Reglas verificadas en el código: las presentaciones (sin repetir) deben ser de la empresa, `ACTIVE` y vendibles; si se envía `version`, debe ser la vigente; la política debe estar `ACTIVE` (una inactiva es final); ninguna presentación puede estar en otra política de la misma lista. Registra `ASSIGN_PRICING_POLICY_PRESENTATION` en Audit con las presentaciones asignadas.
 
-Antes necesita: el `policy_id` y su `version` ([API 22](#22-consultar-las-políticas-de-una-lista)); empresa `ACTIVE`.
+Antes necesita: el `policy_id` (y, opcionalmente, su `version`) de la [API 22](#22-consultar-las-políticas-de-una-lista); empresa `ACTIVE`.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -2679,7 +2680,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente de la política | `1` | `items[].version` de la [API 22](#22-consultar-las-políticas-de-una-lista) (lista las políticas; errores en §22) |
+| `version` | integer ≥ 1 | No | Versión vigente de la política | `1` | `items[].version` de la [API 22](#22-consultar-las-políticas-de-una-lista) (lista las políticas; errores en §22) |
 | `company_product_presentation_ids` | UUID[] (hasta 100 distintos) | Sí | Presentaciones `ACTIVE` y vendibles de la empresa | `["b6c7d8e9-f0a1-4b2c-8d3e-4f5a6b7c8d94"]` | `items[].id` de la [API 12](#12-consultar-las-presentaciones-de-la-empresa) con `is_sellable=true` (lista las presentaciones; errores en §12) · guía [company_product_presentation_id](../parametros/company-product-presentation-id.md) |
 
 ### Respuesta exitosa
@@ -2715,13 +2716,13 @@ curl -X POST \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | La política no existe o es de una empresa sin membresía `ACTIVE` | Volver a la lista de políticas |
-| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer con la [API 22](#22-consultar-las-políticas-de-una-lista) y repetir |
+| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | Se envió `version` y no es la vigente | Releer con la [API 22](#22-consultar-las-políticas-de-una-lista) y repetir |
 | `409` | `COMMERCIAL_RELATIONSHIP.POLICY_INACTIVE` | La política está inactiva (estado final) | Crear otra política con la [API 21](#21-crear-una-política-de-ganancia) |
 | `409` | `COMMERCIAL_RELATIONSHIP.PRESENTATION_ALREADY_IN_POLICY` | Alguna presentación ya está en otra política de la misma lista | Retirarla primero con la [API 24](#24-retirar-presentaciones-de-una-política) |
 | `422` | `COMMERCIAL_RELATIONSHIP.PRESENTATION_NOT_FOUND` / `PRESENTATION_INACTIVE` / `PRESENTATION_NOT_SELLABLE` | Alguna presentación no es de la empresa, está inactiva o no es vendible | Volver a cargar las presentaciones vendibles |
 | `422` | `COMMERCIAL_RELATIONSHIP.BATCH_LIMIT_EXCEEDED` | Más de 100 presentaciones distintas | Dividir en varias llamadas |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden modificar políticas |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` ausente o < 1, UUID inválido, campo desconocido | Corregir la solicitud |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1, UUID inválido, campo desconocido | Corregir la solicitud |
 
 ## 24. Retirar presentaciones de una política
 
@@ -2733,9 +2734,9 @@ curl -X POST \
 
 Retira hasta 100 presentaciones de una política cerrando su vigencia en ella. No toca los precios actuales: desde la siguiente recepción de compra esas presentaciones quedan sin política en la lista (resultado `SKIPPED_NO_POLICY` en la [API 27](#27-consultar-las-actualizaciones-automáticas-de-precio)) y, si no tienen política en otra lista vigente de la moneda, Compras no confirmará compras de ellas. Se usa también para mover una presentación a otra política de la misma lista: retirarla aquí y asignarla allá con la [API 23](#23-asignar-presentaciones-a-una-política).
 
-Reglas verificadas en el código: la lista no puede estar vacía y **todas** las presentaciones enviadas deben pertenecer hoy a la política; si alguna no, no retira ninguna (`409 PRESENTATION_NOT_IN_POLICY`); la política debe estar `ACTIVE` y la `version` ser la vigente. Registra `UNASSIGN_PRICING_POLICY_PRESENTATION` en Audit.
+Reglas verificadas en el código: la lista no puede estar vacía y **todas** las presentaciones enviadas deben pertenecer hoy a la política; si alguna no, no retira ninguna (`409 PRESENTATION_NOT_IN_POLICY`); la política debe estar `ACTIVE` y, si se envía, la `version` ser la vigente. Registra `UNASSIGN_PRICING_POLICY_PRESENTATION` en Audit.
 
-Antes necesita: el `policy_id`, su `version` ([API 22](#22-consultar-las-políticas-de-una-lista)) y las presentaciones vigentes de la política (CR 66); empresa `ACTIVE`.
+Antes necesita: el `policy_id` (y, opcionalmente, su `version`: [API 22](#22-consultar-las-políticas-de-una-lista)) y las presentaciones vigentes de la política (CR 66); empresa `ACTIVE`.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -2779,7 +2780,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente de la política | `2` | `items[].version` de la [API 22](#22-consultar-las-políticas-de-una-lista) (lista las políticas; errores en §22) |
+| `version` | integer ≥ 1 | No | Versión vigente de la política | `2` | `items[].version` de la [API 22](#22-consultar-las-políticas-de-una-lista) (lista las políticas; errores en §22) |
 | `company_product_presentation_ids` | UUID[] (1–100 distintos) | Sí | Presentaciones que hoy pertenecen a la política | `["b6c7d8e9-f0a1-4b2c-8d3e-4f5a6b7c8d94"]` | `items[].company_product_presentation_id` de `GET https://sio-commercial-relationship-dev.onrender.com/api/v1/pricing-policies/{policy_id}/presentations` (lista las presentaciones vigentes de la política; permiso `perm:commercial-relationship:pricing_policies:read`; errores `404 NOT_FOUND` si la política no es accesible y `422 VALIDATION_ERROR` por paginación inválida; ficha [CR 66](../servicios/commercial-relationship.md#66-get-pricing-policiespolicy_idpresentations)) |
 
 ### Respuesta exitosa
@@ -2815,12 +2816,12 @@ curl -X POST \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | La política no existe o es de una empresa sin membresía `ACTIVE` | Volver a la lista de políticas |
-| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer y repetir |
+| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | Se envió `version` y no es la vigente | Releer y repetir |
 | `409` | `COMMERCIAL_RELATIONSHIP.POLICY_INACTIVE` | La política está inactiva | Nada que retirar |
 | `409` | `COMMERCIAL_RELATIONSHIP.PRESENTATION_NOT_IN_POLICY` | La lista está vacía o alguna presentación no pertenece a la política | Volver a cargar las presentaciones de la política (CR 66) |
 | `422` | `COMMERCIAL_RELATIONSHIP.BATCH_LIMIT_EXCEEDED` | Más de 100 presentaciones distintas | Dividir en varias llamadas |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden modificar políticas |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` ausente o < 1, UUID inválido, campo desconocido | Corregir la solicitud |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1, UUID inválido, campo desconocido | Corregir la solicitud |
 
 Ejemplo de `409`:
 
@@ -2853,9 +2854,9 @@ Ejemplo de `409`:
 
 Cambia el porcentaje de ganancia de una política. Cierra el término vigente y abre uno nuevo desde el instante del servidor; el historial se consulta con CR 65. **No recalcula ningún precio**: los precios actuales se conservan y el porcentaje nuevo se aplica en la siguiente recepción de compra de cada presentación. Si se necesita el precio nuevo de inmediato hay que cambiarlo a mano con la [API 19](#19-cambiar-un-precio-vigente).
 
-Reglas verificadas en el código: porcentaje de 0 a 1000 con hasta 4 decimales; la política debe estar `ACTIVE` y la `version` ser la vigente; si el porcentaje es igual al vigente no escribe ni incrementa `version`. Registra `CHANGE_PRICING_POLICY_PERCENTAGE` en Audit con el porcentaje anterior y el nuevo.
+Reglas verificadas en el código: porcentaje de 0 a 1000 con hasta 4 decimales; la política debe estar `ACTIVE` y, si se envía, la `version` ser la vigente; si el porcentaje es igual al vigente no escribe ni incrementa `version`. Registra `CHANGE_PRICING_POLICY_PERCENTAGE` en Audit con el porcentaje anterior y el nuevo.
 
-Antes necesita: el `policy_id` y su `version` ([API 22](#22-consultar-las-políticas-de-una-lista)); empresa `ACTIVE`.
+Antes necesita: el `policy_id` (y, opcionalmente, su `version`) de la [API 22](#22-consultar-las-políticas-de-una-lista); empresa `ACTIVE`.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -2895,7 +2896,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente de la política | `3` | `items[].version` de la [API 22](#22-consultar-las-políticas-de-una-lista) (lista las políticas; errores en §22) |
+| `version` | integer ≥ 1 | No | Versión vigente de la política | `3` | `items[].version` de la [API 22](#22-consultar-las-políticas-de-una-lista) (lista las políticas; errores en §22) |
 | `markup_percentage` | número o texto decimal (0–1000, hasta 4 decimales) | Sí | Nuevo porcentaje; `0` es válido | `35` | Formulario |
 
 ### Respuesta exitosa
@@ -2931,11 +2932,11 @@ curl -X POST \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | La política no existe o es de una empresa sin membresía `ACTIVE` | Volver a la lista de políticas |
-| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer y repetir |
+| `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | Se envió `version` y no es la vigente | Releer y repetir |
 | `409` | `COMMERCIAL_RELATIONSHIP.POLICY_INACTIVE` | La política está inactiva | Crear otra política |
 | `422` | `COMMERCIAL_RELATIONSHIP.MARKUP_PERCENTAGE_OUT_OF_RANGE` | Porcentaje negativo, mayor que 1000, con más de 4 decimales o no numérico | Corregir el porcentaje |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden modificar políticas |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` ausente o < 1, campo desconocido | Corregir la solicitud |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1, campo desconocido | Corregir la solicitud |
 
 Ejemplo de `422`:
 
@@ -3163,7 +3164,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 | `items[].previous_price`, `new_price` | string \| null | Precio antes y después, con los decimales de la moneda |
 | `items[].new_price_item_id`, `previous_price_item_id`, `cancelled_future_item_ids[]` | UUID \| null, UUID[] | Precio creado, precio cerrado y precios futuros cancelados |
 | `items[].attempts`, `next_attempt_at`, `last_error_code` | integer, fecha, string \| null | Seguimiento de reintentos en `FAILED` |
-| `items[].version` | integer | Valor que pide la resolución administrativa (CR 74) |
+| `items[].version` | integer | Valor que admite (opcional) la resolución administrativa (CR 74) |
 | `page`, `page_size`, `total_records`, `total_pages` | integer | Paginación |
 
 ### Posibles errores

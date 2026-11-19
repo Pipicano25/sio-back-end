@@ -74,7 +74,7 @@ Respuesta `200` (modelo `SequenceList`; en Purchase el objeto es idéntico con `
 }
 ```
 
-**Campo exacto:** `items[].id`. Elige el elemento por `branch_id` (la sucursal buscada, o `null` para la secuencia de la empresa) y comprueba `is_active`. Guarda también `items[].version`: lo piden las operaciones de modificación y de cambio de estado.
+**Campo exacto:** `items[].id`. Elige el elemento por `branch_id` (la sucursal buscada, o `null` para la secuencia de la empresa) y comprueba `is_active`. Guarda también `items[].version`: puedes enviarlo (opcional) en las operaciones de modificación y de cambio de estado para detectar cambios simultáneos.
 
 **Posibles errores de la lista de ventas** (en compras, los mismos con prefijo `PURCHASE.` y permiso `perm:purchase:purchase_sequences:read`):
 

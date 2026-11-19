@@ -40,6 +40,21 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 
 Global. No hay aislamiento por empresa: cualquier usuario con el permiso de lectura ve los mismos registros. Las escrituras afectan a **todas las empresas** de la plataforma.
 
+## Convenciones comunes
+
+- `PUT` es **parcial**: el cuerpo lleva solo los campos que cambian; un campo ausente no cambia; `null` borra un campo opcional y en uno obligatorio responde `422`. Cuerpo vacío `{}`, solo con `version` o con campos desconocidos → `422`. La unicidad de `code` se valida sobre el registro combinado; si nada cambia, no se escribe ni sube la versión.
+- En los tipos de condición de pago, `version` es **opcional** en `PUT`, `deactivate` y `reactivate`: si se envía y no coincide → `409 PAYMENT_REFERENCE.VERSION_CONFLICT`; si no se envía, se aplica sobre lo vigente. `deactivate` y `reactivate` aceptan cuerpo vacío `{}` o ningún cuerpo.
+- Los métodos de pago no tienen versión: el último que escribe gana.
+
+Ejemplo de `PUT` parcial (solo cambia `name`, sin `version`):
+
+```bash
+curl -sS -X PUT 'https://sio-payment-reference-dev.onrender.com/global-payment-condition-types/08fa0f04-b71b-43a4-8715-ae2d2961f889' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"name": "Crédito a 30 días calendario"}'
+```
+
 ## Tabla de endpoints
 
 | # | Método | Ruta relativa | Descripción | Permiso | Clase | Ficha |
@@ -49,13 +64,13 @@ Global. No hay aislamiento por empresa: cualquier usuario con el permiso de lect
 | 3 | `GET` | `/global-payment-condition-types` | Listar tipos de condición de pago | `…global_payment_condition_types:read` | `READ` | [Ver](#3-get-global-payment-condition-types) |
 | 4 | `POST` | `/global-payment-condition-types` | Crear tipo de condición | `…global_payment_condition_types:create` | `WRITE` | [Ver](#4-post-global-payment-condition-types) |
 | 5 | `GET` | `/global-payment-condition-types/{condition_type_id}` | Consultar un tipo | `…global_payment_condition_types:read` | `READ` | [Ver](#5-get-global-payment-condition-typescondition_type_id) |
-| 6 | `PUT` | `/global-payment-condition-types/{condition_type_id}` | Reemplazar un tipo (con versión) | `…global_payment_condition_types:update` | `WRITE` | [Ver](#6-put-global-payment-condition-typescondition_type_id) |
+| 6 | `PUT` | `/global-payment-condition-types/{condition_type_id}` | Actualizar un tipo (parcial) | `…global_payment_condition_types:update` | `WRITE` | [Ver](#6-put-global-payment-condition-typescondition_type_id) |
 | 7 | `POST` | `/global-payment-condition-types/{condition_type_id}/deactivate` | Inactivar un tipo | `…global_payment_condition_types:delete` | `HIGH_RISK` | [Ver](#7-post-global-payment-condition-typescondition_type_iddeactivate) |
 | 8 | `POST` | `/global-payment-condition-types/{condition_type_id}/reactivate` | Reactivar un tipo | `…global_payment_condition_types:update` | `WRITE` | [Ver](#8-post-global-payment-condition-typescondition_type_idreactivate) |
 | 9 | `GET` | `/global-payment-methods` | Listar métodos de pago | `…global_payment_methods:read` | `READ` | [Ver](#9-get-global-payment-methods) |
 | 10 | `POST` | `/global-payment-methods` | Crear método de pago | `…global_payment_methods:create` | `WRITE` | [Ver](#10-post-global-payment-methods) |
 | 11 | `GET` | `/global-payment-methods/{payment_method_id}` | Consultar un método | `…global_payment_methods:read` | `READ` | [Ver](#11-get-global-payment-methodspayment_method_id) |
-| 12 | `PUT` | `/global-payment-methods/{payment_method_id}` | Reemplazar un método (incluido `status`) | `…global_payment_methods:update` | `HIGH_RISK` | [Ver](#12-put-global-payment-methodspayment_method_id) |
+| 12 | `PUT` | `/global-payment-methods/{payment_method_id}` | Actualizar un método (parcial, incluido `status`) | `…global_payment_methods:update` | `HIGH_RISK` | [Ver](#12-put-global-payment-methodspayment_method_id) |
 
 Todos los permisos empiezan por `perm:payment-reference:`.
 
@@ -70,7 +85,7 @@ Todos los permisos empiezan por `perm:payment-reference:`.
 | `name` | string (≤ 100) | Nombre |
 | `description` | string \| null | Descripción |
 | `status` | `ACTIVE` \| `INACTIVE` | Estado de uso |
-| `version` | integer | Versión para control de concurrencia; obligatoria en `PUT`, `deactivate` y `reactivate` |
+| `version` | integer | Versión para control de concurrencia; opcional en `PUT`, `deactivate` y `reactivate` (si se envía y no coincide → `409`) |
 | `created_by`, `updated_by` | string | `sub` del usuario autor |
 | `created_at`, `updated_at` | date-time | Marcas de tiempo |
 
@@ -229,17 +244,17 @@ Ejemplo de respuesta `200` (`GlobalPaymentConditionTypeResponse`; valores ilustr
 
 | | |
 |---|---|
-| Clasificación | `WRITE` · reemplazo completo de un registro global |
+| Clasificación | `WRITE` · actualización parcial de un registro global |
 | URL | `https://sio-payment-reference-dev.onrender.com/global-payment-condition-types/{condition_type_id}` |
 | Permiso | `perm:payment-reference:global_payment_condition_types:update` |
 
-Cuerpo (`GlobalPaymentConditionTypeUpdate`; rechaza campos adicionales):
+Cuerpo (`GlobalPaymentConditionTypeUpdate`, parcial; rechaza campos adicionales; envíe al menos un campo distinto de `version`):
 
 | Campo | Tipo | Obligatorio | Validación |
 |---|---|---|---|
-| `version` | integer | Sí | La versión que el cliente leyó |
-| `code` | string | Sí | ≤ 30; único |
-| `name` | string | Sí | ≤ 100 |
+| `version` | integer | No | La versión que el cliente leyó; si no coincide → `409` |
+| `code` | string | No | ≤ 30; único; no admite `null` |
+| `name` | string | No | ≤ 100; no admite `null` |
 | `description` | string \| null | No | — |
 
 ```json
@@ -265,7 +280,7 @@ curl -sS -X PUT 'https://sio-payment-reference-dev.onrender.com/global-payment-c
   }'
 ```
 
-Reglas: reemplaza `code`, `name` y `description`; **no cambia `status`** (usar las operaciones 7 y 8). `created_by` y `created_at` no cambian; `updated_by`/`updated_at` se actualizan y `version` se incrementa. Respuestas: `200` con el objeto; `404`; `409` `{"detail": "El registro fue modificado por otra operación. Consulte nuevamente antes de modificarlo.", "code": "PAYMENT_REFERENCE.VERSION_CONFLICT"}` si la versión no coincide; `409` `{"detail": "Ya existe un tipo de condición de pago con el código indicado."}` por código duplicado; `422`.
+Reglas: cambia solo los campos enviados entre `code`, `name` y `description` (`description: null` la borra); **no cambia `status`** (usar las operaciones 7 y 8). `created_by` y `created_at` no cambian; `updated_by`/`updated_at` se actualizan y `version` se incrementa (si nada cambia, no sube). Respuestas: `200` con el objeto; `404`; `409` `{"detail": "El registro fue modificado por otra operación. Consulte nuevamente antes de modificarlo.", "code": "PAYMENT_REFERENCE.VERSION_CONFLICT"}` si se envió `version` y no coincide; `409` `{"detail": "Ya existe un tipo de condición de pago con el código indicado."}` por código duplicado; `422`.
 
 ### 7. `POST /global-payment-condition-types/{condition_type_id}/deactivate`
 
@@ -275,7 +290,7 @@ Reglas: reemplaza `code`, `name` y `description`; **no cambia `status`** (usar l
 | URL | `https://sio-payment-reference-dev.onrender.com/global-payment-condition-types/{condition_type_id}/deactivate` |
 | Permiso | `perm:payment-reference:global_payment_condition_types:delete` |
 
-Cuerpo (`VersionRequest`): `{"version": 1}`. Respuestas: `200` con el objeto en `INACTIVE`; `404`; `409` `PAYMENT_REFERENCE.VERSION_CONFLICT`; `409` `{"detail": "...", "code": "PAYMENT_REFERENCE.INVALID_STATUS_TRANSITION"}` si ya estaba `INACTIVE`; `422`.
+Cuerpo (`VersionRequest`): `{"version": 1}` con `version` opcional; se acepta `{}` o ningún cuerpo. Respuestas: `200` con el objeto en `INACTIVE`; `404`; `409` `PAYMENT_REFERENCE.VERSION_CONFLICT`; `409` `{"detail": "...", "code": "PAYMENT_REFERENCE.INVALID_STATUS_TRANSITION"}` si ya estaba `INACTIVE`; `422`.
 
 Advertencia: no existe borrado físico. Un tipo inactivo deja de ser elegible para nuevas condiciones de pago en Commercial Relationship (`422 PAYMENT_CONDITION_TYPE_INACTIVE`); las condiciones existentes conservan la referencia. Confirmar con el usuario antes de enviar.
 
@@ -292,7 +307,7 @@ curl -sS -X POST 'https://sio-payment-reference-dev.onrender.com/global-payment-
 
 ### 8. `POST /global-payment-condition-types/{condition_type_id}/reactivate`
 
-`WRITE`. URL `https://sio-payment-reference-dev.onrender.com/global-payment-condition-types/{condition_type_id}/reactivate`; permiso `…update`. Cuerpo `{"version": 2}`. `200` con el objeto en `ACTIVE`; `404`; `409` versión o transición inválida (ya estaba `ACTIVE`).
+`WRITE`. URL `https://sio-payment-reference-dev.onrender.com/global-payment-condition-types/{condition_type_id}/reactivate`; permiso `…update`. Cuerpo `{"version": 2}` con `version` opcional; se acepta `{}` o ningún cuerpo. `200` con el objeto en `ACTIVE`; `404`; `409` versión o transición inválida (ya estaba `ACTIVE`).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -449,11 +464,11 @@ Ejemplo de respuesta `200` (`GlobalPaymentMethodResponse`; valores ilustrativos)
 
 | | |
 |---|---|
-| Clasificación | `HIGH_RISK` · reemplazo completo, incluido `status`, de un método usado por ventas y compras de todas las empresas |
+| Clasificación | `HIGH_RISK` · actualización parcial, incluido `status`, de un método usado por ventas y compras de todas las empresas |
 | URL | `https://sio-payment-reference-dev.onrender.com/global-payment-methods/{payment_method_id}` |
 | Permiso | `perm:payment-reference:global_payment_methods:update` |
 
-Cuerpo (`GlobalPaymentMethodUpdate`; todos obligatorios): `code` (≤ 40, único), `name` (≤ 120), `method_type` (enum), `requires_reference` (boolean), `status` (`ACTIVE` \| `INACTIVE`).
+Cuerpo (`GlobalPaymentMethodUpdate`, parcial; todos opcionales y ninguno admite `null`; envíe al menos uno): `code` (≤ 40, único), `name` (≤ 120), `method_type` (enum), `requires_reference` (boolean), `status` (`ACTIVE` \| `INACTIVE`).
 
 ```json
 {
@@ -506,7 +521,7 @@ Ejemplo de respuesta `200` (`GlobalPaymentMethodResponse`; valores ilustrativos)
 | `401` `{"detail": "Se requiere un token de acceso Bearer"}` | Sin token | Autenticar |
 | `403` `{"detail": "Su usuario no tiene permiso…"}` | Falta el permiso | Ocultar la acción; este servicio no devuelve `trace_id` |
 | `404` `{"detail": "..."}` | UUID inexistente | Revisar el identificador |
-| `409` con `code` `PAYMENT_REFERENCE.VERSION_CONFLICT` | `version` desactualizada (solo tipos de condición) | Recargar y repetir |
+| `409` con `code` `PAYMENT_REFERENCE.VERSION_CONFLICT` | `version` enviada desactualizada (solo tipos de condición) | Recargar y repetir |
 | `409` con `code` `PAYMENT_REFERENCE.INVALID_STATUS_TRANSITION` | Inactivar algo ya inactivo o reactivar algo ya activo | Recargar el estado |
 | `409` sin `code` | Código duplicado | Elegir otro `code` |
 | `422` con `detail` en lista | Validación FastAPI (longitud, enumeración, `page_size`) | Leer `loc` y `msg` |

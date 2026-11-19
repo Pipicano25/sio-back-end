@@ -49,11 +49,22 @@ Global: cualquier usuario con el permiso ve todas las identidades, sin membresí
 ## Convenciones comunes
 
 - Listas paginadas (`page` ≥ 1, `page_size` 1–100, por defecto 20). Identidades y sectores devuelven por defecto solo `ACTIVE` (`status=INACTIVE` para las inactivas). Asignaciones (sectores, representantes) usan `state` = `active` (vigentes), `closed`, `all`.
-- Escrituras con `version` (≥ 1); desactualizada → `409 PARTY_IDENTITY.VERSION_CONFLICT`. Inactivar algo inactivo o reactivar algo activo → `409 INVALID_STATUS_TRANSITION`.
+- `PUT` es **parcial**: el cuerpo lleva solo los campos que cambian; un campo ausente no cambia; `null` borra un campo opcional y en uno obligatorio responde `422`. Cuerpo vacío `{}` o solo con `version` → `422`. Las validaciones (regla de identificación, unicidad, edades) se aplican sobre el registro combinado; si nada cambia, no se escribe ni sube la versión.
+- `version` (≥ 1) es **opcional** en `PUT` y en las acciones (`deactivate`, `reactivate`, `:set-primary`, `:close`, nuevo perfil de contacto): si se envía y no coincide → `409 PARTY_IDENTITY.VERSION_CONFLICT`; si no se envía, se aplica sobre lo vigente. Las acciones cuyo cuerpo solo era `{"version": n}` aceptan `{}` o ningún cuerpo. Excepciones: `POST /identification-type-rules/{rule_id}/versions` sigue exigiendo `version`, y `legal-representatives:set-primary` exige `current_primary_version` cuando ya existe un `PRIMARY` vigente.
+- Inactivar algo inactivo o reactivar algo activo → `409 INVALID_STATUS_TRANSITION`.
 - Sin borrado físico. Las asignaciones (sectores de organización, representantes) se **cierran** con `valid_to` y no se reabren.
 - Modelos con `extra="forbid"`: campos desconocidos → `422`; campos inmutables enviados → `422 IMMUTABLE_FIELD`.
 - Direcciones de los perfiles: `country_id`, `administrative_division_id`, `city_id` validados en Geography (`422 COUNTRY_NOT_FOUND`, `ADMINISTRATIVE_DIVISION_NOT_FOUND`, `CITY_NOT_FOUND`, `LOCATION_INACTIVE`, `GEOGRAPHY_INCOHERENT`, `GEOGRAPHY_PARENT_REQUIRED`).
 - `503 DEPENDENCY_UNAVAILABLE` con `dependency` (`database`, `geography`, `operational-context`).
+
+Ejemplo de `PUT` parcial (solo cambia `middle_name`, sin `version`):
+
+```bash
+curl -sS -X PUT 'https://sio-party-identity-dev.onrender.com/api/v1/person-identities/a0e1d2c3-b4a5-4968-8776-655443322110' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"middle_name": "Lucía"}'
+```
 
 ## Tabla de endpoints
 
@@ -293,7 +304,7 @@ Ejemplo de respuesta `200` (`PersonIdentityResponse`; valores ilustrativos):
 
 ### 6. `PUT /person-identities/{person_identity_id}`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/person-identities/{person_identity_id}`; permiso `person_identities:update`. Cuerpo (`PersonIdentityUpdate`): los campos de la operación 4 con `verification_status` **obligatorio** más `version`. Reemplazo completo; sin cambios no escribe. Cambiar país, tipo o número vuelve a validar la regla y la unicidad. Errores: `409 VERSION_CONFLICT`, `409 DUPLICATE_IDENTIFICATION`, `422`.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/person-identities/{person_identity_id}`; permiso `person_identities:update`. Cuerpo (`PersonIdentityUpdate`, parcial): los campos de la operación 4 y `verification_status`, todos opcionales; `identification_country_id`, `identification_type`, `identification_number`, `first_name`, `last_name` y `verification_status` no admiten `null`. `version` es opcional. Sin cambios no escribe. Cambiar país, tipo o número vuelve a validar la regla y la unicidad. Errores: `409 VERSION_CONFLICT`, `409 DUPLICATE_IDENTIFICATION`, `422`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -337,7 +348,7 @@ Ejemplo de respuesta `200` (`PersonIdentityResponse`; valores ilustrativos):
 
 ### 7. `POST /person-identities/{person_identity_id}/deactivate`
 
-`HIGH_RISK`: una persona inactiva deja de ser utilizable como cliente nuevo (`422 PERSON_IDENTITY_INACTIVE` en Commercial Relationship), como usuario operativo nuevo (Operational Context) y para nuevos perfiles de contacto. URL `https://sio-party-identity-dev.onrender.com/api/v1/person-identities/{person_identity_id}/deactivate`; permiso `person_identities:delete`; cuerpo `{"version": n}`. 
+`HIGH_RISK`: una persona inactiva deja de ser utilizable como cliente nuevo (`422 PERSON_IDENTITY_INACTIVE` en Commercial Relationship), como usuario operativo nuevo (Operational Context) y para nuevos perfiles de contacto. URL `https://sio-party-identity-dev.onrender.com/api/v1/person-identities/{person_identity_id}/deactivate`; permiso `person_identities:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -376,7 +387,7 @@ Ejemplo de respuesta `200` (`PersonIdentityResponse`; valores ilustrativos):
 
 ### 8. `POST /person-identities/{person_identity_id}/reactivate`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/person-identities/{person_identity_id}/reactivate`; permiso `person_identities:update`; cuerpo `{"version": n}`.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/person-identities/{person_identity_id}/reactivate`; permiso `person_identities:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -555,7 +566,7 @@ Ejemplo de respuesta `200` (`OrganizationIdentityResponse`; valores ilustrativos
 
 ### 12. `PUT /organization-identities/{organization_identity_id}`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}`; permiso `organization_identities:update`. Cuerpo (`OrganizationIdentityUpdate`): campos de la operación 10 más `version`. Reemplazo completo; sin cambios no escribe.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}`; permiso `organization_identities:update`. Cuerpo (`OrganizationIdentityUpdate`, parcial): campos de la operación 10, todos opcionales; `country_id`, `identification_type`, `identification_number` y `legal_name` no admiten `null`. `version` es opcional. Sin cambios no escribe.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -597,7 +608,7 @@ Ejemplo de respuesta `200` (`OrganizationIdentityResponse`; valores ilustrativos
 
 ### 13. `POST /organization-identities/{organization_identity_id}/deactivate`
 
-`HIGH_RISK`: una organización inactiva deja de ser utilizable para nuevos proveedores, clientes organización y empresas. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}/deactivate`; permiso `organization_identities:delete`; cuerpo `{"version": n}`.
+`HIGH_RISK`: una organización inactiva deja de ser utilizable para nuevos proveedores, clientes organización y empresas. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}/deactivate`; permiso `organization_identities:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -634,7 +645,7 @@ Ejemplo de respuesta `200` (`OrganizationIdentityResponse`; valores ilustrativos
 
 ### 14. `POST /organization-identities/{organization_identity_id}/reactivate`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}/reactivate`; permiso `organization_identities:update`; cuerpo `{"version": n}`.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}/reactivate`; permiso `organization_identities:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -801,7 +812,7 @@ Ejemplo de respuesta `200` (`IdentificationTypeRuleResponse`; valores ilustrativ
 
 ### 18. `PUT /identification-type-rules/{rule_id}`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/identification-type-rules/{rule_id}`; permiso `identification_type_rules:update`. Cuerpo (`IdentificationTypeRuleUpdate`): `number_pattern_description` (obligatorio), `example_value`, `version`. Los demás campos (`party_kind`, `country_id`, `identification_type`, `sigla`, `number_pattern`, edades) son inmutables aquí: enviarlos → `422 RULE_CHANGE_REQUIRES_NEW_VERSION` («El patrón y las edades de una regla no se modifican en sitio; cree una nueva versión de la regla.») o `IMMUTABLE_FIELD`.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/identification-type-rules/{rule_id}`; permiso `identification_type_rules:update`. Cuerpo (`IdentificationTypeRuleUpdate`, parcial): `number_pattern_description` (no admite `null`), `example_value` (`null` lo borra), `version` (opcional); envíe al menos uno de los dos primeros. Los demás campos (`party_kind`, `country_id`, `identification_type`, `sigla`, `number_pattern`, edades) son inmutables aquí: enviarlos → `422 RULE_CHANGE_REQUIRES_NEW_VERSION` («El patrón y las edades de una regla no se modifican en sitio; cree una nueva versión de la regla.») o `IMMUTABLE_FIELD`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -849,7 +860,7 @@ Ejemplo de respuesta `200` (`IdentificationTypeRuleResponse`; valores ilustrativ
 
 ### 19. `POST /identification-type-rules/{rule_id}/versions`
 
-`HIGH_RISK`: cambia cómo se validan los números de identificación de todas las empresas a partir de ahora. URL `https://sio-party-identity-dev.onrender.com/api/v1/identification-type-rules/{rule_id}/versions`; permiso `identification_type_rules:create`. Cuerpo (`IdentificationTypeRuleVersionCreate`): `number_pattern`, `number_pattern_description` (obligatorios), `example_value`, `min_age_years`, `max_age_years`, `version` (de la regla vigente). Cierra la regla vigente (`valid_to`, `is_active: false`) y crea la sucesora. 
+`HIGH_RISK`: cambia cómo se validan los números de identificación de todas las empresas a partir de ahora. URL `https://sio-party-identity-dev.onrender.com/api/v1/identification-type-rules/{rule_id}/versions`; permiso `identification_type_rules:create`. Cuerpo (`IdentificationTypeRuleVersionCreate`): `number_pattern`, `number_pattern_description` (obligatorios), `example_value`, `min_age_years`, `max_age_years`, `version` (de la regla vigente; **obligatoria** en esta operación). Cierra la regla vigente (`valid_to`, `is_active: false`) y crea la sucesora. 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -894,7 +905,7 @@ Ejemplo de respuesta `201` (`IdentificationTypeRuleResponse`; valores ilustrativ
 
 ### 20. `POST /identification-type-rules/{rule_id}/deactivate`
 
-`HIGH_RISK`: sin regla activa, esa sigla deja de aceptarse (`422 UNSUPPORTED_IDENTIFICATION_TYPE`) al crear o cambiar identificaciones. URL `https://sio-party-identity-dev.onrender.com/api/v1/identification-type-rules/{rule_id}/deactivate`; permiso `identification_type_rules:delete`; cuerpo `{"version": n}`. La regla queda histórica.
+`HIGH_RISK`: sin regla activa, esa sigla deja de aceptarse (`422 UNSUPPORTED_IDENTIFICATION_TYPE`) al crear o cambiar identificaciones. URL `https://sio-party-identity-dev.onrender.com/api/v1/identification-type-rules/{rule_id}/deactivate`; permiso `identification_type_rules:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). La regla queda histórica.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -989,7 +1000,7 @@ Cuerpo (`ContactProfileCreate`):
 | `country_id`, `administrative_division_id`, `city_id` | UUID \| null | No | Coherentes y activos en Geography; división o ciudad exigen país | [Geography](geography.md) |
 | `postal_code` | string \| null | No | ≤ 20 | — |
 | `confirmed_by_company_id` | UUID | Sí | Empresa `ACTIVE` en la que el usuario tiene membresía (`422 COMPANY_NOT_FOUND`, `COMPANY_INACTIVE`, `CONFIRMATION_MEMBERSHIP_INVALID`) | [company_id](../parametros/company-id.md) |
-| `version` | integer \| null | Si existe perfil vigente | Versión del vigente; se ignora si no hay | Operación 21 |
+| `version` | integer \| null | No | Versión del vigente; si se envía y no coincide → `409 VERSION_CONFLICT`; se ignora si no hay perfil vigente | Operación 21 |
 
 ```json
 {
@@ -1109,7 +1120,7 @@ Ejemplo de respuesta `200` (`PersonContactProfileResponse`; valores ilustrativos
 
 ### 25. `POST /person-identities/{person_identity_id}/contact-profile:close`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/person-identities/{person_identity_id}/contact-profile:close`; permiso `person_contact_profiles:delete`. Cuerpo (`ContactProfileClose`): `{"version": n}` del vigente. Cierra sin reemplazo. `409 CONTACT_PROFILE_ALREADY_CLOSED`; `404 CONTACT_PROFILE_NOT_FOUND`.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/person-identities/{person_identity_id}/contact-profile:close`; permiso `person_contact_profiles:delete`. Cuerpo (`ContactProfileClose`): `{"version": n}` del vigente, con `version` opcional; se acepta `{}` o ningún cuerpo. Cierra sin reemplazo. `409 CONTACT_PROFILE_ALREADY_CLOSED`; `404 CONTACT_PROFILE_NOT_FOUND`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1318,7 +1329,7 @@ Ejemplo de respuesta `200` (`OrganizationContactProfileResponse`; valores ilustr
 
 ### 30. `POST /organization-identities/{organization_identity_id}/contact-profile:close`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}/contact-profile:close`; permiso `organization_contact_profiles:delete`; cuerpo `{"version": n}`.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-identities/{organization_identity_id}/contact-profile:close`; permiso `organization_contact_profiles:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1470,7 +1481,7 @@ Ejemplo de respuesta `200` (`ContactPersonResponse`; valores ilustrativos):
 
 ### 34. `PUT /organization-contact-persons/{contact_id}`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-contact-persons/{contact_id}`; permiso `organization_contact_persons:update`. Cuerpo (`ContactPersonUpdate`): `person_identity_id`, `position`, `email`, `phone`, `version`. `is_primary` no se modifica aquí (usar la operación 35) y `organization_identity_id` es inmutable (`422 IMMUTABLE_FIELD`).
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-contact-persons/{contact_id}`; permiso `organization_contact_persons:update`. Cuerpo (`ContactPersonUpdate`, parcial): `person_identity_id`, `position`, `email`, `phone` (todos opcionales; `null` borra el valor), `version` (opcional); envíe al menos uno. `is_primary` no se modifica aquí (usar la operación 35) y `organization_identity_id` es inmutable (`422 IMMUTABLE_FIELD`).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1511,7 +1522,7 @@ Ejemplo de respuesta `200` (`ContactPersonResponse`; valores ilustrativos):
 
 ### 35. `POST /organization-contact-persons/{contact_id}:set-primary`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-contact-persons/{contact_id}:set-primary`; permiso `organization_contact_persons:update`; cuerpo `{"version": n}`. Atómico: el contacto pasa a principal y el anterior deja de serlo. `422 INVALID_PRIMARY_CONTACT` si el contacto está inactivo.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-contact-persons/{contact_id}:set-primary`; permiso `organization_contact_persons:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Atómico: el contacto pasa a principal y el anterior deja de serlo. `422 INVALID_PRIMARY_CONTACT` si el contacto está inactivo.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1546,7 +1557,7 @@ Ejemplo de respuesta `200` (`ContactPersonResponse`; valores ilustrativos):
 
 ### 36. `POST /organization-contact-persons/{contact_id}:deactivate`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-contact-persons/{contact_id}:deactivate`; permiso `organization_contact_persons:delete`; cuerpo `{"version": n}`.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-contact-persons/{contact_id}:deactivate`; permiso `organization_contact_persons:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1581,7 +1592,7 @@ Ejemplo de respuesta `200` (`ContactPersonResponse`; valores ilustrativos):
 
 ### 37. `POST /organization-contact-persons/{contact_id}:reactivate`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-contact-persons/{contact_id}:reactivate`; permiso `organization_contact_persons:update`; cuerpo `{"version": n}`.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-contact-persons/{contact_id}:reactivate`; permiso `organization_contact_persons:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1723,7 +1734,7 @@ Ejemplo de respuesta `200` (`BusinessSectorResponse`; valores ilustrativos):
 
 ### 41. `PUT /global-business-sectors/{sector_id}`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/global-business-sectors/{sector_id}`; permiso `global_business_sectors:update`. Cuerpo (`BusinessSectorUpdate`): `name` (obligatorio), `description`, `parent_sector_id`, `version`. `classification_system` y `code` son inmutables (`422 IMMUTABLE_FIELD`).
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/global-business-sectors/{sector_id}`; permiso `global_business_sectors:update`. Cuerpo (`BusinessSectorUpdate`, parcial): `name` (no admite `null`), `description`, `parent_sector_id`, `version` (opcional); envíe al menos uno distinto de `version`. `classification_system` y `code` son inmutables (`422 IMMUTABLE_FIELD`).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1761,7 +1772,7 @@ Ejemplo de respuesta `200` (`BusinessSectorResponse`; valores ilustrativos):
 
 ### 42. `POST /global-business-sectors/{sector_id}:deactivate`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/global-business-sectors/{sector_id}:deactivate`; permiso `global_business_sectors:delete`; cuerpo `{"version": n}`. Sin cascada: con hijos activos → `409 SECTOR_HAS_ACTIVE_CHILDREN`.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/global-business-sectors/{sector_id}:deactivate`; permiso `global_business_sectors:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Sin cascada: con hijos activos → `409 SECTOR_HAS_ACTIVE_CHILDREN`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1795,7 +1806,7 @@ Ejemplo de respuesta `200` (`BusinessSectorResponse`; valores ilustrativos):
 
 ### 43. `POST /global-business-sectors/{sector_id}:reactivate`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/global-business-sectors/{sector_id}:reactivate`; permiso `global_business_sectors:update`; cuerpo `{"version": n}`.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/global-business-sectors/{sector_id}:reactivate`; permiso `global_business_sectors:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1935,7 +1946,7 @@ Ejemplo de respuesta `200` (`OrganizationBusinessSectorResponse`; valores ilustr
 
 ### 47. `POST /organization-business-sectors/{assignment_id}:set-primary`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-business-sectors/{assignment_id}:set-primary`; permiso `organization_business_sectors:update`; cuerpo `{"version": n}`. Atómico. `422 INVALID_PRIMARY_SECTOR` si la asignación está cerrada.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-business-sectors/{assignment_id}:set-primary`; permiso `organization_business_sectors:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Atómico. `422 INVALID_PRIMARY_SECTOR` si la asignación está cerrada.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1969,7 +1980,7 @@ Ejemplo de respuesta `200` (`OrganizationBusinessSectorResponse`; valores ilustr
 
 ### 48. `POST /organization-business-sectors/{assignment_id}:close`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-business-sectors/{assignment_id}:close`; permiso `organization_business_sectors:delete`; cuerpo `{"version": n}`. Cierra con `valid_to`; no se reactiva.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-business-sectors/{assignment_id}:close`; permiso `organization_business_sectors:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Cierra con `valid_to`; no se reactiva.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -2138,7 +2149,7 @@ Ejemplo de respuesta `200` (`LegalRepresentativeResponse`; valores ilustrativos)
 
 ### 53. `PUT /organization-legal-representatives/{representative_id}`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-legal-representatives/{representative_id}`; permiso `organization_legal_representatives:update`. Cuerpo (`LegalRepresentativeUpdate`): `position`, `source_document_reference`, `version`. `person_identity_id`, `organization_identity_id` y `representative_type` son inmutables.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-legal-representatives/{representative_id}`; permiso `organization_legal_representatives:update`. Cuerpo (`LegalRepresentativeUpdate`, parcial): `position`, `source_document_reference` (opcionales; `null` borra el valor), `version` (opcional); envíe al menos uno distinto de `version`. `person_identity_id`, `organization_identity_id` y `representative_type` son inmutables.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -2179,7 +2190,7 @@ Ejemplo de respuesta `200` (`LegalRepresentativeResponse`; valores ilustrativos)
 
 ### 54. `POST /organization-legal-representatives/{representative_id}:close`
 
-`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-legal-representatives/{representative_id}:close`; permiso `organization_legal_representatives:delete`; cuerpo `{"version": n}`. Cierra la relación; no se reactiva.
+`WRITE`. URL `https://sio-party-identity-dev.onrender.com/api/v1/organization-legal-representatives/{representative_id}:close`; permiso `organization_legal_representatives:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Cierra la relación; no se reactiva.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -2225,7 +2236,7 @@ Ejemplo de respuesta `200` (`LegalRepresentativeResponse`; valores ilustrativos)
 | `422 …CONFIRMATION_MEMBERSHIP_INVALID` | El usuario no tiene membresía activa en `confirmed_by_company_id` | Usar la empresa activa del usuario |
 | `422 …PERSON_IDENTITY_INACTIVE` / `ORGANIZATION_IDENTITY_INACTIVE` | Identidad inactiva | Reactivarla (operaciones 8 o 14) si procede |
 | `409 …PRIMARY_*_CONFLICT` | Ya existe un principal | Usar la operación `set-primary` correspondiente |
-| `409 …VERSION_CONFLICT` | Versión desactualizada | Recargar |
+| `409 …VERSION_CONFLICT` | `version` enviada desactualizada | Recargar, o enviar sin `version` |
 | `422 …IMMUTABLE_FIELD` / `RULE_CHANGE_REQUIRES_NEW_VERSION` | Campo inmutable | Quitar el campo o crear una versión nueva |
 | `503` con `dependency` `geography` u `operational-context` | Dependencia caída | Reintentar |
 

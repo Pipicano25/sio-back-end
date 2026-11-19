@@ -69,6 +69,17 @@ Ningún grupo de área puede modificar políticas; ningún grupo de usuario salv
 | Saldo nunca negativo | Una salida, un reverso de entrada o un ajuste negativo que dejaría saldo negativo → `409 INSUFFICIENT_STOCK` con la extensión `shortages` (faltantes por producto) |
 | FIFO | Cada entrada o ajuste positivo abre una **capa de costo** (`layer_kind`: `ENTRY`, `ADJUSTMENT`, `OPENING`; `status`: `OPEN`, `CLOSED`). Las salidas consumen capas en orden (`consumption_type`: `CONSUME`, `RESTORE`, `ENTRY_REVERSAL`). `cost_known: false` marca cantidades sin costo conocido |
 | Reversos | Un reverso deshace una operación completa, una sola vez (`409 ALREADY_REVERSED`); un reverso no se revierte (`409 REVERSAL_NOT_ALLOWED`); revertir una entrada cuyas capas ya se consumieron → `409 ENTRY_LAYER_CONSUMED` |
+| `PUT` parcial | Los `PUT` de políticas llevan solo los campos que cambian; un campo ausente no cambia; `null` borra un campo opcional y en uno obligatorio responde `422`. Cuerpo vacío `{}` o solo con `version` → `422`; campo desconocido → `422`. Los rangos se validan sobre el registro combinado; si nada cambia, no se escribe ni sube la versión |
+| `version` | **Opcional** en las escrituras de políticas y conteos (`PUT`, `deactivate`, `start`, `complete`, `cancel`): si se envía y no coincide → `409 VERSION_CONFLICT`; si no se envía, se aplica sobre lo vigente. `start` y `deactivate` aceptan `{}` o ningún cuerpo |
+
+Ejemplo de `PUT` parcial (solo cambia `minimum_stock`, sin `version`):
+
+```bash
+curl -sS -X PUT 'https://sio-inventory-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/inventory-policies/7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"minimum_stock": "10"}'
+```
 
 ## Tabla de endpoints
 
@@ -1148,7 +1159,7 @@ Ejemplo de respuesta `200` (`CountPage`; valores ilustrativos):
 
 ### 21. `POST /companies/{company_id}/inventory-counts/{count_id}/start`
 
-`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/start`; permiso `counts:create` + asignación. Cuerpo (`CountTransitionIn`): `{"version": 1}`. Pasa a `IN_PROGRESS` y fija `started_at`. Errores: `409 COUNT_ALREADY_IN_PROGRESS` (otro conteo en curso en la sucursal), `409 INVALID_COUNT_TRANSITION`, `409 VERSION_CONFLICT`.
+`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/start`; permiso `counts:create` + asignación. Cuerpo (`CountTransitionIn`): `{"version": 1}`, con `version` opcional; se acepta `{}` o ningún cuerpo. Pasa a `IN_PROGRESS` y fija `started_at`. Errores: `409 COUNT_ALREADY_IN_PROGRESS` (otro conteo en curso en la sucursal), `409 INVALID_COUNT_TRANSITION`, `409 VERSION_CONFLICT`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1259,7 +1270,7 @@ Ejemplo de respuesta `200` (`InventoryCountDetailResponse`; valores ilustrativos
 
 ### 23. `POST /companies/{company_id}/inventory-counts/{count_id}/complete`
 
-`HIGH_RISK` · aplica **todas** las diferencias como ajustes, todo o nada. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/complete`; permiso `counts:create` + asignación. Cuerpo (`CountCompleteIn`): `completion_key` (UUID de idempotencia) y `version`. Reglas (verificadas): una sola operación `ADJUSTMENT` con origen `COUNT` y una línea por diferencia distinta de cero calculada **sobre el saldo vigente** en ese momento; crea un ajuste por línea y cierra el conteo en una transacción. Un conteo sin diferencias se completa sin operación. Repetir con la misma clave y versión devuelve el conteo. 
+`HIGH_RISK` · aplica **todas** las diferencias como ajustes, todo o nada. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/complete`; permiso `counts:create` + asignación. Cuerpo (`CountCompleteIn`): `completion_key` (UUID de idempotencia, obligatorio) y `version` (opcional). Reglas (verificadas): una sola operación `ADJUSTMENT` con origen `COUNT` y una línea por diferencia distinta de cero calculada **sobre el saldo vigente** en ese momento; crea un ajuste por línea y cierra el conteo en una transacción. Un conteo sin diferencias se completa sin operación. Repetir con la misma clave y versión devuelve el conteo. 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1351,7 +1362,7 @@ Ejemplo de respuesta `200` (`InventoryCountResponse`; valores ilustrativos):
 
 ### 24. `POST /companies/{company_id}/inventory-counts/{count_id}/cancel`
 
-`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/cancel`; permiso `counts:create` + asignación. Cuerpo (`CountCancelIn`): `reason` (1–2000, obligatorio) y `version`. Desde `DRAFT` o `IN_PROGRESS`; no afecta existencias. 
+`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/cancel`; permiso `counts:create` + asignación. Cuerpo (`CountCancelIn`): `reason` (1–2000, obligatorio) y `version` (opcional). Desde `DRAFT` o `IN_PROGRESS`; no afecta existencias. 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1585,7 +1596,7 @@ Ejemplo de respuesta `201` (`CompanyPolicyResponse`; valores ilustrativos):
 
 ### 28. `PUT /companies/{company_id}/inventory-policy`
 
-`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-policy`; permiso `company-policies:update`. Cuerpo (`CompanyPolicyUpdateIn`): los campos de la operación 27 más `version`. `409 VERSION_CONFLICT`.
+`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-policy`; permiso `company-policies:update`. Cuerpo (`CompanyPolicyUpdateIn`, parcial): los campos de la operación 27, todos opcionales (`inventory_system`, `valuation_method`, `replenishment_strategy` no admiten `null`), y `version` (opcional). `409 VERSION_CONFLICT` si se envía `version` y no coincide.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1770,7 +1781,7 @@ Ejemplo de respuesta `200` (`ProductPolicyResponse`; valores ilustrativos):
 
 ### 32. `PUT /companies/{company_id}/inventory-policies/{policy_id}`
 
-`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-policies/{policy_id}`; permiso `product-policies:update`. Cuerpo (`ProductPolicyUpdateIn`): los campos de la operación 30 salvo `branch_id` y `company_product_id`, más `version`. `409 VERSION_CONFLICT`.
+`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-policies/{policy_id}`; permiso `product-policies:update`. Cuerpo (`ProductPolicyUpdateIn`, parcial): los campos de la operación 30 salvo `branch_id` y `company_product_id`, todos opcionales (`minimum_stock`, `safety_stock_method`, `calculation_window_days`, `replenishment_mode`, `auto_purchase_enabled` no admiten `null`; `target_stock` y `service_level` se borran con `null`), y `version` (opcional). `409 VERSION_CONFLICT` si se envía `version` y no coincide.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1814,7 +1825,7 @@ Ejemplo de respuesta `200` (`ProductPolicyResponse`; valores ilustrativos):
 
 ### 33. `POST /companies/{company_id}/inventory-policies/{policy_id}/deactivate`
 
-`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-policies/{policy_id}/deactivate`; permiso `product-policies:update`. Cuerpo `{"version": n}`. 
+`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-policies/{policy_id}/deactivate`; permiso `product-policies:update`. Cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). 
 
 Ejemplo de solicitud (valores ilustrativos):
 

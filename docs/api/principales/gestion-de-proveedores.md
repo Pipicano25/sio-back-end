@@ -39,7 +39,8 @@ Convenciones de todo el módulo:
 - Errores comunes a todas las API de este módulo (no se repiten en cada tabla): `401` con `{"detail": "Se requiere un token de acceso Bearer"}` u otro `detail` cuando el token falta, venció o no es válido (renovar una vez y reintentar; si falla, volver al login); `403` con `code` `COMMERCIAL_RELATIONSHIP.FORBIDDEN` o `PARTY_IDENTITY.FORBIDDEN` cuando el token no tiene el permiso indicado (mostrar que faltan permisos y el `trace_id`); `503` con `code` `…DEPENDENCY_UNAVAILABLE` cuando la base de datos u otro servicio no responde (`dependency` indica cuál; reintentar más tarde; nada se guarda). Los demás errores llegan en Problem Details (`application/problem+json`) con `code` `COMMERCIAL_RELATIONSHIP.…` o `PARTY_IDENTITY.…` y `trace_id`; ver la [guía de errores](../guias/errores.md). Payment Reference ([API 10](#10-consultar-los-tipos-de-condición-de-pago)) responde errores en formato FastAPI simple (`{"detail": …}`), sin Problem Details.
 - **Alcance.** Los proveedores, sus condiciones y sus productos solo se ven y modifican con membresía `ACTIVE` en la empresa (Commercial Relationship lo comprueba en Operational Context en cada solicitud); fuera de ese alcance la respuesta es `404 COMMERCIAL_RELATIONSHIP.NOT_FOUND`, igual que si no existieran. Las identidades de Party Identity y los tipos de condición de Payment Reference son globales.
 - **Empresa inactiva.** Si la empresa está `INACTIVE`, Commercial Relationship solo permite consultar e inactivar; registrar, actualizar, reactivar, bloquear o desbloquear responde `422 COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE`.
-- **Control de versión.** Toda modificación envía la `version` actual del recurso; si otra persona lo cambió antes, la API responde `409 COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` y el frontend debe volver a leer el recurso y repetir con la nueva `version`.
+- **Control de versión.** `version` es **opcional** en toda modificación: si se envía la `version` leída y otra persona cambió el recurso antes, la API responde `409 COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` y el frontend debe volver a leer el recurso y repetir; si no se envía, el cambio se aplica sobre lo vigente. Se recomienda enviarla para detectar cambios simultáneos.
+- **`PUT` parcial.** El cuerpo de un `PUT` lleva solo los campos que cambian: un campo ausente no cambia, `null` borra un campo opcional y en uno obligatorio responde `422`; un cuerpo vacío `{}` o solo con `version` responde `422`. Inactivar, reactivar y desbloquear aceptan `{}` o ningún cuerpo; bloquear exige `block_reason`.
 - **Estados del proveedor.** `ACTIVE` → `INACTIVE` (inactivar) → `ACTIVE` (reactivar); `ACTIVE` o `INACTIVE` → `BLOCKED` (bloquear, con motivo) → `ACTIVE` (desbloquear). Cualquier otra combinación responde `409 COMMERCIAL_RELATIONSHIP.INVALID_STATUS_TRANSITION`. Solo un proveedor `ACTIVE` sirve para comprar y para registrarle condiciones o productos.
 - Las respuestas traen siempre `created_by`, `updated_by` (el `sub` de Keycloak de quien actuó), `created_at` y `updated_at`.
 - Toda escritura queda registrada en [Audit](../servicios/audit.md) con las acciones `CREATE_`, `UPDATE_`, `DEACTIVATE_`, `REACTIVATE_`, `BLOCK_` y `UNBLOCK_COMPANY_SUPPLIER` (entidad `CompanySupplier`), `CREATE_`/`UPDATE_`/`DEACTIVATE_`/`REACTIVATE_SUPPLIER_PAYMENT_CONDITION` (entidad `SupplierPaymentCondition`) y `CREATE_`/`UPDATE_`/`DEACTIVATE_`/`REACTIVATE_SUPPLIER_PRODUCT` (entidad `SupplierProduct`); se consultan con la [API 16 de Administración empresarial](administracion-empresarial.md#16-consultar-la-trazabilidad-de-la-empresa-auditoría) (lista los eventos de auditoría de la empresa; sus errores están en esa sección).
@@ -282,7 +283,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 | `items[].preferred_contact_person_id` | UUID \| null | Contacto preferido |
 | `items[].status` | `ACTIVE` \| `INACTIVE` \| `BLOCKED` | Solo los `ACTIVE` se pueden usar en compras |
 | `items[].block_reason` | string \| null | Motivo del bloqueo; solo tiene valor con `status` `BLOCKED` |
-| `items[].version` | integer | Valor que debe enviarse en las API 5 a 9 |
+| `items[].version` | integer | Valor que puede enviarse (opcional) en las API 5 a 9 |
 | `page`, `page_size`, `total_records`, `total_pages` | integer | Paginación; `items` vacío cuando no hay coincidencias (no es error) |
 
 ### Posibles errores
@@ -302,7 +303,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 ### ¿Qué hace esta API?
 
-Devuelve la ficha completa de un proveedor, en cualquier estado, si pertenece a una empresa en la que el usuario tiene membresía `ACTIVE`. Se usa para abrir el detalle del proveedor y para leer su `version` antes de modificarlo o cambiar su estado. Para mostrar NIT, razón social y datos de contacto hay que encadenar la [API 10](gestion-de-clientes.md#10-consultar-los-datos-de-identidad-de-una-organización) y la [API 11 de Gestión de clientes](gestion-de-clientes.md#11-consultar-los-datos-de-contacto-vigentes-del-cliente) (identidad y perfil de contacto vigente de la organización; sus errores están en esas secciones) y la [API 4](#4-consultar-las-personas-de-contacto-del-proveedor) para las personas de contacto.
+Devuelve la ficha completa de un proveedor, en cualquier estado, si pertenece a una empresa en la que el usuario tiene membresía `ACTIVE`. Se usa para abrir el detalle del proveedor y para leer su `version` (opcional, recomendable para detectar cambios simultáneos) antes de modificarlo o cambiar su estado. Para mostrar NIT, razón social y datos de contacto hay que encadenar la [API 10](gestion-de-clientes.md#10-consultar-los-datos-de-identidad-de-una-organización) y la [API 11 de Gestión de clientes](gestion-de-clientes.md#11-consultar-los-datos-de-contacto-vigentes-del-cliente) (identidad y perfil de contacto vigente de la organización; sus errores están en esas secciones) y la [API 4](#4-consultar-las-personas-de-contacto-del-proveedor) para las personas de contacto.
 
 Antes necesita: el `company_supplier_id`.
 
@@ -355,7 +356,7 @@ curl -X GET \
 |---|---|---|
 | `status` | `ACTIVE` \| `INACTIVE` \| `BLOCKED` | Determina qué acciones mostrar: inactivar y bloquear desde `ACTIVE`; reactivar y bloquear desde `INACTIVE`; desbloquear desde `BLOCKED` |
 | `block_reason` | string \| null | Motivo a mostrar cuando está `BLOCKED` |
-| `version` | integer | Valor que debe enviarse en las API 5 a 9 |
+| `version` | integer | Valor que puede enviarse (opcional) en las API 5 a 9 |
 
 ### Posibles errores
 
@@ -462,11 +463,11 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 ### ¿Qué hace esta API?
 
-Modifica los datos propios de la relación comercial: código interno, nombre con que la empresa muestra al proveedor y persona de contacto preferida. Es un reemplazo completo: se envían los tres campos con sus valores finales más la `version` vigente. La organización (`organization_identity_id`), la empresa, el `status` y el `block_reason` son **inmutables** por esta vía: el estado cambia solo con las API 6 a 9, y los datos legales se corrigen en Party Identity con la [API 14 de Gestión de clientes](gestion-de-clientes.md#14-actualizar-la-identidad-de-una-organización).
+Modifica los datos propios de la relación comercial: código interno, nombre con que la empresa muestra al proveedor y persona de contacto preferida. Es un `PUT` parcial: se envían solo los campos que cambian (un campo ausente no cambia; `null` en `preferred_contact_person_id` lo borra) y, opcionalmente, la `version` vigente. La organización (`organization_identity_id`), la empresa, el `status` y el `block_reason` son **inmutables** por esta vía: el estado cambia solo con las API 6 a 9, y los datos legales se corrigen en Party Identity con la [API 14 de Gestión de clientes](gestion-de-clientes.md#14-actualizar-la-identidad-de-una-organización).
 
 Efectos verificados en el código: funciona sobre proveedores en cualquier estado (`ACTIVE`, `INACTIVE` o `BLOCKED`); si no hay cambios no escribe ni incrementa `version`; si cambia `preferred_contact_person_id` a un valor no nulo lo revalida en Party Identity; registra `UPDATE_COMPANY_SUPPLIER` en Audit.
 
-Antes necesita: la `version` actual ([API 3](#3-consultar-un-proveedor)) y empresa `ACTIVE`.
+Antes necesita: empresa `ACTIVE`. Recomendado: la `version` actual ([API 3](#3-consultar-un-proveedor)) para detectar cambios simultáneos.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -510,10 +511,10 @@ curl -X PUT \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente del proveedor | `1` | `version` de la [API 3](#3-consultar-un-proveedor) (devuelve la ficha del proveedor; errores en §3) |
-| `internal_code` | string (1–60) | Sí | Código interno final; único en la empresa sin distinguir mayúsculas | `PRV-0001` | Formulario (repetir el actual si no cambia) |
-| `display_name` | string (1–200) | Sí | Nombre final para mostrar | `Distribuidora Farma` | Formulario |
-| `preferred_contact_person_id` | UUID \| null | No; acepta `null` (si se omite queda `null`) | Contacto preferido final; debe ser un contacto activo de la organización del proveedor | `7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d` | `items[].id` de la [API 4](#4-consultar-las-personas-de-contacto-del-proveedor) (lista las personas de contacto de la organización; errores en §4) |
+| `version` | integer ≥ 1 | No | Versión vigente del proveedor; opcional: si se envía y no coincide → `409 VERSION_CONFLICT` | `1` | `version` de la [API 3](#3-consultar-un-proveedor) (devuelve la ficha del proveedor; errores en §3) |
+| `internal_code` | string (1–60) | No; no admite `null` | Código interno final; único en la empresa sin distinguir mayúsculas | `PRV-0001` | Formulario (omitir si no cambia) |
+| `display_name` | string (1–200) | No; no admite `null` | Nombre final para mostrar | `Distribuidora Farma` | Formulario |
+| `preferred_contact_person_id` | UUID \| null | No; acepta `null` (`null` lo borra; si se omite no cambia) | Contacto preferido final; debe ser un contacto activo de la organización del proveedor | `7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d` | `items[].id` de la [API 4](#4-consultar-las-personas-de-contacto-del-proveedor) (lista las personas de contacto de la organización; errores en §4) |
 
 No se admiten en el cuerpo `organization_identity_id`, `company_id`, `status` ni `block_reason`: su presencia responde `422 IMMUTABLE_FIELD`.
 
@@ -541,7 +542,7 @@ No se admiten en el cuerpo `organization_identity_id`, `company_id`, `status` ni
 
 | Campo | Tipo | Significado para el frontend |
 |---|---|---|
-| `version` | integer | Nueva versión; es la que debe enviarse en la siguiente modificación. Si no hubo cambios se mantiene |
+| `version` | integer | Nueva versión; es la que se envía (si se usa) en la siguiente modificación. Si no hubo cambios se mantiene |
 | `status`, `block_reason` | — | No cambian con esta API |
 
 ### Posibles errores
@@ -554,7 +555,7 @@ No se admiten en el cuerpo `organization_identity_id`, `company_id`, `status` ni
 | `422` | `COMMERCIAL_RELATIONSHIP.IMMUTABLE_FIELD` | El cuerpo incluye `organization_identity_id`, `company_id`, `status` o `block_reason` | Error de programación: no enviar esos campos |
 | `422` | `COMMERCIAL_RELATIONSHIP.CONTACT_PERSON_INVALID` | El contacto no existe, está inactivo o es de otra organización | Volver a cargar los contactos activos con la [API 4](#4-consultar-las-personas-de-contacto-del-proveedor) |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden modificar proveedores en ella |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1, `internal_code` vacío o > 60, `display_name` vacío o > 200, campo faltante o desconocido | Corregir el formulario |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | Cuerpo vacío o solo con `version`; `version` < 1; `internal_code` o `display_name` en `null`, vacíos o demasiado largos (> 60 / > 200); campo desconocido | Corregir el formulario |
 | `403` | `COMMERCIAL_RELATIONSHIP.PARTY_IDENTITY_ACCESS_DENIED` | Sin permiso en Party Identity para validar el contacto | Pedir `perm:party-identity:organization_contact_persons:read` |
 | `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Sin permiso en Operational Context para consultar el acceso operativo | Pedir `perm:operational-context:application_users:read` |
 | `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Party Identity u Operational Context no responden | Reintentar más tarde; nada se guardó |
@@ -590,7 +591,7 @@ Ejemplo de `422` por campo inmutable:
 
 Pasa un proveedor `ACTIVE` a `INACTIVE` sin borrarlo ni borrar su historial. Desde ese momento [Compras](compras.md) rechaza nuevas compras a ese proveedor con `409 PURCHASE.REFERENCES_NOT_ELIGIBLE` (motivo `SUPPLIER_NOT_ELIGIBLE`) y Commercial Relationship rechaza registrarle o reactivarle condiciones de pago y productos con `422 COMPANY_SUPPLIER_INACTIVE`; las compras ya confirmadas no cambian. La identidad en Party Identity no se toca. Es la única escritura sobre proveedores permitida cuando la empresa está `INACTIVE`. Registra `DEACTIVATE_COMPANY_SUPPLIER` en Audit. Clasificada como `HIGH_RISK` en la ficha: conviene pedir confirmación al usuario.
 
-Antes necesita: la `version` actual ([API 3](#3-consultar-un-proveedor)) y que el proveedor esté `ACTIVE` (un proveedor `BLOCKED` no se inactiva: se desbloquea primero).
+Antes necesita: que el proveedor esté `ACTIVE`; la `version` actual ([API 3](#3-consultar-un-proveedor)) es opcional (el cuerpo puede ser `{}` o ninguno) (un proveedor `BLOCKED` no se inactiva: se desbloquea primero).
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -628,7 +629,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente del proveedor | `2` | `version` de la [API 3](#3-consultar-un-proveedor) (devuelve la ficha del proveedor; errores en §3) |
+| `version` | integer ≥ 1 | No | Versión vigente del proveedor; opcional: si se envía y no coincide → `409 VERSION_CONFLICT` | `2` | `version` de la [API 3](#3-consultar-un-proveedor) (devuelve la ficha del proveedor; errores en §3) |
 
 ### Respuesta exitosa
 
@@ -655,7 +656,7 @@ curl -X POST \
 | Campo | Tipo | Significado para el frontend |
 |---|---|---|
 | `status` | `INACTIVE` | El proveedor deja de aparecer en la lista por defecto de la [API 2](#2-buscar-y-listar-los-proveedores-de-la-empresa) (usar `status=INACTIVE` o `ALL`) |
-| `version` | integer | Valor que debe enviarse en la [API 7](#7-reactivar-un-proveedor) o la [API 8](#8-bloquear-un-proveedor) |
+| `version` | integer | Valor que puede enviarse (opcional) en la [API 7](#7-reactivar-un-proveedor) o la [API 8](#8-bloquear-un-proveedor) |
 
 ### Posibles errores
 
@@ -664,7 +665,7 @@ curl -X POST \
 | `404` | `COMMERCIAL_RELATIONSHIP.NOT_FOUND` | El proveedor no existe o es de una empresa sin membresía `ACTIVE` | Volver a la lista |
 | `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer con la [API 3](#3-consultar-un-proveedor) y repetir |
 | `409` | `COMMERCIAL_RELATIONSHIP.INVALID_STATUS_TRANSITION` | El proveedor no está `ACTIVE` (ya `INACTIVE` o `BLOCKED`) | Refrescar la ficha; si está bloqueado, desbloquear primero ([API 9](#9-desbloquear-un-proveedor)) |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` ausente, < 1 o campo desconocido | Corregir la solicitud |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1 o campo desconocido | Corregir la solicitud |
 | `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Sin permiso en Operational Context para consultar el acceso operativo | Pedir `perm:operational-context:application_users:read` |
 | `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Operational Context no responde | Reintentar más tarde |
 
@@ -694,7 +695,7 @@ Devuelve un proveedor `INACTIVE` a `ACTIVE` conservando su `id`, su código, sus
 
 Efectos verificados en el código: antes de reactivar vuelve a comprobar en Party Identity que la organización exista y esté `ACTIVE` (no revalida la persona de contacto); deja `block_reason` en `null`; exige empresa `ACTIVE`; registra `REACTIVATE_COMPANY_SUPPLIER` en Audit. Las condiciones de pago y los productos del proveedor que se hubieran inactivado no se reactivan automáticamente.
 
-Antes necesita: la `version` actual ([API 3](#3-consultar-un-proveedor)) y `perm:party-identity:organization_identities:read` para la revalidación.
+Antes necesita: `perm:party-identity:organization_identities:read` para la revalidación; la `version` actual ([API 3](#3-consultar-un-proveedor)) es opcional (el cuerpo puede ser `{}` o ninguno).
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -732,7 +733,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente del proveedor | `3` | `version` de la [API 3](#3-consultar-un-proveedor) (devuelve la ficha del proveedor; errores en §3) |
+| `version` | integer ≥ 1 | No | Versión vigente del proveedor; opcional: si se envía y no coincide → `409 VERSION_CONFLICT` | `3` | `version` de la [API 3](#3-consultar-un-proveedor) (devuelve la ficha del proveedor; errores en §3) |
 
 ### Respuesta exitosa
 
@@ -771,7 +772,7 @@ curl -X POST \
 | `422` | `COMMERCIAL_RELATIONSHIP.ORGANIZATION_IDENTITY_NOT_FOUND` | La organización ya no existe en Party Identity | Informar; registrar un proveedor nuevo con otra identidad |
 | `422` | `COMMERCIAL_RELATIONSHIP.ORGANIZATION_IDENTITY_INACTIVE` | La organización está `INACTIVE` en Party Identity | Reactivar primero la identidad (PI 14) |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden reactivar proveedores en ella |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` ausente, < 1 o campo desconocido | Corregir la solicitud |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1 o campo desconocido | Corregir la solicitud |
 | `403` | `COMMERCIAL_RELATIONSHIP.PARTY_IDENTITY_ACCESS_DENIED` | Sin permiso en Party Identity para revalidar la organización | Pedir `perm:party-identity:organization_identities:read` |
 | `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Sin permiso en Operational Context para consultar el acceso operativo | Pedir `perm:operational-context:application_users:read` |
 | `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Party Identity u Operational Context no responden | Reintentar más tarde; nada se guardó |
@@ -788,7 +789,7 @@ Suspende temporalmente un proveedor, dejándolo en `BLOCKED` con un motivo oblig
 
 Efectos verificados en el código: se permite desde `ACTIVE` o `INACTIVE`; no consulta Party Identity; guarda `block_reason`; registra `BLOCK_COMPANY_SUPPLIER` en Audit con el motivo; exige empresa `ACTIVE`. Clasificada como `HIGH_RISK`: pedir confirmación y el motivo al usuario.
 
-Antes necesita: la `version` actual ([API 3](#3-consultar-un-proveedor)) y el motivo escrito por el usuario.
+Antes necesita: el motivo escrito por el usuario; la `version` actual ([API 3](#3-consultar-un-proveedor)) es opcional.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -829,7 +830,7 @@ curl -X POST \
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
 | `block_reason` | string (1–500) | Sí | Motivo del bloqueo; se recortan espacios; queda visible en la ficha y en Audit | `Incumplimiento reiterado en los plazos de entrega` | Formulario (texto del usuario) |
-| `version` | integer ≥ 1 | Sí | Versión vigente del proveedor | `4` | `version` de la [API 3](#3-consultar-un-proveedor) (devuelve la ficha del proveedor; errores en §3) |
+| `version` | integer ≥ 1 | No | Versión vigente del proveedor; opcional: si se envía y no coincide → `409 VERSION_CONFLICT` | `4` | `version` de la [API 3](#3-consultar-un-proveedor) (devuelve la ficha del proveedor; errores en §3) |
 
 ### Respuesta exitosa
 
@@ -857,7 +858,7 @@ curl -X POST \
 |---|---|---|
 | `status` | `BLOCKED` | Mostrar el proveedor como bloqueado; la única acción disponible es desbloquear |
 | `block_reason` | string | Motivo para mostrar en la ficha |
-| `version` | integer | Valor que debe enviarse en la [API 9](#9-desbloquear-un-proveedor) |
+| `version` | integer | Valor que puede enviarse (opcional) en la [API 9](#9-desbloquear-un-proveedor) |
 
 ### Posibles errores
 
@@ -867,7 +868,7 @@ curl -X POST \
 | `409` | `COMMERCIAL_RELATIONSHIP.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer con la [API 3](#3-consultar-un-proveedor) y repetir |
 | `409` | `COMMERCIAL_RELATIONSHIP.INVALID_STATUS_TRANSITION` | El proveedor ya está `BLOCKED` | Refrescar la ficha |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden bloquear proveedores en ella |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `block_reason` vacío o > 500, `version` ausente o < 1, campo desconocido | Pedir el motivo y corregir |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `block_reason` ausente, vacío o > 500, `version` < 1, campo desconocido | Pedir el motivo y corregir |
 | `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Sin permiso en Operational Context para consultar el acceso operativo | Pedir `perm:operational-context:application_users:read` |
 | `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Operational Context no responde | Reintentar más tarde |
 
@@ -883,7 +884,7 @@ Levanta el bloqueo de un proveedor `BLOCKED` y lo deja `ACTIVE` (aunque antes de
 
 Efectos verificados en el código: solo desde `BLOCKED`; antes de desbloquear vuelve a comprobar en Party Identity que la organización exista y esté `ACTIVE` (no revalida la persona de contacto); exige empresa `ACTIVE`; registra `UNBLOCK_COMPANY_SUPPLIER` en Audit.
 
-Antes necesita: la `version` actual ([API 3](#3-consultar-un-proveedor)) y `perm:party-identity:organization_identities:read` para la revalidación.
+Antes necesita: `perm:party-identity:organization_identities:read` para la revalidación; la `version` actual ([API 3](#3-consultar-un-proveedor)) es opcional (el cuerpo puede ser `{}` o ninguno).
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -921,7 +922,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer ≥ 1 | Sí | Versión vigente del proveedor | `5` | `version` de la [API 3](#3-consultar-un-proveedor) (devuelve la ficha del proveedor; errores en §3) |
+| `version` | integer ≥ 1 | No | Versión vigente del proveedor; opcional: si se envía y no coincide → `409 VERSION_CONFLICT` | `5` | `version` de la [API 3](#3-consultar-un-proveedor) (devuelve la ficha del proveedor; errores en §3) |
 
 ### Respuesta exitosa
 
@@ -959,7 +960,7 @@ curl -X POST \
 | `409` | `COMMERCIAL_RELATIONSHIP.INVALID_STATUS_TRANSITION` | El proveedor no está `BLOCKED` | Refrescar la ficha |
 | `422` | `COMMERCIAL_RELATIONSHIP.ORGANIZATION_IDENTITY_NOT_FOUND` / `ORGANIZATION_IDENTITY_INACTIVE` | La organización ya no existe o está `INACTIVE` en Party Identity | Informar; reactivar primero la identidad (PI 14) |
 | `422` | `COMMERCIAL_RELATIONSHIP.COMPANY_INACTIVE` | La empresa está `INACTIVE` | No se pueden desbloquear proveedores en ella |
-| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` ausente, < 1 o campo desconocido | Corregir la solicitud |
+| `422` | `COMMERCIAL_RELATIONSHIP.VALIDATION_ERROR` | `version` < 1 o campo desconocido | Corregir la solicitud |
 | `403` | `COMMERCIAL_RELATIONSHIP.PARTY_IDENTITY_ACCESS_DENIED` | Sin permiso en Party Identity para revalidar la organización | Pedir `perm:party-identity:organization_identities:read` |
 | `403` | `COMMERCIAL_RELATIONSHIP.OPERATIONAL_ACCESS_DENIED` | Sin permiso en Operational Context para consultar el acceso operativo | Pedir `perm:operational-context:application_users:read` |
 | `503` | `COMMERCIAL_RELATIONSHIP.DEPENDENCY_UNAVAILABLE` | Party Identity u Operational Context no responden | Reintentar más tarde; nada se guardó |

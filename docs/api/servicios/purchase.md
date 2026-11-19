@@ -54,7 +54,8 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>` 
 | Concepto | Detalle |
 |---|---|
 | Estados | `status`: `DRAFT`, `CONFIRMED`, `CANCELLED`. `receipt_status` (solo desde la confirmación): `PENDING` o `RECEIVED`. Una compra `CONFIRMED` con `receipt_status: PENDING` está **pendiente de recepción**: no es mercancía recibida |
-| `version` | Concurrencia optimista; toda escritura la exige; `409 PURCHASE.VERSION_CONFLICT` si no coincide |
+| `version` | Concurrencia optimista **opcional** en toda escritura (cuerpos de `PUT`, alta de línea, confirmación, recepción, anulación, secuencias y el `?version=` del `DELETE` de línea): si se envía y no coincide → `409 PURCHASE.VERSION_CONFLICT`; si no se envía, se aplica sobre lo vigente. La confirmación y la (in)activación de secuencias aceptan `{}` o ningún cuerpo |
+| `PUT` parcial | El cuerpo de `PUT` (cabecera, línea, secuencia) lleva solo los campos que cambian; un campo ausente no cambia; `null` borra un campo opcional y en uno obligatorio responde `422`. Cuerpo vacío `{}` o solo con `version` → `422`; campo desconocido → `422`. Las validaciones se hacen sobre el registro combinado; si nada cambia, no se escribe ni sube la versión |
 | Costos | El comprador envía `unit_cost` por presentación (cadena decimal, > 0). El servicio calcula `base_quantity` (`quantity × base_quantity_factor_snapshot`) e `inventory_unit_cost` (costo por unidad base), que es el que recibe Inventory |
 | Impuesto | `tax_amount` lo calcula el servidor con la tasa de la línea: por defecto la `purchase_tax_percentage` del producto empresarial (`tax_percentage_source: PRODUCT_DEFAULT`); con `perm:purchase:purchase_line_taxes:override` se puede enviar `tax_percentage` (0 a 100, hasta 4 decimales; `LINE_OVERRIDE`). Enviar `tax_amount` produce `422 UNKNOWN_FIELD` |
 | Descuentos | `discount_amount` por línea (≥ 0, 2 decimales) |
@@ -63,6 +64,15 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>` 
 | Idempotencia | Confirmación, recepción y anulación exigen `Idempotency-Key` ([Primeros pasos §6](../guias/primeros-pasos.md#6-idempotencia-en-operaciones-de-negocio)) |
 | Numeración | Al confirmar se asigna `number` desde la secuencia activa de la sucursal o, si no hay, de la empresa |
 | Política de ganancia | Al confirmar, cada presentación debe tener una política de ganancia aplicable en Commercial Relationship; si no, `409 PRICING_POLICY_NOT_CONFIGURED`. Tras recibir, Purchase envía los costos reales a Commercial Relationship para la actualización automática de precios |
+
+Ejemplo de `PUT` parcial (solo cambia `observations`, sin `version`):
+
+```bash
+curl -sS -X PUT 'https://sio-purchase-dev.onrender.com/api/v1/companies/550e8400-e29b-41d4-a716-446655440000/purchases/4b5c6d7e-8f9a-4b0c-8d1e-2f3a4b5c6d7e' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"observations": "Entrega en bodega"}'
+```
 
 ## Tabla de endpoints
 
@@ -523,7 +533,7 @@ Ejemplo de respuesta `200` (`PurchaseResponse`; valores ilustrativos):
 
 ### 6. `PUT /companies/{company_id}/purchases/{purchase_id}`
 
-`WRITE`, solo en `DRAFT`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases/{purchase_id}`; permiso `perm:purchase:purchases:update`. Cuerpo (`PurchaseUpdateIn`): los campos de cabecera de la operación 3 (`branch_id`, `company_supplier_id`, `operation_date`, `payment_method_id` obligatorios; `supplier_payment_condition_id`, `promised_delivery_at`, `supplier_document_number`, `observations` opcionales) **más `version`**.
+`WRITE`, solo en `DRAFT`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases/{purchase_id}`; permiso `perm:purchase:purchases:update`. Cuerpo (`PurchaseUpdateIn`, parcial; todos opcionales): los campos de cabecera de la operación 3 (`branch_id`, `company_supplier_id`, `operation_date`, `payment_method_id` no admiten `null`; `supplier_payment_condition_id`, `promised_delivery_at`, `supplier_document_number`, `observations` se borran con `null`) y `version` (opcional).
 
 ```json
 {
@@ -641,7 +651,7 @@ Ejemplo de respuesta `200` (`PurchaseResponse`; valores ilustrativos):
 
 ### 7. `POST /companies/{company_id}/purchases/{purchase_id}/details`
 
-`WRITE`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases/{purchase_id}/details`; permiso `perm:purchase:purchase_details:create` (+ `override` si trae `tax_percentage`). Cuerpo (`LineCreateIn`): los campos de `lines[]` de la operación 3 **más `version`**.
+`WRITE`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases/{purchase_id}/details`; permiso `perm:purchase:purchase_details:create` (+ `override` si trae `tax_percentage`). Cuerpo (`LineCreateIn`): los campos de `lines[]` de la operación 3 y `version` de la compra (opcional).
 
 ```json
 {
@@ -804,7 +814,7 @@ Ejemplo de respuesta `200` (`None`; valores ilustrativos):
 
 ### 9. `PUT /companies/{company_id}/purchases/{purchase_id}/details/{detail_id}`
 
-`WRITE`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases/{purchase_id}/details/{detail_id}`; permiso `perm:purchase:purchase_details:update` (+ `override`). Cuerpo: `LineCreateIn`. Reemplaza la línea y recalcula el impuesto con la tasa vigente. 
+`WRITE`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases/{purchase_id}/details/{detail_id}`; permiso `perm:purchase:purchase_details:update` (+ `override`). Cuerpo (`LineUpdateIn`, parcial; todos opcionales): `company_product_id`, `company_product_presentation_id`, `quantity`, `unit_cost`, `discount_amount` (no admiten `null`), `supplier_product_id`, `tax_percentage` y `version` (opcional). Cambia solo los campos enviados y recalcula el impuesto con la tasa vigente. 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -905,7 +915,7 @@ Ejemplo de respuesta `200` (`PurchaseResponse`; valores ilustrativos):
 
 ### 10. `DELETE /companies/{company_id}/purchases/{purchase_id}/details/{detail_id}`
 
-`WRITE`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases/{purchase_id}/details/{detail_id}?version=3`; permiso `perm:purchase:purchase_details:delete`. `version` como parámetro de consulta (≥ 1). 
+`WRITE`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchases/{purchase_id}/details/{detail_id}?version=3`; permiso `perm:purchase:purchase_details:delete`. `version` como parámetro de consulta (≥ 1), opcional: si se envía y no coincide → `409 VERSION_CONFLICT`. 
 
 Ejemplo de solicitud (sin cuerpo):
 
@@ -1003,7 +1013,7 @@ Ejemplo de respuesta `200` (`PurchaseResponse`; valores ilustrativos):
 | Permiso | `perm:purchase:purchases:update` |
 | Cabeceras | `Authorization`, `Content-Type: application/json`, **`Idempotency-Key`** |
 
-Cuerpo (`VersionIn`): `{"version": 3}`.
+Cuerpo (`VersionIn`): `{"version": 3}`, con `version` opcional; se acepta `{}` o ningún cuerpo.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1111,7 +1121,7 @@ Errores propios: `422 PURCHASE_WITHOUT_LINES`; `409 PURCHASE_TAX_NOT_CONFIGURED`
 | Permiso | `perm:purchase:purchases:update` |
 | Cabeceras | `Authorization`, `Content-Type: application/json`, **`Idempotency-Key`** |
 
-Cuerpo (`ReceiptIn`): `{"version": 4, "full_receipt_confirmed": true}`. `full_receipt_confirmed` declara que se recibió **toda** la compra; no hay recepciones parciales ni por línea. Enviar `false` se rechaza con `422 FULL_RECEIPT_NOT_CONFIRMED` (verificado en el código).
+Cuerpo (`ReceiptIn`): `{"version": 4, "full_receipt_confirmed": true}`; `version` es opcional y `full_receipt_confirmed` obligatorio. `full_receipt_confirmed` declara que se recibió **toda** la compra; no hay recepciones parciales ni por línea. Enviar `false` se rechaza con `422 FULL_RECEIPT_NOT_CONFIRMED` (verificado en el código).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1207,7 +1217,7 @@ Ejemplo de respuesta `200` (`PurchaseResponse`; valores ilustrativos):
 }
 ```
 
-Reglas: la compra debe estar `CONFIRMED`, no recibida, sin operación en curso y con la versión vigente; los costos congelados deben ser positivos. No se revalidan proveedor ni productos (Inventory valida los productos al aplicar la entrada). Se registra la operación `RECEIVE` `PENDING` cuyo `id` es la clave de la entrada en Inventory; con la entrada aplicada se completa. Si Inventory no responde, la operación queda `PENDING` y la respuesta es `503` con el `operation_id`: reintente con la **misma** `Idempotency-Key` o consulte la operación (14/15); nunca habrá dos entradas. Tras la recepción, en la misma transacción se registran los costos reales para la actualización automática de precios en Commercial Relationship.
+Reglas: la compra debe estar `CONFIRMED`, no recibida, sin operación en curso y, si se envía `version`, con la versión vigente; los costos congelados deben ser positivos. No se revalidan proveedor ni productos (Inventory valida los productos al aplicar la entrada). Se registra la operación `RECEIVE` `PENDING` cuyo `id` es la clave de la entrada en Inventory; con la entrada aplicada se completa. Si Inventory no responde, la operación queda `PENDING` y la respuesta es `503` con el `operation_id`: reintente con la **misma** `Idempotency-Key` o consulte la operación (14/15); nunca habrá dos entradas. Tras la recepción, en la misma transacción se registran los costos reales para la actualización automática de precios en Commercial Relationship.
 
 Errores: `409 INVALID_STATUS` (no confirmada o ya recibida), `409 INVENTORY_REJECTED`, `409 OPERATION_IN_PROGRESS`, `409 VERSION_CONFLICT`, `409 IDEMPOTENCY_KEY_CONFLICT`, `403 BRANCH_ACCESS_DENIED`, `503`.
 
@@ -1220,7 +1230,7 @@ Errores: `409 INVALID_STATUS` (no confirmada o ya recibida), `409 INVENTORY_REJE
 | Permiso | `perm:purchase:purchases:delete` |
 | Cabeceras | `Authorization`, `Content-Type: application/json`, **`Idempotency-Key`** |
 
-Cuerpo (`CancelIn`): `version` (≥ 1) y `reason` (obligatorio, no vacío, ≤ 1000).
+Cuerpo (`CancelIn`): `version` (≥ 1, opcional) y `reason` (obligatorio, no vacío, ≤ 1000).
 
 Reglas: `DRAFT` o `CONFIRMED` pendiente de recepción → `CANCELLED` en una transacción local sin Inventory (conserva el número si lo tiene). `CONFIRMED` recibida → operación `CANCEL` `PENDING`, reverso exacto de `inventory_operation_id` y después `CANCELLED` (conserva número y datos de recepción); si el reverso falla, `FAILED` y la compra sigue `CONFIRMED`; si la mercancía ya se consumió, `409 INVENTORY_ALREADY_CONSUMED`. No revalida proveedor ni productos. Errores: `422 REASON_REQUIRED`, `409 INVALID_STATUS` (ya anulada), `VERSION_CONFLICT`, `OPERATION_IN_PROGRESS`, `IDEMPOTENCY_KEY_CONFLICT`, `INVENTORY_REJECTED`, `403`, `404`, `503`.
 
@@ -1583,7 +1593,7 @@ Ejemplo de respuesta `200` (`SequenceResponse`; valores ilustrativos):
 
 ### 21. `PUT /companies/{company_id}/purchase-sequences/{sequence_id}`
 
-`WRITE`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchase-sequences/{sequence_id}`; permiso `perm:purchase:purchase_sequences:update`. Cuerpo (`SequenceUpdateIn`): campos de la operación 18 **más `version`**. Tras el primer número asignado, el formato es inmutable (`409 SEQUENCE_IN_USE`); solo `maximum_number` puede cambiar sin quedar por debajo de un contador.
+`WRITE`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchase-sequences/{sequence_id}`; permiso `perm:purchase:purchase_sequences:update`. Cuerpo (`SequenceUpdateIn`, parcial): campos de la operación 18, todos opcionales (`series_code`, `prefix`, `separator`, `initial_number`, `number_length`, `reset_policy` no admiten `null`), y `version` (opcional). Tras el primer número asignado, el formato es inmutable (`409 SEQUENCE_IN_USE`); solo `maximum_number` puede cambiar sin quedar por debajo de un contador.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1637,7 +1647,7 @@ Ejemplo de respuesta `200` (`SequenceResponse`; valores ilustrativos):
 
 ### 22. `POST /companies/{company_id}/purchase-sequences/{sequence_id}/deactivate`
 
-`HIGH_RISK` (sin secuencia activa, las confirmaciones fallan con `409 SEQUENCE_NOT_CONFIGURED`). URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchase-sequences/{sequence_id}/deactivate`; cuerpo `{"version": 1}`; respuesta `200` con `is_active: false`.
+`HIGH_RISK` (sin secuencia activa, las confirmaciones fallan con `409 SEQUENCE_NOT_CONFIGURED`). URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchase-sequences/{sequence_id}/deactivate`; cuerpo `{"version": 1}` (`version` opcional; se acepta `{}` o ningún cuerpo); respuesta `200` con `is_active: false`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1683,7 +1693,7 @@ Ejemplo de respuesta `200` (`SequenceResponse`; valores ilustrativos):
 
 ### 23. `POST /companies/{company_id}/purchase-sequences/{sequence_id}/reactivate`
 
-`WRITE`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchase-sequences/{sequence_id}/reactivate`; cuerpo `{"version": 2}`; respuesta `200` con `is_active: true`; `409 SEQUENCE_ALREADY_ACTIVE` si ya hay otra activa en el mismo alcance.
+`WRITE`. URL `https://sio-purchase-dev.onrender.com/api/v1/companies/{company_id}/purchase-sequences/{sequence_id}/reactivate`; cuerpo `{"version": 2}` (`version` opcional; se acepta `{}` o ningún cuerpo); respuesta `200` con `is_active: true`; `409 SEQUENCE_ALREADY_ACTIVE` si ya hay otra activa en el mismo alcance.
 
 Ejemplo de solicitud (valores ilustrativos):
 

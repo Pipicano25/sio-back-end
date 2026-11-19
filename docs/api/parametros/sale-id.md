@@ -120,7 +120,7 @@ Respuesta `201` (`SaleResponse` con `lines`; valores ilustrativos):
 }
 ```
 
-**Campo exacto:** `id`. Guárdalo junto con `version` (`1` al crear), que es el valor que se envía en la siguiente escritura.
+**Campo exacto:** `id`. Guárdalo junto con `version` (`1` al crear), que puedes enviar (opcional) en la siguiente escritura para detectar cambios simultáneos.
 
 **Posibles errores de esta API:**
 
@@ -205,7 +205,7 @@ Respuesta `200` (`SalePage`; cada elemento es un `SaleResponse` sin `lines`; val
 }
 ```
 
-**Campo exacto:** `items[].id`. `number` es el número legible del documento (`null` mientras la venta está en `DRAFT`), `version` el valor que debe enviarse en la siguiente escritura y `status` el estado actual.
+**Campo exacto:** `items[].id`. `number` es el número legible del documento (`null` mientras la venta está en `DRAFT`), `version` el valor que puede enviarse (opcional) en la siguiente escritura y `status` el estado actual.
 
 **Posibles errores de esta API:**
 
@@ -221,9 +221,9 @@ Respuesta `200` (`SalePage`; cada elemento es un `SaleResponse` sin `lines`; val
 ## Cómo usarlo después
 
 - Consultar la venta con líneas y totales: [API 10 de Ventas](../principales/ventas.md#10-consultar-la-venta-con-sus-líneas-y-totales).
-- Agregar, modificar o eliminar líneas, siempre con `version`: [API 7](../principales/ventas.md#7-agregar-una-línea-a-la-venta), [API 8](../principales/ventas.md#8-modificar-una-línea-de-la-venta) y [API 9 de Ventas](../principales/ventas.md#9-eliminar-una-línea-de-la-venta).
+- Agregar, modificar o eliminar líneas, con `version` opcional: [API 7](../principales/ventas.md#7-agregar-una-línea-a-la-venta), [API 8](../principales/ventas.md#8-modificar-una-línea-de-la-venta) y [API 9 de Ventas](../principales/ventas.md#9-eliminar-una-línea-de-la-venta).
 - Verificar existencias antes de confirmar: [API 11 de Ventas](../principales/ventas.md#11-verificar-la-disponibilidad-antes-de-confirmar).
-- Confirmar con `{"version": n}` y el encabezado `Idempotency-Key`: [API 12 de Ventas](../principales/ventas.md#12-confirmar-la-venta). Anular con `version` y `reason`: [API 14 de Ventas](../principales/ventas.md#14-anular-una-venta).
+- Confirmar con `{"version": n}` (`version` opcional; también `{}`) y el encabezado `Idempotency-Key`: [API 12 de Ventas](../principales/ventas.md#12-confirmar-la-venta). Anular con `reason` (obligatorio) y `version` (opcional): [API 14 de Ventas](../principales/ventas.md#14-anular-una-venta).
 - Historial de la venta: `{entity_id}` de la [API 17 de Administración empresarial](../principales/administracion-empresarial.md#17-consultar-el-historial-de-una-venta-una-compra-o-un-producto) con `entity_type=Sale`.
 - Movimientos de inventario de la venta: filtro `origin_id` (con `origin_type=SALE`) del kardex de un producto en la sucursal de la venta, `GET https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/branches/{branch_id}/kardex/{company_product_id}?origin_type=SALE&origin_id={sale_id}` (permiso `perm:inventory:movements:read`; ficha [Inventory 10](../servicios/inventory.md#10-get-companiescompany_idbranchesbranch_idkardexcompany_product_id); guía principal [Inventario](../principales/inventario.md)).
 

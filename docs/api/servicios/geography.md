@@ -41,10 +41,20 @@ Global: todos los usuarios ven los mismos registros. Las escrituras afectan a to
 
 - Listas paginadas con `page` (≥ 1) y `page_size` (1–100, por defecto 20) y la envoltura `items`, `page`, `page_size`, `total_records`, `total_pages`.
 - `status` es `ACTIVE` o `INACTIVE`. Sin filtro, las listas devuelven ambos estados. **No existe** operación de inactivación separada: el estado se cambia con `PUT`.
-- `PUT` es reemplazo completo y exige `version` (≥ 1), la última leída. Versión desactualizada → `409` `{"detail": "El registro fue modificado por otra operación. Consulte nuevamente antes de actualizar."}`.
+- `PUT` es **parcial**: el cuerpo lleva solo los campos que cambian; un campo ausente no cambia; `null` borra un campo opcional y en uno obligatorio responde `422`. Cuerpo vacío `{}`, solo con `version` o con campos desconocidos → `422`. Las validaciones (unicidad, jerarquía) se aplican sobre el registro combinado; si nada cambia, no se escribe ni sube la versión.
+- `version` (≥ 1) es **opcional**: si se envía y no coincide con la vigente → `409` `{"detail": "El registro fue modificado por otra operación. Consulte nuevamente antes de actualizar."}`; si no se envía, el cambio se aplica sobre lo vigente. Enviarla sirve para detectar cambios simultáneos.
 - `DELETE` es **borrado físico** (`204`). Si existen registros relacionados (divisiones o ciudades del país, ciudades de la división, o referencias desde otros servicios no comprobables aquí), responde `409` con `detail` «No se puede eliminar … porque existen registros relacionados.».
 - `422` usa el formato estándar de FastAPI (`detail` como lista con `loc`, `msg`, `type`).
 - Todas las respuestas de recurso incluyen `created_by`, `updated_by` (`sub` del autor), `created_at`, `updated_at` y `version`.
+
+Ejemplo de `PUT` parcial (solo cambia `name`, sin `version`):
+
+```bash
+curl -sS -X PUT 'https://sio-geography-dev.onrender.com/global-countries/c0a80101-0000-4000-8000-000000000001' \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"name": "Colombia"}'
+```
 
 ## Tabla de endpoints
 
@@ -55,17 +65,17 @@ Global: todos los usuarios ven los mismos registros. Las escrituras afectan a to
 | 3 | `GET` | `/global-countries` | Listar países | `perm:geography:global_countries:read` | `READ` | [Ver](#3-get-global-countries) |
 | 4 | `POST` | `/global-countries` | Crear país | `perm:geography:global_countries:create` | `WRITE` | [Ver](#4-post-global-countries) |
 | 5 | `GET` | `/global-countries/{country_id}` | Consultar país | `perm:geography:global_countries:read` | `READ` | [Ver](#5-get-global-countriescountry_id) |
-| 6 | `PUT` | `/global-countries/{country_id}` | Reemplazar país | `perm:geography:global_countries:update` | `WRITE` | [Ver](#6-put-global-countriescountry_id) |
+| 6 | `PUT` | `/global-countries/{country_id}` | Actualizar país (parcial) | `perm:geography:global_countries:update` | `WRITE` | [Ver](#6-put-global-countriescountry_id) |
 | 7 | `DELETE` | `/global-countries/{country_id}` | Eliminar país | `perm:geography:global_countries:delete` | `HIGH_RISK` | [Ver](#7-delete-global-countriescountry_id) |
 | 8 | `GET` | `/global-administrative-divisions` | Listar divisiones | `perm:geography:global_administrative_divisions:read` | `READ` | [Ver](#8-get-global-administrative-divisions) |
 | 9 | `POST` | `/global-administrative-divisions` | Crear división | `perm:geography:global_administrative_divisions:create` | `WRITE` | [Ver](#9-post-global-administrative-divisions) |
 | 10 | `GET` | `/global-administrative-divisions/{division_id}` | Consultar división | `perm:geography:global_administrative_divisions:read` | `READ` | [Ver](#10-get-global-administrative-divisionsdivision_id) |
-| 11 | `PUT` | `/global-administrative-divisions/{division_id}` | Reemplazar división | `perm:geography:global_administrative_divisions:update` | `WRITE` | [Ver](#11-put-global-administrative-divisionsdivision_id) |
+| 11 | `PUT` | `/global-administrative-divisions/{division_id}` | Actualizar división (parcial) | `perm:geography:global_administrative_divisions:update` | `WRITE` | [Ver](#11-put-global-administrative-divisionsdivision_id) |
 | 12 | `DELETE` | `/global-administrative-divisions/{division_id}` | Eliminar división | `perm:geography:global_administrative_divisions:delete` | `HIGH_RISK` | [Ver](#12-delete-global-administrative-divisionsdivision_id) |
 | 13 | `GET` | `/global-cities` | Listar ciudades | `perm:geography:global_cities:read` | `READ` | [Ver](#13-get-global-cities) |
 | 14 | `POST` | `/global-cities` | Crear ciudad | `perm:geography:global_cities:create` | `WRITE` | [Ver](#14-post-global-cities) |
 | 15 | `GET` | `/global-cities/{city_id}` | Consultar ciudad | `perm:geography:global_cities:read` | `READ` | [Ver](#15-get-global-citiescity_id) |
-| 16 | `PUT` | `/global-cities/{city_id}` | Reemplazar ciudad | `perm:geography:global_cities:update` | `WRITE` | [Ver](#16-put-global-citiescity_id) |
+| 16 | `PUT` | `/global-cities/{city_id}` | Actualizar ciudad (parcial) | `perm:geography:global_cities:update` | `WRITE` | [Ver](#16-put-global-citiescity_id) |
 | 17 | `DELETE` | `/global-cities/{city_id}` | Eliminar ciudad | `perm:geography:global_cities:delete` | `HIGH_RISK` | [Ver](#17-delete-global-citiescity_id) |
 
 ## Objetos
@@ -224,7 +234,7 @@ Ejemplo de respuesta `200` (`GlobalCountryResponse`; valores ilustrativos):
 
 ### 6. `PUT /global-countries/{country_id}`
 
-`WRITE`. URL `https://sio-geography-dev.onrender.com/global-countries/{country_id}`; permiso `perm:geography:global_countries:update`. Cuerpo (`GlobalCountryUpdate`): los mismos campos de la operación 4 **más `version`** (integer ≥ 1, obligatorio). Reemplazo completo, incluido `status`.
+`WRITE`. URL `https://sio-geography-dev.onrender.com/global-countries/{country_id}`; permiso `perm:geography:global_countries:update`. Cuerpo (`GlobalCountryUpdate`, parcial): los mismos campos de la operación 4 (`iso2_code`, `iso3_code`, `name`, `phone_prefix`, `status`), todos opcionales; `iso2_code`, `iso3_code`, `name` y `status` no admiten `null`. `version` (integer ≥ 1) es opcional. El ejemplo envía el registro completo, lo cual también es válido.
 
 ```json
 {
@@ -253,7 +263,7 @@ curl -sS -X PUT 'https://sio-geography-dev.onrender.com/global-countries/c0a8010
   }'
 ```
 
-Respuestas: `200` con el objeto (`version` incrementada); `404`; `409` por versión desactualizada o códigos ISO duplicados; `422`. Efecto: cambiar `status` a `INACTIVE` deja el país no elegible en los servicios que validan ubicaciones activas (Operational Context responde `422 LOCATION_INACTIVE` al crear o editar empresas y sucursales con él).
+Respuestas: `200` con el objeto (`version` incrementada); `404`; `409` por `version` enviada desactualizada o códigos ISO duplicados; `422`. Efecto: cambiar `status` a `INACTIVE` deja el país no elegible en los servicios que validan ubicaciones activas (Operational Context responde `422 LOCATION_INACTIVE` al crear o editar empresas y sucursales con él).
 
 Ejemplo de respuesta `200` (`GlobalCountryResponse`; valores ilustrativos):
 
@@ -434,7 +444,7 @@ Ejemplo de respuesta `200` (`GlobalAdministrativeDivisionResponse`; valores ilus
 
 ### 11. `PUT /global-administrative-divisions/{division_id}`
 
-`WRITE`. URL `https://sio-geography-dev.onrender.com/global-administrative-divisions/{division_id}`; permiso `…update`. Cuerpo (`GlobalAdministrativeDivisionUpdate`): los campos de la operación 9 **más `version`** (≥ 1). Reglas adicionales: una división no puede ser su propia superior (`409` «Una división administrativa no puede ser su propia división superior…»). Respuestas: `200`; `404`; `409` (versión, padre inválido, integridad); `422`.
+`WRITE`. URL `https://sio-geography-dev.onrender.com/global-administrative-divisions/{division_id}`; permiso `…update`. Cuerpo (`GlobalAdministrativeDivisionUpdate`, parcial): los campos de la operación 9, todos opcionales (los obligatorios al crear no admiten `null`), y `version` (≥ 1) opcional. Reglas adicionales: una división no puede ser su propia superior (`409` «Una división administrativa no puede ser su propia división superior…»). Respuestas: `200`; `404`; `409` (versión, padre inválido, integridad); `422`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -633,7 +643,7 @@ Ejemplo de respuesta `200` (`GlobalCityResponse`; valores ilustrativos):
 
 ### 16. `PUT /global-cities/{city_id}`
 
-`WRITE`. URL `https://sio-geography-dev.onrender.com/global-cities/{city_id}`; permiso `…update`. Cuerpo (`GlobalCityUpdate`): los campos de la operación 14 **más `version`** (≥ 1). Respuestas: `200`; `404`; `409` (versión, división inválida, integridad); `422`.
+`WRITE`. URL `https://sio-geography-dev.onrender.com/global-cities/{city_id}`; permiso `…update`. Cuerpo (`GlobalCityUpdate`, parcial): los campos de la operación 14, todos opcionales (los obligatorios al crear no admiten `null`), y `version` (≥ 1) opcional. Respuestas: `200`; `404`; `409` (versión, división inválida, integridad); `422`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -690,7 +700,7 @@ curl -sS -X DELETE 'https://sio-geography-dev.onrender.com/global-cities/c0a8010
 |---|---|---|
 | `401` / `403` `{"detail": ...}` | Sin token o sin permiso | Autenticar; ocultar acciones de escritura a perfiles sin permiso |
 | `404` | UUID inexistente | Revisar el identificador |
-| `409` «El registro fue modificado por otra operación…» | `version` desactualizada | Recargar y repetir |
+| `409` «El registro fue modificado por otra operación…» | `version` enviada desactualizada | Recargar y repetir, o enviar sin `version` |
 | `409` «Ya existe un país con alguno de los códigos ISO indicados.» | ISO2 o ISO3 duplicado | Corregir códigos |
 | `409` «…debe pertenecer al mismo país…» | División o ciudad con padre de otro país | Corregir jerarquía |
 | `409` «No se puede eliminar … registros relacionados.» | Borrado con hijos | Inactivar en lugar de borrar |

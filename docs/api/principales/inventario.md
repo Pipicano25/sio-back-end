@@ -46,7 +46,8 @@ Convenciones de todo el módulo:
 - **Costeo FIFO.** Cada entrada abre una capa de costo y las salidas consumen primero las capas más antiguas. `average_unit_cost` e `inventory_value` se calculan sobre las capas abiertas; `has_unknown_cost: true` indica que hay unidades sin costo conocido.
 - **Alcance.** Las lecturas exigen membresía `ACTIVE` en la empresa, sin asignación a la sucursal; sin membresía la respuesta es `404 …NOT_FOUND`, igual que si la empresa no existiera. Los ajustes y conteos exigen además un **usuario humano** (un token de cuenta de servicio recibe `403 INVENTORY.FORBIDDEN`) con asignación `ACTIVE` a la sucursal en una sucursal y empresa activas; si falta, `403 INVENTORY.BRANCH_ACCESS_DENIED`. Una sucursal de otra empresa responde `404 INVENTORY.NOT_FOUND`. Las políticas de mínimo exigen usuario humano y membresía.
 - **Idempotencia.** Los ajustes llevan `adjustment_key` y la finalización de conteos `completion_key`: UUID que genera el frontend, uno por operación. Repetir la llamada con la misma clave y el mismo cuerpo devuelve el resultado original sin duplicar movimientos; la misma clave con otro cuerpo responde `409 INVENTORY.OPERATION_KEY_CONFLICT`.
-- **Control de versión.** Iniciar, completar y cancelar un conteo envían la `version` actual; si otra persona lo cambió antes, la API responde `409 INVENTORY.VERSION_CONFLICT` y el frontend debe volver a leer el conteo y repetir con la nueva `version`.
+- **Control de versión.** Al iniciar, completar y cancelar un conteo (y en las escrituras de políticas) `version` es **opcional**: si se envía y otra persona cambió el registro antes, la API responde `409 INVENTORY.VERSION_CONFLICT` y el frontend debe volver a leer el conteo y repetir; si no se envía, se aplica sobre lo vigente. Enviarla se recomienda para detectar cambios simultáneos. Iniciar un conteo acepta `{}` o ningún cuerpo.
+- **`PUT` parcial.** Los `PUT` de políticas llevan solo los campos que cambian: un campo ausente no cambia, `null` borra un campo opcional y en uno obligatorio responde `422`; un cuerpo vacío `{}` o solo con `version` responde `422`. Si nada cambia, no se escribe ni sube la versión.
 - **Paginación.** Inventory pagina con `page` (desde `1`) y `page_size` (`1` a `100`, por defecto `20`) y responde `items`, `page`, `page_size`, `total_records` y `total_pages`. Product Inventory Query pagina por cursor: `page_size` de `1` a `20` y `cursor` con el `next_cursor` de la página anterior; ver la [API 1](#1-buscar-productos-con-precio-y-existencias).
 - Las escrituras quedan registradas en [Audit](../servicios/audit.md) con las acciones `CREATE_INVENTORY_ADJUSTMENT` (entidad `InventoryAdjustment`), `START_INVENTORY_COUNT`, `COMPLETE_INVENTORY_COUNT` y `CANCEL_INVENTORY_COUNT` (entidad `InventoryCount`) y `CREATE_INVENTORY_POLICY` (entidad `InventoryPolicy`); se consultan con la [API 16 de Administración empresarial](administracion-empresarial.md#16-consultar-la-trazabilidad-de-la-empresa-auditoría) (lista los eventos de auditoría de la empresa; sus errores están en esa sección).
 
@@ -1415,7 +1416,7 @@ curl -X POST \
 |---|---|---|
 | `id` | UUID | El `count_id` que se usa en las API 12 a 15 y 17 |
 | `status` | `DRAFT` | Estado inicial |
-| `version` | integer | `1`; se envía al iniciar o cancelar |
+| `version` | integer | `1`; puede enviarse (opcional) al iniciar o cancelar |
 | `started_by_user_id` | UUID | Usuario operativo que creó el conteo |
 | `started_at`, `completed_at`, `cancelled_at` | date-time \| null | `null` hasta la transición correspondiente |
 | `details`, `adjustments` | lista | Vacías al crear |
@@ -1440,9 +1441,9 @@ curl -X POST \
 
 Pasa el conteo de `DRAFT` a `IN_PROGRESS`; desde ese momento se registran las cantidades contadas ([API 13](#13-registrar-la-cantidad-contada-de-un-producto)).
 
-Efectos verificados en el código: comprueba primero la `version` (`409 VERSION_CONFLICT`) y luego que el conteo esté en `DRAFT` (`409 INVALID_COUNT_TRANSITION`). Solo puede haber **un conteo en curso por sucursal** (`409 COUNT_ALREADY_IN_PROGRESS`). Registra `started_at`, incrementa `version` y registra `START_INVENTORY_COUNT` en Audit sobre la entidad `InventoryCount`.
+Efectos verificados en el código: comprueba primero la `version`, si se envió (`409 VERSION_CONFLICT`), y luego que el conteo esté en `DRAFT` (`409 INVALID_COUNT_TRANSITION`). Solo puede haber **un conteo en curso por sucursal** (`409 COUNT_ALREADY_IN_PROGRESS`). Registra `started_at`, incrementa `version` y registra `START_INVENTORY_COUNT` en Audit sobre la entidad `InventoryCount`.
 
-Antes necesita: el `count_id` y la `version` vigente del conteo ([API 11](#11-crear-un-conteo-físico) o [API 17](#17-consultar-un-conteo)).
+Antes necesita: el `count_id` y, opcionalmente, la `version` vigente del conteo ([API 11](#11-crear-un-conteo-físico) o [API 17](#17-consultar-un-conteo)) para detectar cambios simultáneos.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1481,7 +1482,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `version` | integer | Sí | Versión vigente del conteo | `1` | `version` de la [API 11](#11-crear-un-conteo-físico) (crea el conteo; errores en §11) o de la [API 17](#17-consultar-un-conteo) (consulta el conteo; errores en §17) |
+| `version` | integer | No | Versión vigente del conteo | `1` | `version` de la [API 11](#11-crear-un-conteo-físico) (crea el conteo; errores en §11) o de la [API 17](#17-consultar-un-conteo) (consulta el conteo; errores en §17) |
 
 ### Respuesta exitosa
 
@@ -1516,7 +1517,7 @@ curl -X POST \
 |---|---|---|
 | `status` | `IN_PROGRESS` | Ya se pueden registrar cantidades |
 | `started_at` | date-time | Momento del inicio |
-| `version` | integer | Nueva versión; se envía al completar o cancelar |
+| `version` | integer | Nueva versión; puede enviarse (opcional) al completar o cancelar |
 
 ### Posibles errores
 
@@ -1527,10 +1528,10 @@ curl -X POST \
 | `403` | `INVENTORY.FORBIDDEN` | El token es de una cuenta de servicio: estas operaciones solo las ejecuta un usuario humano | Usar el token del usuario |
 | `403` | `INVENTORY.OPERATIONAL_ACCESS_DENIED` | El usuario no tiene permiso en Operational Context para consultar su acceso operativo | Pedir acceso al administrador indicando el `trace_id` |
 | `404` | `INVENTORY.NOT_FOUND` | El conteo no existe en la empresa | Volver a la lista de conteos |
-| `409` | `INVENTORY.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer con la [API 17](#17-consultar-un-conteo) y repetir |
+| `409` | `INVENTORY.VERSION_CONFLICT` | Se envió `version` y no es la vigente | Releer con la [API 17](#17-consultar-un-conteo) y repetir |
 | `409` | `INVENTORY.INVALID_COUNT_TRANSITION` | El conteo no está en `DRAFT` | Refrescar el conteo; mostrar su estado actual |
 | `409` | `INVENTORY.COUNT_ALREADY_IN_PROGRESS` | Ya hay otro conteo en curso en la sucursal | Abrir el conteo en curso ([API 16](#16-consultar-los-conteos) con `status=IN_PROGRESS`) o cancelarlo |
-| `422` | `INVENTORY.VALIDATION_ERROR` | `version` ausente o no entera, o campo desconocido | Corregir la solicitud |
+| `422` | `INVENTORY.VALIDATION_ERROR` | `version` no entera o campo desconocido | Corregir la solicitud |
 
 Ejemplo de `409` por conteo en curso:
 
@@ -1666,9 +1667,9 @@ Ejemplo de `409`:
 
 Cierra el conteo y aplica **todas** las diferencias registradas como ajustes, de una sola vez y todo o nada. Cada faltante genera un `NEGATIVE_ADJUSTMENT` y cada sobrante un `POSITIVE_ADJUSTMENT`, con el motivo «Diferencia del conteo físico»; los productos sin diferencia no generan movimiento.
 
-Efectos verificados en el código, en este orden: (1) idempotencia por `completion_key`: si la clave ya completó este conteo con la misma `version`, devuelve el conteo completado sin aplicar nada; si la clave pertenece a otra operación, `409 OPERATION_KEY_CONFLICT`; (2) acceso a la sucursal del conteo y moneda de la empresa; (3) bloqueo del conteo: `version` vigente (`409 VERSION_CONFLICT`) y estado `IN_PROGRESS` (`409 COUNT_NOT_IN_PROGRESS`); (4) el conteo debe tener al menos un producto (`422 COUNT_WITHOUT_DETAILS`); (5) aplica una operación de inventario de tipo `ADJUSTMENT` con origen `COUNT` y una línea por cada diferencia distinta de cero. Si algún faltante deja un saldo por debajo de cero (porque hubo ventas después de registrar la cantidad), responde `409 INSUFFICIENT_STOCK` y no aplica ninguna línea. Un sobrante sin `unit_cost` y sin capa previa con costo responde `422 UNIT_COST_REQUIRED` en el campo `details[<company_product_id>].unit_cost`. Si no hay diferencias, completa el conteo sin operación (`operation_id` `null`). Pasa a `COMPLETED`, incrementa `version` y registra `COMPLETE_INVENTORY_COUNT` en Audit sobre la entidad `InventoryCount`.
+Efectos verificados en el código, en este orden: (1) idempotencia por `completion_key`: si la clave ya completó este conteo con la misma `version`, devuelve el conteo completado sin aplicar nada; si la clave pertenece a otra operación, `409 OPERATION_KEY_CONFLICT`; (2) acceso a la sucursal del conteo y moneda de la empresa; (3) bloqueo del conteo: `version` vigente, si se envió (`409 VERSION_CONFLICT`) y estado `IN_PROGRESS` (`409 COUNT_NOT_IN_PROGRESS`); (4) el conteo debe tener al menos un producto (`422 COUNT_WITHOUT_DETAILS`); (5) aplica una operación de inventario de tipo `ADJUSTMENT` con origen `COUNT` y una línea por cada diferencia distinta de cero. Si algún faltante deja un saldo por debajo de cero (porque hubo ventas después de registrar la cantidad), responde `409 INSUFFICIENT_STOCK` y no aplica ninguna línea. Un sobrante sin `unit_cost` y sin capa previa con costo responde `422 UNIT_COST_REQUIRED` en el campo `details[<company_product_id>].unit_cost`. Si no hay diferencias, completa el conteo sin operación (`operation_id` `null`). Pasa a `COMPLETED`, incrementa `version` y registra `COMPLETE_INVENTORY_COUNT` en Audit sobre la entidad `InventoryCount`.
 
-Antes necesita: un conteo `IN_PROGRESS` con productos registrados ([API 13](#13-registrar-la-cantidad-contada-de-un-producto)) y su `version` vigente. El frontend genera un UUID nuevo para `completion_key` al pulsar «Completar» y lo reutiliza solo si reintenta.
+Antes necesita: un conteo `IN_PROGRESS` con productos registrados ([API 13](#13-registrar-la-cantidad-contada-de-un-producto)) y, opcionalmente, su `version` vigente. El frontend genera un UUID nuevo para `completion_key` al pulsar «Completar» y lo reutiliza solo si reintenta.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1710,7 +1711,7 @@ curl -X POST \
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
 | `completion_key` | UUID | Sí | Clave de idempotencia de la finalización | `4b5c6d7e-8f9a-4b0c-9d1e-2f3a4b5c6d7e` | Generada por el frontend (UUID v4) al pulsar «Completar» |
-| `version` | integer | Sí | Versión vigente del conteo | `2` | `version` de la [API 12](#12-iniciar-el-conteo) (inicia el conteo; errores en §12) o de la [API 17](#17-consultar-un-conteo) (consulta el conteo; errores en §17) |
+| `version` | integer | No | Versión vigente del conteo | `2` | `version` de la [API 12](#12-iniciar-el-conteo) (inicia el conteo; errores en §12) o de la [API 17](#17-consultar-un-conteo) (consulta el conteo; errores en §17) |
 
 ### Respuesta exitosa
 
@@ -1807,7 +1808,7 @@ curl -X POST \
 | `403` | `INVENTORY.FORBIDDEN` | El token es de una cuenta de servicio: estas operaciones solo las ejecuta un usuario humano | Usar el token del usuario |
 | `403` | `INVENTORY.OPERATIONAL_ACCESS_DENIED` | El usuario no tiene permiso en Operational Context para consultar su acceso operativo | Pedir acceso al administrador indicando el `trace_id` |
 | `404` | `INVENTORY.NOT_FOUND` | El conteo no existe en la empresa | Volver a la lista de conteos |
-| `409` | `INVENTORY.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer con la [API 17](#17-consultar-un-conteo) y repetir con una `completion_key` nueva |
+| `409` | `INVENTORY.VERSION_CONFLICT` | Se envió `version` y no es la vigente | Releer con la [API 17](#17-consultar-un-conteo) y repetir con una `completion_key` nueva |
 | `409` | `INVENTORY.COUNT_NOT_IN_PROGRESS` | El conteo no está en `IN_PROGRESS` | Refrescar el conteo |
 | `409` | `INVENTORY.INSUFFICIENT_STOCK` | Algún faltante deja el saldo por debajo de cero; `shortages` indica producto, disponible y pedido | Volver a registrar ese producto con la [API 13](#13-registrar-la-cantidad-contada-de-un-producto) (toma una foto nueva del saldo) y completar con una clave nueva; nada se aplicó |
 | `409` | `INVENTORY.OPERATION_KEY_CONFLICT` | La `completion_key` ya se usó en otra operación | Generar una clave nueva |
@@ -1837,9 +1838,9 @@ Ejemplo de `409` por versión:
 
 Cancela un conteo en `DRAFT` o `IN_PROGRESS` dejando el motivo. Las cantidades registradas se conservan como historia, pero **no** se aplica ningún ajuste ni cambia ningún saldo. Cancelar un conteo en curso libera la sucursal para iniciar otro.
 
-Efectos verificados en el código: comprueba la `version` (`409 VERSION_CONFLICT`) y luego el estado; desde `COMPLETED` o `CANCELLED` responde `409 INVALID_COUNT_TRANSITION`. Guarda `cancel_reason`, `cancelled_by_user_id` y `cancelled_at`, incrementa `version` y registra `CANCEL_INVENTORY_COUNT` en Audit sobre la entidad `InventoryCount`.
+Efectos verificados en el código: comprueba la `version`, si se envió (`409 VERSION_CONFLICT`), y luego el estado; desde `COMPLETED` o `CANCELLED` responde `409 INVALID_COUNT_TRANSITION`. Guarda `cancel_reason`, `cancelled_by_user_id` y `cancelled_at`, incrementa `version` y registra `CANCEL_INVENTORY_COUNT` en Audit sobre la entidad `InventoryCount`.
 
-Antes necesita: el `count_id` y su `version` vigente.
+Antes necesita: el `count_id` y, opcionalmente, su `version` vigente.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1881,7 +1882,7 @@ curl -X POST \
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
 | `reason` | string (1–2000) | Sí | Motivo de la cancelación | `Se repetirá el conteo con más personal` | Formulario |
-| `version` | integer | Sí | Versión vigente del conteo | `2` | `version` de la [API 17](#17-consultar-un-conteo) (consulta el conteo; errores en §17) |
+| `version` | integer | No | Versión vigente del conteo | `2` | `version` de la [API 17](#17-consultar-un-conteo) (consulta el conteo; errores en §17) |
 
 ### Respuesta exitosa
 
@@ -1928,9 +1929,9 @@ curl -X POST \
 | `403` | `INVENTORY.FORBIDDEN` | El token es de una cuenta de servicio: estas operaciones solo las ejecuta un usuario humano | Usar el token del usuario |
 | `403` | `INVENTORY.OPERATIONAL_ACCESS_DENIED` | El usuario no tiene permiso en Operational Context para consultar su acceso operativo | Pedir acceso al administrador indicando el `trace_id` |
 | `404` | `INVENTORY.NOT_FOUND` | El conteo no existe en la empresa | Volver a la lista de conteos |
-| `409` | `INVENTORY.VERSION_CONFLICT` | La `version` enviada no es la vigente | Releer con la [API 17](#17-consultar-un-conteo) y repetir |
+| `409` | `INVENTORY.VERSION_CONFLICT` | Se envió `version` y no es la vigente | Releer con la [API 17](#17-consultar-un-conteo) y repetir |
 | `409` | `INVENTORY.INVALID_COUNT_TRANSITION` | El conteo ya está `COMPLETED` o `CANCELLED` | Refrescar el conteo |
-| `422` | `INVENTORY.VALIDATION_ERROR` | `reason` vacío o > 2000 (`REASON_REQUIRED`), `version` ausente o campo desconocido | Corregir el formulario |
+| `422` | `INVENTORY.VALIDATION_ERROR` | `reason` vacío o > 2000 (`REASON_REQUIRED`), o campo desconocido | Corregir el formulario |
 
 ## 16. Consultar los conteos
 
@@ -2038,7 +2039,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 ### ¿Qué hace esta API?
 
-Devuelve un conteo con todos los productos registrados y, si está `COMPLETED`, los ajustes que generó. Es la pantalla de trabajo del conteo y la fuente de la `version` vigente para iniciar, completar o cancelar.
+Devuelve un conteo con todos los productos registrados y, si está `COMPLETED`, los ajustes que generó. Es la pantalla de trabajo del conteo y la fuente de la `version` vigente que puede enviarse (opcional) al iniciar, completar o cancelar.
 
 Efectos verificados en el código: `details[]` se ordena por `company_product_id`; `adjustments[]` solo trae elementos cuando el conteo está `COMPLETED` (vacío en los demás estados). No escribe nada.
 
