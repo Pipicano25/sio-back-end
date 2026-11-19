@@ -18,6 +18,7 @@ from purchase_service.api.identity import SERVICE, logger
 from purchase_service.api.openapi import READ_RESPONSES, TAG_PURCHASES, WRITE_RESPONSES
 from purchase_service.api.schemas.purchases import (
     LineCreateIn,
+    LineUpdateIn,
     PurchaseCreateIn,
     PurchaseDetailResponse,
     PurchasePage,
@@ -113,7 +114,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def update_purchase(
         company_id: UUID, purchase_id: UUID, body: PurchaseUpdateIn, actor: ActorDep, services: ServicesDep
     ) -> PurchaseResponse:
-        view = services.purchases().update_header(company_id, purchase_id, body.to_header(), body.version, actor)
+        view = services.purchases().update_header(company_id, purchase_id, body.changes(), body.version, actor)
         return PurchaseResponse.of(view)
 
     @router.post(
@@ -142,13 +143,13 @@ def build_router(auth: SIOAuth) -> APIRouter:
         company_id: UUID,
         purchase_id: UUID,
         detail_id: UUID,
-        body: LineCreateIn,
+        body: LineUpdateIn,
         request: Request,
         actor: ActorDep,
         services: ServicesDep,
     ) -> PurchaseResponse:
         require_override_if_requested(request, [body])
-        view = services.purchases().update_line(company_id, purchase_id, detail_id, body.to_data(), body.version, actor)
+        view = services.purchases().update_line(company_id, purchase_id, detail_id, body.changes(), body.version, actor)
         return PurchaseResponse.of(view)
 
     @router.delete(
@@ -162,9 +163,9 @@ def build_router(auth: SIOAuth) -> APIRouter:
         company_id: UUID,
         purchase_id: UUID,
         detail_id: UUID,
-        version: Annotated[int, Query(ge=1)],
         actor: ActorDep,
         services: ServicesDep,
+        version: Annotated[int | None, Query(ge=1)] = None,
     ) -> PurchaseResponse:
         return PurchaseResponse.of(services.purchases().delete_line(company_id, purchase_id, detail_id, version, actor))
 

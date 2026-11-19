@@ -24,6 +24,7 @@ from purchase_service.application.exceptions import (
     VersionConflictError,
     field_error,
 )
+from purchase_service.application.partial import merge
 from purchase_service.application.ports import AccessDirectory, CompanyInfo
 from purchase_service.application.reference_validation import (
     HeaderInput,
@@ -216,7 +217,7 @@ class PurchaseService:
         if version is not None and purchase.version != version:
             raise VersionConflictError()
 
-    def _lock_draft(self, company_id: UUID, purchase_id: UUID, version: int) -> Purchase:
+    def _lock_draft(self, company_id: UUID, purchase_id: UUID, version: int | None) -> Purchase:
         self._repo.begin()
         purchase = self._repo.lock_purchase(company_id, purchase_id)
         if purchase is None:
@@ -334,9 +335,13 @@ class PurchaseService:
     # --------------------------------------------------------------- cabecera
 
     def update_header(
-        self, company_id: UUID, purchase_id: UUID, header: HeaderData, version: int, actor: Actor
+        self, company_id: UUID, purchase_id: UUID, changes: dict, version: int | None, actor: Actor
     ) -> PurchaseView:
+        """`PUT` parcial (D28): `changes` trae solo los campos enviados."""
         current = self._existing(company_id, purchase_id)
+        # Sin versión se usa la leída: un cambio simultáneo responde 409 y no se pierde (D9).
+        version = current.version if version is None else version
+        header = merge(HeaderData, current, changes)
         operator = require_branch_access(actor.access, company_id, current.branch_id)
         if header.branch_id != current.branch_id:
             require_branch_access(actor.access, company_id, header.branch_id)
@@ -425,7 +430,7 @@ class PurchaseService:
         self._repo.commit()
         return PurchaseView(purchase, lines, None, uncovered)
 
-    def add_line(self, company_id: UUID, purchase_id: UUID, line: LineData, version: int, actor: Actor) -> PurchaseView:
+    def add_line(self, company_id: UUID, purchase_id: UUID, line: LineData, version: int | None, actor: Actor) -> PurchaseView:
         current = self._existing(company_id, purchase_id)
         operator = require_branch_access(actor.access, company_id, current.branch_id)
         self._precheck(current, version)
@@ -475,14 +480,24 @@ class PurchaseService:
             raise
 
     def update_line(
-        self, company_id: UUID, purchase_id: UUID, detail_id: UUID, line: LineData, version: int, actor: Actor
+        self, company_id: UUID, purchase_id: UUID, detail_id: UUID, changes: dict, version: int | None, actor: Actor
     ) -> PurchaseView:
         current = self._existing(company_id, purchase_id)
+        # Sin versión se usa la leída: un cambio simultáneo responde 409 y no se pierde (D9).
+        version = current.version if version is None else version
         operator = require_branch_access(actor.access, company_id, current.branch_id)
         self._precheck(current, version)
         before = self._repo.lines(current.id)
-        if not any(item.id == detail_id for item in before):
+        stored = next((item for item in before if item.id == detail_id), None)
+        if stored is None:
             raise NotFoundError()
+        # D28: lo no enviado conserva su valor; la tasa solo se conserva si fue un ajuste de la línea.
+        line = merge(
+            LineData,
+            stored,
+            changes,
+            tax_percentage=stored.tax_percentage if stored.tax_percentage_source == LINE_OVERRIDE else None,
+        )
         planned = [
             line.company_product_presentation_id if item.id == detail_id else item.company_product_presentation_id
             for item in before
@@ -519,7 +534,7 @@ class PurchaseService:
             self._repo.rollback()
             raise
 
-    def delete_line(self, company_id: UUID, purchase_id: UUID, detail_id: UUID, version: int, actor: Actor) -> PurchaseView:
+    def delete_line(self, company_id: UUID, purchase_id: UUID, detail_id: UUID, version: int | None, actor: Actor) -> PurchaseView:
         current = self._existing(company_id, purchase_id)
         operator = require_branch_access(actor.access, company_id, current.branch_id)
         self._precheck(current, version)

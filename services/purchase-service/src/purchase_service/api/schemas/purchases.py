@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, ClassVar
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
 from purchase_service.application.purchase_service import HeaderData, LineData, PurchaseView
@@ -41,6 +41,32 @@ DecimalIn = Annotated[Decimal, Field(allow_inf_nan=False)]
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class PartialUpdate(StrictModel):
+    """Base de un `PUT` parcial (constitución 4.0.0, D28).
+
+    Un campo ausente no cambia; `null` borra uno opcional y en uno de `not_nullable` → `422`.
+    Un cuerpo vacío o solo con `version` → `422`. `version` es opcional (D9).
+    """
+
+    not_nullable: ClassVar[frozenset[str]] = frozenset()
+
+    version: Annotated[int, Field(ge=1)] | None = None
+
+    @model_validator(mode="after")
+    def _check_partial(self):
+        sent = self.model_fields_set - {"version"}
+        if not sent:
+            raise PydanticCustomError("INVALID_FORMAT", "Envíe al menos un campo a modificar.")
+        nulls = sorted(name for name in sent & self.not_nullable if getattr(self, name) is None)
+        if nulls:
+            raise PydanticCustomError("INVALID_FORMAT", f"Estos campos no admiten null: {', '.join(nulls)}.")
+        return self
+
+    def changes(self) -> dict:
+        """Solo los campos enviados, sin `version`."""
+        return self.model_dump(exclude_unset=True, exclude={"version"})
 
 
 class LineIn(StrictModel):
@@ -100,27 +126,52 @@ class PurchaseCreateIn(HeaderIn):
         return value
 
 
-class PurchaseUpdateIn(HeaderIn):
-    version: Annotated[int, Field(ge=1)]
+class PurchaseUpdateIn(PartialUpdate):
+    """`PUT` parcial de la cabecera de un borrador (D28)."""
+
+    not_nullable = frozenset({"branch_id", "company_supplier_id", "operation_date", "payment_method_id"})
+
+    branch_id: UUID | None = None
+    company_supplier_id: UUID | None = None
+    operation_date: date | None = None
+    supplier_payment_condition_id: UUID | None = None
+    payment_method_id: UUID | None = None
+    promised_delivery_at: AwareDatetime | None = None
+    supplier_document_number: Annotated[str, Field(min_length=1, max_length=100)] | None = None
+    observations: Annotated[str, Field(max_length=2000)] | None = None
 
 
 class LineCreateIn(LineIn):
-    version: Annotated[int, Field(ge=1)]
+    version: Annotated[int, Field(ge=1)] | None = None
+
+
+class LineUpdateIn(PartialUpdate):
+    """`PUT` parcial de una línea de un borrador (D28)."""
+
+    not_nullable = frozenset({"company_product_id", "company_product_presentation_id", "quantity", "unit_cost", "discount_amount"})
+
+    company_product_id: UUID | None = None
+    company_product_presentation_id: UUID | None = None
+    supplier_product_id: UUID | None = None
+    quantity: DecimalIn | None = None
+    unit_cost: DecimalIn | None = None
+    discount_amount: DecimalIn | None = None
+    tax_percentage: str | int | float | Decimal | None = None
 
 
 class VersionIn(StrictModel):
-    version: Annotated[int, Field(ge=1)]
+    version: Annotated[int, Field(ge=1)] | None = None
 
 
 class ReceiptIn(StrictModel):
     """Recepción física completa (spec 020, FR-020-02): el usuario confirma que recibió **toda** la compra."""
 
-    version: Annotated[int, Field(ge=1)]
+    version: Annotated[int, Field(ge=1)] | None = None
     full_receipt_confirmed: bool
 
 
 class CancelIn(StrictModel):
-    version: Annotated[int, Field(ge=1)]
+    version: Annotated[int, Field(ge=1)] | None = None
     reason: str
 
     @field_validator("reason")

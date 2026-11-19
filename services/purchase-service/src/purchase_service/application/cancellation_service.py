@@ -53,7 +53,7 @@ class CancellationService:
         self,
         company_id: UUID,
         purchase_id: UUID,
-        version: int,
+        version: int | None,
         reason: str,
         idempotency_key: str,
         correlation_id: UUID | None,
@@ -74,7 +74,7 @@ class CancellationService:
             raise OperationInProgressError(pending.id)
         if purchase.status == CANCELLED:
             raise InvalidStatusError(purchase.status)
-        if purchase.version != version:
+        if version is not None and purchase.version != version:
             raise VersionConflictError()
         self._repo.end_read()
 
@@ -89,7 +89,7 @@ class CancellationService:
                 raise OperationInProgressError(pending.id)
             if locked.status == CANCELLED:
                 raise InvalidStatusError(locked.status)
-            if locked.version != version:
+            if version is not None and locked.version != version:
                 raise VersionConflictError()
 
             operation = PurchaseOperation(

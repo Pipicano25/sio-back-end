@@ -12,9 +12,11 @@ Spec 020: confirmar **no** mueve inventario; la recepción física completa apli
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import Body, APIRouter
 from sio_auth import SIOAuth
 
 from purchase_service.api.dependencies import ActorDep, CompanyReader, CorrelationId, IdempotencyKey, ServicesDep
@@ -36,7 +38,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def confirm_purchase(
         company_id: UUID,
         purchase_id: UUID,
-        body: VersionIn,
+        body: Annotated[VersionIn, Body(default_factory=VersionIn)],
         actor: ActorDep,
         key: IdempotencyKey,
         correlation: CorrelationId,

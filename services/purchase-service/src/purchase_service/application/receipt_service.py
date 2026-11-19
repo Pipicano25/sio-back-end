@@ -45,13 +45,13 @@ from purchase_service.infrastructure.models import Purchase, PurchaseOperation
 from purchase_service.infrastructure.repository import UQ_IDEMPOTENCY_KEY, UQ_PENDING, PurchaseRepository, violated_constraint
 
 
-def require_receivable(purchase: Purchase, version: int) -> None:
+def require_receivable(purchase: Purchase, version: int | None) -> None:
     """Estado, recepción previa y versión, en ese orden."""
     if purchase.status != CONFIRMED:
         raise InvalidStatusError(purchase.status)
     if purchase.inventory_operation_id is not None:
         raise PurchaseAlreadyReceivedError()
-    if purchase.version != version:
+    if version is not None and purchase.version != version:
         raise VersionConflictError()
 
 
@@ -75,7 +75,7 @@ class ReceiptService:
         self,
         company_id: UUID,
         purchase_id: UUID,
-        version: int,
+        version: int | None,
         full_receipt_confirmed: bool,
         idempotency_key: str,
         correlation_id: UUID | None,

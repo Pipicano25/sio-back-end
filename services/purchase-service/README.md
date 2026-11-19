@@ -8,7 +8,7 @@ entrada si se recibieron), administra la numeración por período y registra los
 
 ## Reglas de la spec 020
 
-- **Recepción** (`POST /companies/{c}/purchases/{id}/receipt`, `{version, full_receipt_confirmed: true}`,
+- **Recepción** (`POST /companies/{c}/purchases/{id}/receipt`, `{version?, full_receipt_confirmed: true}`,
   `Idempotency-Key`, permiso `purchases:update`): única operación que aplica la entrada en Inventory; solo
   completa (sin parciales ni diferencias); `receipt_status` = `PENDING`/`RECEIVED`, `received_at`,
   `received_by_user_id`. Una segunda recepción → `409 PURCHASE_ALREADY_RECEIVED`.
@@ -20,6 +20,14 @@ entrada si se recibieron), administra la numeración por período y registra los
 - Hitos `RECEIVED`/`AVAILABLE_FOR_SALE` solo en compras recibidas (`409 PURCHASE_NOT_RECEIVED`).
 - **Cargue inicial**: compras normales identificadas con `observations` (no se filtra ni se audita); aparecen
   en los reportes como compras normales.
+
+## `PUT` parcial y versión opcional (constitución 4.0.0)
+
+- El `PUT` de cabecera, de línea y de secuencias recibe solo los campos que cambian; lo demás queda
+  igual. `null` en un campo obligatorio, un cuerpo vacío o solo con `version` → `422`.
+- `version` es opcional en `PUT`, acciones y `DELETE` de línea (`?version=`); si llega desactualizada →
+  `409`; si no llega se usa la leída, así un cambio simultáneo responde `409` en vez de perderse.
+- En una línea, la tasa ajustada (`tax_percentage`) se conserva si no se envía; `null` vuelve a la del producto.
 
 ## Reglas de la spec 021
 
