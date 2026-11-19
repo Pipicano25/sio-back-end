@@ -14,6 +14,7 @@ from uuid import UUID
 from pydantic import BaseModel, BeforeValidator, ConfigDict, field_validator
 from pydantic_core import PydanticCustomError
 
+from inventory_service.api.schemas.partial import PartialUpdate
 from inventory_service.domain.quantities import QuantityError, format_decimal, optional_decimal, parse_decimal
 
 FIFO = "FIFO"
@@ -52,8 +53,14 @@ class CompanyPolicyIn(_CompanyPolicyFields):
     pass
 
 
-class CompanyPolicyUpdateIn(_CompanyPolicyFields):
-    version: int
+class CompanyPolicyUpdateIn(PartialUpdate, _CompanyPolicyFields):
+    """`PUT` parcial de la política de la empresa (D28); conserva la regla FIFO."""
+
+    not_nullable = frozenset({"inventory_system", "valuation_method", "replenishment_strategy"})
+
+    inventory_system: Literal["PERPETUAL", "PERIODIC"] | None = None
+    valuation_method: str | None = None
+    replenishment_strategy: Literal["STANDARD", "JIT"] | None = None
 
 
 class CompanyPolicyResponse(BaseModel):
@@ -121,14 +128,26 @@ class ProductPolicyIn(_ProductPolicyFields):
     company_product_id: UUID
 
 
-class ProductPolicyUpdateIn(_ProductPolicyFields):
-    version: int
+class ProductPolicyUpdateIn(PartialUpdate, _ProductPolicyFields):
+    """`PUT` parcial de la política de un producto (D28); los rangos se validan sobre el resultado."""
+
+    not_nullable = frozenset(
+        {"minimum_stock", "safety_stock_method", "calculation_window_days", "replenishment_mode", "auto_purchase_enabled"}
+    )
+
+    minimum_stock: Level = None
+    safety_stock_method: Literal["BASIC", "STATISTICAL"] | None = None
+    calculation_window_days: int | None = None
+    replenishment_mode: Literal["MANUAL", "AUTO_DRAFT"] | None = None
+    auto_purchase_enabled: bool | None = None
 
 
 class VersionIn(BaseModel):
+    """Acciones de estado: versión opcional; el cuerpo puede omitirse (D10)."""
+
     model_config = ConfigDict(extra="forbid")
 
-    version: int
+    version: int | None = None
 
 
 class ProductPolicyResponse(BaseModel):

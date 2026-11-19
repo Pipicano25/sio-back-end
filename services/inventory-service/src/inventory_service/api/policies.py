@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import Body, APIRouter, Depends, Query, Request, status
 from sio_auth import SIOAuth
 
 from inventory_service.api.dependencies import access_directory, lock_timeout_ms
@@ -153,7 +153,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         dependencies=product_update,
     )
     def deactivate_product_policy(
-        company_id: UUID, policy_id: UUID, body: VersionIn, identity: Human, service: Service
+        company_id: UUID, policy_id: UUID, body: Annotated[VersionIn, Body(default_factory=VersionIn)], identity: Human, service: Service
     ) -> ProductPolicyResponse:
         return ProductPolicyResponse.of(service.deactivate_product_policy(company_id, policy_id, body, identity.subject))
 

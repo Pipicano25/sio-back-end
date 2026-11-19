@@ -177,7 +177,7 @@ class BalanceRow:
     branch_id: UUID
     company_product_id: UUID
     quantity: Decimal
-    version: int
+    version: int | None
     updated_at: datetime | None
     inventory_value: Decimal = Decimal("0.00")
     average_unit_cost: Decimal | None = None
@@ -864,7 +864,7 @@ class CountRow:
     cancel_reason: str | None
     operation_id: UUID | None
     observations: str | None
-    version: int
+    version: int | None
     created_at: datetime
     created_by: str
     updated_at: datetime
@@ -1003,7 +1003,7 @@ class SqlCountRepository:
             session.rollback()
             raise
 
-    def start(self, company_id: UUID, count_id: UUID, version: int, actor: str, hook: CountHook) -> CountRow:
+    def start(self, company_id: UUID, count_id: UUID, version: int | None, actor: str, hook: CountHook) -> CountRow:
         session = self._session
         try:
             now = self._begin()
@@ -1025,7 +1025,7 @@ class SqlCountRepository:
             raise
 
     def cancel(
-        self, company_id: UUID, count_id: UUID, version: int, reason: str, user_id: UUID, actor: str, hook: CountHook
+        self, company_id: UUID, count_id: UUID, version: int | None, reason: str, user_id: UUID, actor: str, hook: CountHook
     ) -> CountRow:
         session = self._session
         try:
@@ -1121,7 +1121,7 @@ class SqlCountRepository:
         self,
         company_id: UUID,
         count_id: UUID,
-        version: int,
+        version: int | None,
         user_id: UUID,
         actor: str,
         build: BuildCompletion,
@@ -1218,7 +1218,7 @@ class CompanyPolicyRow:
     valuation_method: str
     replenishment_strategy: str
     is_active: bool
-    version: int
+    version: int | None
     created_at: datetime
     created_by: str
     updated_at: datetime
@@ -1239,7 +1239,7 @@ class ProductPolicyRow:
     replenishment_mode: str
     auto_purchase_enabled: bool
     is_active: bool
-    version: int
+    version: int | None
     created_at: datetime
     created_by: str
     updated_at: datetime
@@ -1311,7 +1311,7 @@ class SqlPolicyRepository:
             raise
 
     def update_company_policy(
-        self, company_id: UUID, version: int, values: dict[str, Any], actor: str, hook: PolicyHook
+        self, company_id: UUID, version: int | None, values: dict[str, Any], actor: str, hook: PolicyHook
     ) -> CompanyPolicyRow:
         session = self._session
         try:
@@ -1323,7 +1323,7 @@ class SqlPolicyRepository:
             )
             if model is None:
                 raise NotFoundError()
-            if model.version != version:
+            if version is not None and model.version != version:
                 raise VersionConflictError()
             previous = _policy_row(CompanyPolicyRow, model)
             for name, value in values.items():
@@ -1406,7 +1406,7 @@ class SqlPolicyRepository:
             session.rollback()
             raise
 
-    def _lock_product_policy(self, company_id: UUID, policy_id: UUID, version: int) -> InventoryPolicy:
+    def _lock_product_policy(self, company_id: UUID, policy_id: UUID, version: int | None) -> InventoryPolicy:
         model = self._session.scalar(
             select(InventoryPolicy)
             .where(InventoryPolicy.id == policy_id, InventoryPolicy.company_id == company_id)
@@ -1414,12 +1414,12 @@ class SqlPolicyRepository:
         )
         if model is None:
             raise NotFoundError()
-        if model.version != version:
+        if version is not None and model.version != version:
             raise VersionConflictError()
         return model
 
     def update_product_policy(
-        self, company_id: UUID, policy_id: UUID, version: int, values: dict[str, Any], actor: str, hook: PolicyHook
+        self, company_id: UUID, policy_id: UUID, version: int | None, values: dict[str, Any], actor: str, hook: PolicyHook
     ) -> ProductPolicyRow:
         session = self._session
         try:
@@ -1436,7 +1436,7 @@ class SqlPolicyRepository:
             raise
 
     def deactivate_product_policy(
-        self, company_id: UUID, policy_id: UUID, version: int, actor: str, hook: PolicyHook
+        self, company_id: UUID, policy_id: UUID, version: int | None, actor: str, hook: PolicyHook
     ) -> ProductPolicyRow:
         session = self._session
         try:

@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import Body, APIRouter, Depends, Query, Request, status
 from sio_auth import SIOAuth
 
 from inventory_service.api.dependencies import access_directory, lock_timeout_ms
@@ -84,7 +84,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         dependencies=create,
     )
     def start_count(
-        company_id: UUID, count_id: UUID, body: CountTransitionIn, identity: Human, service: Service
+        company_id: UUID, count_id: UUID, body: Annotated[CountTransitionIn, Body(default_factory=CountTransitionIn)], identity: Human, service: Service
     ) -> InventoryCountResponse:
         return count_response(service.start(company_id, count_id, body, identity.subject))
 

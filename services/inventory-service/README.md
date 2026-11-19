@@ -68,7 +68,8 @@ Cualquier dependencia no disponible responde `503` con `dependency` (`operationa
   consultar dependencias**; cualquier diferencia → `409 OPERATION_KEY_CONFLICT`.
 - **Inmutabilidad en la base**: triggers rechazan cambios a movimientos, operaciones, ajustes y
   consumos, la eliminación de saldos y capas, y los cambios a detalles de conteos finalizados.
-- **Control de versión**: conteos y políticas exigen la `version` vigente (`409 VERSION_CONFLICT`).
+- **Control de versión**: en conteos y políticas `version` es opcional; si llega desactualizada →
+  `409 VERSION_CONFLICT`. El `PUT` de políticas es parcial (D28) y los rangos se validan sobre el resultado.
 - **Auditoría** en `audit_outbox`, en la misma transacción: entradas, salidas y reversos (con costo,
   valor y `cost_known` por línea), `CREATE_INVENTORY_ADJUSTMENT`, `START_`, `CANCEL_` y
   `COMPLETE_INVENTORY_COUNT` (resumen), `SET_COMPANY_INVENTORY_POLICY` y `CREATE_`, `UPDATE_` y

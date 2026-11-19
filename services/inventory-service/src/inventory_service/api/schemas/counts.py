@@ -43,7 +43,7 @@ class CountCreateIn(BaseModel):
 class CountTransitionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    version: int
+    version: int | None = None
 
 
 class CountDetailIn(BaseModel):
@@ -57,14 +57,14 @@ class CountCompleteIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     completion_key: UUID
-    version: int
+    version: int | None = None
 
 
 class CountCancelIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     reason: RequiredReason = Field(default=None, validate_default=True)
-    version: int
+    version: int | None = None
 
 
 class InventoryCountDetailResponse(BaseModel):
@@ -109,7 +109,7 @@ class InventoryCountResponse(BaseModel):
     cancel_reason: str | None
     operation_id: UUID | None
     observations: str | None
-    version: int
+    version: int | None = None
     created_at: datetime
     created_by: str
     updated_at: datetime

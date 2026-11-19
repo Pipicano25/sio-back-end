@@ -10,6 +10,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
@@ -126,10 +128,17 @@ class PolicyService:
         return self._repository.create_company_policy(company_id, values, subject, hook)
 
     def update_company_policy(self, company_id: UUID, data: Any, subject: str) -> CompanyPolicyRow:
+        """`PUT` parcial (D28): lo no enviado conserva su valor."""
         operator = require_membership(self._access, company_id)
-        values = {name: getattr(data, name) for name in COMPANY_POLICY_FIELDS}
+        current = self._repository.company_policy(company_id)
+        if current is None:
+            raise NotFoundError()
+        merged = _merge(current, data.changes(), COMPANY_POLICY_FIELDS)
+        values = {name: getattr(merged, name) for name in COMPANY_POLICY_FIELDS}
         hook = self._hook("SET_COMPANY_INVENTORY_POLICY", "CompanyInventoryPolicy", COMPANY_POLICY_FIELDS, operator, subject)
-        return self._repository.update_company_policy(company_id, data.version, values, subject, hook)
+        # Sin versión se usa la leída: un cambio simultáneo responde 409 y no se pierde (D9).
+        version = current.version if data.version is None else data.version
+        return self._repository.update_company_policy(company_id, version, values, subject, hook)
 
     # Producto (R-07) ---------------------------------------------------------------------
 
@@ -156,16 +165,26 @@ class PolicyService:
         )
 
     def update_product_policy(self, company_id: UUID, policy_id: UUID, data: Any, subject: str) -> ProductPolicyRow:
+        """`PUT` parcial (D28): lo no enviado conserva su valor; los rangos se validan sobre el resultado."""
         operator = require_membership(self._access, company_id)
-        errors = level_errors(data)
+        current = self.product_policy(company_id, policy_id)
+        merged = _merge(current, data.changes(), PRODUCT_POLICY_FIELDS)
+        errors = level_errors(merged)
         if errors:
             raise ValidationFailedError(errors)
-        values = {name: getattr(data, name) for name in PRODUCT_POLICY_FIELDS}
+        values = {name: getattr(merged, name) for name in PRODUCT_POLICY_FIELDS}
         hook = self._hook("UPDATE_INVENTORY_POLICY", "InventoryPolicy", PRODUCT_POLICY_FIELDS, operator, subject)
-        return self._repository.update_product_policy(company_id, policy_id, data.version, values, subject, hook)
+        # Sin versión se usa la leída: un cambio simultáneo responde 409 y no se pierde (D9).
+        version = current.version if data.version is None else data.version
+        return self._repository.update_product_policy(company_id, policy_id, version, values, subject, hook)
 
     def deactivate_product_policy(self, company_id: UUID, policy_id: UUID, data: Any, subject: str) -> ProductPolicyRow:
         operator = require_membership(self._access, company_id)
         hook = self._hook("DEACTIVATE_INVENTORY_POLICY", "InventoryPolicy", PRODUCT_POLICY_FIELDS, operator, subject)
         return self._repository.deactivate_product_policy(company_id, policy_id, data.version, subject, hook)
 
+
+
+def _merge(current: Any, changes: dict[str, Any], names: tuple[str, ...]) -> SimpleNamespace:
+    """Registro resultante de un `PUT` parcial: lo enviado sobre lo guardado (D28)."""
+    return SimpleNamespace(**{name: changes.get(name, getattr(current, name)) for name in names})
