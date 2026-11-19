@@ -28,6 +28,12 @@ from commercial_relationship_service.application.exceptions import (
     PartyIdentityAccessDeniedError,
 )
 from commercial_relationship_service.application.ports import (
+    CatalogIdentifier,
+    CatalogMatchPage,
+    CatalogPresentation,
+    CatalogPresentationLookup,
+    CatalogProductLookup,
+    CatalogProductSummary,
     CompanyAccess,
     ContactPersonRef,
     GlobalPresentationRef,
@@ -175,6 +181,8 @@ class FakeProductCatalog:
     presentation_lookup_unavailable: bool = False
     base_unit_unavailable: bool = False
     first_use_error: str | None = None  # "not_found" | "not_eligible" | "other_product" | "unavailable"
+    # Spec 027: productos globales cuyo primer uso (del producto o de sus presentaciones) falla por indisponibilidad.
+    first_use_unavailable_for: set[UUID] = field(default_factory=set)
     lookup_calls: list[UUID] = field(default_factory=list)
     presentation_lookup_calls: list[UUID] = field(default_factory=list)
     base_unit_calls: list[UUID] = field(default_factory=list)
@@ -250,8 +258,116 @@ class FakeProductCatalog:
             if self.first_use_error == "other_product":
                 raise GlobalPresentationOfOtherProductError(field=field_name)
 
-        if self.first_use_error == "unavailable":
+        if self.first_use_error == "unavailable" or global_product_id in self.first_use_unavailable_for:
             raise _unavailable(PRODUCT_CATALOG, "products_first_use")
+
+
+@dataclass
+class FakeProductCatalogBulkDirectory:
+    """Lecturas por lotes de Product Catalog (spec 027) sobre el mismo catálogo en memoria de `FakeProductCatalog`.
+
+    Agrega lo que el doble individual no tiene: nombre canónico, presentación base, identificadores y fallas
+    programables (todo el puerto con `unavailable`, o por producto con `failing_products`).
+    """
+
+    catalog: FakeProductCatalog
+    names: dict[UUID, str] = field(default_factory=dict)
+    base_presentations: dict[UUID, UUID] = field(default_factory=dict)
+    identifiers: dict[UUID, list[CatalogIdentifier]] = field(default_factory=dict)
+    unavailable: bool = False
+    failing_products: set[UUID] = field(default_factory=set)
+    calls: list[tuple[str, tuple]] = field(default_factory=list)
+
+    def add_product(
+        self,
+        product_id: UUID | None = None,
+        *,
+        name: str = "Producto global de prueba",
+        status: str = "ACTIVE",
+        eligible: bool = True,
+        presentations: int = 1,
+        barcode: str | None = None,
+    ) -> tuple[UUID, list[UUID]]:
+        """Producto con `presentations` presentaciones activas; la primera es la base y lleva `barcode`."""
+        product_id = self.catalog.add(product_id or uuid4(), status=status, eligible=eligible)
+        self.names[product_id] = name
+        ids = [
+            self.catalog.add_presentation(uuid4(), product_id, eligible=eligible and status == "ACTIVE")
+            for _ in range(presentations)
+        ]
+        if ids:
+            self.base_presentations[product_id] = ids[0]
+        if barcode is not None and ids:
+            self.identifiers[product_id] = [
+                CatalogIdentifier(type="GTIN", value=barcode, is_primary=True, global_product_presentation_id=ids[0])
+            ]
+        return product_id, ids
+
+    def _guard(self, operation: str, *args) -> None:
+        self.calls.append((operation, args))
+        if self.unavailable:
+            raise _unavailable(PRODUCT_CATALOG, operation)
+
+    def match_products(self, *, category_ids, brand_ids, include_descendants, after, limit) -> CatalogMatchPage:
+        self._guard("products_match", tuple(category_ids), tuple(brand_ids))
+        ordered = sorted(
+            (product_id for product_id, ref in self.catalog.products.items() if ref.status == "ACTIVE"), key=str
+        )
+        start = 0 if after is None else ordered.index(UUID(after["id"])) + 1
+        page = ordered[start : start + limit]
+        position = {"k": [str(page[-1])], "id": str(page[-1])} if page else after
+        return CatalogMatchPage(ids=page, after=position, has_more=start + limit < len(ordered))
+
+    def lookup_products(self, ids: list[UUID]) -> list[CatalogProductLookup]:
+        self._guard("products_batch_lookup", tuple(ids))
+        return [
+            CatalogProductLookup(id=item, ref=self.catalog.products.get(item, GlobalProductRef(found=False)))
+            for item in ids
+        ]
+
+    def product_summaries(self, ids: list[UUID]) -> dict[UUID, CatalogProductSummary]:
+        self._guard("products_summaries_batch_lookup", tuple(ids))
+        summaries = {}
+        for item in ids:
+            ref = self.catalog.products.get(item)
+            summaries[item] = (
+                CatalogProductSummary(id=item, found=False)
+                if ref is None
+                else CatalogProductSummary(
+                    id=item,
+                    found=True,
+                    canonical_name=self.names.get(item, "Producto global de prueba"),
+                    status=ref.status,
+                    identifiers=tuple(self.identifiers.get(item, ())),
+                )
+            )
+        return summaries
+
+    def product_presentations(self, global_product_id: UUID) -> list[CatalogPresentation]:
+        self._guard("products_presentations_list", global_product_id)
+        if global_product_id in self.failing_products:
+            raise _unavailable(PRODUCT_CATALOG, "products_presentations_list")
+        base = self.base_presentations.get(global_product_id)
+        return [
+            CatalogPresentation(
+                id=presentation_id,
+                global_product_id=global_product_id,
+                status=ref.status,
+                is_base=presentation_id == base,
+                eligible_for_adoption=bool(ref.eligible_for_adoption),
+            )
+            for presentation_id, ref in self.catalog.presentations.items()
+            if ref.global_product_id == global_product_id and ref.status == "ACTIVE"
+        ]
+
+    def lookup_presentations(self, ids: list[UUID]) -> list[CatalogPresentationLookup]:
+        self._guard("presentations_batch_lookup", tuple(ids))
+        return [
+            CatalogPresentationLookup(
+                id=item, ref=self.catalog.presentations.get(item, GlobalPresentationRef(found=False))
+            )
+            for item in ids
+        ]
 
 
 # --------------------------------------------------------------------------

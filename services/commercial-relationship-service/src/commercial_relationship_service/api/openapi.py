@@ -129,6 +129,14 @@ OPENAPI_TAGS = [
             "recepción física de una compra. Solo SuperAdmin y Admin (expone porcentajes internos)."
         ),
     },
+    {
+        "name": "Adopción masiva",
+        "description": (
+            "Spec 027. Adopta muchas presentaciones globales en una sola solicitud y, por debajo, el producto de "
+            "cada una. Cada elemento se adopta igual que en las rutas individuales y trae su resultado: "
+            "`ADOPTED`, `ALREADY_ADOPTED` o `REJECTED` con su motivo."
+        ),
+    },
 ]
 
 

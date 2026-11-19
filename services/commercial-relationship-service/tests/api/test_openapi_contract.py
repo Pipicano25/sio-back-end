@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from tests.api.routes import ROUTES, SPEC_021_ROUTES, SPEC_022_ROUTES
+from tests.api.routes import ROUTES, SPEC_021_ROUTES, SPEC_022_ROUTES, SPEC_027_ROUTES
 
 SPECS = Path(__file__).resolve().parents[4] / "specs"
 CONTRACTS = (
@@ -15,6 +15,9 @@ CONTRACTS = (
     SPECS / "022-product-inventory-query-service" / "contracts" / "commercial-relationship.md",
 )
 CONTRACT_ROUTE = re.compile(r"^\| `(GET|POST|PUT|DELETE|PATCH) (/api/v1/[^`]+)`", re.MULTILINE)
+# Spec 027: el contrato declara cada ruta en su propia línea (`POST /api/v1/...`), con su consulta de ejemplo.
+SPEC_027_CONTRACT = SPECS / "027-bulk-product-adoption" / "contracts" / "bulk-adoption.md"
+SPEC_027_ROUTE = re.compile(r"^`(GET|POST|PUT|DELETE|PATCH) (/api/v1/[^`?]+)", re.MULTILINE)
 
 
 def _contract_operations() -> set[tuple[str, str]]:
@@ -35,13 +38,25 @@ def _openapi_operations(schema) -> set[tuple[str, str]]:
     }
 
 
+def _spec_027_operations() -> set[tuple[str, str]]:
+    return set(SPEC_027_ROUTE.findall(SPEC_027_CONTRACT.read_text(encoding="utf-8")))
+
+
 def test_openapi_matches_contract_exactly(as_token):
     schema = as_token(None).get("/openapi.json").json()
-    assert _openapi_operations(schema) == _contract_operations()
+    implemented_027 = {(route.method, route.path) for route in SPEC_027_ROUTES}
+    assert _openapi_operations(schema) == _contract_operations() | implemented_027
     assert len(_contract_operations()) == len(ROUTES) + len(SPEC_021_ROUTES) + len(SPEC_022_ROUTES) == 55 + 17 + 2
     assert {
         (route.method, route.path) for route in (*ROUTES, *SPEC_021_ROUTES, *SPEC_022_ROUTES)
     } == _contract_operations()
+
+
+def test_spec_027_routes_are_declared_in_its_contract():
+    """Las rutas implementadas de la spec 027 están en su contrato; las 4 restantes son de la Historia 3."""
+    declared = _spec_027_operations()
+    assert len(declared) == 5
+    assert {(route.method, route.path) for route in SPEC_027_ROUTES} <= declared
 
 
 def test_no_delete_routes(as_token):

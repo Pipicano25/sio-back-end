@@ -69,6 +69,13 @@ READS_BY_POST = {
     ("POST", f"{C}/company-product-presentations/by-products"),
 }
 
+# Spec 027 (FR-014): escrituras compuestas sin acción propia. Cada elemento adoptado emite el mismo evento de la
+# adopción individual (`ADOPT_COMPANY_PRODUCT` y `CREATE_COMPANY_PRODUCT_PRESENTATION`); lo prueba
+# `tests/api/test_bulk_adoption_presentations.py::test_audit_has_one_event_per_adoption_with_the_requesting_user`.
+COMPOSED_WRITES = {
+    ("POST", f"{C}/bulk-adoptions"): ("ADOPT_COMPANY_PRODUCT", "CREATE_COMPANY_PRODUCT_PRESENTATION"),
+}
+
 
 def _writes(app) -> set[tuple[str, str]]:
     return {
@@ -82,7 +89,9 @@ def _writes(app) -> set[tuple[str, str]]:
 def test_every_write_has_exactly_one_action(app) -> None:
     writes = _writes(app)
     assert READS_BY_POST <= writes
-    assert writes - READS_BY_POST == set(CATALOG)
+    assert set(COMPOSED_WRITES) <= writes
+    assert writes - READS_BY_POST - set(COMPOSED_WRITES) == set(CATALOG)
+    assert {action for actions in COMPOSED_WRITES.values() for action in actions} <= set(audit.ACTIONS)
     assert len(CATALOG) == 45  # 35 de la 016 + 10 de la spec 021
 
 

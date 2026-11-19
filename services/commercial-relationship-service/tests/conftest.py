@@ -55,6 +55,7 @@ from tests.fakes import (  # noqa: E402
     FakePartyIdentity,
     FakePaymentReference,
     FakeProductCatalog,
+    FakeProductCatalogBulkDirectory,
 )
 
 TEST_ISSUER = "https://keycloak.test/realms/sio"
@@ -324,6 +325,12 @@ def fake_catalog() -> FakeProductCatalog:
 
 
 @pytest.fixture
+def fake_bulk_catalog(fake_catalog) -> FakeProductCatalogBulkDirectory:
+    """Lecturas por lotes de Product Catalog (spec 027) sobre el mismo catálogo en memoria de `fake_catalog`."""
+    return FakeProductCatalogBulkDirectory(fake_catalog)
+
+
+@pytest.fixture
 def fake_party() -> FakePartyIdentity:
     return FakePartyIdentity()
 
@@ -354,13 +361,14 @@ def test_settings(test_database_url: str) -> Settings:
 
 
 @pytest.fixture
-def app(test_settings, clean_database, test_auth, fake_oc, fake_catalog, fake_party, fake_payment):
+def app(test_settings, clean_database, test_auth, fake_oc, fake_catalog, fake_bulk_catalog, fake_party, fake_payment):
     return create_app(
         test_settings,
         auth=test_auth,
         access_directory_factory=fake_oc.access_for,
         company_directory_factory=fake_oc.companies_for,
         product_directory_factory=lambda request: fake_catalog,
+        product_bulk_directory_factory=lambda request: fake_bulk_catalog,
         party_directory_factory=lambda request: fake_party,
         payment_directory_factory=lambda request: fake_payment,
     )

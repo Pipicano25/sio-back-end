@@ -15,6 +15,7 @@ from commercial_relationship_service.audit_context import bind_audit_actor
 from commercial_relationship_service.api.applicable_prices import (
     build_router as build_applicable_prices_router,
 )
+from commercial_relationship_service.api.bulk_adoptions import build_router as build_bulk_adoptions_router
 from commercial_relationship_service.api.company_customers import (
     build_router as build_customers_router,
 )
@@ -35,6 +36,7 @@ from commercial_relationship_service.api.dependencies import (
     CompanyDirectoryFactory,
     PartyDirectoryFactory,
     PaymentDirectoryFactory,
+    ProductBulkDirectoryFactory,
     ProductDirectoryFactory,
 )
 from commercial_relationship_service.api.errors import register_error_handlers
@@ -86,6 +88,9 @@ from commercial_relationship_service.infrastructure.party_identity_directory imp
 )
 from commercial_relationship_service.infrastructure.payment_reference_directory import (
     HTTPPaymentReferenceDirectory,
+)
+from commercial_relationship_service.infrastructure.product_catalog_bulk_directory import (
+    HTTPProductCatalogBulkDirectory,
 )
 from commercial_relationship_service.infrastructure.product_catalog_directory import (
     HTTPProductCatalogDirectory,
@@ -213,6 +218,26 @@ def build_product_directory_factory(
     return factory
 
 
+def build_product_bulk_directory_factory(
+    settings: Settings, token_client: KeycloakTokenClient
+) -> ProductBulkDirectoryFactory:
+    """Lecturas por lotes de Product Catalog para la adopción masiva (spec 027, R4), siempre por HTTP.
+
+    Mismo token técnico y mismo `timeout` que `build_product_directory_factory`. No depende de
+    `PRODUCT_CATALOG_READ_SOURCE`: ninguna vista de contrato expone identificadores ni elegibilidad (R4).
+    """
+    directory = HTTPProductCatalogBulkDirectory(
+        base_url=settings.product_catalog_base_url,
+        timeout_seconds=settings.product_catalog_timeout_seconds,
+        token_client=token_client,
+    )
+
+    def factory(request: Request) -> HTTPProductCatalogBulkDirectory:
+        return directory
+
+    return factory
+
+
 def build_payment_directory_factory(
     settings: Settings, token_client: KeycloakTokenClient, contract_engine: Engine | None = None
 ) -> PaymentDirectoryFactory:
@@ -263,6 +288,7 @@ def create_app(
     access_directory_factory: AccessDirectoryFactory | None = None,
     company_directory_factory: CompanyDirectoryFactory | None = None,
     product_directory_factory: ProductDirectoryFactory | None = None,
+    product_bulk_directory_factory: ProductBulkDirectoryFactory | None = None,
     party_directory_factory: PartyDirectoryFactory | None = None,
     payment_directory_factory: PaymentDirectoryFactory | None = None,
 ) -> FastAPI:
@@ -313,6 +339,9 @@ def create_app(
         product_directory_factory
         or build_product_directory_factory(current_settings, token_client, engines.product_catalog)
     )
+    app.state.product_bulk_directory_factory = product_bulk_directory_factory or build_product_bulk_directory_factory(
+        current_settings, token_client
+    )
     app.state.payment_directory_factory = (
         payment_directory_factory
         or build_payment_directory_factory(current_settings, token_client, engines.payment_reference)
@@ -344,6 +373,7 @@ def create_app(
     app.include_router(build_applicable_prices_router(current_auth), prefix=API_PREFIX)
     app.include_router(build_pricing_policies_router(current_auth), prefix=API_PREFIX)  # spec 021
     app.include_router(build_automatic_prices_router(current_auth), prefix=API_PREFIX)  # spec 021
+    app.include_router(build_bulk_adoptions_router(current_auth), prefix=API_PREFIX)  # spec 027
 
     current_auth.protect(app, public_paths=public_paths)
     # Último middleware agregado = más externo: envuelve también a sio-auth.

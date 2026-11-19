@@ -110,6 +110,13 @@ SPEC_022_ROUTES: tuple[Route, ...] = (
     Route("POST", "/api/v1/companies/{company_id}/company-product-presentations/by-products", "company_product_presentations", "read", "company", False),
 )
 
+# Spec 027 (adopción masiva). Historia 1: solo la adopción en espera. Las cuatro rutas de procesos en segundo plano
+# (`bulk-adoption-jobs`) del mismo contrato llegan con la Historia 3. Permisos, membresía y errores los prueba
+# `test_bulk_adoption_presentations.py`; aquí solo se contrastan con el OpenAPI y el contrato.
+SPEC_027_ROUTES: tuple[Route, ...] = (
+    Route("POST", "/api/v1/companies/{company_id}/bulk-adoptions", "company_products", "create", "company", True),
+)
+
 RESOURCES = (
     "company_products",
     "company_customers",

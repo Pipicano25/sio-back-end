@@ -183,3 +183,102 @@ class PartyDirectory(Protocol):
         Raises `DependencyUnavailableError`.
         """
         ...
+
+
+# --------------------------------------------------------------------------
+# Spec 027: adopción masiva (research R4)
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogMatchPage:
+    """Página de `products/match` (modo conductor): ids en orden, última posición y si hay más."""
+
+    ids: list[UUID]
+    after: dict | None
+    has_more: bool
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogIdentifier:
+    """Identificador `ACTIVE` de un producto global según `products/summaries/batch-lookup`."""
+
+    type: str
+    value: str
+    is_primary: bool
+    global_product_presentation_id: UUID | None
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogProductSummary:
+    """Resumen de un producto global: nombre canónico, estado e identificadores `ACTIVE`."""
+
+    id: UUID
+    found: bool
+    canonical_name: str | None = None
+    status: str | None = None
+    identifiers: tuple[CatalogIdentifier, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogPresentation:
+    """Presentación global de un producto según `GET products/{id}/presentations`."""
+
+    id: UUID
+    global_product_id: UUID
+    status: str
+    is_base: bool
+    eligible_for_adoption: bool
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogProductLookup:
+    """Elegibilidad de un producto global (`products/batch-lookup`) con su id."""
+
+    id: UUID
+    ref: GlobalProductRef
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogPresentationLookup:
+    """Elegibilidad de una presentación global (`presentations/batch-lookup`) con su id."""
+
+    id: UUID
+    ref: GlobalPresentationRef
+
+
+class ProductCatalogBulkDirectory(Protocol):
+    """Lecturas por lotes de Product Catalog para la adopción masiva (spec 027, R4).
+
+    Usa la identidad técnica propia, como `ProductCatalogDirectory`. Cada lote admite hasta 100 ids. Ante un
+    fallo de red, tiempo agotado o una respuesta inesperada, todos los métodos lanzan
+    `DependencyUnavailableError` (la misma excepción del puerto individual; ver la nota de T005 en `tasks.md`).
+    """
+
+    def match_products(
+        self,
+        *,
+        category_ids: list[UUID],
+        brand_ids: list[UUID],
+        include_descendants: bool,
+        after: dict | None,
+        limit: int,
+    ) -> CatalogMatchPage:
+        """Productos globales `ACTIVE` que cumplen el filtro, después de `after` (Historia 3)."""
+        ...
+
+    def lookup_products(self, ids: list[UUID]) -> list[CatalogProductLookup]:
+        """Elegibilidad de hasta 100 productos globales, en el orden recibido."""
+        ...
+
+    def product_summaries(self, ids: list[UUID]) -> dict[UUID, CatalogProductSummary]:
+        """Nombre canónico e identificadores de hasta 100 productos globales."""
+        ...
+
+    def product_presentations(self, global_product_id: UUID) -> list[CatalogPresentation]:
+        """Presentaciones `ACTIVE` del producto global, con `is_base`; vacío si el producto no existe."""
+        ...
+
+    def lookup_presentations(self, ids: list[UUID]) -> list[CatalogPresentationLookup]:
+        """Elegibilidad de hasta 100 presentaciones globales, en el orden recibido."""
+        ...

@@ -13,6 +13,7 @@ from fastapi import Depends, Request
 from sio_auth import CurrentClaims
 from sqlalchemy.orm import Session
 
+from commercial_relationship_service.application.bulk_adoption_service import BulkAdoptionService
 from commercial_relationship_service.application.company_customer_service import (
     CompanyCustomerService,
 )
@@ -38,6 +39,7 @@ from commercial_relationship_service.application.ports import (
     CompanyDirectory,
     PartyDirectory,
     PaymentReferenceDirectory,
+    ProductCatalogBulkDirectory,
     ProductCatalogDirectory,
 )
 from commercial_relationship_service.application.price_list_item_service import (
@@ -54,6 +56,10 @@ from commercial_relationship_service.application.supplier_payment_condition_serv
 )
 from commercial_relationship_service.application.supplier_product_service import (
     SupplierProductService,
+)
+from commercial_relationship_service.infrastructure.bulk_adoption_repository import (
+    BulkAdoptionRepository,
+    SequencedCompanyProductRepository,
 )
 from commercial_relationship_service.infrastructure.database import get_db_session
 from commercial_relationship_service.infrastructure.pricing_repositories import (
@@ -75,6 +81,7 @@ from commercial_relationship_service.infrastructure.repositories import (
 AccessDirectoryFactory = Callable[[Request], CompanyAccessDirectory]
 CompanyDirectoryFactory = Callable[[Request], CompanyDirectory]
 ProductDirectoryFactory = Callable[[Request], ProductCatalogDirectory]
+ProductBulkDirectoryFactory = Callable[[Request], ProductCatalogBulkDirectory]
 PartyDirectoryFactory = Callable[[Request], PartyDirectory]
 PaymentDirectoryFactory = Callable[[Request], PaymentReferenceDirectory]
 
@@ -254,3 +261,30 @@ def get_automatic_price_application_repository(
 
 def get_automatic_price_resolution_service(session: Session = Depends(get_db_session)) -> AutomaticPriceResolutionService:
     return AutomaticPriceResolutionService(AutomaticPriceApplicationRepository(session))
+
+
+# --------------------------------------------------------------------------
+# Spec 027: adopción masiva
+# --------------------------------------------------------------------------
+
+
+def get_bulk_adoption_service(
+    request: Request,
+    session: Session = Depends(get_db_session),
+) -> BulkAdoptionService:
+    """Adopción masiva sobre los casos de uso individuales, con la misma sesión de la solicitud.
+
+    El producto usa `SequencedCompanyProductRepository`: asigna el consecutivo `P-NNNNNN` bajo el bloqueo por
+    empresa en la misma transacción del alta (research R5).
+    """
+    product_directory = _lazy(request.app.state.product_directory_factory, request)
+    return BulkAdoptionService(
+        products=CompanyProductService(SequencedCompanyProductRepository(session), product_directory),
+        presentations=CompanyProductPresentationService(
+            CompanyProductPresentationRepository(session),
+            CompanyProductRepository(session),
+            product_directory,
+        ),
+        repository=BulkAdoptionRepository(session),
+        catalog_factory=_lazy(request.app.state.product_bulk_directory_factory, request),
+    )
