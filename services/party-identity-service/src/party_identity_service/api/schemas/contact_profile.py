@@ -53,7 +53,7 @@ class ContactProfileCreate(BaseModel):
     version: int | None = Field(
         default=None,
         ge=1,
-        description="Versión de la vigente; obligatoria si existe, ignorada si no.",
+        description="Versión de la vigente (opcional, D9): si llega y no coincide, 409; si no hay vigente, se ignora.",
     )
 
 
