@@ -21,7 +21,7 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | 02 | [02-consultar-ubicacion.md](02-consultar-ubicacion.md) | Obtener `<PAIS_CO>`, `<DIV_ANT>`, `<CIU_MED>`, `<DIV_CUN>` y `<CIU_BOG>`. | 5 | — |
 | 03 | [03-registrar-empresa.md](03-registrar-empresa.md) | Crear la empresa que tendrá las sucursales. | 1 | 01, 02 |
 | 04 | [04-registrar-sucursales.md](04-registrar-sucursales.md) | Crear dos sucursales y comprobar los rechazos. | 4 | 02, 03 |
-| 05 | [05-consultar-y-cambiar-codigo.md](05-consultar-y-cambiar-codigo.md) | Listar las sucursales de la empresa y cambiar el código de la bodega. | 3 | 02, 03, 04 |
+| 05 | [05-consultar-y-cambiar-codigo.md](05-consultar-y-cambiar-codigo.md) | Listar las sucursales de la empresa y cambiar el código de la bodega. | 3 | 03, 04 |
 
 ## Por qué este orden
 
@@ -33,11 +33,11 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | Variable | Se obtiene en | Se usa en |
 | --- | --- | --- |
 | `<ORG_EMPRESA>` | 01 | 03 |
-| `<PAIS_CO>` | 02 | 03, 04, 05 |
+| `<PAIS_CO>` | 02 | 03, 04 |
 | `<DIV_ANT>` | 02 | 04 |
 | `<CIU_MED>` | 02 | 04 |
-| `<DIV_CUN>` | 02 | 04, 05 |
-| `<CIU_BOG>` | 02 | 04, 05 |
+| `<DIV_CUN>` | 02 | 04 |
+| `<CIU_BOG>` | 02 | 04 |
 | `<EMPRESA>` | 03 | 04, 05 |
 | `<SUC_MED>` | 04 | — |
 | `<SUC_BOG>` | 04 | 05 |

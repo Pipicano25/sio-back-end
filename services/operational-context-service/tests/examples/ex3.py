@@ -43,8 +43,7 @@ EX3 = dict(
             "Inactivar la empresa",
             "Inactivar la empresa y ver el efecto en su sucursal.",
             [
-                call("Inactivar la empresa con la versión vigente", "POST", f"{API}/companies/<EMPRESA>/deactivate", also=PLATFORM,
-                     body={"version": 1},
+                call("Inactivar la empresa", "POST", f"{API}/companies/<EMPRESA>/deactivate", also=PLATFORM,
                      why=["Exige el permiso `delete` aunque no elimina: cambia `status` a `INACTIVE`."],
                      show=["status", "version"]),
                 call("Consultar la sucursal", "GET", f"{API}/branches/<SUCURSAL>",
@@ -62,11 +61,10 @@ EX3 = dict(
             "Reactivar la empresa",
             "Reactivar la empresa y comprobar la transición repetida.",
             [
-                call("Reactivar la empresa", "POST", f"{API}/companies/<EMPRESA>/reactivate", also=PLATFORM, body={"version": 2},
+                call("Reactivar la empresa", "POST", f"{API}/companies/<EMPRESA>/reactivate", also=PLATFORM,
                      why=["Exige el permiso `update` y, desde la Fase B, `platform:administer`: solo `admin.sio` puede reactivar empresas."],
                      show=["status", "version"]),
                 call("Intentar reactivarla otra vez (rechazado)", "POST", f"{API}/companies/<EMPRESA>/reactivate", also=PLATFORM,
-                     body={"version": 3},
                      why=["Ya está `ACTIVE`: `409 INVALID_STATUS_TRANSITION`, sin cambiar la versión."],
                      expect=409, show=["status", "code", "detail"]),
                 call("Consultar la sucursal otra vez", "GET", f"{API}/branches/<SUCURSAL>",

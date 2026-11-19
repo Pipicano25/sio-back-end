@@ -112,7 +112,7 @@ class ContactProfileRepository(Protocol):
         """
         ...
 
-    def close(self, owner_id: UUID, *, expected_version: int, actor_id: str) -> ContactProfile:
+    def close(self, owner_id: UUID, *, expected_version: int | None, actor_id: str) -> ContactProfile:
         """Cierra la vigente sin reemplazo bajo bloqueo del propietario.
 
         Raises:
@@ -143,14 +143,14 @@ class ContactPersonRepository(Protocol):
     ) -> ContactPerson: ...
 
     def update(
-        self, contact_id: UUID, *, expected_version: int, values: dict[str, Any], actor_id: str
+        self, contact_id: UUID, *, expected_version: int | None, values: dict[str, Any], actor_id: str
     ) -> ContactPerson: ...
 
     def set_active(
-        self, contact_id: UUID, *, expected_version: int, active: bool, actor_id: str
+        self, contact_id: UUID, *, expected_version: int | None, active: bool, actor_id: str
     ) -> ContactPerson: ...
 
-    def set_primary(self, contact_id: UUID, *, expected_version: int, actor_id: str) -> ContactPerson: ...
+    def set_primary(self, contact_id: UUID, *, expected_version: int | None, actor_id: str) -> ContactPerson: ...
 
 
 class BusinessSectorRepository(Protocol):
@@ -181,7 +181,7 @@ class BusinessSectorRepository(Protocol):
     ) -> BusinessSector: ...
 
     def update(
-        self, sector_id: UUID, *, expected_version: int, values: dict[str, Any], actor_id: str
+        self, sector_id: UUID, *, expected_version: int | None, values: dict[str, Any], actor_id: str
     ) -> BusinessSector: ...
 
     def has_active_children(self, sector_id: UUID) -> bool: ...
@@ -207,10 +207,10 @@ class OrganizationBusinessSectorRepository(Protocol):
     ) -> OrganizationBusinessSector: ...
 
     def set_primary(
-        self, assignment_id: UUID, *, expected_version: int, actor_id: str
+        self, assignment_id: UUID, *, expected_version: int | None, actor_id: str
     ) -> OrganizationBusinessSector: ...
 
-    def close(self, assignment_id: UUID, *, expected_version: int, actor_id: str) -> OrganizationBusinessSector: ...
+    def close(self, assignment_id: UUID, *, expected_version: int | None, actor_id: str) -> OrganizationBusinessSector: ...
 
 
 class LegalRepresentativeRepository(Protocol):
@@ -235,10 +235,10 @@ class LegalRepresentativeRepository(Protocol):
     ) -> LegalRepresentative: ...
 
     def update(
-        self, representative_id: UUID, *, expected_version: int, values: dict[str, Any], actor_id: str
+        self, representative_id: UUID, *, expected_version: int | None, values: dict[str, Any], actor_id: str
     ) -> LegalRepresentative: ...
 
-    def close(self, representative_id: UUID, *, expected_version: int, actor_id: str) -> LegalRepresentative: ...
+    def close(self, representative_id: UUID, *, expected_version: int | None, actor_id: str) -> LegalRepresentative: ...
 
     def set_primary(
         self,

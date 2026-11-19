@@ -7,7 +7,7 @@ consumidores solo necesiten el `branch_id` (R-04). Todas las rutas exigen
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from operational_context_service.api.access_scope import get_access_scope
@@ -110,9 +110,9 @@ def build_router(auth: SIOAuth) -> APIRouter:
         scope: AccessScope = Depends(get_access_scope),
         service: BranchService = Depends(get_branch_service),
     ):
-        """Reemplazo completo con versión esperada; la empresa es inmutable (FR-022)."""
-        data = payload.model_dump()
-        expected_version = data.pop("version")
+        """Actualización parcial (D28); versión opcional (D9); la empresa es inmutable (FR-022)."""
+        data = payload.changes()
+        expected_version = payload.version
 
         return service.update(
             scope,
@@ -130,7 +130,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def deactivate_branch(
         branch_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         scope: AccessScope = Depends(get_access_scope),
         service: BranchService = Depends(get_branch_service),
@@ -146,7 +147,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def reactivate_branch(
         branch_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         scope: AccessScope = Depends(get_access_scope),
         service: BranchService = Depends(get_branch_service),

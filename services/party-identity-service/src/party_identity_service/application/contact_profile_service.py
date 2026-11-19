@@ -127,9 +127,9 @@ class ContactProfileService:
 
         current = self.profiles.get_active(owner_id)
         if current is not None:
-            # Sin versión, el cliente cree que no hay vigente: su vista está
-            # desactualizada (también si otra solicitud acaba de crearla) → 409.
-            if expected_version is None or expected_version != current.version:
+            # La versión es opcional (constitución 4.0.0, D9): si llega y no coincide → 409;
+            # si no llega, la versión nueva se registra sobre la vigente.
+            if expected_version is not None and expected_version != current.version:
                 raise VersionConflictError
             if current.data == data and current.confirmed_by_company_id == confirmed_by_company_id:
                 # No-op semántico (DS-04): sin escritura ni dependencias.
@@ -162,7 +162,7 @@ class ContactProfileService:
         )
         return profile, True
 
-    def close(self, owner_id: UUID, *, expected_version: int, actor_id: str) -> ContactProfile:
+    def close(self, owner_id: UUID, *, expected_version: int | None, actor_id: str) -> ContactProfile:
         """Cierra la versión vigente sin reemplazo (DS-03, FR-020)."""
         self._require_owner(owner_id)
         profile = self.profiles.close(owner_id, expected_version=expected_version, actor_id=actor_id)

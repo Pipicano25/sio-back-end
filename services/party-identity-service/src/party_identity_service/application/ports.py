@@ -106,7 +106,7 @@ class PersonIdentityRepository(Protocol):
         self,
         person_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> PersonIdentity:
@@ -121,7 +121,7 @@ class PersonIdentityRepository(Protocol):
         self,
         person_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         status: IdentityStatus,
         actor_id: str,
     ) -> PersonIdentity:
@@ -181,7 +181,7 @@ class OrganizationIdentityRepository(Protocol):
         self,
         organization_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> OrganizationIdentity:
@@ -192,7 +192,7 @@ class OrganizationIdentityRepository(Protocol):
         self,
         organization_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         status: IdentityStatus,
         actor_id: str,
     ) -> OrganizationIdentity:
@@ -251,7 +251,7 @@ class IdentificationTypeRuleRepository(Protocol):
         self,
         rule_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> IdentificationTypeRule:
@@ -262,7 +262,7 @@ class IdentificationTypeRuleRepository(Protocol):
         self,
         rule_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         number_pattern: str,
         number_pattern_description: str,
         example_value: str | None,
@@ -282,7 +282,7 @@ class IdentificationTypeRuleRepository(Protocol):
         self,
         rule_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> IdentificationTypeRule:
         """Retira una regla (`is_active = FALSE` y `valid_to`)."""

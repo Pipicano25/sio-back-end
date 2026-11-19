@@ -63,7 +63,7 @@ EX5 = dict(
             "03-inactivar-persona.md", "Inactivar la persona", "Ver el efecto sobre el perfil.",
             [
                 call("Inactivar la persona", "POST", f"{API}/person-identities/<PERSONA_CLIENTE>/deactivate",
-                     body={"version": 1}, why=["Exige `delete` sobre `person_identities`; no elimina."],
+                     why=["Sin cuerpo: inactivar no exige `version` (constitución 4.0.0, D10).", "Exige `delete` sobre `person_identities`; no elimina."],
                      show=["id", "status", "version"]),
                 call("Intentar una versión nueva del perfil (rechazado)", "POST",
                      f"{API}/person-identities/<PERSONA_CLIENTE>/contact-profile",

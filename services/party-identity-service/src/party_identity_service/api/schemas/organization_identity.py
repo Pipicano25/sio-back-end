@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from party_identity_service.api.schemas.partial import PartialUpdate
+
 from party_identity_service.domain.person_identity import IdentityStatus
 
 
@@ -84,25 +86,19 @@ class OrganizationIdentityCreate(BaseModel):
     website: Website = None
 
 
-class OrganizationIdentityUpdate(BaseModel):
-    """Payload para actualización completa de organización."""
+class OrganizationIdentityUpdate(PartialUpdate):
+    """Actualización parcial de organización: solo los campos que cambian (D28)."""
 
-    model_config = ConfigDict(
-        extra="forbid",
-    )
+    not_nullable = frozenset({"country_id", "identification_type", "identification_number", "legal_name"})
 
-    country_id: UUID
-    identification_type: IdentificationTypeCode
-    identification_number: IdentificationNumber
-    legal_name: OrganizationName
+    country_id: UUID | None = None
+    identification_type: IdentificationTypeCode | None = None
+    identification_number: IdentificationNumber | None = None
+    legal_name: OrganizationName | None = None
     trade_name: OptionalOrganizationName = None
     organization_type: OrganizationType = None
     registration_status: RegistrationStatus = None
     website: Website = None
-    version: int = Field(
-        ge=1,
-        description="Versión conocida por el cliente.",
-    )
 
 
 class OrganizationIdentityResponse(BaseModel):

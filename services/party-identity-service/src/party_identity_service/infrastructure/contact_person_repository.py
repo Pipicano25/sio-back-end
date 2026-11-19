@@ -115,7 +115,7 @@ class SQLAlchemyContactPersonRepository:
         return self._to_domain(model)
 
     def update(
-        self, contact_id: UUID, *, expected_version: int, values: dict[str, Any], actor_id: str
+        self, contact_id: UUID, *, expected_version: int | None, values: dict[str, Any], actor_id: str
     ) -> ContactPerson:
         model = load_for_update(
             self.session,
@@ -133,7 +133,7 @@ class SQLAlchemyContactPersonRepository:
         return self._to_domain(model)
 
     def set_active(
-        self, contact_id: UUID, *, expected_version: int, active: bool, actor_id: str
+        self, contact_id: UUID, *, expected_version: int | None, active: bool, actor_id: str
     ) -> ContactPerson:
         values: dict[str, Any] = {"is_active": active}
         if not active:
@@ -141,7 +141,7 @@ class SQLAlchemyContactPersonRepository:
             values["is_primary"] = False
         return self.update(contact_id, expected_version=expected_version, values=values, actor_id=actor_id)
 
-    def set_primary(self, contact_id: UUID, *, expected_version: int, actor_id: str) -> ContactPerson:
+    def set_primary(self, contact_id: UUID, *, expected_version: int | None, actor_id: str) -> ContactPerson:
         # Se obtiene la organización sin cargar la entidad, para no dejar en la sesión
         # una versión anterior al bloqueo.
         organization_id = self.session.scalar(
@@ -153,7 +153,7 @@ class SQLAlchemyContactPersonRepository:
         self._lock_organization(organization_id)
         target = self.session.get(Model, contact_id, with_for_update=True, populate_existing=True)
 
-        if target.version != expected_version:
+        if expected_version is not None and target.version != expected_version:
             self.session.rollback()
             raise VersionConflictError
         if not target.is_active:

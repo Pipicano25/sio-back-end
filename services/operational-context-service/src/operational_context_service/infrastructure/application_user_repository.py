@@ -186,7 +186,7 @@ class SQLAlchemyApplicationUserRepository:
         self,
         application_user_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> ApplicationUser:
@@ -214,7 +214,7 @@ class SQLAlchemyApplicationUserRepository:
         self,
         application_user_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> ApplicationUser:
         """Reactiva si la empresa sigue `ACTIVE`; el índice parcial impide dos `ACTIVE`."""

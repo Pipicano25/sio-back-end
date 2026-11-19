@@ -56,7 +56,6 @@ POST /api/v1/advisor-assignments/<ASESORIA_3>/close
 
 ```json
 {
-  "version": 1,
   "valid_to": "2026-07-01T00:00:00-05:00"
 }
 ```
@@ -85,12 +84,6 @@ POST /api/v1/advisor-assignments/<ASESORIA_3>/close
 
 ```http
 POST /api/v1/advisor-assignments/<ASESORIA_3>/close
-```
-
-```json
-{
-  "version": 2
-}
 ```
 
 **Permiso que exige la URL:** `perm:operational-context:company_advisor_assignments:delete`

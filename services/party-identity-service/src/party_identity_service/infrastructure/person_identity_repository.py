@@ -180,7 +180,7 @@ class SQLAlchemyPersonIdentityRepository:
         self,
         person_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> PersonIdentity:
@@ -210,7 +210,7 @@ class SQLAlchemyPersonIdentityRepository:
         self,
         person_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         status: IdentityStatus,
         actor_id: str,
     ) -> PersonIdentity:

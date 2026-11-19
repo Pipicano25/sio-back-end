@@ -165,7 +165,7 @@ class CompanyRepository(Protocol):
         self,
         company_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> Company: ...
@@ -208,7 +208,7 @@ class BranchRepository(Protocol):
         self,
         branch_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> Branch: ...
@@ -217,7 +217,7 @@ class BranchRepository(Protocol):
         self,
         branch_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> Branch: ...
 
@@ -360,7 +360,7 @@ class ApplicationUserRepository(Protocol):
         self,
         application_user_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> ApplicationUser: ...
@@ -369,7 +369,7 @@ class ApplicationUserRepository(Protocol):
         self,
         application_user_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> ApplicationUser: ...
 
@@ -408,9 +408,9 @@ class UserBranchRepository(Protocol):
         actor_id: str,
     ) -> UserBranch: ...
 
-    def deactivate(self, user_branch_id: UUID, *, expected_version: int, actor_id: str) -> UserBranch: ...
+    def deactivate(self, user_branch_id: UUID, *, expected_version: int | None, actor_id: str) -> UserBranch: ...
 
-    def reactivate(self, user_branch_id: UUID, *, expected_version: int, actor_id: str) -> UserBranch: ...
+    def reactivate(self, user_branch_id: UUID, *, expected_version: int | None, actor_id: str) -> UserBranch: ...
 
 
 class AdvisorAssignmentRepository(Protocol):
@@ -446,7 +446,7 @@ class AdvisorAssignmentRepository(Protocol):
         self,
         assignment_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         valid_to: datetime,
         actor_id: str,
     ) -> AdvisorAssignment: ...
@@ -456,7 +456,7 @@ class AdvisorAssignmentRepository(Protocol):
         company_id: UUID,
         *,
         current_assignment_id: UUID,
-        expected_version: int,
+        expected_version: int | None,
         person_identity_id: UUID,
         effective_at: datetime,
         actor_id: str,

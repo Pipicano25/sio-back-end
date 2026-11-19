@@ -8,6 +8,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from party_identity_service.api.schemas.partial import PartialUpdate
+
 from party_identity_service.api.schemas.contact_person import Position
 from party_identity_service.api.schemas.contact_profile import TrimmedOptional
 
@@ -41,14 +43,11 @@ class LegalRepresentativeSetPrimary(BaseModel):
     )
 
 
-class LegalRepresentativeUpdate(BaseModel):
+class LegalRepresentativeUpdate(PartialUpdate):
     """Solo cargo y referencia documental; los demás campos responden `IMMUTABLE_FIELD`."""
-
-    model_config = ConfigDict(extra="forbid")
 
     position: Position = None
     source_document_reference: DocumentReference = None
-    version: int = Field(ge=1)
     person_identity_id: UUID | None = Field(default=None, description="Inmutable.")
     organization_identity_id: UUID | None = Field(default=None, description="Inmutable.")
     representative_type: str | None = Field(default=None, description="Inmutable.")

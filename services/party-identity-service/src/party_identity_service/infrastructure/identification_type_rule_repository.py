@@ -192,7 +192,7 @@ class SQLAlchemyIdentificationTypeRuleRepository:
         self,
         rule_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> IdentificationTypeRule:
@@ -222,7 +222,7 @@ class SQLAlchemyIdentificationTypeRuleRepository:
         self,
         rule_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         number_pattern: str,
         number_pattern_description: str,
         example_value: str | None,
@@ -272,7 +272,7 @@ class SQLAlchemyIdentificationTypeRuleRepository:
         self,
         rule_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> IdentificationTypeRule:
         """Retira una regla: `is_active = FALSE` y `valid_to` si no había uno anterior."""
@@ -341,7 +341,7 @@ class SQLAlchemyIdentificationTypeRuleRepository:
         self,
         rule_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
     ) -> IdentificationTypeRuleModel:
         model = load_for_update(
             self.session,

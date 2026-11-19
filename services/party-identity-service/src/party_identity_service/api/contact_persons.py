@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import Body, APIRouter, Depends, Query, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from party_identity_service.api.dependencies import get_contact_person_service
@@ -92,10 +92,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         return service.update(
             contact_id,
             expected_version=payload.version,
-            person_identity_id=payload.person_identity_id,
-            position=payload.position,
-            email=payload.email,
-            phone=payload.phone,
+            **payload.changes(exclude={"is_primary", "organization_identity_id"}),
             actor_id=actor_id,
             immutable_fields=immutable,
         )
@@ -108,7 +105,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def set_primary(
         contact_id: UUID,
-        payload: VersionRequest,
+        *,
+        payload: VersionRequest = Body(default_factory=VersionRequest),
         actor_id: CurrentSubject,
         service: ContactPersonService = Depends(get_contact_person_service),
     ):
@@ -122,7 +120,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def deactivate(
         contact_id: UUID,
-        payload: VersionRequest,
+        *,
+        payload: VersionRequest = Body(default_factory=VersionRequest),
         actor_id: CurrentSubject,
         service: ContactPersonService = Depends(get_contact_person_service),
     ):
@@ -136,7 +135,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def reactivate(
         contact_id: UUID,
-        payload: VersionRequest,
+        *,
+        payload: VersionRequest = Body(default_factory=VersionRequest),
         actor_id: CurrentSubject,
         service: ContactPersonService = Depends(get_contact_person_service),
     ):

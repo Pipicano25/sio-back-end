@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
+from party_identity_service.application.partial_update import UNSET
 from party_identity_service.application.exceptions import (
     DomainValidationError,
     ImmutableFieldError,
@@ -92,10 +93,10 @@ class BusinessSectorService:
         self,
         sector_id: UUID,
         *,
-        expected_version: int,
-        name: str,
-        description: str | None,
-        parent_sector_id: UUID | None,
+        expected_version: int | None,
+        name: str = UNSET,
+        description: str | None = UNSET,
+        parent_sector_id: UUID | None = UNSET,
         actor_id: str,
         immutable_fields: list[str] | None = None,
     ) -> BusinessSector:
@@ -105,8 +106,12 @@ class BusinessSectorService:
                 + ", ".join(immutable_fields)
             )
         current = self.get(sector_id)
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
+        # D28: un campo no enviado conserva su valor.
+        name = current.name if name is UNSET else name
+        description = current.description if description is UNSET else description
+        parent_sector_id = current.parent_sector_id if parent_sector_id is UNSET else parent_sector_id
 
         values = {
             "name": name.strip(),
@@ -123,9 +128,9 @@ class BusinessSectorService:
 
         return self.sectors.update(sector_id, expected_version=expected_version, values=values, actor_id=actor_id)
 
-    def deactivate(self, sector_id: UUID, *, expected_version: int, actor_id: str) -> BusinessSector:
+    def deactivate(self, sector_id: UUID, *, expected_version: int | None, actor_id: str) -> BusinessSector:
         current = self.get(sector_id)
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
         if current.status != "ACTIVE":
             raise InvalidStatusTransitionError("El sector ya está inactivo.")
@@ -135,9 +140,9 @@ class BusinessSectorService:
             sector_id, expected_version=expected_version, values={"status": "INACTIVE"}, actor_id=actor_id
         )
 
-    def reactivate(self, sector_id: UUID, *, expected_version: int, actor_id: str) -> BusinessSector:
+    def reactivate(self, sector_id: UUID, *, expected_version: int | None, actor_id: str) -> BusinessSector:
         current = self.get(sector_id)
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
         if current.status != "INACTIVE":
             raise InvalidStatusTransitionError("El sector ya está activo.")
@@ -210,11 +215,11 @@ class OrganizationBusinessSectorService:
             actor_id=actor_id,
         )
 
-    def set_primary(self, assignment_id: UUID, *, expected_version: int, actor_id: str) -> OrganizationBusinessSector:
+    def set_primary(self, assignment_id: UUID, *, expected_version: int | None, actor_id: str) -> OrganizationBusinessSector:
         """Establece el sector principal de forma atómica (DS-12, FR-063)."""
         return self.assignments.set_primary(assignment_id, expected_version=expected_version, actor_id=actor_id)
 
-    def close(self, assignment_id: UUID, *, expected_version: int, actor_id: str) -> OrganizationBusinessSector:
+    def close(self, assignment_id: UUID, *, expected_version: int | None, actor_id: str) -> OrganizationBusinessSector:
         """Cierra sin reactivación posible (DS-08)."""
         return self.assignments.close(assignment_id, expected_version=expected_version, actor_id=actor_id)
 

@@ -4,7 +4,7 @@ Ejercicio 1 — Empresa con su sede operativa principal · [← Paso anterior](0
 
 **Objetivo:** Leer la empresa, cambiar el teléfono con la versión vigente y buscarla por su organización.
 
-**Necesita (de pasos anteriores):** `<EMPRESA>`, `<ORG_EMPRESA>`, `<PAIS_CO>`, `<DIV_ANT>`, `<CIU_MED>` — pasos [01](01-consultar-organizacion.md), [02](02-consultar-ubicacion.md), [03](03-registrar-empresa.md)
+**Necesita (de pasos anteriores):** `<EMPRESA>`, `<ORG_EMPRESA>` — pasos [01](01-consultar-organizacion.md), [03](03-registrar-empresa.md)
 
 ---
 
@@ -43,7 +43,7 @@ GET /api/v1/companies/<EMPRESA>
 }
 ```
 
-## 2. Modificar el teléfono con la versión vigente
+## 2. Modificar el teléfono
 
 ```http
 PUT /api/v1/companies/<EMPRESA>
@@ -51,19 +51,7 @@ PUT /api/v1/companies/<EMPRESA>
 
 ```json
 {
-  "organization_identity_id": "<ORG_EMPRESA>",
-  "email": "contacto@comercializadora-ficticia.co",
-  "phone": "+57 604 000 0002",
-  "address_line": "Carrera Ficticia 43A # 1-50",
-  "country_id": "<PAIS_CO>",
-  "administrative_division_id": "<DIV_ANT>",
-  "city_id": "<CIU_MED>",
-  "postal_code": "050021",
-  "latitude": "6.208000",
-  "longitude": "-75.567000",
-  "timezone": "America/Bogota",
-  "default_currency": "COP",
-  "version": 1
+  "phone": "+57 604 000 0002"
 }
 ```
 
@@ -75,7 +63,8 @@ PUT /api/v1/companies/<EMPRESA>
 
 **Por qué se hace así**
 
-- `PUT` reemplaza todos los campos: se envían de nuevo los que no cambian.
+- El `PUT` es parcial: solo se envía lo que cambia; lo demás queda igual (constitución 4.0.0, D28).
+- `version` es opcional: si se envía y otro usuario cambió la empresa antes, responde `409`.
 - No cambia la organización ni la ubicación: el servicio no vuelve a consultar Party Identity ni Geography.
 
 **Respuesta esperada — `200 OK`** (abreviada)

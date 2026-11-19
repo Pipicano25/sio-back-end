@@ -107,9 +107,7 @@ TOKEN_ADMIN_DAO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/open
 
 ```bash
 curl -s -X POST "http://localhost:8002/api/v1/organization-legal-representatives/<REP_JORGE_SUPLENTE>:close" \
-  -H "Authorization: Bearer $TOKEN_ADMIN_DAO" \
-  -H "Content-Type: application/json" \
-  -d '{"version": 1}'
+  -H "Authorization: Bearer $TOKEN_ADMIN_DAO"
 ```
 
 Respuesta `403 Forbidden`:

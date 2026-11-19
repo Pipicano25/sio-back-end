@@ -19,7 +19,6 @@ POST /api/v1/companies/<EMPRESA>/advisor-assignments/change-primary
 ```json
 {
   "current_assignment_id": "<ASESORIA_1>",
-  "version": 1,
   "person_identity_id": "<PERSONA_ASESOR_2>",
   "effective_at": "2026-06-01T00:00:00-05:00"
 }

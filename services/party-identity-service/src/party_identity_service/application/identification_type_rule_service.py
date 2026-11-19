@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from uuid import UUID
 
+from party_identity_service.application.partial_update import UNSET
 from party_identity_service.application.exceptions import (
     CountryNotFoundError,
     ExampleDoesNotMatchPatternError,
@@ -206,9 +207,9 @@ class IdentificationTypeRuleService:
         self,
         rule_id: UUID,
         *,
-        expected_version: int,
-        number_pattern_description: str,
-        example_value: str | None,
+        expected_version: int | None,
+        number_pattern_description: str = UNSET,
+        example_value: str | None = UNSET,
         requested_identity: dict[str, object] | None = None,
         requested_semantics: dict[str, object] | None = None,
         actor_id: str,
@@ -223,8 +224,11 @@ class IdentificationTypeRuleService:
         """
         current = self.get_by_id(rule_id)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
+        # D28: un campo no enviado conserva su valor.
+        number_pattern_description = current.number_pattern_description if number_pattern_description is UNSET else number_pattern_description
+        example_value = current.example_value if example_value is UNSET else example_value
 
         if not current.is_active:
             raise InvalidStatusTransitionError(
@@ -266,7 +270,7 @@ class IdentificationTypeRuleService:
         self,
         rule_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         number_pattern: str,
         number_pattern_description: str,
         example_value: str | None,
@@ -280,7 +284,7 @@ class IdentificationTypeRuleService:
         """
         current = self.get_by_id(rule_id)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if not current.is_active:
@@ -308,13 +312,13 @@ class IdentificationTypeRuleService:
         self,
         rule_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> IdentificationTypeRule:
         """Retira una regla sin eliminarla (FR-014)."""
         current = self.get_by_id(rule_id)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if not current.is_active:

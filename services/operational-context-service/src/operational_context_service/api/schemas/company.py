@@ -16,6 +16,7 @@ from operational_context_service.api.schemas.common import (
     Latitude,
     Longitude,
     OptionalEmail,
+    PartialUpdate,
     Phone,
     PostalCode,
     StrictModel,
@@ -47,12 +48,23 @@ class CompanyCreate(_CompanyFields):
     default_currency: str = DEFAULT_CURRENCY
 
 
-class CompanyUpdate(_CompanyFields):
-    """`PUT` de empresa: reemplazo completo con versión esperada."""
+class CompanyUpdate(PartialUpdate):
+    """`PUT` parcial de empresa: solo los campos que cambian (D28); versión opcional (D9)."""
 
-    timezone: TimezoneText
-    default_currency: str
-    version: Version
+    not_nullable = frozenset({"organization_identity_id", "timezone", "default_currency"})
+
+    organization_identity_id: UUID | None = None
+    email: OptionalEmail = None
+    phone: Phone = None
+    address_line: AddressLine = None
+    country_id: UUID | None = None
+    administrative_division_id: UUID | None = None
+    city_id: UUID | None = None
+    postal_code: PostalCode = None
+    latitude: Latitude = None
+    longitude: Longitude = None
+    timezone: TimezoneText | None = None
+    default_currency: str | None = None
 
 
 class CompanyResponse(BaseModel):

@@ -4,7 +4,7 @@ Ejercicio 2 — Sucursales de una empresa · [← Paso anterior](04-registrar-su
 
 **Objetivo:** Listar las sucursales de la empresa y cambiar el código de la bodega.
 
-**Necesita (de pasos anteriores):** `<EMPRESA>`, `<SUC_BOG>`, `<PAIS_CO>`, `<DIV_CUN>`, `<CIU_BOG>` — pasos [02](02-consultar-ubicacion.md), [03](03-registrar-empresa.md), [04](04-registrar-sucursales.md)
+**Necesita (de pasos anteriores):** `<EMPRESA>`, `<SUC_BOG>` — pasos [03](03-registrar-empresa.md), [04](04-registrar-sucursales.md)
 
 ---
 
@@ -50,13 +50,7 @@ PUT /api/v1/branches/<SUC_BOG>
 
 ```json
 {
-  "code": "BOD-NORTE",
-  "name": "Bodega Norte (ficticia)",
-  "country_id": "<PAIS_CO>",
-  "administrative_division_id": "<DIV_CUN>",
-  "city_id": "<CIU_BOG>",
-  "timezone": "America/Bogota",
-  "version": 1
+  "code": "BOD-NORTE"
 }
 ```
 
@@ -68,6 +62,7 @@ PUT /api/v1/branches/<SUC_BOG>
 
 **Por qué se hace así**
 
+- El `PUT` es parcial: solo se envía el campo que cambia.
 - El código puede cambiar respetando la unicidad; el `id` no cambia (DS-10).
 - No cambia la ubicación: no se consulta Geography.
 

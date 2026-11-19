@@ -64,9 +64,7 @@ Intenta el paso 03 (*Inactivar la persona*), llamada 1:
 
 ```bash
 curl -s -X POST "http://localhost:8002/api/v1/person-identities/<PERSONA_CLIENTE>/deactivate" \
-  -H "Authorization: Bearer $TOKEN_EMPLEADO" \
-  -H "Content-Type: application/json" \
-  -d '{"version": 1}'
+  -H "Authorization: Bearer $TOKEN_EMPLEADO"
 ```
 
 Respuesta `403 Forbidden`:
@@ -105,9 +103,7 @@ TOKEN_ADMIN_DAO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/open
 
 ```bash
 curl -s -X POST "http://localhost:8002/api/v1/person-identities/<PERSONA_CLIENTE>/deactivate" \
-  -H "Authorization: Bearer $TOKEN_ADMIN_DAO" \
-  -H "Content-Type: application/json" \
-  -d '{"version": 1}'
+  -H "Authorization: Bearer $TOKEN_ADMIN_DAO"
 ```
 
 Respuesta `403 Forbidden`:

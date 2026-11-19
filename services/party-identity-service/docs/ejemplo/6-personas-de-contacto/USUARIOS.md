@@ -66,9 +66,7 @@ Intenta el paso 04 (*Cambiar el principal e inactivar*), llamada 3:
 
 ```bash
 curl -s -X POST "http://localhost:8002/api/v1/organization-contact-persons/<CONTACTO_CARTERA>:deactivate" \
-  -H "Authorization: Bearer $TOKEN_EMPLEADO" \
-  -H "Content-Type: application/json" \
-  -d '{"version": 2}'
+  -H "Authorization: Bearer $TOKEN_EMPLEADO"
 ```
 
 Respuesta `403 Forbidden`:
@@ -107,9 +105,7 @@ TOKEN_ADMIN_DAO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/open
 
 ```bash
 curl -s -X POST "http://localhost:8002/api/v1/organization-contact-persons/<CONTACTO_CARTERA>:deactivate" \
-  -H "Authorization: Bearer $TOKEN_ADMIN_DAO" \
-  -H "Content-Type: application/json" \
-  -d '{"version": 2}'
+  -H "Authorization: Bearer $TOKEN_ADMIN_DAO"
 ```
 
 Respuesta `403 Forbidden`:

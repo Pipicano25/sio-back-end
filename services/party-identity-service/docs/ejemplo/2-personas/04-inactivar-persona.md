@@ -14,12 +14,6 @@ Ejercicio 2 — Personas: registrar, validar, verificar e inactivar · [← Paso
 POST /api/v1/person-identities/<PERSONA_ANA>/deactivate
 ```
 
-```json
-{
-  "version": 2
-}
-```
-
 **Permiso que exige la URL:** `perm:party-identity:person_identities:delete`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
@@ -28,6 +22,7 @@ POST /api/v1/person-identities/<PERSONA_ANA>/deactivate
 
 **Por qué se hace así**
 
+- Sin cuerpo: inactivar no exige `version` (constitución 4.0.0, D10).
 - Inactivar exige `delete` sobre `person_identities`; reactivar (`/reactivate`) exige `update`.
 - `verification_status` sigue `VERIFIED`: son estados independientes.
 

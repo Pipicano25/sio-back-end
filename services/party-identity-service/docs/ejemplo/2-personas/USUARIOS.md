@@ -23,7 +23,7 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 | [02](02-registrar-persona.md) | 2. Intentar registrar con tarjeta de identidad (`TI`) a una persona adulta (rechazado) | `POST /api/v1/person-identities` | `perm:party-identity:person_identities:create` | ✅ | ✅ | ✅ |
 | [02](02-registrar-persona.md) | 3. Intentar registrar otra vez la misma cédula (rechazado) | `POST /api/v1/person-identities` | `perm:party-identity:person_identities:create` | ✅ | ✅ | ✅ |
 | [03](03-verificar-persona.md) | 1. Cambiar `verification_status` a `VERIFIED` | `PUT /api/v1/person-identities/{id}` | `perm:party-identity:person_identities:update` | ✅ | ✅ | ✅ |
-| [03](03-verificar-persona.md) | 2. Repetir el cambio con la versión vieja (rechazado) | `PUT /api/v1/person-identities/{id}` | `perm:party-identity:person_identities:update` | ✅ | ✅ | ✅ |
+| [03](03-verificar-persona.md) | 2. Enviar una versión vieja (rechazado) | `PUT /api/v1/person-identities/{id}` | `perm:party-identity:person_identities:update` | ✅ | ✅ | ✅ |
 | [04](04-inactivar-persona.md) | 1. Inactivar a ANA MARIA | `POST /api/v1/person-identities/{id}/deactivate` | `perm:party-identity:person_identities:delete` | ✅ | ❌ | ❌ |
 | [04](04-inactivar-persona.md) | 2. Listar personas (por defecto solo `ACTIVE`) | `GET /api/v1/person-identities` | `perm:party-identity:person_identities:read` | ✅ | ✅ | ✅ |
 | [04](04-inactivar-persona.md) | 3. Listar personas inactivas | `GET /api/v1/person-identities` | `perm:party-identity:person_identities:read` | ✅ | ✅ | ✅ |
@@ -65,9 +65,7 @@ Intenta el paso 04 (*Inactivar la persona*), llamada 1:
 
 ```bash
 curl -s -X POST "http://localhost:8002/api/v1/person-identities/<PERSONA_ANA>/deactivate" \
-  -H "Authorization: Bearer $TOKEN_EMPLEADO" \
-  -H "Content-Type: application/json" \
-  -d '{"version": 2}'
+  -H "Authorization: Bearer $TOKEN_EMPLEADO"
 ```
 
 Respuesta `403 Forbidden`:
@@ -106,9 +104,7 @@ TOKEN_ADMIN_DAO=$(curl -s -X POST http://localhost:8081/realms/sio/protocol/open
 
 ```bash
 curl -s -X POST "http://localhost:8002/api/v1/person-identities/<PERSONA_ANA>/deactivate" \
-  -H "Authorization: Bearer $TOKEN_ADMIN_DAO" \
-  -H "Content-Type: application/json" \
-  -d '{"version": 2}'
+  -H "Authorization: Bearer $TOKEN_ADMIN_DAO"
 ```
 
 Respuesta `403 Forbidden`:

@@ -7,7 +7,7 @@ capacidad `platform:lookup` (FR-045).
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from operational_context_service.api.access_scope import get_access_scope
@@ -110,7 +110,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         return service.update(
             scope,
             application_user_id,
-            payload.model_dump(include={"display_name", "reference_email"}),
+            payload.changes(),
             expected_version=payload.version,
             actor_id=actor_id,
         )
@@ -123,7 +123,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def deactivate_application_user(
         application_user_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         scope: AccessScope = Depends(get_access_scope),
         service: ApplicationUserService = Depends(get_application_user_service),
@@ -139,7 +140,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def reactivate_application_user(
         application_user_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         scope: AccessScope = Depends(get_access_scope),
         service: ApplicationUserService = Depends(get_application_user_service),

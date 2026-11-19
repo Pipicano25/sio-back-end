@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from party_identity_service.api.schemas.partial import PartialUpdate
+
 from party_identity_service.domain.person_identity import (
     IdentityStatus,
     PersonVerificationStatus,
@@ -67,29 +69,23 @@ class PersonIdentityCreate(BaseModel):
     verification_status: PersonVerificationStatus = "UNVERIFIED"
 
 
-class PersonIdentityUpdate(BaseModel):
-    """Payload para actualización completa de persona.
+class PersonIdentityUpdate(PartialUpdate):
+    """Actualización parcial de persona: solo los campos que cambian (D28).
 
     El estado de uso solo cambia con las acciones `deactivate`/`reactivate`.
     """
 
-    model_config = ConfigDict(
-        extra="forbid",
-    )
+    not_nullable = frozenset({"identification_country_id", "identification_type", "identification_number", "first_name", "last_name", "verification_status"})
 
-    identification_country_id: UUID
-    identification_type: IdentificationTypeCode
-    identification_number: IdentificationNumber
-    first_name: PersonName
+    identification_country_id: UUID | None = None
+    identification_type: IdentificationTypeCode | None = None
+    identification_number: IdentificationNumber | None = None
+    first_name: PersonName | None = None
     middle_name: OptionalPersonName = None
-    last_name: PersonName
+    last_name: PersonName | None = None
     second_last_name: OptionalPersonName = None
     birth_date: date | None = None
-    verification_status: PersonVerificationStatus
-    version: int = Field(
-        ge=1,
-        description="Versión conocida por el cliente.",
-    )
+    verification_status: PersonVerificationStatus | None = None
 
 
 class PersonIdentityResponse(BaseModel):

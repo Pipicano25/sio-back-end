@@ -8,6 +8,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from party_identity_service.api.schemas.partial import PartialUpdate
+
 from party_identity_service.domain.business_sector import SectorStatus
 
 SystemCode = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=30)]
@@ -25,15 +27,14 @@ class BusinessSectorCreate(BaseModel):
     parent_sector_id: UUID | None = None
 
 
-class BusinessSectorUpdate(BaseModel):
+class BusinessSectorUpdate(PartialUpdate):
     """`classification_system` y `code` solo se aceptan para responder `IMMUTABLE_FIELD`."""
 
-    model_config = ConfigDict(extra="forbid")
+    not_nullable = frozenset({"name"})
 
-    name: SectorName
+    name: SectorName | None = None
     description: str | None = None
     parent_sector_id: UUID | None = None
-    version: int = Field(ge=1)
     classification_system: str | None = Field(default=None, description="Inmutable.")
     code: str | None = Field(default=None, description="Inmutable.")
 

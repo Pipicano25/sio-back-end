@@ -14,12 +14,6 @@ Ejercicio 5 — Perfil de contacto de una persona: cliente persona natural e ina
 POST /api/v1/person-identities/<PERSONA_CLIENTE>/deactivate
 ```
 
-```json
-{
-  "version": 1
-}
-```
-
 **Permiso que exige la URL:** `perm:party-identity:person_identities:delete`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
@@ -28,6 +22,7 @@ POST /api/v1/person-identities/<PERSONA_CLIENTE>/deactivate
 
 **Por qué se hace así**
 
+- Sin cuerpo: inactivar no exige `version` (constitución 4.0.0, D10).
 - Exige `delete` sobre `person_identities`; no elimina.
 
 **Respuesta esperada — `200 OK`** (abreviada)

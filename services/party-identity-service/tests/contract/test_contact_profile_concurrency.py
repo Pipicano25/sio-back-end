@@ -45,7 +45,9 @@ def test_two_simultaneous_first_versions_leave_exactly_one(api, test_engine) -> 
 
     statuses = _run(api, [(url, profile_payload(phone=f"+57 300 000 000{i}")) for i in range(2)])
 
-    assert sorted(statuses) == [201, 409]
+    # Sin versión gana la última escritura (D9): puede haber uno o dos 201, pero siempre queda
+    # exactamente una versión vigente.
+    assert 201 in statuses and set(statuses) <= {201, 409}
     assert _active_count(test_engine, organization["id"]) == 1
 
 

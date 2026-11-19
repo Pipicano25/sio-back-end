@@ -14,12 +14,6 @@ Ejercicio 5 — Sucursales asignadas y acceso operativo · [← Paso anterior](0
 POST /api/v1/user-branches/<ASIGNACION>/deactivate
 ```
 
-```json
-{
-  "version": 1
-}
-```
-
 **Permiso que exige la URL:** `perm:operational-context:user_branches:delete`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:delete`)
@@ -75,12 +69,6 @@ GET /api/v1/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operar
 
 ```http
 POST /api/v1/branches/<SUC_PRINCIPAL>/deactivate
-```
-
-```json
-{
-  "version": 1
-}
 ```
 
 **Permiso que exige la URL:** `perm:operational-context:branches:delete`

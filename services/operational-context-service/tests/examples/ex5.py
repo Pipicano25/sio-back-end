@@ -121,7 +121,6 @@ EX5 = dict(
             "Retirar la asignación, inactivar la sucursal y volver a comprobar.",
             [
                 call("Retirar la asignación", "POST", f"{API}/user-branches/<ASIGNACION>/deactivate",
-                     body={"version": 1},
                      why=["No se elimina: queda `INACTIVE` con su fecha de retiro."],
                      show=["status", "version", "operational_access"]),
                 call("Acceso tras retirar la asignación (denegado)", "GET",
@@ -130,7 +129,6 @@ EX5 = dict(
                      why=["La asignación existe pero está inactiva: `USER_BRANCH_INACTIVE`."],
                      show=ACCESS_SHOW),
                 call("Inactivar la sucursal principal", "POST", f"{API}/branches/<SUC_PRINCIPAL>/deactivate",
-                     body={"version": 1},
                      why=["Inactivar la sucursal no modifica las asignaciones (DS-11)."],
                      show=["status", "version"]),
                 call("Acceso a la sucursal inactiva (denegado)", "GET",

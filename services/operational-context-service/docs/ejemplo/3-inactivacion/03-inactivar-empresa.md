@@ -8,16 +8,10 @@ Ejercicio 3 — Inactivar y reactivar una empresa · [← Paso anterior](02-regi
 
 ---
 
-## 1. Inactivar la empresa con la versión vigente
+## 1. Inactivar la empresa
 
 ```http
 POST /api/v1/companies/<EMPRESA>/deactivate
-```
-
-```json
-{
-  "version": 1
-}
 ```
 
 **Permisos que exige la URL (todos):** `perm:operational-context:companies:delete` + `perm:operational-context:platform:administer`

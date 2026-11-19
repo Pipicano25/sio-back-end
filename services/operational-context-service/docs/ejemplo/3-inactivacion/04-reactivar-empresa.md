@@ -14,12 +14,6 @@ Ejercicio 3 — Inactivar y reactivar una empresa · [← Paso anterior](03-inac
 POST /api/v1/companies/<EMPRESA>/reactivate
 ```
 
-```json
-{
-  "version": 2
-}
-```
-
 **Permisos que exige la URL (todos):** `perm:operational-context:companies:update` + `perm:operational-context:platform:administer`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
@@ -44,12 +38,6 @@ POST /api/v1/companies/<EMPRESA>/reactivate
 
 ```http
 POST /api/v1/companies/<EMPRESA>/reactivate
-```
-
-```json
-{
-  "version": 3
-}
 ```
 
 **Permisos que exige la URL (todos):** `perm:operational-context:companies:update` + `perm:operational-context:platform:administer`

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import Body, APIRouter, Depends, Query, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from party_identity_service.api.dependencies import (
@@ -115,9 +115,7 @@ def build_sectors_router(auth: SIOAuth) -> APIRouter:
         return service.update(
             sector_id,
             expected_version=payload.version,
-            name=payload.name,
-            description=payload.description,
-            parent_sector_id=payload.parent_sector_id,
+            **payload.changes(exclude={"classification_system", "code"}),
             actor_id=actor_id,
             immutable_fields=immutable,
         )
@@ -130,7 +128,8 @@ def build_sectors_router(auth: SIOAuth) -> APIRouter:
     )
     def deactivate_sector(
         sector_id: UUID,
-        payload: VersionRequest,
+        *,
+        payload: VersionRequest = Body(default_factory=VersionRequest),
         actor_id: CurrentSubject,
         service: BusinessSectorService = Depends(get_business_sector_service),
     ):
@@ -144,7 +143,8 @@ def build_sectors_router(auth: SIOAuth) -> APIRouter:
     )
     def reactivate_sector(
         sector_id: UUID,
-        payload: VersionRequest,
+        *,
+        payload: VersionRequest = Body(default_factory=VersionRequest),
         actor_id: CurrentSubject,
         service: BusinessSectorService = Depends(get_business_sector_service),
     ):
@@ -211,7 +211,8 @@ def build_organization_sectors_router(auth: SIOAuth) -> APIRouter:
     )
     def set_primary(
         assignment_id: UUID,
-        payload: VersionRequest,
+        *,
+        payload: VersionRequest = Body(default_factory=VersionRequest),
         actor_id: CurrentSubject,
         service: OrganizationBusinessSectorService = Depends(get_organization_business_sector_service),
     ):
@@ -225,7 +226,8 @@ def build_organization_sectors_router(auth: SIOAuth) -> APIRouter:
     )
     def close(
         assignment_id: UUID,
-        payload: VersionRequest,
+        *,
+        payload: VersionRequest = Body(default_factory=VersionRequest),
         actor_id: CurrentSubject,
         service: OrganizationBusinessSectorService = Depends(get_organization_business_sector_service),
     ):

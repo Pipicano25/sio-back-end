@@ -155,7 +155,7 @@ class SQLAlchemyLegalRepresentativeRepository:
         return self._to_domain(model)
 
     def update(
-        self, representative_id: UUID, *, expected_version: int, values: dict[str, Any], actor_id: str
+        self, representative_id: UUID, *, expected_version: int | None, values: dict[str, Any], actor_id: str
     ) -> LegalRepresentative:
         model = load_for_update(
             self.session,
@@ -175,7 +175,7 @@ class SQLAlchemyLegalRepresentativeRepository:
         self.session.refresh(model)
         return self._to_domain(model)
 
-    def close(self, representative_id: UUID, *, expected_version: int, actor_id: str) -> LegalRepresentative:
+    def close(self, representative_id: UUID, *, expected_version: int | None, actor_id: str) -> LegalRepresentative:
         model = load_for_update(
             self.session,
             Model,

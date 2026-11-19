@@ -19,7 +19,7 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 | 00 | [00-datos-ficticios.md](00-datos-ficticios.md) | Leer: los datos ficticios y cómo se interpretan | — | — |
 | 01 | [01-consultar-pais.md](01-consultar-pais.md) | Obtener `<PAIS_CO>`. | 1 | — |
 | 02 | [02-registrar-persona.md](02-registrar-persona.md) | Crear la persona y comprobar los rechazos por edad y por duplicado. | 3 | 01 |
-| 03 | [03-verificar-persona.md](03-verificar-persona.md) | Modificar con control de versión. | 2 | 01, 02 |
+| 03 | [03-verificar-persona.md](03-verificar-persona.md) | Modificar solo el campo que cambia. | 2 | 02 |
 | 04 | [04-inactivar-persona.md](04-inactivar-persona.md) | Retirarla de uso sin borrarla y consultarla con filtro explícito. | 3 | 02 |
 
 ## Por qué este orden
@@ -32,7 +32,7 @@ Ejecute los archivos **en este orden**. Cada paso usa `id` guardados en pasos an
 
 | Variable | Se obtiene en | Se usa en |
 | --- | --- | --- |
-| `<PAIS_CO>` | 01 | 02, 03 |
+| `<PAIS_CO>` | 01 | 02 |
 | `<PERSONA_ANA>` | 02 | 03, 04 |
 
 [Empezar → paso 01](01-consultar-pais.md)

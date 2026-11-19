@@ -125,7 +125,7 @@ EX4 = dict(
                      why=["Ni la persona ni la cuenta son únicas globalmente: son dos membresías independientes."],
                      save={"USR_COMPRADOR_B": "id"}, show=USER_SHOW),
                 call("Inactivar la membresía de la empresa B", "POST",
-                     f"{API}/application-users/<USR_COMPRADOR_B>/deactivate", body={"version": 1},
+                     f"{API}/application-users/<USR_COMPRADOR_B>/deactivate",
                      why=["Solo termina la relación con la empresa B: la membresía de A, la cuenta de Keycloak y la "
                           "`PersonIdentity` no cambian (DS-11)."],
                      show=["status", "version"]),
@@ -133,7 +133,7 @@ EX4 = dict(
                      why=["Sigue `ACTIVE`."],
                      show=["company_id", "status", "version"]),
                 call("Reactivar la membresía de la empresa B", "POST",
-                     f"{API}/application-users/<USR_COMPRADOR_B>/reactivate", body={"version": 2},
+                     f"{API}/application-users/<USR_COMPRADOR_B>/reactivate",
                      why=["Reactivar vuelve a validar la cuenta en Keycloak y la persona en Party Identity."],
                      show=["status", "version"]),
             ],

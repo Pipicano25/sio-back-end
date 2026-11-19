@@ -10,7 +10,4 @@ class StatusActionRequest(BaseModel):
         extra="forbid",
     )
 
-    version: int = Field(
-        ge=1,
-        description="Versión conocida por el cliente.",
-    )
+    version: int | None = Field(default=None, ge=1, description="Versión conocida por el cliente. Opcional (D10).")

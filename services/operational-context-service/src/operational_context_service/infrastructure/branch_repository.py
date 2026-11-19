@@ -160,7 +160,7 @@ class SQLAlchemyBranchRepository:
         self,
         branch_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> Branch:
@@ -188,7 +188,7 @@ class SQLAlchemyBranchRepository:
         self,
         branch_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> Branch:
         """Reactiva la sucursal si su empresa sigue `ACTIVE` (bloqueo `FOR SHARE`)."""

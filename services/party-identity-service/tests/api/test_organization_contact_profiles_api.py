@@ -116,12 +116,25 @@ def test_body_with_confirmed_by_user_id_is_rejected(api, organization, fake_memb
     assert fake_membership.calls == []
 
 
-def test_missing_version_with_current_profile_is_conflict(api, organization) -> None:
-    """Sin versión el cliente cree que no hay vigente: vista desactualizada (spec, casos límite)."""
+def test_missing_version_with_current_profile_replaces_it(api, organization) -> None:
+    """Sin versión se registra sobre la vigente: gana la última escritura (constitución 4.0.0, D9)."""
     url = profile_url("organization", organization["id"])
-    api.post(url, json=profile_payload())
+    first = api.post(url, json=profile_payload()).json()
 
     response = api.post(url, json=profile_payload(phone="+57 300 000 0001"))
+
+    assert response.status_code == 201, response.text
+    assert response.json()["phone"] == "+57 300 000 0001"
+    assert response.json()["version"] > first["version"]
+
+
+def test_stale_version_with_current_profile_is_conflict(api, organization) -> None:
+    """Con una versión enviada que no coincide sigue respondiendo 409."""
+    url = profile_url("organization", organization["id"])
+    first = api.post(url, json=profile_payload()).json()
+    api.post(url, json=profile_payload(phone="+57 300 000 0001"))
+
+    response = api.post(url, json=profile_payload(phone="+57 300 000 0002", version=first["version"]))
 
     assert response.status_code == 409
     assert code(response) == "VERSION_CONFLICT"

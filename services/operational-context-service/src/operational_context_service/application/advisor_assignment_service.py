@@ -134,14 +134,14 @@ class AdvisorAssignmentService:
         scope: AccessScope,
         assignment_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         valid_to: datetime | None,
         actor_id: str,
     ) -> AdvisorAssignment:
         """Cierra una asignación vigente; sin proveedores (FR-054)."""
         current = self.get(scope, assignment_id)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if current.status != ACTIVE:
@@ -157,7 +157,7 @@ class AdvisorAssignmentService:
         company_id: UUID,
         *,
         current_assignment_id: UUID,
-        expected_version: int,
+        expected_version: int | None,
         person_identity_id: UUID,
         effective_at: datetime | None,
         actor_id: str,
@@ -178,7 +178,7 @@ class AdvisorAssignmentService:
             self.repository.end_read()
             raise PrimaryAdvisorMismatchError(field="current_assignment_id")
 
-        if primary.version != expected_version:
+        if expected_version is not None and primary.version != expected_version:
             self.repository.end_read()
             raise VersionConflictError
 

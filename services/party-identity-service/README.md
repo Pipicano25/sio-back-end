@@ -45,9 +45,15 @@ Reglas principales de la Fase A:
   dígito que no corresponde responde `422 INVALID_IDENTIFICATION_NUMBER` e indica el esperado. La
   migración falla sin escribir si queda alguna identidad activa con un `NIT` con letras.
 - Una regla con edades exige `birth_date` y valida la edad (zona operativa `America/Bogota`).
-- Las modificaciones llevan la `version` leída (`409` si está desactualizada). Solo se consulta
-  Geography y se revalida el número si cambia el país, el tipo o el número; un `PUT` sin cambios
-  responde `200` sin incrementar la versión.
+- **`PUT` parcial (constitución 4.0.0, D28):** el `PUT` recibe solo los campos que cambian; un campo
+  ausente no cambia, `null` borra un campo opcional y en uno obligatorio responde `422`, igual que un
+  cuerpo vacío o solo con `version`. Las validaciones se hacen sobre el registro resultante: cambiar
+  solo el número del NIT lo valida con la sigla y el país guardados.
+- **Versión opcional (D9, D10):** `version` se puede omitir; si llega y no coincide, `409`; si no
+  llega, gana la última escritura. Inactivar, reactivar, cerrar y `:set-primary` aceptan el cuerpo
+  vacío o sin cuerpo. Un perfil de contacto enviado sin versión se registra sobre la vigente.
+- Solo se consulta Geography y se revalida el número si cambia el país, el tipo o el número; un `PUT`
+  sin cambios efectivos responde `200` sin incrementar la versión.
 - No hay eliminación física: personas y organizaciones se inactivan (`/deactivate`) y reactivan
   (`/reactivate`); las reglas se retiran (`/deactivate`) o se versionan (`/versions`).
 - El número de identificación y la fecha de nacimiento se enmascaran en logs y mensajes de error

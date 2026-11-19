@@ -17,6 +17,7 @@ from operational_context_service.api.schemas.common import (
     Longitude,
     OptionalEmail,
     OptionalTimezoneText,
+    PartialUpdate,
     Phone,
     PostalCode,
     StrictModel,
@@ -49,10 +50,23 @@ class BranchCreate(StrictModel):
     timezone: OptionalTimezoneText = None
 
 
-class BranchUpdate(BranchCreate):
-    """`PUT` de sucursal: reemplazo completo con versión esperada."""
+class BranchUpdate(PartialUpdate):
+    """`PUT` parcial de sucursal: solo los campos que cambian (D28); versión opcional (D9)."""
 
-    version: Version
+    not_nullable = frozenset({"code", "name"})
+
+    code: str | None = None
+    name: BranchName | None = None
+    email: OptionalEmail = None
+    phone: Phone = None
+    address_line: AddressLine = None
+    country_id: UUID | None = None
+    administrative_division_id: UUID | None = None
+    city_id: UUID | None = None
+    postal_code: PostalCode = None
+    latitude: Latitude = None
+    longitude: Longitude = None
+    timezone: OptionalTimezoneText = None
 
 
 class BranchResponse(BaseModel):

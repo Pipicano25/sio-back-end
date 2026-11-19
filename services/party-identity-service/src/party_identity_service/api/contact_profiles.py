@@ -9,7 +9,7 @@ from collections.abc import Callable
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from party_identity_service.api.dependencies import (
@@ -122,7 +122,8 @@ def build_router(auth: SIOAuth, kind: Kind) -> APIRouter:
         operation_id=f"close_{kind}_contact_profile",
     )
     def close(
-        payload: ContactProfileClose,
+        *,
+        payload: ContactProfileClose = Body(default_factory=ContactProfileClose),
         actor_id: CurrentSubject,
         identity_id: UUID = _path(owner_param),
         service: ContactProfileService = Depends(service_dependency),

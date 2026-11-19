@@ -6,7 +6,7 @@ No hay `PUT` ni reactivación: una asignación cerrada es inmutable (DS-13).
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from operational_context_service.api.access_scope import get_access_scope
@@ -106,7 +106,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def close_advisor(
         assignment_id: UUID,
-        payload: AdvisorCloseRequest,
+        *,
+        payload: AdvisorCloseRequest = Body(default_factory=AdvisorCloseRequest),
         actor_id: CurrentSubject,
         scope: AccessScope = Depends(get_access_scope),
         service: AdvisorAssignmentService = Depends(get_advisor_assignment_service),

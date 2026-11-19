@@ -9,7 +9,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from operational_context_service.api.schemas.common import StrictModel, Version
+from operational_context_service.api.schemas.common import OptionalVersion, StrictModel
 from operational_context_service.domain.status import EntityStatus
 
 
@@ -20,13 +20,13 @@ class AdvisorAssignmentCreate(StrictModel):
 
 
 class AdvisorCloseRequest(StrictModel):
-    version: Version
+    version: OptionalVersion = None
     valid_to: datetime | None = None
 
 
 class ChangePrimaryRequest(StrictModel):
     current_assignment_id: UUID
-    version: Version
+    version: OptionalVersion = None
     person_identity_id: UUID
     effective_at: datetime | None = None
 

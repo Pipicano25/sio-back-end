@@ -6,7 +6,7 @@ gestiona el servicio. No hay `DELETE` (D7).
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import Body, APIRouter, Depends, Query, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from operational_context_service.api.access_scope import get_access_scope
@@ -157,7 +157,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def deactivate_user_branch(
         user_branch_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         scope: AccessScope = Depends(get_access_scope),
         service: UserBranchService = Depends(get_user_branch_service),
@@ -174,7 +175,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def reactivate_user_branch(
         user_branch_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         scope: AccessScope = Depends(get_access_scope),
         service: UserBranchService = Depends(get_user_branch_service),

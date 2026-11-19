@@ -137,7 +137,9 @@ class SQLAlchemyContactProfileRepository:
             if current is not None:
                 self.session.rollback()
                 raise VersionConflictError
-        elif current is None or current.id != expected_active_id or current.version != expected_version:
+        elif current is None or current.id != expected_active_id or (
+            expected_version is not None and current.version != expected_version
+        ):
             self.session.rollback()
             raise VersionConflictError
 
@@ -199,7 +201,7 @@ class SQLAlchemyContactProfileRepository:
         self.session.refresh(model)
         return self._to_domain(model)
 
-    def close(self, owner_id: UUID, *, expected_version: int, actor_id: str) -> ContactProfile:
+    def close(self, owner_id: UUID, *, expected_version: int | None, actor_id: str) -> ContactProfile:
         self._lock_owner(owner_id)
         current = self._active_model(owner_id)
 
@@ -212,7 +214,7 @@ class SQLAlchemyContactProfileRepository:
                 "La identidad nunca ha tenido un perfil de contacto."
             )
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             self.session.rollback()
             raise VersionConflictError
 

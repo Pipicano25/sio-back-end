@@ -4,6 +4,7 @@ import logging
 from datetime import date
 from uuid import UUID
 
+from party_identity_service.application.partial_update import UNSET
 from party_identity_service.application.exceptions import (
     CountryNotFoundError,
     InvalidStatusTransitionError,
@@ -158,16 +159,16 @@ class PersonIdentityService:
         self,
         person_identity_id: UUID,
         *,
-        expected_version: int,
-        identification_country_id: UUID,
-        identification_type: PersonIdentificationType,
-        identification_number: str,
-        first_name: str,
-        middle_name: str | None,
-        last_name: str,
-        second_last_name: str | None,
-        birth_date: date | None,
-        verification_status: PersonVerificationStatus,
+        expected_version: int | None,
+        identification_country_id: UUID = UNSET,
+        identification_type: PersonIdentificationType = UNSET,
+        identification_number: str = UNSET,
+        first_name: str = UNSET,
+        middle_name: str | None = UNSET,
+        last_name: str = UNSET,
+        second_last_name: str | None = UNSET,
+        birth_date: date | None = UNSET,
+        verification_status: PersonVerificationStatus = UNSET,
         actor_id: str,
     ) -> PersonIdentity:
         """Modifica una persona (FR-025, FR-026, FR-029).
@@ -177,8 +178,18 @@ class PersonIdentityService:
         """
         current = self.get_by_id(person_identity_id)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
+        # D28: un campo no enviado conserva su valor.
+        identification_country_id = current.identification_country_id if identification_country_id is UNSET else identification_country_id
+        identification_type = current.identification_type if identification_type is UNSET else identification_type
+        identification_number = current.identification_number if identification_number is UNSET else identification_number
+        first_name = current.first_name if first_name is UNSET else first_name
+        middle_name = current.middle_name if middle_name is UNSET else middle_name
+        last_name = current.last_name if last_name is UNSET else last_name
+        second_last_name = current.second_last_name if second_last_name is UNSET else second_last_name
+        birth_date = current.birth_date if birth_date is UNSET else birth_date
+        verification_status = current.verification_status if verification_status is UNSET else verification_status
 
         requested = {
             "identification_country_id": identification_country_id,
@@ -235,7 +246,7 @@ class PersonIdentityService:
         self,
         person_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> PersonIdentity:
         """Inactiva una persona sin eliminarla (DS-11)."""
@@ -250,7 +261,7 @@ class PersonIdentityService:
         self,
         person_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> PersonIdentity:
         """Reactiva una persona inactiva (DS-11)."""
@@ -265,13 +276,13 @@ class PersonIdentityService:
         self,
         person_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         target: IdentityStatus,
         actor_id: str,
     ) -> PersonIdentity:
         current = self.get_by_id(person_identity_id)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if current.status == target:

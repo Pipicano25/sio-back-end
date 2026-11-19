@@ -84,7 +84,7 @@ EX6 = dict(
             "04-set-primary-e-inactivar.md", "Cambiar el principal e inactivar", "Usar set-primary y retirar un contacto.",
             [
                 call("Establecer el contacto de cartera como principal", "POST",
-                     f"{API}/organization-contact-persons/<CONTACTO_CARTERA>:set-primary", body={"version": 1},
+                     f"{API}/organization-contact-persons/<CONTACTO_CARTERA>:set-primary",
                      why=["Exige `update`. En una sola operación el comercial deja de ser principal."],
                      show=CONTACT_SHOW),
                 call("Consultar el contacto comercial por `id` (contrato Provider)", "GET",
@@ -92,7 +92,7 @@ EX6 = dict(
                      why=["Commercial Relationship comprueba `organization_identity_id` e `is_active` con esta consulta."],
                      show=CONTACT_SHOW),
                 call("Inactivar el contacto de cartera", "POST",
-                     f"{API}/organization-contact-persons/<CONTACTO_CARTERA>:deactivate", body={"version": 2},
+                     f"{API}/organization-contact-persons/<CONTACTO_CARTERA>:deactivate",
                      why=["Exige `delete`; no elimina. Deja de ser principal; la organización queda sin principal."],
                      show=CONTACT_SHOW),
                 call("Listar los contactos vigentes", "GET", f"{API}/organization-identities/<ORG_LAB>/contact-persons",

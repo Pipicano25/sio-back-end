@@ -40,7 +40,12 @@ Qué **no** se guarda:
   `ACTIVE` en Geography al asignarlo o cambiarlo (DS-04, DS-05). Coordenadas en pareja y en rango.
 - Zona horaria IANA (la sucursal hereda la de la empresa en `effective_timezone`) y moneda de 3 letras.
 - Código de sucursal normalizado, único por empresa y modificable.
-- Modificaciones con `version` (`409` si está desactualizada); un `PUT` sin cambios no escribe.
+- **`PUT` parcial (constitución 4.0.0, D28):** se envían solo los campos que cambian; un campo ausente
+  no cambia, `null` borra uno opcional y en uno obligatorio responde `422`, igual que un cuerpo vacío.
+  La ubicación se valida sobre el registro resultante. Un `PUT` sin cambios efectivos no escribe.
+- **Versión opcional (D9, D10):** si `version` llega y no coincide, `409`; si no llega, gana la última
+  escritura. Inactivar, reactivar, cerrar y cambiar el asesor principal no la exigen; las acciones sin
+  más datos aceptan el cuerpo vacío o sin cuerpo.
 - Inactivar una empresa no modifica sus sucursales; no se crean ni reactivan sucursales bajo una
   empresa inactiva.
 

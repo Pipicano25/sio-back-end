@@ -62,7 +62,7 @@ class ContactProfileClose(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    version: int = Field(ge=1, description="Versión de la vigente.")
+    version: int | None = Field(default=None, ge=1, description="Versión conocida por el cliente. Opcional (D10).")
 
 
 class _ContactProfileResponseBase(BaseModel):

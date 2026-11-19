@@ -57,12 +57,6 @@ POST /api/v1/organization-identities/<ORG_INV>/legal-representatives
 POST /api/v1/organization-legal-representatives/<REP_JORGE_SUPLENTE>:close
 ```
 
-```json
-{
-  "version": 1
-}
-```
-
 **Permiso que exige la URL:** `perm:party-identity:organization_legal_representatives:delete`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)

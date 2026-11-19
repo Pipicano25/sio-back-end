@@ -16,6 +16,8 @@ from pydantic import (
     Field,
 )
 
+from party_identity_service.api.schemas.partial import PartialUpdate
+
 PartyKindCode = Literal[
     "PERSON",
     "ORGANIZATION",
@@ -99,7 +101,7 @@ class IdentificationTypeRuleCreate(BaseModel):
     valid_to: datetime | None = None
 
 
-class IdentificationTypeRuleUpdate(BaseModel):
+class IdentificationTypeRuleUpdate(PartialUpdate):
     """Payload de modificación ordinaria: solo descripción y ejemplo (FR-013).
 
     Los campos de identidad y los semánticos se aceptan únicamente para
@@ -107,13 +109,10 @@ class IdentificationTypeRuleUpdate(BaseModel):
     o `RULE_CHANGE_REQUIRES_NEW_VERSION`.
     """
 
-    model_config = ConfigDict(
-        extra="forbid",
-    )
+    not_nullable = frozenset({"number_pattern_description"})
 
-    number_pattern_description: RuleDescription
+    number_pattern_description: RuleDescription | None = None
     example_value: ExampleValue = None
-    version: Version
     party_kind: PartyKindCode | None = None
     country_id: UUID | None = None
     identification_type: IdentificationTypeCode | None = None

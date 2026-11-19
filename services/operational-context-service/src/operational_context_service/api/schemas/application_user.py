@@ -12,7 +12,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
 
-from operational_context_service.api.schemas.common import OptionalEmail, StrictModel, Version
+from operational_context_service.api.schemas.common import OptionalEmail, PartialUpdate, StrictModel
 from operational_context_service.application.exceptions import ImmutableFieldError
 from operational_context_service.domain.status import EntityStatus
 
@@ -58,12 +58,13 @@ class ApplicationUserCreate(StrictModel):
 IMMUTABLE_FIELDS = ("keycloak_user_id", "person_identity_id", "company_id")
 
 
-class ApplicationUserUpdate(StrictModel):
-    """`PUT` de usuario operativo: solo datos de referencia propios de SIO (FR-013)."""
+class ApplicationUserUpdate(PartialUpdate):
+    """`PUT` parcial de usuario operativo: nombre y correo de referencia (FR-013, D28)."""
 
-    display_name: DisplayName
+    not_nullable = frozenset({"display_name"})
+
+    display_name: DisplayName | None = None
     reference_email: OptionalEmail = None
-    version: Version
 
     @model_validator(mode="before")
     @classmethod

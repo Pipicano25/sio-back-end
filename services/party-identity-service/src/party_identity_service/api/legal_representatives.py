@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import Body, APIRouter, Depends, Query, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from party_identity_service.api.dependencies import get_legal_representative_service
@@ -121,8 +121,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         return service.update(
             representative_id,
             expected_version=payload.version,
-            position=payload.position,
-            source_document_reference=payload.source_document_reference,
+            **payload.changes(exclude={"person_identity_id", "organization_identity_id", "representative_type"}),
             actor_id=actor_id,
             immutable_fields=immutable,
         )
@@ -135,7 +134,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def close(
         representative_id: UUID,
-        payload: VersionRequest,
+        *,
+        payload: VersionRequest = Body(default_factory=VersionRequest),
         actor_id: CurrentSubject,
         service: LegalRepresentativeService = Depends(get_legal_representative_service),
     ):

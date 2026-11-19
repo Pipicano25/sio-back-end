@@ -155,15 +155,17 @@ class BranchService:
         branch_id: UUID,
         data: dict[str, Any],
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> Branch:
         """Modifica una sucursal; la empresa es inmutable (FR-022, FR-025)."""
         current = self.get(scope, branch_id, lookup_read=False)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
+        # D28: un campo no enviado conserva su valor guardado.
+        data = {**{field: getattr(current, field) for field in BRANCH_FIELDS}, **data}
         values = self._normalize(data)
         changes = {
             field: value
@@ -199,13 +201,13 @@ class BranchService:
         scope: AccessScope,
         branch_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> Branch:
         """Inactiva sin eliminar (FR-026, DS-11)."""
         current = self.get(scope, branch_id, lookup_read=False)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if current.status == INACTIVE:
@@ -226,13 +228,13 @@ class BranchService:
         scope: AccessScope,
         branch_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> Branch:
         """Reactiva si la empresa sigue `ACTIVE` (FR-026, RN-09)."""
         current = self.get(scope, branch_id, lookup_read=False)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if current.status == ACTIVE:

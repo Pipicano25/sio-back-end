@@ -57,12 +57,6 @@ POST /api/v1/companies/<EMPRESA_B>/application-users
 POST /api/v1/application-users/<USR_COMPRADOR_B>/deactivate
 ```
 
-```json
-{
-  "version": 1
-}
-```
-
 **Permiso que exige la URL:** `perm:operational-context:application_users:delete`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:operational-context:all:delete`)
@@ -111,12 +105,6 @@ GET /api/v1/application-users/<USR_COMPRADOR_A>
 
 ```http
 POST /api/v1/application-users/<USR_COMPRADOR_B>/reactivate
-```
-
-```json
-{
-  "version": 2
-}
 ```
 
 **Permiso que exige la URL:** `perm:operational-context:application_users:update`

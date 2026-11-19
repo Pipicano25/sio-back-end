@@ -25,7 +25,7 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 | [03](03-registrar-empresa.md) | 1. Registrar la empresa con su sede operativa principal | `POST /api/v1/companies` | `perm:operational-context:companies:create` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ |
 | [03](03-registrar-empresa.md) | 2. Intentar registrar una empresa con una organización inexistente (rechazado) | `POST /api/v1/companies` | `perm:operational-context:companies:create` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ |
 | [04](04-consultar-y-modificar.md) | 1. Consultar la empresa por su `id` | `GET /api/v1/companies/{id}` 🔒 | `perm:operational-context:companies:read` | ✅ | ✅ | ✅ |
-| [04](04-consultar-y-modificar.md) | 2. Modificar el teléfono con la versión vigente | `PUT /api/v1/companies/{id}` 🔒 | `perm:operational-context:companies:update` | ✅ | ✅ | ❌ |
+| [04](04-consultar-y-modificar.md) | 2. Modificar el teléfono | `PUT /api/v1/companies/{id}` 🔒 | `perm:operational-context:companies:update` | ✅ | ✅ | ❌ |
 | [04](04-consultar-y-modificar.md) | 3. Buscar la empresa por su organización | `GET /api/v1/companies` 🔒 | `perm:operational-context:companies:read` | ✅ | ✅ | ✅ |
 
 ## Ejemplos de uso con los usuarios

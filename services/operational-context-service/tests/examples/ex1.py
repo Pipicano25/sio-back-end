@@ -103,13 +103,13 @@ EX1 = dict(
                 call("Consultar la empresa por su `id`", "GET", f"{API}/companies/<EMPRESA>",
                      why=["Es la consulta que usan los demás servicios (contrato Provider)."], show=COMPANY_SHOW),
                 call(
-                    "Modificar el teléfono con la versión vigente",
+                    "Modificar el teléfono",
                     "PUT",
                     f"{API}/companies/<EMPRESA>",
-                    body={**COMPANY, "phone": "+57 604 000 0002", "timezone": "America/Bogota",
-                          "default_currency": "COP", "version": 1},
+                    body={"phone": "+57 604 000 0002"},
                     why=[
-                        "`PUT` reemplaza todos los campos: se envían de nuevo los que no cambian.",
+                        "El `PUT` es parcial: solo se envía lo que cambia; lo demás queda igual (constitución 4.0.0, D28).",
+                        "`version` es opcional: si se envía y otro usuario cambió la empresa antes, responde `409`.",
                         "No cambia la organización ni la ubicación: el servicio no vuelve a consultar Party Identity ni Geography.",
                     ],
                     show=["phone", "version"],

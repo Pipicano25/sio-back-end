@@ -99,7 +99,7 @@ EX8 = dict(
                           "Una referencia documental de solo espacios se guarda como `null`."],
                      save={"REP_JORGE_SUPLENTE": "id"}, show=REP_SHOW),
                 call("Cerrar la relación de suplente", "POST",
-                     f"{API}/organization-legal-representatives/<REP_JORGE_SUPLENTE>:close", body={"version": 1},
+                     f"{API}/organization-legal-representatives/<REP_JORGE_SUPLENTE>:close",
                      why=["Exige `delete`; no borra."], show=REP_SHOW),
                 call("Consultar el historial", "GET",
                      f"{API}/organization-identities/<ORG_INV>/legal-representatives?state=all",

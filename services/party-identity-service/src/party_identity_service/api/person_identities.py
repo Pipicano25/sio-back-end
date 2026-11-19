@@ -6,7 +6,7 @@ estados HTTP de error.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from party_identity_service.api.dependencies import get_person_identity_service
@@ -117,8 +117,8 @@ def build_router(
         service: PersonIdentityService = Depends(get_person_identity_service),
     ):
         """Modifica una persona; un `PUT` sin cambios no escribe (FR-029)."""
-        data = payload.model_dump()
-        expected_version = data.pop("version")
+        data = payload.changes()
+        expected_version = payload.version
 
         return service.update(
             person_identity_id,
@@ -135,7 +135,8 @@ def build_router(
     )
     def deactivate_person_identity(
         person_identity_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         service: PersonIdentityService = Depends(get_person_identity_service),
     ):
@@ -154,7 +155,8 @@ def build_router(
     )
     def reactivate_person_identity(
         person_identity_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         service: PersonIdentityService = Depends(get_person_identity_service),
     ):

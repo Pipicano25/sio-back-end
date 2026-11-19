@@ -129,7 +129,7 @@ class SQLAlchemyOrganizationBusinessSectorRepository:
         return self._to_domain(model)
 
     def set_primary(
-        self, assignment_id: UUID, *, expected_version: int, actor_id: str
+        self, assignment_id: UUID, *, expected_version: int | None, actor_id: str
     ) -> OrganizationBusinessSector:
         # Se obtiene la organización sin cargar la entidad, para no dejar en la sesión
         # una versión anterior al bloqueo.
@@ -142,7 +142,7 @@ class SQLAlchemyOrganizationBusinessSectorRepository:
         self._lock_organization(organization_id)
         target = self.session.get(Model, assignment_id, with_for_update=True, populate_existing=True)
 
-        if target.version != expected_version:
+        if expected_version is not None and target.version != expected_version:
             self.session.rollback()
             raise VersionConflictError
         if not target.is_active:
@@ -166,13 +166,13 @@ class SQLAlchemyOrganizationBusinessSectorRepository:
         return self._to_domain(target)
 
     def close(
-        self, assignment_id: UUID, *, expected_version: int, actor_id: str
+        self, assignment_id: UUID, *, expected_version: int | None, actor_id: str
     ) -> OrganizationBusinessSector:
         target = self.session.get(Model, assignment_id, with_for_update=True, populate_existing=True)
         if target is None:
             self.session.rollback()
             raise NotFoundError("La asignación de sector no existe.")
-        if target.version != expected_version:
+        if expected_version is not None and target.version != expected_version:
             self.session.rollback()
             raise VersionConflictError
         if not target.is_active:

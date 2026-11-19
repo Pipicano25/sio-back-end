@@ -129,12 +129,13 @@ EX1 = dict(
                     body={
                         "number_pattern_description": "Pasaporte colombiano: 6 a 9 letras o dígitos, sin espacios.",
                         "example_value": "AB123456",
-                        "version": 1,
                     },
                     why=[
-                        "El `PUT` solo cambia la descripción y el ejemplo. Enviar otro `number_pattern` o edades responde "
-                        "`422 RULE_CHANGE_REQUIRES_NEW_VERSION`, y cambiar país, tipo o sigla `422 IMMUTABLE_FIELD`.",
-                        "`version` es la que se leyó; si otro usuario la cambió antes, responde `409 VERSION_CONFLICT`.",
+                        "El `PUT` es parcial: se envía solo lo que cambia (aquí, la descripción y el ejemplo).",
+                        "En una regla solo cambian la descripción y el ejemplo. Enviar otro `number_pattern` o edades "
+                        "responde `422 RULE_CHANGE_REQUIRES_NEW_VERSION`, y cambiar país, tipo o sigla `422 IMMUTABLE_FIELD`.",
+                        "`version` es opcional: si se envía y otro usuario cambió la regla antes, responde "
+                        "`409 VERSION_CONFLICT`.",
                     ],
                     show=["id", "number_pattern_description", "version", "is_active"],
                 ),
@@ -142,12 +143,7 @@ EX1 = dict(
                     "Intentar cambiar el patrón con `PUT` (rechazado)",
                     "PUT",
                     f"{API}/identification-type-rules/<REGLA_PA>",
-                    body={
-                        "number_pattern_description": "Pasaporte colombiano: 6 a 9 letras o dígitos, sin espacios.",
-                        "example_value": "AB123456",
-                        "number_pattern": "^[A-Z]{2}[0-9]{6,7}$",
-                        "version": 2,
-                    },
+                    body={"number_pattern": "^[A-Z]{2}[0-9]{6,7}$"},
                     why=["Cambiar el patrón exige una nueva versión (paso siguiente)."],
                     expect=422,
                     show=["status", "code"],
@@ -195,8 +191,8 @@ EX1 = dict(
                     "Retirar la versión vigente",
                     "POST",
                     f"{API}/identification-type-rules/<REGLA_PA_V2>/deactivate",
-                    body={"version": 1},
                     why=[
+                        "Sin cuerpo: inactivar no exige `version` (constitución 4.0.0, D10).",
                         "Retirar exige `delete` sobre `identification_type_rules`; la regla no se elimina (D7).",
                         "Sin regla activa `PA`, las personas con esa sigla vuelven a validarse solo con las reglas base.",
                     ],
@@ -206,7 +202,6 @@ EX1 = dict(
                     "Intentar retirarla otra vez (rechazado)",
                     "POST",
                     f"{API}/identification-type-rules/<REGLA_PA_V2>/deactivate",
-                    body={"version": 2},
                     why=["Una regla histórica no admite cambios: responde `409 INVALID_STATUS_TRANSITION`."],
                     expect=409,
                     show=["status", "code"],

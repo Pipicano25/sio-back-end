@@ -174,7 +174,7 @@ class SQLAlchemyOrganizationIdentityRepository:
         self,
         organization_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> OrganizationIdentity:
@@ -204,7 +204,7 @@ class SQLAlchemyOrganizationIdentityRepository:
         self,
         organization_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         status: IdentityStatus,
         actor_id: str,
     ) -> OrganizationIdentity:

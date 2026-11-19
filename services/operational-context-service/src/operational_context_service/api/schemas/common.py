@@ -1,9 +1,9 @@
 """Tipos y modelo base compartidos por los esquemas de la API."""
 
 from decimal import Decimal
-from typing import Annotated, Any, Generic, TypeVar
+from typing import Annotated, Any, ClassVar, Generic, TypeVar
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field, model_validator
 
 from operational_context_service.domain.location import normalize_coordinate
 
@@ -48,10 +48,42 @@ OptionalTimezoneText = Annotated[
 Version = Annotated[int, Field(ge=1)]
 
 
-class StatusActionRequest(StrictModel):
-    """Cuerpo de `deactivate` y `reactivate`: solo la versión esperada (D10)."""
+OptionalVersion = Annotated[
+    int | None,
+    Field(default=None, ge=1, description="Versión conocida por el cliente. Opcional: si se envía y no coincide, responde 409."),
+]
 
-    version: Version
+
+class StatusActionRequest(StrictModel):
+    """Cuerpo de `deactivate` y `reactivate`: la versión es opcional y el cuerpo puede omitirse (D10)."""
+
+    version: OptionalVersion = None
+
+
+class PartialUpdate(StrictModel):
+    """Base de un `PUT` parcial (constitución 4.0.0, D28).
+
+    Un campo ausente no cambia; `null` borra un campo opcional y en uno de
+    `not_nullable` responde `422`. Un cuerpo vacío o solo con `version` → `422`.
+    """
+
+    not_nullable: ClassVar[frozenset[str]] = frozenset()
+
+    version: OptionalVersion = None
+
+    @model_validator(mode="after")
+    def _check_partial(self):
+        sent = self.model_fields_set - {"version"}
+        if not sent:
+            raise ValueError("Envíe al menos un campo a modificar.")
+        nulls = sorted(name for name in sent & self.not_nullable if getattr(self, name) is None)
+        if nulls:
+            raise ValueError(f"Estos campos no admiten null: {', '.join(nulls)}.")
+        return self
+
+    def changes(self) -> dict[str, Any]:
+        """Solo los campos enviados, sin `version`."""
+        return self.model_dump(exclude_unset=True, exclude={"version"})
 
 
 ItemT = TypeVar("ItemT")

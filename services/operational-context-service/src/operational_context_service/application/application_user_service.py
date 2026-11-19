@@ -159,18 +159,19 @@ class ApplicationUserService:
         application_user_id: UUID,
         data: dict[str, Any],
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> ApplicationUser:
         """Modifica nombre y correo de referencia; sin proveedores (FR-013)."""
         current = self.get(scope, application_user_id, lookup_read=False)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
+        # D28: un campo no enviado conserva su valor guardado.
         values = {
-            "display_name": data["display_name"],
-            "reference_email": data.get("reference_email"),
+            "display_name": data.get("display_name", current.display_name),
+            "reference_email": data.get("reference_email", current.reference_email),
         }
         changes = {field: value for field, value in values.items() if getattr(current, field) != value}
 
@@ -189,13 +190,13 @@ class ApplicationUserService:
         scope: AccessScope,
         application_user_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> ApplicationUser:
         """Inactiva solo esta membresía; sin cascadas ni proveedores (FR-014, DS-11)."""
         current = self.get(scope, application_user_id, lookup_read=False)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if current.status == INACTIVE:
@@ -216,13 +217,13 @@ class ApplicationUserService:
         scope: AccessScope,
         application_user_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> ApplicationUser:
         """Reactiva revalidando cuenta y persona y la unicidad `ACTIVE` (FR-014, R-14)."""
         current = self.get(scope, application_user_id, lookup_read=False)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if current.status == ACTIVE:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from party_identity_service.application.partial_update import UNSET
 from party_identity_service.application.exceptions import (
     DomainValidationError,
     ImmutableFieldError,
@@ -86,11 +87,11 @@ class ContactPersonService:
         self,
         contact_id: UUID,
         *,
-        expected_version: int,
-        person_identity_id: UUID | None,
-        position: str | None,
-        email: str | None,
-        phone: str | None,
+        expected_version: int | None,
+        person_identity_id: UUID | None = UNSET,
+        position: str | None = UNSET,
+        email: str | None = UNSET,
+        phone: str | None = UNSET,
         actor_id: str,
         immutable_fields: list[str] | None = None,
     ) -> ContactPerson:
@@ -100,8 +101,13 @@ class ContactPersonService:
                 + ", ".join(immutable_fields)
             )
         current = self.get(contact_id)
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
+        # D28: un campo no enviado conserva su valor.
+        person_identity_id = current.person_identity_id if person_identity_id is UNSET else person_identity_id
+        position = current.position if position is UNSET else position
+        email = current.email if email is UNSET else email
+        phone = current.phone if phone is UNSET else phone
         if not current.is_active:
             raise InvalidStatusTransitionError("La persona de contacto está inactiva.")
         position, email, phone = self._normalize(position, email, phone, person_identity_id)
@@ -122,9 +128,9 @@ class ContactPersonService:
             contact_id, expected_version=expected_version, values=values, actor_id=actor_id
         )
 
-    def deactivate(self, contact_id: UUID, *, expected_version: int, actor_id: str) -> ContactPerson:
+    def deactivate(self, contact_id: UUID, *, expected_version: int | None, actor_id: str) -> ContactPerson:
         current = self.get(contact_id)
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
         if not current.is_active:
             raise InvalidStatusTransitionError("La persona de contacto ya está inactiva.")
@@ -132,9 +138,9 @@ class ContactPersonService:
             contact_id, expected_version=expected_version, active=False, actor_id=actor_id
         )
 
-    def reactivate(self, contact_id: UUID, *, expected_version: int, actor_id: str) -> ContactPerson:
+    def reactivate(self, contact_id: UUID, *, expected_version: int | None, actor_id: str) -> ContactPerson:
         current = self.get(contact_id)
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
         if current.is_active:
             raise InvalidStatusTransitionError("La persona de contacto ya está activa.")
@@ -144,7 +150,7 @@ class ContactPersonService:
             contact_id, expected_version=expected_version, active=True, actor_id=actor_id
         )
 
-    def set_primary(self, contact_id: UUID, *, expected_version: int, actor_id: str) -> ContactPerson:
+    def set_primary(self, contact_id: UUID, *, expected_version: int | None, actor_id: str) -> ContactPerson:
         """Establece el contacto principal de forma atómica (DS-05, FR-044a)."""
         return self.contacts.set_primary(contact_id, expected_version=expected_version, actor_id=actor_id)
 

@@ -6,7 +6,7 @@ estados HTTP de error.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from party_identity_service.api.dependencies import (
@@ -129,8 +129,8 @@ def build_router(
         ),
     ):
         """Modifica una organización; un `PUT` sin cambios no escribe (FR-029)."""
-        data = payload.model_dump()
-        expected_version = data.pop("version")
+        data = payload.changes()
+        expected_version = payload.version
 
         return service.update(
             organization_identity_id,
@@ -147,7 +147,8 @@ def build_router(
     )
     def deactivate_organization_identity(
         organization_identity_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         service: OrganizationIdentityService = Depends(
             get_organization_identity_service,
@@ -168,7 +169,8 @@ def build_router(
     )
     def reactivate_organization_identity(
         organization_identity_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         service: OrganizationIdentityService = Depends(
             get_organization_identity_service,

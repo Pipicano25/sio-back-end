@@ -8,6 +8,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from party_identity_service.api.schemas.partial import PartialUpdate
+
 from party_identity_service.api.schemas.contact_profile import Email, Phone, TrimmedOptional
 
 Position = Annotated[Annotated[str, StringConstraints(max_length=120)] | None, TrimmedOptional]
@@ -23,17 +25,14 @@ class ContactPersonCreate(BaseModel):
     is_primary: bool = False
 
 
-class ContactPersonUpdate(BaseModel):
+class ContactPersonUpdate(PartialUpdate):
     """`is_primary` y `organization_identity_id` se aceptan solo para responder
     `IMMUTABLE_FIELD` (regla 4.2); nunca se aplican."""
-
-    model_config = ConfigDict(extra="forbid")
 
     person_identity_id: UUID | None = None
     position: Position = None
     email: Email = None
     phone: Phone = None
-    version: int = Field(ge=1)
     is_primary: bool | None = Field(default=None, description="No modificable por PUT; use set-primary.")
     organization_identity_id: UUID | None = Field(default=None, description="Inmutable.")
 
@@ -41,7 +40,7 @@ class ContactPersonUpdate(BaseModel):
 class VersionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    version: int = Field(ge=1)
+    version: int | None = Field(default=None, ge=1, description="Versión conocida por el cliente. Opcional (D10).")
 
 
 class ContactPersonResponse(BaseModel):

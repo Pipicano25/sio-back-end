@@ -3,6 +3,7 @@
 import logging
 from uuid import UUID
 
+from party_identity_service.application.partial_update import UNSET
 from party_identity_service.application.exceptions import (
     CountryNotFoundError,
     InvalidStatusTransitionError,
@@ -144,22 +145,31 @@ class OrganizationIdentityService:
         self,
         organization_identity_id: UUID,
         *,
-        expected_version: int,
-        country_id: UUID,
-        identification_type: OrganizationIdentificationType,
-        identification_number: str,
-        legal_name: str,
-        trade_name: str | None,
-        organization_type: str | None,
-        registration_status: str | None,
-        website: str | None,
+        expected_version: int | None,
+        country_id: UUID = UNSET,
+        identification_type: OrganizationIdentificationType = UNSET,
+        identification_number: str = UNSET,
+        legal_name: str = UNSET,
+        trade_name: str | None = UNSET,
+        organization_type: str | None = UNSET,
+        registration_status: str | None = UNSET,
+        website: str | None = UNSET,
         actor_id: str,
     ) -> OrganizationIdentity:
         """Modifica una organización (FR-033, FR-034, FR-029)."""
         current = self.get_by_id(organization_identity_id)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
+        # D28: un campo no enviado conserva su valor.
+        country_id = current.country_id if country_id is UNSET else country_id
+        identification_type = current.identification_type if identification_type is UNSET else identification_type
+        identification_number = current.identification_number if identification_number is UNSET else identification_number
+        legal_name = current.legal_name if legal_name is UNSET else legal_name
+        trade_name = current.trade_name if trade_name is UNSET else trade_name
+        organization_type = current.organization_type if organization_type is UNSET else organization_type
+        registration_status = current.registration_status if registration_status is UNSET else registration_status
+        website = current.website if website is UNSET else website
 
         requested = {
             "country_id": country_id,
@@ -201,7 +211,7 @@ class OrganizationIdentityService:
         self,
         organization_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> OrganizationIdentity:
         """Inactiva una organización sin eliminarla (DS-11)."""
@@ -216,7 +226,7 @@ class OrganizationIdentityService:
         self,
         organization_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> OrganizationIdentity:
         """Reactiva una organización inactiva (DS-11)."""
@@ -231,13 +241,13 @@ class OrganizationIdentityService:
         self,
         organization_identity_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         target: IdentityStatus,
         actor_id: str,
     ) -> OrganizationIdentity:
         current = self.get_by_id(organization_identity_id)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if current.status == target:

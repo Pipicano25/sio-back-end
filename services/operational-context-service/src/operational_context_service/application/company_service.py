@@ -141,15 +141,17 @@ class CompanyService:
         company_id: UUID,
         data: dict[str, Any],
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> Company:
         """Modifica una empresa del alcance (FR-016, FR-063, FR-043)."""
         current = self.get(scope, company_id, lookup_read=False)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
+        # D28: un campo no enviado conserva su valor guardado.
+        data = {**{field: getattr(current, field) for field in COMPANY_FIELDS}, **data}
         values = self._normalize(data)
         changes = {
             field: value
@@ -186,7 +188,7 @@ class CompanyService:
         scope: AccessScope,
         company_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> Company:
         """Inactiva sin eliminar y sin modificar sus sucursales (DS-07, DS-11).
@@ -200,7 +202,7 @@ class CompanyService:
         scope: AccessScope,
         company_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> Company:
         """Reactiva una empresa inactiva (DS-11); la ruta exige `platform:administer`."""
@@ -213,12 +215,12 @@ class CompanyService:
         scope: AccessScope,
         company_id: UUID,
         target: EntityStatus,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> Company:
         current = self.get(scope, company_id, lookup_read=False)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if current.status == target:

@@ -145,7 +145,7 @@ class SQLAlchemyAdvisorAssignmentRepository:
         self,
         assignment_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         valid_to: datetime,
         actor_id: str,
     ) -> AdvisorAssignment:
@@ -177,7 +177,7 @@ class SQLAlchemyAdvisorAssignmentRepository:
         company_id: UUID,
         *,
         current_assignment_id: UUID,
-        expected_version: int,
+        expected_version: int | None,
         person_identity_id: UUID,
         effective_at: datetime,
         actor_id: str,
@@ -200,7 +200,7 @@ class SQLAlchemyAdvisorAssignmentRepository:
             self.session.rollback()
             raise PrimaryAdvisorMismatchError(field="current_assignment_id")
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             self.session.rollback()
             raise VersionConflictError
 

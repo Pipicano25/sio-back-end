@@ -117,7 +117,7 @@ class SQLAlchemyCompanyRepository:
         self,
         company_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         values: dict[str, Any],
         actor_id: str,
     ) -> Company:

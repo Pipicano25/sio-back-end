@@ -14,12 +14,6 @@ Ejercicio 1 — Reglas de identificación: crear, versionar y retirar · [← Pa
 POST /api/v1/identification-type-rules/<REGLA_PA_V2>/deactivate
 ```
 
-```json
-{
-  "version": 1
-}
-```
-
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:delete`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`)
@@ -28,6 +22,7 @@ POST /api/v1/identification-type-rules/<REGLA_PA_V2>/deactivate
 
 **Por qué se hace así**
 
+- Sin cuerpo: inactivar no exige `version` (constitución 4.0.0, D10).
 - Retirar exige `delete` sobre `identification_type_rules`; la regla no se elimina (D7).
 - Sin regla activa `PA`, las personas con esa sigla vuelven a validarse solo con las reglas base.
 
@@ -45,12 +40,6 @@ POST /api/v1/identification-type-rules/<REGLA_PA_V2>/deactivate
 
 ```http
 POST /api/v1/identification-type-rules/<REGLA_PA_V2>/deactivate
-```
-
-```json
-{
-  "version": 2
-}
 ```
 
 **Permiso que exige la URL:** `perm:party-identity:identification_type_rules:delete`

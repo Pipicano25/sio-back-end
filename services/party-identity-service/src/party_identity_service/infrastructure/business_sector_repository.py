@@ -115,7 +115,7 @@ class SQLAlchemyBusinessSectorRepository:
         return self._to_domain(model)
 
     def update(
-        self, sector_id: UUID, *, expected_version: int, values: dict[str, Any], actor_id: str
+        self, sector_id: UUID, *, expected_version: int | None, values: dict[str, Any], actor_id: str
     ) -> BusinessSector:
         model = load_for_update(
             self.session,

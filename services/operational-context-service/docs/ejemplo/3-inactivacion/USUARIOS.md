@@ -21,7 +21,7 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 | [01](01-consultar-organizacion.md) | 1. Consultar la organización SERVICIOS EJEMPLO FICTICIOS S.A.S. en Party Identity Service | `GET http://localhost:8002/api/v1/organization-identities` | `perm:party-identity:organization_identities:read` | ✅ | ✅ | ✅ |
 | [02](02-registrar-empresa-y-sucursal.md) | 1. Registrar la empresa | `POST /api/v1/companies` | `perm:operational-context:companies:create` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ |
 | [02](02-registrar-empresa-y-sucursal.md) | 2. Registrar la sucursal | `POST /api/v1/companies/{id}/branches` 🔒 | `perm:operational-context:branches:create` | ✅ | ✅ | ❌ |
-| [03](03-inactivar-empresa.md) | 1. Inactivar la empresa con la versión vigente | `POST /api/v1/companies/{id}/deactivate` 🔒 | `perm:operational-context:companies:delete` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ |
+| [03](03-inactivar-empresa.md) | 1. Inactivar la empresa | `POST /api/v1/companies/{id}/deactivate` 🔒 | `perm:operational-context:companies:delete` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ |
 | [03](03-inactivar-empresa.md) | 2. Consultar la sucursal | `GET /api/v1/branches/{id}` 🔒 | `perm:operational-context:branches:read` | ✅ | ✅ | ✅ |
 | [03](03-inactivar-empresa.md) | 3. Intentar crear otra sucursal (rechazado) | `POST /api/v1/companies/{id}/branches` 🔒 | `perm:operational-context:branches:create` | ✅ | ✅ | ❌ |
 | [04](04-reactivar-empresa.md) | 1. Reactivar la empresa | `POST /api/v1/companies/{id}/reactivate` 🔒 | `perm:operational-context:companies:update` + `perm:operational-context:platform:administer` | ✅ | ❌ | ❌ |

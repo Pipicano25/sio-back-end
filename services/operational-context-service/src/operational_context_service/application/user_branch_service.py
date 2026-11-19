@@ -174,13 +174,13 @@ class UserBranchService:
         scope: AccessScope,
         user_branch_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> UserBranch:
         """Retira la asignación sin eliminarla (FR-023, D7)."""
         current = self.get(scope, user_branch_id)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if current.status == INACTIVE:
@@ -193,13 +193,13 @@ class UserBranchService:
         scope: AccessScope,
         user_branch_id: UUID,
         *,
-        expected_version: int,
+        expected_version: int | None,
         actor_id: str,
     ) -> UserBranch:
         """Reactiva si membresía, sucursal y empresa siguen `ACTIVE` (FR-023, RN-10)."""
         current = self.get(scope, user_branch_id)
 
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
 
         if current.status == ACTIVE:

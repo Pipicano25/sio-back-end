@@ -14,12 +14,6 @@ Ejercicio 6 — Personas de contacto: principal, set-primary e inactivación · 
 POST /api/v1/organization-contact-persons/<CONTACTO_CARTERA>:set-primary
 ```
 
-```json
-{
-  "version": 1
-}
-```
-
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:update`
 
 - ✅ **Pueden:** `admin.sio` (por `perm:all:all:all`), `admin.dao` (por `perm:party-identity:all:update`), `operario.dao` (por `perm:party-identity:organization_contact_persons:update`)
@@ -77,12 +71,6 @@ GET /api/v1/organization-contact-persons/<CONTACTO_COMERCIAL>
 
 ```http
 POST /api/v1/organization-contact-persons/<CONTACTO_CARTERA>:deactivate
-```
-
-```json
-{
-  "version": 2
-}
 ```
 
 **Permiso que exige la URL:** `perm:party-identity:organization_contact_persons:delete`

@@ -95,15 +95,16 @@ EX2 = dict(
         step(
             "03-verificar-persona.md",
             "Marcar la persona como verificada",
-            "Modificar con control de versión.",
+            "Modificar solo el campo que cambia.",
             [
                 call(
                     "Cambiar `verification_status` a `VERIFIED`",
                     "PUT",
                     f"{API}/person-identities/<PERSONA_ANA>",
-                    body={**PERSON, "verification_status": "VERIFIED", "version": 1},
+                    body={"verification_status": "VERIFIED"},
                     why=[
-                        "El `PUT` envía la persona completa y la `version` leída (1).",
+                        "El `PUT` es parcial: solo se envía el campo que cambia. Lo demás queda igual.",
+                        "`version` es opcional; aquí no se envía y el cambio se aplica sobre la versión vigente.",
                         "Como no cambian país, tipo ni número, **no** se consulta Geography: la modificación funciona aunque "
                         "Geography no esté disponible (DS-06).",
                         "Si el cuerpo fuera idéntico al actual, respondería `200` sin cambiar la versión.",
@@ -111,11 +112,14 @@ EX2 = dict(
                     show=PERSON_SHOW,
                 ),
                 call(
-                    "Repetir el cambio con la versión vieja (rechazado)",
+                    "Enviar una versión vieja (rechazado)",
                     "PUT",
                     f"{API}/person-identities/<PERSONA_ANA>",
-                    body={**PERSON, "verification_status": "VERIFIED", "version": 1},
-                    why=["La persona ya está en la versión 2: responde `409 VERSION_CONFLICT` y no cambia nada."],
+                    body={"verification_status": "VERIFIED", "version": 1},
+                    why=[
+                        "Si se envía `version` y no coincide (la persona ya está en la 2), responde "
+                        "`409 VERSION_CONFLICT` y no cambia nada.",
+                    ],
                     expect=409,
                     show=["status", "code"],
                 ),
@@ -130,8 +134,8 @@ EX2 = dict(
                     "Inactivar a ANA MARIA",
                     "POST",
                     f"{API}/person-identities/<PERSONA_ANA>/deactivate",
-                    body={"version": 2},
                     why=[
+                        "Sin cuerpo: inactivar no exige `version` (constitución 4.0.0, D10).",
                         "Inactivar exige `delete` sobre `person_identities`; reactivar (`/reactivate`) exige `update`.",
                         "`verification_status` sigue `VERIFIED`: son estados independientes.",
                     ],

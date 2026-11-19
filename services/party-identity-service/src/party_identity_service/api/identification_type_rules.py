@@ -6,7 +6,7 @@ estados HTTP de error.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from party_identity_service.api.dependencies import (
@@ -138,8 +138,11 @@ def build_router(
         return service.update(
             rule_id,
             expected_version=payload.version,
-            number_pattern_description=payload.number_pattern_description,
-            example_value=payload.example_value,
+            **{
+                field: getattr(payload, field)
+                for field in ("number_pattern_description", "example_value")
+                if field in sent
+            },
             requested_identity={
                 field: getattr(payload, field)
                 for field in IDENTITY_FIELDS
@@ -190,7 +193,8 @@ def build_router(
     )
     def deactivate_identification_type_rule(
         rule_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         service: IdentificationTypeRuleService = Depends(
             get_identification_type_rule_service,

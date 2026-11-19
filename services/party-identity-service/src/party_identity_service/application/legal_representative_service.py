@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
+from party_identity_service.application.partial_update import UNSET
 from party_identity_service.application.exceptions import (
     DomainValidationError,
     ImmutableFieldError,
@@ -113,9 +114,9 @@ class LegalRepresentativeService:
         self,
         representative_id: UUID,
         *,
-        expected_version: int,
-        position: str | None,
-        source_document_reference: str | None,
+        expected_version: int | None,
+        position: str | None = UNSET,
+        source_document_reference: str | None = UNSET,
         actor_id: str,
         immutable_fields: list[str] | None = None,
     ) -> LegalRepresentative:
@@ -124,8 +125,11 @@ class LegalRepresentativeService:
                 "Persona, organización y tipo son inmutables (cerrar y crear): " + ", ".join(immutable_fields)
             )
         current = self.get(representative_id)
-        if current.version != expected_version:
+        if expected_version is not None and current.version != expected_version:
             raise VersionConflictError
+        # D28: un campo no enviado conserva su valor.
+        position = current.position if position is UNSET else position
+        source_document_reference = current.source_document_reference if source_document_reference is UNSET else source_document_reference
         if not current.is_active:
             raise InvalidStatusTransitionError("La relación está cerrada y es inmutable.")
 
@@ -139,7 +143,7 @@ class LegalRepresentativeService:
             representative_id, expected_version=expected_version, values=values, actor_id=actor_id
         )
 
-    def close(self, representative_id: UUID, *, expected_version: int, actor_id: str) -> LegalRepresentative:
+    def close(self, representative_id: UUID, *, expected_version: int | None, actor_id: str) -> LegalRepresentative:
         """Cierra sin reactivación posible (DS-08)."""
         return self.representatives.close(representative_id, expected_version=expected_version, actor_id=actor_id)
 

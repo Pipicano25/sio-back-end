@@ -174,7 +174,7 @@ class SQLAlchemyUserBranchRepository:
 
         return self._reload(user_branch_id)
 
-    def deactivate(self, user_branch_id: UUID, *, expected_version: int, actor_id: str) -> UserBranch:
+    def deactivate(self, user_branch_id: UUID, *, expected_version: int | None, actor_id: str) -> UserBranch:
         model = self._load(user_branch_id, expected_version)
 
         if model.status == "INACTIVE":
@@ -193,7 +193,7 @@ class SQLAlchemyUserBranchRepository:
 
         return self._reload(user_branch_id)
 
-    def reactivate(self, user_branch_id: UUID, *, expected_version: int, actor_id: str) -> UserBranch:
+    def reactivate(self, user_branch_id: UUID, *, expected_version: int | None, actor_id: str) -> UserBranch:
         """Reactiva: borra `deactivated_at` y renueva fecha y autor de la asignación (FR-023)."""
         model = self._load(user_branch_id, expected_version)
 
@@ -215,7 +215,7 @@ class SQLAlchemyUserBranchRepository:
 
         return self._reload(user_branch_id)
 
-    def _load(self, user_branch_id: UUID, expected_version: int) -> UserBranchModel:
+    def _load(self, user_branch_id: UUID, expected_version: int | None) -> UserBranchModel:
         return load_for_update(
             self.session,
             UserBranchModel,

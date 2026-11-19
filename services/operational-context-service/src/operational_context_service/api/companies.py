@@ -6,7 +6,7 @@ estados HTTP de error.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from operational_context_service.api.access_scope import get_access_scope
@@ -109,9 +109,9 @@ def build_router(auth: SIOAuth) -> APIRouter:
         scope: AccessScope = Depends(get_access_scope),
         service: CompanyService = Depends(get_company_service),
     ):
-        """Reemplazo completo con versión esperada; sin cambios no escribe (FR-063)."""
-        data = payload.model_dump()
-        expected_version = data.pop("version")
+        """Actualización parcial (D28): solo los campos enviados; versión opcional (D9)."""
+        data = payload.changes()
+        expected_version = payload.version
 
         return service.update(
             scope,
@@ -132,7 +132,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def deactivate_company(
         company_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         scope: AccessScope = Depends(get_access_scope),
         service: CompanyService = Depends(get_company_service),
@@ -151,7 +152,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def reactivate_company(
         company_id: UUID,
-        payload: StatusActionRequest,
+        *,
+        payload: StatusActionRequest = Body(default_factory=StatusActionRequest),
         actor_id: CurrentSubject,
         scope: AccessScope = Depends(get_access_scope),
         service: CompanyService = Depends(get_company_service),
