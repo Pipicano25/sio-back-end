@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, ConfigDict
 
+from geography_service.api.schemas.partial import PartialUpdate
 from geography_service.domain.global_administrative_division import (
     AdministrativeDivisionStatus,
     AdministrativeDivisionType,
@@ -27,27 +28,18 @@ class GlobalAdministrativeDivisionCreate(BaseModel):
     status: AdministrativeDivisionStatus
 
 
-class GlobalAdministrativeDivisionUpdate(BaseModel):
-    country_id: UUID
+class GlobalAdministrativeDivisionUpdate(PartialUpdate):
+    """`PUT` parcial (D28): solo los campos que cambian; `version` opcional (D9)."""
+
+    not_nullable = frozenset({"country_id", "code", "name", "division_type", "status"})
+
+    country_id: UUID | None = None
     parent_division_id: UUID | None = None
+    code: str | None = Field(default=None, min_length=1, max_length=40)
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    division_type: AdministrativeDivisionType | None = None
+    status: AdministrativeDivisionStatus | None = None
 
-    code: str = Field(
-        min_length=1,
-        max_length=40,
-    )
-
-    name: str = Field(
-        min_length=1,
-        max_length=160,
-    )
-
-    division_type: AdministrativeDivisionType
-    status: AdministrativeDivisionStatus
-
-    version: int = Field(
-        ge=1,
-        description="Versión conocida para control de concurrencia.",
-    )
 
 
 class GlobalAdministrativeDivisionResponse(BaseModel):

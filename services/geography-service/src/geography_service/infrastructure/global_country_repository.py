@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
+from geography_service.application.partial_update import UNSET
 from geography_service.application.exceptions import (
     GlobalCountryConflictError,
     GlobalCountryVersionConflictError,
@@ -165,12 +166,12 @@ class SQLAlchemyGlobalCountryRepository:
         self,
         country_id: UUID,
         *,
-        expected_version: int,
-        iso2_code: str,
-        iso3_code: str,
-        name: str,
-        phone_prefix: str | None,
-        status: GlobalCountryStatus,
+        expected_version: int | None,
+        iso2_code: str = UNSET,
+        iso3_code: str = UNSET,
+        name: str = UNSET,
+        phone_prefix: str | None = UNSET,
+        status: GlobalCountryStatus = UNSET,
         actor_id: str,
     ) -> GlobalCountry | None:
         model = self.session.get(
@@ -181,11 +182,18 @@ class SQLAlchemyGlobalCountryRepository:
         if model is None:
             return None
 
-        if model.version != expected_version:
+        if expected_version is not None and model.version != expected_version:
             raise GlobalCountryVersionConflictError(
                 "El registro fue modificado por otra operación. "
                 "Consulte nuevamente antes de actualizar."
             )
+
+        # D28: un campo no enviado conserva su valor.
+        iso2_code = model.iso2_code if iso2_code is UNSET else iso2_code
+        iso3_code = model.iso3_code if iso3_code is UNSET else iso3_code
+        name = model.name if name is UNSET else name
+        phone_prefix = model.phone_prefix if phone_prefix is UNSET else phone_prefix
+        status = model.status if status is UNSET else status
 
         model.iso2_code = iso2_code
         model.iso3_code = iso3_code

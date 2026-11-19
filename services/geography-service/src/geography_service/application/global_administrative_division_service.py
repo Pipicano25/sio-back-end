@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from geography_service.application.partial_update import UNSET
 from geography_service.application.exceptions import (
     GlobalAdministrativeDivisionNotFoundError,
 )
@@ -96,13 +97,13 @@ class GlobalAdministrativeDivisionService:
         self,
         division_id: UUID,
         *,
-        expected_version: int,
-        country_id: UUID,
-        parent_division_id: UUID | None,
-        code: str,
-        name: str,
-        division_type: AdministrativeDivisionType,
-        status: AdministrativeDivisionStatus,
+        expected_version: int | None,
+        country_id: UUID = UNSET,
+        parent_division_id: UUID | None = UNSET,
+        code: str = UNSET,
+        name: str = UNSET,
+        division_type: AdministrativeDivisionType = UNSET,
+        status: AdministrativeDivisionStatus = UNSET,
         actor_id: str,
     ) -> GlobalAdministrativeDivision:
         division = self.repository.update(

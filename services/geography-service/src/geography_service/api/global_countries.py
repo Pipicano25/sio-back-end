@@ -188,11 +188,9 @@ def build_router(
             get_global_country_service,
         ),
     ):
-        data = payload.model_dump()
+        data = payload.changes()
 
-        expected_version = data.pop(
-            "version",
-        )
+        expected_version = payload.version
 
         try:
             return service.update(

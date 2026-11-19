@@ -252,11 +252,9 @@ def build_router(
         Raises:
             HTTPException: Con 404 si no existe o 409 ante conflictos.
         """
-        data = payload.model_dump()
+        data = payload.changes()
 
-        expected_version = data.pop(
-            "version",
-        )
+        expected_version = payload.version
 
         try:
             return service.update(

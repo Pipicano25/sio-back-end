@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from geography_service.api.schemas.partial import PartialUpdate
 from geography_service.domain.global_country import (
     GlobalCountryStatus,
 )
@@ -60,20 +61,17 @@ class GlobalCountryCreate(BaseModel):
     status: GlobalCountryStatus
 
 
-class GlobalCountryUpdate(BaseModel):
-    iso2_code: Iso2Code
-    iso3_code: Iso3Code
-    name: CountryName
-    phone_prefix: PhonePrefix = None
-    status: GlobalCountryStatus
+class GlobalCountryUpdate(PartialUpdate):
+    """`PUT` parcial (D28): solo los campos que cambian; `version` opcional (D9)."""
 
-    version: int = Field(
-        ge=1,
-        description=(
-            "Versión conocida por el cliente para "
-            "control de concurrencia."
-        ),
-    )
+    not_nullable = frozenset({"iso2_code", "iso3_code", "name", "status"})
+
+    iso2_code: Iso2Code | None = None
+    iso3_code: Iso3Code | None = None
+    name: CountryName | None = None
+    phone_prefix: PhonePrefix = None
+    status: GlobalCountryStatus | None = None
+
 
 
 class GlobalCountryResponse(BaseModel):

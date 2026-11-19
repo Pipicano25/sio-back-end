@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
+from geography_service.application.partial_update import UNSET
 from geography_service.application.exceptions import (
     GlobalCityConflictError,
     GlobalCityInvalidAdministrativeDivisionError,
@@ -230,14 +231,14 @@ class SQLAlchemyGlobalCityRepository:
         self,
         city_id: UUID,
         *,
-        expected_version: int,
-        country_id: UUID,
-        administrative_division_id: UUID | None,
-        code: str | None,
-        name: str,
-        latitude: Decimal | None,
-        longitude: Decimal | None,
-        status: GlobalCityStatus,
+        expected_version: int | None,
+        country_id: UUID = UNSET,
+        administrative_division_id: UUID | None = UNSET,
+        code: str | None = UNSET,
+        name: str = UNSET,
+        latitude: Decimal | None = UNSET,
+        longitude: Decimal | None = UNSET,
+        status: GlobalCityStatus = UNSET,
         actor_id: str,
     ) -> GlobalCity | None:
         """Actualiza completamente una ciudad global.
@@ -271,11 +272,20 @@ class SQLAlchemyGlobalCityRepository:
         if model is None:
             return None
 
-        if model.version != expected_version:
+        if expected_version is not None and model.version != expected_version:
             raise GlobalCityVersionConflictError(
                 "El registro fue modificado por otra operación. "
                 "Consulte nuevamente antes de actualizar."
             )
+
+        # D28: un campo no enviado conserva su valor.
+        country_id = model.country_id if country_id is UNSET else country_id
+        administrative_division_id = model.administrative_division_id if administrative_division_id is UNSET else administrative_division_id
+        code = model.code if code is UNSET else code
+        name = model.name if name is UNSET else name
+        latitude = model.latitude if latitude is UNSET else latitude
+        longitude = model.longitude if longitude is UNSET else longitude
+        status = model.status if status is UNSET else status
 
         self._validate_country(
             country_id,

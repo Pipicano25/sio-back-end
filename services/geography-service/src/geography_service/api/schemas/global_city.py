@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from geography_service.api.schemas.partial import PartialUpdate
 from geography_service.domain.global_city import (
     GlobalCityStatus,
 )
@@ -71,45 +72,22 @@ class GlobalCityCreate(BaseModel):
     status: GlobalCityStatus
 
 
-class GlobalCityUpdate(BaseModel):
-    """Representa una actualización completa de una ciudad global.
+class GlobalCityUpdate(PartialUpdate):
+    """`PUT` parcial de una ciudad global (D28): solo los campos que cambian.
 
-    Attributes:
-        country_id: País al que pertenece la ciudad.
-        administrative_division_id: División administrativa opcional.
-        code: Código oficial cuando exista.
-        name: Nombre oficial.
-        latitude: Latitud aproximada.
-        longitude: Longitud aproximada.
-        status: Estado funcional.
-        version: Versión conocida por el cliente.
+    País y división se validan sobre el registro resultante; `version` es opcional (D9).
     """
 
-    country_id: UUID
+    not_nullable = frozenset({"country_id", "name", "status"})
+
+    country_id: UUID | None = None
     administrative_division_id: UUID | None = None
-
-    code: str | None = Field(
-        default=None,
-        max_length=40,
-    )
-
-    name: str = Field(
-        min_length=1,
-        max_length=160,
-    )
-
+    code: str | None = Field(default=None, max_length=40)
+    name: str | None = Field(default=None, min_length=1, max_length=160)
     latitude: Latitude | None = None
     longitude: Longitude | None = None
+    status: GlobalCityStatus | None = None
 
-    status: GlobalCityStatus
-
-    version: int = Field(
-        ge=1,
-        description=(
-            "Versión conocida por el cliente para "
-            "control de concurrencia."
-        ),
-    )
 
 
 class GlobalCityResponse(BaseModel):

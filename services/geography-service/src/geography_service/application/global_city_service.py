@@ -1,6 +1,7 @@
 from decimal import Decimal
 from uuid import UUID
 
+from geography_service.application.partial_update import UNSET
 from geography_service.application.exceptions import (
     GlobalCityNotFoundError,
 )
@@ -133,14 +134,14 @@ class GlobalCityService:
         self,
         city_id: UUID,
         *,
-        expected_version: int,
-        country_id: UUID,
-        administrative_division_id: UUID | None,
-        code: str | None,
-        name: str,
-        latitude: Decimal | None,
-        longitude: Decimal | None,
-        status: GlobalCityStatus,
+        expected_version: int | None,
+        country_id: UUID = UNSET,
+        administrative_division_id: UUID | None = UNSET,
+        code: str | None = UNSET,
+        name: str = UNSET,
+        latitude: Decimal | None = UNSET,
+        longitude: Decimal | None = UNSET,
+        status: GlobalCityStatus = UNSET,
         actor_id: str,
     ) -> GlobalCity:
         """Actualiza completamente una ciudad global.

@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from geography_service.application.partial_update import UNSET
 from geography_service.application.exceptions import (
     GlobalCountryNotFoundError,
 )
@@ -90,12 +91,12 @@ class GlobalCountryService:
         self,
         country_id: UUID,
         *,
-        expected_version: int,
-        iso2_code: str,
-        iso3_code: str,
-        name: str,
-        phone_prefix: str | None,
-        status: GlobalCountryStatus,
+        expected_version: int | None,
+        iso2_code: str = UNSET,
+        iso3_code: str = UNSET,
+        name: str = UNSET,
+        phone_prefix: str | None = UNSET,
+        status: GlobalCountryStatus = UNSET,
         actor_id: str,
     ) -> GlobalCountry:
         country = self.repository.update(

@@ -524,6 +524,10 @@ SIO_DOCS_ENABLED=false
 
 # Recursos HTTP
 
+El `PUT` es parcial (constitución 4.0.0, D28): solo los campos que cambian; `null` borra un campo
+opcional y en uno obligatorio responde `422`; un cuerpo vacío o solo con `version` → `422`. `version`
+es opcional: si llega desactualizada → `409`.
+
 ## Countries
 
 Base:

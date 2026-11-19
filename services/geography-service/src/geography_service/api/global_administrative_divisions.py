@@ -174,8 +174,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         actor_id: CurrentSubject,
         service: GlobalAdministrativeDivisionService = Depends(get_service),
     ):
-        data = payload.model_dump()
-        expected_version = data.pop("version")
+        data = payload.changes()
+        expected_version = payload.version
 
         try:
             return service.update(
