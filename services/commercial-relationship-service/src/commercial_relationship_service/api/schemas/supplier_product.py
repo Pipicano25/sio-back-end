@@ -41,14 +41,24 @@ class SupplierProductCreate(_SupplierProductFields):
     company_product_id: UUID
 
 
-class SupplierProductUpdate(_SupplierProductFields, UpdateModel):
-    """`PUT` (FR-026): proveedor y producto empresarial inmutables."""
+class SupplierProductUpdate(UpdateModel):
+    """`PUT` parcial (FR-026, D28): proveedor y producto empresarial inmutables."""
 
     immutable_fields = frozenset({"company_supplier_id", "company_product_id", "company_id", "status"})
+    not_nullable = frozenset(
+        {"purchase_unit_id", "minimum_order_quantity", "pack_quantity", "currency_code", "is_preferred"}
+    )
 
-    minimum_order_quantity: Quantity
-    pack_quantity: PackQuantity
-    is_preferred: bool
+    company_product_presentation_id: UUID | None = None
+    supplier_product_code: SupplierProductCode = None
+    purchase_unit_id: UUID | None = None
+    minimum_order_quantity: Quantity | None = None
+    pack_quantity: PackQuantity | None = None
+    negotiated_unit_cost: Cost | None = None
+    currency_code: CurrencyCode | None = None
+    expected_supplier_lead_time_hours: LeadTimeHours | None = None
+    priority: Priority | None = None
+    is_preferred: bool | None = None
 
 
 class SupplierProductResponse(AuditedResponse):

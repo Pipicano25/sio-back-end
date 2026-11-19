@@ -93,7 +93,7 @@ class SupplierPaymentConditionService:
 
         return self._repository.add(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.CREATE_SUPPLIER_PAYMENT_CONDITION, "SupplierPaymentCondition", model.company_id))
 
-    def update(self, current, values: dict[str, Any], *, version: int, actor: str):
+    def update(self, current, values: dict[str, Any], *, version: int | None, actor: str):
         """`PUT` en cualquier estado; Payment Reference solo si cambian el tipo o el plazo (DS-06)."""
         values = _validate_values(values)
         require_active_for_mark(current.status, marked=values["is_default"], field="is_default")
@@ -132,7 +132,7 @@ class SupplierPaymentConditionService:
         touch(model, actor)
         return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_SUPPLIER_PAYMENT_CONDITION, "SupplierPaymentCondition", model.company_id))
 
-    def deactivate(self, current, *, version: int, actor: str):
+    def deactivate(self, current, *, version: int | None, actor: str):
         """Inactivar retira `is_default` (DS-05); no consulta Payment Reference."""
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE)
@@ -140,7 +140,7 @@ class SupplierPaymentConditionService:
         touch(model, actor)
         return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_SUPPLIER_PAYMENT_CONDITION, "SupplierPaymentCondition", model.company_id))
 
-    def reactivate(self, current, *, version: int, actor: str):
+    def reactivate(self, current, *, version: int | None, actor: str):
         """FR-031 y FR-032: proveedor `ACTIVE` y tipo de condición `ACTIVE`."""
         next_status(current.status, REACTIVATE)
         require_active_supplier(self._suppliers, current.company_supplier_id, current.company_id)

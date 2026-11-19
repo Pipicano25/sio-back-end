@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from commercial_relationship_service.api.company_scope import check_company, company_dependency, load_scoped
@@ -256,8 +256,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         current=Depends(_resource(write=True)),
         service: CompanyProductService = Depends(get_product_service),
     ):
-        values = body.model_dump(exclude={"version"})
-        model = service.update(current, values, version=body.version, actor=actor)
+        values = body.merged(current)  # D28: PUT parcial
+        model = service.update(current, values, version=_version(body, current), actor=actor)
         return CompanyProductResponse.model_validate(model)
 
     @router.post(
@@ -267,7 +267,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         summary="Inactivar un producto empresarial",
     )
     def deactivate_product(
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         current=Depends(_resource(write=True, allow_inactive_company=True)),
         service: CompanyProductService = Depends(get_product_service),
@@ -282,7 +283,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         summary="Reactivar un producto empresarial",
     )
     def reactivate_product(
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         current=Depends(_resource(write=True)),
         service: CompanyProductService = Depends(get_product_service),
@@ -291,3 +293,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         return CompanyProductResponse.model_validate(model)
 
     return router
+
+
+def _version(body, current) -> int:
+    """Versión esperada: la enviada o, si no llega, la leída (D9): un cambio simultáneo responde 409."""
+    return body.version if body.version is not None else current.version

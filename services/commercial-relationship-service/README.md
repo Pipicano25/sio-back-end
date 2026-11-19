@@ -322,8 +322,11 @@ base detenida: `docker start sio-commercial-relationship-db`.
 
 - Prefijo `/api/v1`; errores RFC 9457 (`application/problem+json`) con `code`
   (`COMMERCIAL_RELATIONSHIP.*`), `trace_id` y `errors[]`; cabecera `X-Trace-Id` en toda respuesta.
-- Concurrencia optimista: `version` en el cuerpo de `PUT` y de las acciones; desactualizada →
-  `409 VERSION_CONFLICT`. Un `PUT` sin cambios devuelve `200` sin incrementar `version`.
+- `PUT` parcial (constitución 4.0.0, D28): solo los campos que cambian; un campo ausente no cambia,
+  `null` borra un opcional y en un obligatorio responde `422`; cuerpo vacío o solo `version` → `422`.
+- Concurrencia optimista: `version` es opcional en `PUT` y acciones; si llega desactualizada →
+  `409 VERSION_CONFLICT`; si no llega se usa la leída. Un `PUT` sin cambios devuelve `200` sin
+  incrementar `version`. Las acciones de estado aceptan cuerpo vacío o ninguno.
 - El `PUT` se acepta en cualquier estado y nunca cambia `status`; los cambios de estado son acciones
   `POST …/deactivate`, `…/reactivate`, `…/block`, `…/unblock`.
 - Predeterminadas (presentación de compra y de venta, proveedor preferido, condición por moneda, lista

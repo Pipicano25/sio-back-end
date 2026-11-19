@@ -36,14 +36,15 @@ class CompanyProductPresentationUpdate(UpdateModel):
     immutable_fields = frozenset(
         {"company_product_id", "global_product_presentation_id", "company_id", "status"}
     )
+    not_nullable = frozenset({"is_purchasable", "is_sellable", "is_default_purchase", "is_default_sale"})
 
     internal_code: PresentationCode = None
     sku: PresentationCode = None
     reference_code: ReferenceCode = None
-    is_purchasable: bool
-    is_sellable: bool
-    is_default_purchase: bool
-    is_default_sale: bool
+    is_purchasable: bool | None = None
+    is_sellable: bool | None = None
+    is_default_purchase: bool | None = None
+    is_default_sale: bool | None = None
 
 
 class CompanyProductPresentationResponse(AuditedResponse):

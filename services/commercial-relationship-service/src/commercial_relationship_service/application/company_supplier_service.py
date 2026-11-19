@@ -67,7 +67,7 @@ class CompanySupplierService:
             updated_by=actor,
         )
 
-    def update(self, current, values: dict[str, Any], *, version: int, actor: str):
+    def update(self, current, values: dict[str, Any], *, version: int | None, actor: str):
         """`PUT` en `ACTIVE`, `INACTIVE` o `BLOCKED` (DS-17): no toca `status` ni `block_reason`."""
         contact_id = values.get("preferred_contact_person_id")
 
@@ -91,19 +91,19 @@ class CompanySupplierService:
         _touch(model, actor)
         return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_COMPANY_SUPPLIER, "CompanySupplier", model.company_id))
 
-    def deactivate(self, current, *, version: int, actor: str):
+    def deactivate(self, current, *, version: int | None, actor: str):
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE, supplier=True)
         _touch(model, actor)
         return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_COMPANY_SUPPLIER, "CompanySupplier", model.company_id))
 
-    def reactivate(self, current, *, version: int, actor: str):
+    def reactivate(self, current, *, version: int | None, actor: str):
         return self._to_active(current, REACTIVATE, version=version, actor=actor)
 
-    def unblock(self, current, *, version: int, actor: str):
+    def unblock(self, current, *, version: int | None, actor: str):
         return self._to_active(current, UNBLOCK, version=version, actor=actor)
 
-    def block(self, current, *, block_reason: str, version: int, actor: str):
+    def block(self, current, *, block_reason: str, version: int | None, actor: str):
         """Bloquear no consulta Party Identity; exige motivo (FR-033a)."""
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, BLOCK, supplier=True)
@@ -113,7 +113,7 @@ class CompanySupplierService:
             audit_events.BLOCK_COMPANY_SUPPLIER, "CompanySupplier", model.company_id, reason=block_reason,
         ))
 
-    def _to_active(self, current, action: str, *, version: int, actor: str):
+    def _to_active(self, current, action: str, *, version: int | None, actor: str):
         next_status(current.status, action, supplier=True)
         require_active_organization(self._party_factory(), current.organization_identity_id)
 

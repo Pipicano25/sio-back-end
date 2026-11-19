@@ -85,7 +85,7 @@ class CompanyCustomerService:
             updated_by=actor,
         )
 
-    def update(self, current, values: dict[str, Any], *, version: int, actor: str):
+    def update(self, current, values: dict[str, Any], *, version: int | None, actor: str):
         """`PUT` en cualquier estado (DS-17); valida el contacto solo si cambia a no nulo."""
         contact_id = values.get("preferred_contact_person_id")
 
@@ -112,13 +112,13 @@ class CompanyCustomerService:
         _touch(model, actor)
         return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_COMPANY_CUSTOMER, "CompanyCustomer", model.company_id))
 
-    def deactivate(self, current, *, version: int, actor: str):
+    def deactivate(self, current, *, version: int | None, actor: str):
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE)
         _touch(model, actor)
         return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_COMPANY_CUSTOMER, "CompanyCustomer", model.company_id))
 
-    def reactivate(self, current, *, version: int, actor: str):
+    def reactivate(self, current, *, version: int | None, actor: str):
         """Revalida la identidad (FR-025); no revalida el contacto preferido (DS-08)."""
         next_status(current.status, REACTIVATE)
         party = self._party_factory()

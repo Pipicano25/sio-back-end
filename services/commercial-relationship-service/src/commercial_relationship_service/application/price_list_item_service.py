@@ -53,9 +53,9 @@ def _require_not_closed_automatically(current) -> None:
         raise PriceClosedByAutomaticUpdateError
 
 
-def _require_version(current, version: int) -> None:
+def _require_version(current, version: int | None) -> None:
     """Las reglas de vigencia se validan contra `current`: con otra versión, `409` primero (Principio VII)."""
-    if current.version != version:
+    if version is not None and current.version != version:
         raise VersionConflictError
 
 
@@ -87,7 +87,7 @@ class PriceListItemService:
 
     # ----------------------------------------------------------- mantenimiento
 
-    def update(self, current, values: dict[str, Any], *, version: int, actor: str):
+    def update(self, current, values: dict[str, Any], *, version: int | None, actor: str):
         """FR-054 (DS-08, I2): precio futuro editable; en vigencia solo `valid_to` futuro.
 
         Se valida contra `current`; si al bloquear la fila la versión coincide, sus
@@ -127,7 +127,7 @@ class PriceListItemService:
         *,
         unit_price: Decimal,
         effective_from,
-        version: int,
+        version: int | None,
         actor: str,
     ):
         """FR-054a: cierra el precio en `effective_from` y crea el nuevo hasta el `valid_to` anterior."""
@@ -178,13 +178,13 @@ class PriceListItemService:
         )
         return new, previous
 
-    def deactivate(self, current, *, version: int, actor: str):
+    def deactivate(self, current, *, version: int | None, actor: str):
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE)
         touch(model, actor)
         return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_PRICE_LIST_ITEM, "PriceListItem", model.company_id))
 
-    def reactivate(self, current, *, version: int, actor: str):
+    def reactivate(self, current, *, version: int | None, actor: str):
         """Revalida lista, producto y presentación `ACTIVE`; el solapamiento lo rechaza la base."""
         _require_not_closed_automatically(current)
         next_status(current.status, REACTIVATE)

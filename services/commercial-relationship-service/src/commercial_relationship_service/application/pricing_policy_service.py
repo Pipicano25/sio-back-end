@@ -98,7 +98,7 @@ class PricingPolicyService:
 
     # -------------------------------------------------------- modificaciones
 
-    def rename(self, current, *, name: str, version: int, actor: str):
+    def rename(self, current, *, name: str, version: int | None, actor: str):
         policy = self._locked(current, version)
 
         if policy.name == name:
@@ -111,7 +111,7 @@ class PricingPolicyService:
             policy, [], audit=audit_events.spec(audit_events.UPDATE_PRICING_POLICY, ENTITY, policy.company_id)
         )
 
-    def change_percentage(self, current, *, markup_percentage: Any, version: int, actor: str):
+    def change_percentage(self, current, *, markup_percentage: Any, version: int | None, actor: str):
         """Cierra el término vigente y abre otro; el nuevo rige desde la siguiente recepción (CP-15)."""
         markup = validate_markup(markup_percentage)
         policy = self._locked(current, version)
@@ -139,7 +139,7 @@ class PricingPolicyService:
             ),
         )
 
-    def assign(self, current, *, presentation_ids: list[UUID], version: int, actor: str):
+    def assign(self, current, *, presentation_ids: list[UUID], version: int | None, actor: str):
         """Incorpora presentaciones; las que ya pertenecen a la política no cambian."""
         presentation_ids = self._checked_presentations(current.company_id, presentation_ids)
         policy = self._locked(current, version)
@@ -164,7 +164,7 @@ class PricingPolicyService:
             ),
         )
 
-    def remove(self, current, *, presentation_ids: list[UUID], version: int, actor: str):
+    def remove(self, current, *, presentation_ids: list[UUID], version: int | None, actor: str):
         """Retira presentaciones; no toca precios: desde la siguiente recepción quedan `SKIPPED_NO_POLICY` (CP-16)."""
         presentation_ids = unique_in_order(presentation_ids)
         _require_batch(presentation_ids)
@@ -190,7 +190,7 @@ class PricingPolicyService:
             ),
         )
 
-    def deactivate(self, current, *, reason: str, version: int, actor: str):
+    def deactivate(self, current, *, reason: str, version: int | None, actor: str):
         """Estado final: cierra el término y las asignaciones abiertas (FR-021-04)."""
         policy = self._locked(current, version)
         now = self._repository.database_now()
@@ -217,7 +217,7 @@ class PricingPolicyService:
 
     # -------------------------------------------------------------- internos
 
-    def _locked(self, current, version: int) -> PricingPolicyModel:
+    def _locked(self, current, version: int | None) -> PricingPolicyModel:
         policy = self._repository.load_for_update(current.id, expected_version=version)
 
         if policy.status != ACTIVE:

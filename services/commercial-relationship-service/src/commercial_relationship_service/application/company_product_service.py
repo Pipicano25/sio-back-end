@@ -138,7 +138,7 @@ class CompanyProductService:
 
     # ----------------------------------------------------------- mantenimiento
 
-    def update(self, current, values: dict[str, Any], *, version: int, actor: str):
+    def update(self, current, values: dict[str, Any], *, version: int | None, actor: str):
         """`PUT` en cualquier estado (DS-17): no consulta Product Catalog ni cambia el estado."""
         values = _validate_values(values)
 
@@ -159,14 +159,14 @@ class CompanyProductService:
         _touch(model, actor)
         return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_COMPANY_PRODUCT, "CompanyProduct", model.company_id))
 
-    def deactivate(self, current, *, version: int, actor: str):
+    def deactivate(self, current, *, version: int | None, actor: str):
         """Inactivar no consulta Product Catalog; se permite con la empresa inactiva."""
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE)
         _touch(model, actor)
         return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_COMPANY_PRODUCT, "CompanyProduct", model.company_id))
 
-    def reactivate(self, current, *, version: int, actor: str):
+    def reactivate(self, current, *, version: int | None, actor: str):
         """Exige el producto global `ACTIVE`; no exige completitud ni registra primer uso (FR-016)."""
         next_status(current.status, REACTIVATE)
         _require_active_product(self._catalog_factory(), current.global_product_id, eligible=False)

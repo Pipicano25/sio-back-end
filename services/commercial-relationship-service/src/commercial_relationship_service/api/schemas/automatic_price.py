@@ -15,7 +15,7 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, BeforeValidator, ConfigDict, Field, model_validator
 
-from commercial_relationship_service.api.schemas.common import StrictModel, Version, _strip
+from commercial_relationship_service.api.schemas.common import OptionalVersion, StrictModel, Version, _strip
 
 CURRENCY = re.compile(r"^[A-Z]{3}$")
 
@@ -72,7 +72,7 @@ ResolutionReason = Annotated[str, BeforeValidator(_strip), Field(min_length=10, 
 class ApplicationResolution(StrictModel):
     """A4: resolución administrativa de una aplicación `PENDING` o `FAILED` (FR-021-27)."""
 
-    version: Version
+    version: OptionalVersion = None
     reason: ResolutionReason
 
 

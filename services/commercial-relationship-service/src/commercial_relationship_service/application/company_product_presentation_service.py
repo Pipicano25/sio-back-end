@@ -122,7 +122,7 @@ class CompanyProductPresentationService:
 
     # ----------------------------------------------------------- mantenimiento
 
-    def update(self, current, values: dict[str, Any], *, version: int, actor: str):
+    def update(self, current, values: dict[str, Any], *, version: int | None, actor: str):
         """`PUT` en cualquier estado (FR-014): no consulta Product Catalog ni cambia el estado."""
         values = dict(values)
 
@@ -160,7 +160,7 @@ class CompanyProductPresentationService:
         touch(model, actor)
         return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_COMPANY_PRODUCT_PRESENTATION, "CompanyProductPresentation", model.company_id))
 
-    def deactivate(self, current, *, version: int, actor: str):
+    def deactivate(self, current, *, version: int | None, actor: str):
         """Inactivar retira sus marcas de predeterminada (DS-05); no consulta Product Catalog."""
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE)
@@ -171,7 +171,7 @@ class CompanyProductPresentationService:
         touch(model, actor)
         return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_COMPANY_PRODUCT_PRESENTATION, "CompanyProductPresentation", model.company_id))
 
-    def reactivate(self, current, *, version: int, actor: str):
+    def reactivate(self, current, *, version: int | None, actor: str):
         """FR-015: producto empresarial `ACTIVE` y presentación global `ACTIVE`; sin primer uso."""
         next_status(current.status, REACTIVATE)
         product = require_product(self._products, current.company_product_id, current.company_id, active=False)

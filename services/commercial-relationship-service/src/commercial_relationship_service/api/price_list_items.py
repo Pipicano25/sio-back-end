@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from commercial_relationship_service.api.company_scope import company_dependency, load_scoped
@@ -158,8 +158,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         service: PriceListItemService = Depends(get_price_list_item_service),
         list_repository=Depends(get_price_list_repository),
     ):
-        values = body.model_dump(exclude={"version"})
-        model = service.update(current, values, version=body.version, actor=actor)
+        values = body.merged(current)  # D28: PUT parcial
+        model = service.update(current, values, version=_version(body, current), actor=actor)
         return item_response(model, list_repository.get(model.price_list_id).currency_code)
 
     @router.post(
@@ -197,7 +197,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         summary="Inactivar un precio de lista",
     )
     def deactivate_item(
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         current=Depends(_resource(write=True, allow_inactive_company=True)),
         service: PriceListItemService = Depends(get_price_list_item_service),
@@ -213,7 +214,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         summary="Reactivar un precio de lista",
     )
     def reactivate_item(
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         current=Depends(_resource(write=True)),
         service: PriceListItemService = Depends(get_price_list_item_service),
@@ -223,3 +225,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         return item_response(model, list_repository.get(model.price_list_id).currency_code)
 
     return router
+
+
+def _version(body, current) -> int:
+    """Versión esperada: la enviada o, si no llega, la leída (D9): un cambio simultáneo responde 409."""
+    return body.version if body.version is not None else current.version

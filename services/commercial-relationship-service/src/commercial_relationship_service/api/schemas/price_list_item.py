@@ -12,6 +12,7 @@ from uuid import UUID
 from pydantic import AwareDatetime, BaseModel, Field, field_serializer
 
 from commercial_relationship_service.api.schemas.common import (
+    OptionalVersion,
     AuditedResponse,
     StrictModel,
     UnitPrice,
@@ -41,9 +42,10 @@ class PriceListItemUpdate(UpdateModel):
     immutable_fields = frozenset(
         {"price_list_id", "company_product_id", "company_product_presentation_id", "company_id", "status"}
     )
+    not_nullable = frozenset({"unit_price", "valid_from"})
 
-    unit_price: UnitPrice
-    valid_from: AwareDatetime
+    unit_price: UnitPrice | None = None
+    valid_from: AwareDatetime | None = None
     valid_to: AwareDatetime | None = None
 
 
@@ -52,7 +54,7 @@ class PriceChangeRequest(StrictModel):
 
     unit_price: UnitPrice
     effective_from: AwareDatetime | None = None
-    version: Version
+    version: OptionalVersion = None
 
 
 def _price(value: Decimal | None, currency_code: str | None) -> str | None:

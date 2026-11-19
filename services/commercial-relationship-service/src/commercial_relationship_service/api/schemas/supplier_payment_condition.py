@@ -43,15 +43,16 @@ class SupplierPaymentConditionUpdate(UpdateModel):
     """`PUT` (FR-036): el proveedor es inmutable."""
 
     immutable_fields = frozenset({"company_supplier_id", "company_id", "status"})
+    not_nullable = frozenset({"payment_condition_type_id", "currency_code", "payment_terms_days", "is_default", "valid_from"})
 
-    payment_condition_type_id: UUID
-    currency_code: CurrencyCode
-    payment_terms_days: PaymentTermsDays
+    payment_condition_type_id: UUID | None = None
+    currency_code: CurrencyCode | None = None
+    payment_terms_days: PaymentTermsDays | None = None
     credit_limit: CreditLimit | None = None
     interest_rate_percentage: Percentage | None = None
     cash_discount_percentage: Percentage | None = None
-    is_default: bool
-    valid_from: AwareDatetime
+    is_default: bool | None = None
+    valid_from: AwareDatetime | None = None
     valid_to: AwareDatetime | None = None
 
 

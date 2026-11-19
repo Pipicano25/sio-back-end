@@ -287,7 +287,7 @@ class AutomaticPriceResolutionService:
     def __init__(self, repository) -> None:
         self._repository = repository
 
-    def resolve(self, current: AutomaticPriceApplicationModel, *, version: int, reason: str, actor: str):
+    def resolve(self, current: AutomaticPriceApplicationModel, *, version: int | None, reason: str, actor: str):
         repo = self._repository
         repo.lock_queue(current.price_list_id, current.company_product_presentation_id)
         application = repo.load_for_update(current.id, expected_version=version)

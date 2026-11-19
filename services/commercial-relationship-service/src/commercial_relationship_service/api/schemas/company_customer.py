@@ -31,9 +31,10 @@ class CompanyCustomerUpdate(UpdateModel):
     immutable_fields = frozenset(
         {"customer_kind", "person_identity_id", "organization_identity_id", "company_id", "status"}
     )
+    not_nullable = frozenset({"internal_code", "display_name"})
 
-    internal_code: InternalCode
-    display_name: DisplayName
+    internal_code: InternalCode | None = None
+    display_name: DisplayName | None = None
     preferred_contact_person_id: UUID | None = None
 
 

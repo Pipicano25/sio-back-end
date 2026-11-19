@@ -99,12 +99,43 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+OptionalVersion = Annotated[
+    int | None,
+    Field(ge=1, description="Versión conocida por el cliente. Opcional: si se envía y no coincide, responde 409."),
+]
+
+
 class UpdateModel(StrictModel):
-    """Cuerpo de `PUT` con versión esperada y campos inmutables declarados."""
+    """`PUT` parcial (constitución 4.0.0, D28) con campos inmutables declarados.
+
+    Solo se envían los campos que cambian; un campo ausente conserva su valor.
+    `null` borra un campo opcional y en uno de `not_nullable` responde `422`.
+    Un cuerpo vacío o solo con `version` → `422`. `version` es opcional (D9).
+    """
 
     immutable_fields: ClassVar[frozenset[str]] = frozenset()
+    not_nullable: ClassVar[frozenset[str]] = frozenset()
 
-    version: Version
+    version: OptionalVersion = None
+
+    @model_validator(mode="after")
+    def _check_partial(self):
+        sent = self.model_fields_set - {"version"}
+        if not sent:
+            raise ValueError("Envíe al menos un campo a modificar.")
+        nulls = sorted(name for name in sent & self.not_nullable if getattr(self, name) is None)
+        if nulls:
+            raise ValueError(f"Estos campos no admiten null: {', '.join(nulls)}.")
+        return self
+
+    def changes(self) -> dict[str, Any]:
+        """Solo los campos enviados, sin `version`."""
+        return self.model_dump(exclude_unset=True, exclude={"version"})
+
+    def merged(self, current: Any) -> dict[str, Any]:
+        """Todos los campos modificables: los enviados y, para el resto, el valor guardado."""
+        stored = {name: getattr(current, name) for name in type(self).model_fields if name != "version"}
+        return {**stored, **self.changes()}
 
     @model_validator(mode="before")
     @classmethod
@@ -121,9 +152,9 @@ class UpdateModel(StrictModel):
 
 
 class VersionRequest(StrictModel):
-    """Cuerpo de `deactivate`, `reactivate` y `unblock`: solo la versión esperada (D10)."""
+    """Cuerpo de `deactivate`, `reactivate` y `unblock`: versión opcional; el cuerpo puede omitirse (D10)."""
 
-    version: Version
+    version: OptionalVersion = None
 
 
 class AuditedResponse(BaseModel):

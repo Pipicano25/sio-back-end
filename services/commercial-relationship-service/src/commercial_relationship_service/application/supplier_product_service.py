@@ -92,7 +92,7 @@ class SupplierProductService:
 
     # ----------------------------------------------------------- mantenimiento
 
-    def update(self, current, values: dict[str, Any], *, version: int, actor: str):
+    def update(self, current, values: dict[str, Any], *, version: int | None, actor: str):
         """`PUT` en cualquier estado; H-02: solo se revalidan la presentación y la unidad nuevas."""
         values = {**values, "currency_code": validate_currency(values["currency_code"])}
         require_active_for_mark(current.status, marked=values["is_preferred"], field="is_preferred")
@@ -131,7 +131,7 @@ class SupplierProductService:
         touch(model, actor)
         return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_SUPPLIER_PRODUCT, "SupplierProduct", model.company_id))
 
-    def deactivate(self, current, *, version: int, actor: str):
+    def deactivate(self, current, *, version: int | None, actor: str):
         """Inactivar retira `is_preferred` (DS-05)."""
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE)
@@ -139,7 +139,7 @@ class SupplierProductService:
         touch(model, actor)
         return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_SUPPLIER_PRODUCT, "SupplierProduct", model.company_id))
 
-    def reactivate(self, current, *, version: int, actor: str):
+    def reactivate(self, current, *, version: int | None, actor: str):
         """FR-027: proveedor, producto y presentación `ACTIVE` y relación única entre `ACTIVE`."""
         next_status(current.status, REACTIVATE)
         require_active_supplier(self._suppliers, current.company_supplier_id, current.company_id)

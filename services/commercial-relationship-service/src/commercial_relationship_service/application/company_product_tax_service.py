@@ -31,7 +31,7 @@ class CompanyProductTaxService:
     def __init__(self, repository) -> None:
         self._repository = repository
 
-    def set_one(self, current, *, value: Any, version: int, actor: str):
+    def set_one(self, current, *, value: Any, version: int | None, actor: str):
         tax = validate_purchase_tax(value)
         model = self._repository.load_for_update(current.id, expected_version=version)
 
@@ -63,7 +63,7 @@ class CompanyProductTaxService:
             if model is None or model.company_id != company_id:
                 self._repository.abort()
                 raise CompanyProductNotFoundError(field=f"items[{index}].company_product_id")
-            if model.version != item["version"]:
+            if item.get("version") is not None and model.version != item["version"]:
                 self._repository.abort()
                 raise VersionConflictError
 

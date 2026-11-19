@@ -164,7 +164,7 @@ class SQLAlchemyRepositoryBase(Generic[ModelT]):
         end_read(self.session)
         return model
 
-    def load_for_update(self, entity_id: UUID, *, expected_version: int) -> ModelT:
+    def load_for_update(self, entity_id: UUID, *, expected_version: int | None) -> ModelT:
         model = load_for_update(
             self.session, self.model, entity_id, expected_version=expected_version
         )

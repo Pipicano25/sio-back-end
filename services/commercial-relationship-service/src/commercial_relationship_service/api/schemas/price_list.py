@@ -31,13 +31,14 @@ class PriceListUpdate(UpdateModel):
     """`PUT` (FR-044): la moneda es inmutable (DS-09)."""
 
     immutable_fields = frozenset({"currency_code", "company_id", "status"})
+    not_nullable = frozenset({"code", "name", "is_default"})
 
-    code: PriceListCode
-    name: PriceListName
+    code: PriceListCode | None = None
+    name: PriceListName | None = None
     description: Description = None
     valid_from: AwareDatetime | None = None
     valid_to: AwareDatetime | None = None
-    is_default: bool
+    is_default: bool | None = None
 
 
 class PriceListResponse(AuditedResponse):

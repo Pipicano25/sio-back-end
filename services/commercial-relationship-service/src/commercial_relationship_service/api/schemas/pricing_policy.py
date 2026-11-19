@@ -13,6 +13,7 @@ from uuid import UUID
 from pydantic import AwareDatetime, BaseModel, BeforeValidator, ConfigDict, Field
 
 from commercial_relationship_service.api.schemas.common import (
+    OptionalVersion,
     AuditedResponse,
     CurrencyCode,
     PercentageOut,
@@ -43,22 +44,22 @@ class PricingPolicyCreate(StrictModel):
 
 
 class PricingPolicyRename(StrictModel):
-    version: Version
+    version: OptionalVersion = None
     name: PolicyName
 
 
 class PercentageChange(StrictModel):
-    version: Version
+    version: OptionalVersion = None
     markup_percentage: MarkupIn
 
 
 class PresentationsChange(StrictModel):
-    version: Version
+    version: OptionalVersion = None
     company_product_presentation_ids: PresentationIds
 
 
 class PolicyDeactivation(StrictModel):
-    version: Version
+    version: OptionalVersion = None
     reason: Reason
 
 

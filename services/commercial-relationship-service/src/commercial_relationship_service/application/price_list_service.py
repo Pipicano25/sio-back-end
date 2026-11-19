@@ -42,7 +42,7 @@ class PriceListService:
 
         return self._repository.add(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.CREATE_PRICE_LIST, "PriceList", model.company_id))
 
-    def update(self, current, values: dict[str, Any], *, version: int, actor: str):
+    def update(self, current, values: dict[str, Any], *, version: int | None, actor: str):
         """`PUT` en cualquier estado sin cambiar `status` ni la moneda (FR-044, DS-09)."""
         validate_period(values["valid_from"], values["valid_to"])
         require_active_for_mark(current.status, marked=values["is_default"], field="is_default")
@@ -70,7 +70,7 @@ class PriceListService:
         touch(model, actor)
         return self._repository.save(model, duplicates=self._repository.duplicates, audit=audit_events.spec(audit_events.UPDATE_PRICE_LIST, "PriceList", model.company_id))
 
-    def deactivate(self, current, *, version: int, actor: str):
+    def deactivate(self, current, *, version: int | None, actor: str):
         """Inactivar retira `is_default` y no modifica sus precios (FR-045)."""
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, DEACTIVATE)
@@ -78,7 +78,7 @@ class PriceListService:
         touch(model, actor)
         return self._repository.save(model, duplicates={}, audit=audit_events.spec(audit_events.DEACTIVATE_PRICE_LIST, "PriceList", model.company_id))
 
-    def reactivate(self, current, *, version: int, actor: str):
+    def reactivate(self, current, *, version: int | None, actor: str):
         model = self._repository.load_for_update(current.id, expected_version=version)
         model.status = next_status(model.status, REACTIVATE)
         touch(model, actor)

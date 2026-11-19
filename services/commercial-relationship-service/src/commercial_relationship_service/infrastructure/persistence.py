@@ -27,7 +27,7 @@ def load_for_update(
     model_class: type[ModelT],
     entity_id: UUID,
     *,
-    expected_version: int,
+    expected_version: int | None,
 ) -> ModelT:
     """Carga la fila con `SELECT ... FOR UPDATE` y comprueba la versión esperada.
 
@@ -52,7 +52,7 @@ def load_for_update(
         session.rollback()
         raise NotFoundError
 
-    if model.version != expected_version:
+    if expected_version is not None and model.version != expected_version:
         session.rollback()
         raise VersionConflictError
 

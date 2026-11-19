@@ -41,17 +41,18 @@ class CompanyProductUpdate(UpdateModel):
     """`PUT` (FR-015, DS-17): reemplaza los campos modificables."""
 
     immutable_fields = frozenset({"global_product_id", "company_id", "status"})
+    not_nullable = frozenset({"internal_code", "display_name", "currency_code", "inventory_control_enabled", "lot_tracking_enabled", "expiration_tracking_enabled", "is_purchasable", "is_sellable"})
 
-    internal_code: InternalCode
+    internal_code: InternalCode | None = None
     reference_code: ReferenceCode = None
-    display_name: DisplayName
+    display_name: DisplayName | None = None
     short_name: ShortName = None
-    currency_code: CurrencyCode
-    inventory_control_enabled: bool
-    lot_tracking_enabled: bool
-    expiration_tracking_enabled: bool
-    is_purchasable: bool
-    is_sellable: bool
+    currency_code: CurrencyCode | None = None
+    inventory_control_enabled: bool | None = None
+    lot_tracking_enabled: bool | None = None
+    expiration_tracking_enabled: bool | None = None
+    is_purchasable: bool | None = None
+    is_sellable: bool | None = None
 
 
 class CompanyProductResponse(AuditedResponse):

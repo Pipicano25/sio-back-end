@@ -5,6 +5,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from commercial_relationship_service.api.schemas.common import (
+    OptionalVersion,
     AuditedResponse,
     BlockReason,
     DisplayName,
@@ -30,9 +31,10 @@ class CompanySupplierUpdate(UpdateModel):
     immutable_fields = frozenset(
         {"organization_identity_id", "company_id", "status", "block_reason"}
     )
+    not_nullable = frozenset({"internal_code", "display_name"})
 
-    internal_code: InternalCode
-    display_name: DisplayName
+    internal_code: InternalCode | None = None
+    display_name: DisplayName | None = None
     preferred_contact_person_id: UUID | None = None
 
 
@@ -40,7 +42,7 @@ class SupplierBlockRequest(StrictModel):
     """Bloqueo con motivo obligatorio (FR-033a)."""
 
     block_reason: BlockReason
-    version: Version
+    version: OptionalVersion = None
 
 
 class CompanySupplierResponse(AuditedResponse):

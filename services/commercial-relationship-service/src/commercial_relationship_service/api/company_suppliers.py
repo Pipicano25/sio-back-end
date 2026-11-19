@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import Body, APIRouter, Depends, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 
 from commercial_relationship_service.api.company_scope import check_company, load_scoped
@@ -144,8 +144,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         current=Depends(_resource(write=True)),
         service: CompanySupplierService = Depends(get_supplier_service),
     ):
-        values = body.model_dump(exclude={"version"})
-        return respond(service.update(current, values, version=body.version, actor=actor))
+        values = body.merged(current)  # D28: PUT parcial
+        return respond(service.update(current, values, version=_version(body, current), actor=actor))
 
     @router.post(
         "/company-suppliers/{company_supplier_id}/deactivate",
@@ -154,7 +154,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         summary="Inactivar un proveedor",
     )
     def deactivate_supplier(
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         current=Depends(_resource(write=True, allow_inactive_company=True)),
         service: CompanySupplierService = Depends(get_supplier_service),
@@ -168,7 +169,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         summary="Reactivar un proveedor",
     )
     def reactivate_supplier(
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         current=Depends(_resource(write=True)),
         service: CompanySupplierService = Depends(get_supplier_service),
@@ -198,7 +200,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         summary="Desbloquear un proveedor",
     )
     def unblock_supplier(
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         current=Depends(_resource(write=True)),
         service: CompanySupplierService = Depends(get_supplier_service),
@@ -206,3 +209,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         return respond(service.unblock(current, version=body.version, actor=actor))
 
     return router
+
+
+def _version(body, current) -> int:
+    """Versión esperada: la enviada o, si no llega, la leída (D9): un cambio simultáneo responde 409."""
+    return body.version if body.version is not None else current.version

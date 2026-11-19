@@ -12,7 +12,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, BeforeValidator, Field, field_validator
 
-from commercial_relationship_service.api.schemas.common import StrictModel, Version
+from commercial_relationship_service.api.schemas.common import OptionalVersion, StrictModel, Version
 from commercial_relationship_service.api.schemas.company_product import CompanyProductResponse
 
 
@@ -24,13 +24,13 @@ TaxIn = Annotated[str | int | float | Decimal | None, BeforeValidator(_keep_bool
 
 
 class PurchaseTaxUpdate(StrictModel):
-    version: Version
+    version: OptionalVersion = None
     purchase_tax_percentage: TaxIn
 
 
 class PurchaseTaxItem(StrictModel):
     company_product_id: UUID
-    version: Version
+    version: OptionalVersion = None
     purchase_tax_percentage: TaxIn
 
 
