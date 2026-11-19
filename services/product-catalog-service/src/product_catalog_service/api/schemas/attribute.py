@@ -24,9 +24,10 @@ class AttributeDefinitionCreate(RequestModel):
 
 class AttributeDefinitionUpdate(UpdateModel):
     immutable_fields = frozenset({"code", "data_type", "unit_of_measure_id", "status"})
+    not_nullable = frozenset({"name", "description"})
 
-    name: str = Field(max_length=240)
-    description: str
+    name: str | None = Field(default=None, max_length=240)
+    description: str | None = None
 
 
 class AttributeDefinitionResponse(StatusResourceResponse):
@@ -46,10 +47,11 @@ class OptionCreate(RequestModel):
 
 class OptionUpdate(UpdateModel):
     immutable_fields = frozenset({"code", "status", "attribute_definition_id"})
+    not_nullable = frozenset({"name", "display_order"})
 
-    name: str = Field(max_length=240)
+    name: str | None = Field(default=None, max_length=240)
     description: str | None = None
-    display_order: int = Field(ge=0, le=32767)
+    display_order: int | None = Field(default=None, ge=0, le=32767)
 
 
 class OptionResponse(StatusResourceResponse):
@@ -69,10 +71,11 @@ class CategoryAttributeCreate(RequestModel):
 
 class CategoryAttributeUpdate(UpdateModel):
     immutable_fields = frozenset({"attribute_definition_id", "global_category_id", "status"})
+    not_nullable = frozenset({"is_required", "is_filterable", "display_order"})
 
-    is_required: bool
-    is_filterable: bool
-    display_order: int = Field(ge=0, le=32767)
+    is_required: bool | None = None
+    is_filterable: bool | None = None
+    display_order: int | None = Field(default=None, ge=0, le=32767)
 
 
 class CategoryAttributeResponse(StatusResourceResponse):

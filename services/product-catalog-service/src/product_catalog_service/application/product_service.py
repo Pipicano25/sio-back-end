@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application.lifecycle import UNSET
 from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
@@ -141,16 +142,22 @@ class ProductService:
         self,
         product_id: UUID,
         *,
-        version: int,
-        canonical_name: str,
-        description: str | None,
-        global_brand_id: UUID | None,
-        manufacturer_organization_id: UUID | None,
-        base_unit_id: UUID,
+        version: int | None,
+        canonical_name: str = UNSET,
+        description: str | None = UNSET,
+        global_brand_id: UUID | None = UNSET,
+        manufacturer_organization_id: UUID | None = UNSET,
+        base_unit_id: UUID = UNSET,
         actor: str,
     ) -> ProductWriteResult:
         product = lock_product(self.session, product_id)
         lifecycle.check_version(product, version)
+        # D28: un campo no enviado conserva su valor.
+        canonical_name = lifecycle.keep(product, "canonical_name", canonical_name)
+        description = lifecycle.keep(product, "description", description)
+        global_brand_id = lifecycle.keep(product, "global_brand_id", global_brand_id)
+        manufacturer_organization_id = lifecycle.keep(product, "manufacturer_organization_id", manufacturer_organization_id)
+        base_unit_id = lifecycle.keep(product, "base_unit_id", base_unit_id)
 
         name = normalize_name(canonical_name, max_length=200, field="canonical_name")
 
@@ -190,7 +197,7 @@ class ProductService:
         self.session.commit()
         return ProductWriteResult(product, warnings)
 
-    def deactivate(self, product_id: UUID, *, version: int, actor: str) -> GlobalProductModel:
+    def deactivate(self, product_id: UUID, *, version: int | None, actor: str) -> GlobalProductModel:
         """Sin cascada sobre relaciones, presentaciones, identificadores ni activos (FR-030)."""
         product = lock_product(self.session, product_id)
         lifecycle.deactivate(product, version, actor)
@@ -198,7 +205,7 @@ class ProductService:
         self.session.commit()
         return product
 
-    def reactivate(self, product_id: UUID, *, version: int, actor: str) -> GlobalProductModel:
+    def reactivate(self, product_id: UUID, *, version: int | None, actor: str) -> GlobalProductModel:
         """No revalida marca ni unidad base ya asignadas (FR-006, respuesta 5A)."""
         product = lock_product(self.session, product_id)
         lifecycle.reactivate(product, version, actor)

@@ -25,12 +25,35 @@ class RequestModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+OPTIONAL_VERSION_DESCRIPTION = "Versión conocida por el cliente. Opcional: si se envía y no coincide, responde 409."
+
+
 class UpdateModel(RequestModel):
-    """Cuerpo de modificación con versión esperada y campos inmutables declarados."""
+    """`PUT` parcial (constitución 4.0.0, D28) con campos inmutables declarados.
+
+    Solo se envían los campos que cambian; un campo ausente conserva su valor.
+    `null` borra un campo opcional y en uno de `not_nullable` responde `422`.
+    Un cuerpo vacío o solo con `version` → `422`. `version` es opcional (D9).
+    """
 
     immutable_fields: ClassVar[frozenset[str]] = frozenset()
+    not_nullable: ClassVar[frozenset[str]] = frozenset()
 
-    version: int = Field(ge=1, description="Versión esperada del registro.")
+    version: int | None = Field(default=None, ge=1, description=OPTIONAL_VERSION_DESCRIPTION)
+
+    @model_validator(mode="after")
+    def _check_partial(self):
+        sent = self.model_fields_set - {"version"}
+        if not sent:
+            raise ValueError("Envíe al menos un campo a modificar.")
+        nulls = sorted(name for name in sent & self.not_nullable if getattr(self, name) is None)
+        if nulls:
+            raise ValueError(f"Estos campos no admiten null: {', '.join(nulls)}.")
+        return self
+
+    def as_update(self) -> dict[str, Any]:
+        """Argumentos del servicio: solo los campos enviados más `version`."""
+        return {**self.model_dump(exclude_unset=True, exclude={"version"}), "version": self.version}
 
     @model_validator(mode="before")
     @classmethod
@@ -47,9 +70,9 @@ class UpdateModel(RequestModel):
 
 
 class VersionRequest(RequestModel):
-    """Cuerpo de las acciones de estado y de principal."""
+    """Cuerpo de las acciones de estado y de principal: versión opcional; el cuerpo puede omitirse (D10)."""
 
-    version: int = Field(ge=1, description="Versión esperada del registro.")
+    version: int | None = Field(default=None, ge=1, description=OPTIONAL_VERSION_DESCRIPTION)
 
 
 class ResourceResponse(BaseModel):

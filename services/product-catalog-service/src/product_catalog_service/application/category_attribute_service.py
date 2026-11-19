@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application.lifecycle import UNSET
 from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
@@ -99,14 +100,18 @@ class CategoryAttributeService:
         category_id: UUID,
         association_id: UUID,
         *,
-        version: int,
-        is_required: bool,
-        is_filterable: bool,
-        display_order: int,
+        version: int | None,
+        is_required: bool = UNSET,
+        is_filterable: bool = UNSET,
+        display_order: int = UNSET,
         actor: str,
     ) -> GlobalCategoryAttributeModel:
         association = self._association(category_id, association_id)
         lifecycle.check_version(association, version)
+        # D28: un campo no enviado conserva su valor.
+        is_required = lifecycle.keep(association, "is_required", is_required)
+        is_filterable = lifecycle.keep(association, "is_filterable", is_filterable)
+        display_order = lifecycle.keep(association, "display_order", display_order)
         association.is_required = is_required
         association.is_filterable = is_filterable
         association.display_order = display_order
@@ -115,14 +120,14 @@ class CategoryAttributeService:
         self.session.commit()
         return association
 
-    def deactivate(self, category_id: UUID, association_id: UUID, *, version: int, actor: str):
+    def deactivate(self, category_id: UUID, association_id: UUID, *, version: int | None, actor: str):
         association = self._association(category_id, association_id)
         lifecycle.deactivate(association, version, actor)
         audit.track_update(self.session, association, action=audit.DEACTIVATE_CATEGORY_ATTRIBUTE, entity_type="CategoryAttribute")
         self.session.commit()
         return association
 
-    def reactivate(self, category_id: UUID, association_id: UUID, *, version: int, actor: str):
+    def reactivate(self, category_id: UUID, association_id: UUID, *, version: int | None, actor: str):
         association = self._association(category_id, association_id)
         category = self.session.get(GlobalCategoryModel, category_id)
         self._require_active_references(category, association.attribute_definition_id)

@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import Body, APIRouter, Depends, Query, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 from sqlalchemy.orm import Session
 
@@ -64,7 +64,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def deactivate_assignment(
         product_id: UUID,
         assignment_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: GroupAssignmentService = Depends(get_service),
     ):
@@ -81,7 +82,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def reactivate_assignment(
         product_id: UUID,
         assignment_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: GroupAssignmentService = Depends(get_service),
     ):

@@ -20,8 +20,9 @@ class CategoryCreate(RequestModel):
 
 class CategoryUpdate(UpdateModel):
     immutable_fields = frozenset({"code", "status"})
+    not_nullable = frozenset({"name"})
 
-    name: str = Field(max_length=240)
+    name: str | None = Field(default=None, max_length=240)
     description: str | None = None
     parent_category_id: UUID | None = None
 

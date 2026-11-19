@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
+from fastapi import Body, APIRouter, Depends, Header, Query, Request, Response, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, StreamingResponse
 from sio_auth import CurrentSubject, SIOAuth
@@ -288,7 +288,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         product_id: UUID,
         presentation_id: UUID,
         asset_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: PresentationImageService = Depends(get_service),
         settings: Settings = Depends(settings_of),
@@ -307,7 +308,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         product_id: UUID,
         presentation_id: UUID,
         asset_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: PresentationImageService = Depends(get_service),
         settings: Settings = Depends(settings_of),
@@ -326,7 +328,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
         product_id: UUID,
         presentation_id: UUID,
         asset_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: PresentationImageService = Depends(get_service),
         settings: Settings = Depends(settings_of),

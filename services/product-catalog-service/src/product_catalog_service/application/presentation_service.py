@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application.lifecycle import UNSET
 from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
@@ -126,14 +127,14 @@ class PresentationService:
         self,
         presentation_id: UUID,
         *,
-        version: int,
-        name: str,
-        display_order: int,
-        packaging_type_id: UUID | None,
-        base_quantity: Decimal,
-        content_quantity: Decimal | None,
-        content_unit_id: UUID | None,
-        is_base: bool,
+        version: int | None,
+        name: str = UNSET,
+        display_order: int = UNSET,
+        packaging_type_id: UUID | None = UNSET,
+        base_quantity: Decimal = UNSET,
+        content_quantity: Decimal | None = UNSET,
+        content_unit_id: UUID | None = UNSET,
+        is_base: bool = UNSET,
         actor: str,
     ) -> GlobalProductPresentationModel:
         presentation = self.get(presentation_id)
@@ -141,6 +142,14 @@ class PresentationService:
         ensure_product_active_for_dependents(product)
         self.session.refresh(presentation, with_for_update=True)
         lifecycle.check_version(presentation, version)
+        # D28: un campo no enviado conserva su valor.
+        name = lifecycle.keep(presentation, "name", name)
+        display_order = lifecycle.keep(presentation, "display_order", display_order)
+        packaging_type_id = lifecycle.keep(presentation, "packaging_type_id", packaging_type_id)
+        base_quantity = lifecycle.keep(presentation, "base_quantity", base_quantity)
+        content_quantity = lifecycle.keep(presentation, "content_quantity", content_quantity)
+        content_unit_id = lifecycle.keep(presentation, "content_unit_id", content_unit_id)
+        is_base = lifecycle.keep(presentation, "is_base", is_base)
 
         requested = {
             "packaging_type_id": packaging_type_id,
@@ -184,7 +193,7 @@ class PresentationService:
         self.session.refresh(presentation)
         return presentation
 
-    def deactivate(self, presentation_id: UUID, *, version: int, actor: str) -> GlobalProductPresentationModel:
+    def deactivate(self, presentation_id: UUID, *, version: int | None, actor: str) -> GlobalProductPresentationModel:
         presentation = self.get(presentation_id)
         lock_product(self.session, presentation.global_product_id)
         self.session.refresh(presentation, with_for_update=True)
@@ -193,7 +202,7 @@ class PresentationService:
         self.session.commit()
         return presentation
 
-    def reactivate(self, presentation_id: UUID, *, version: int, actor: str) -> GlobalProductPresentationModel:
+    def reactivate(self, presentation_id: UUID, *, version: int | None, actor: str) -> GlobalProductPresentationModel:
         presentation = self.get(presentation_id)
         product = lock_product(self.session, presentation.global_product_id)
         ensure_product_active_for_dependents(product)

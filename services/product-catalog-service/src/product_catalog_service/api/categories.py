@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import Body, APIRouter, Depends, Query, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 from sqlalchemy.orm import Session
 
@@ -141,7 +141,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         service: CategoryAttributeService = Depends(get_attribute_service),
     ):
         return CategoryAttributeResponse.model_validate(
-            service.update(category_id, association_id, actor=actor, **body.model_dump())
+            service.update(category_id, association_id, actor=actor, **body.as_update())
         )
 
     @router.post(
@@ -153,7 +153,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def deactivate_attribute(
         category_id: UUID,
         association_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: CategoryAttributeService = Depends(get_attribute_service),
     ):
@@ -170,7 +171,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def reactivate_attribute(
         category_id: UUID,
         association_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: CategoryAttributeService = Depends(get_attribute_service),
     ):

@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application.lifecycle import UNSET
 from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
@@ -177,14 +178,18 @@ class GroupService:
         self,
         group_id: UUID,
         *,
-        version: int,
-        name: str,
-        description: str | None,
-        parent_group_id: UUID | None,
+        version: int | None,
+        name: str = UNSET,
+        description: str | None = UNSET,
+        parent_group_id: UUID | None = UNSET,
         actor: str,
     ) -> GlobalProductGroupModel:
         group = lock_row(self.session, GlobalProductGroupModel, group_id, label="El grupo")
         lifecycle.check_version(group, version)
+        # D28: un campo no enviado conserva su valor.
+        name = lifecycle.keep(group, "name", name)
+        description = lifecycle.keep(group, "description", description)
+        parent_group_id = lifecycle.keep(group, "parent_group_id", parent_group_id)
 
         if parent_group_id != group.parent_group_id:
             self._require_parent(group.group_type_id, parent_group_id)
@@ -203,7 +208,7 @@ class GroupService:
         self.session.commit()
         return group
 
-    def deactivate(self, group_id: UUID, *, version: int, actor: str) -> GlobalProductGroupModel:
+    def deactivate(self, group_id: UUID, *, version: int | None, actor: str) -> GlobalProductGroupModel:
         group = lock_row(self.session, GlobalProductGroupModel, group_id, label="El grupo")
         if group.status == ACTIVE and self.tree.has_active_children(group.id):
             raise HasActiveChildrenError("Primero deben inactivarse o moverse los grupos hijos activos.")
@@ -212,7 +217,7 @@ class GroupService:
         self.session.commit()
         return group
 
-    def reactivate(self, group_id: UUID, *, version: int, actor: str) -> GlobalProductGroupModel:
+    def reactivate(self, group_id: UUID, *, version: int | None, actor: str) -> GlobalProductGroupModel:
         group = lock_row(self.session, GlobalProductGroupModel, group_id, label="El grupo")
         if self._type(group.group_type_id).status != ACTIVE:
             raise ReferenceInactiveError("El tipo de grupo está inactivo.")

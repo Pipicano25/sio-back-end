@@ -244,8 +244,10 @@ incluida en el extra `test`).
 
 - Prefijo `/api/v1`; errores RFC 9457 (`application/problem+json`) con `code` y `trace_id`; cabecera
   `X-Trace-Id` en toda respuesta.
-- Concurrencia optimista: `version` en el cuerpo de `PUT` y de las acciones; `?version=` en el único
-  `DELETE` (retiro de un valor de atributo). Una versión desactualizada devuelve `409`.
+- `PUT` parcial (constitución 4.0.0, D28): solo los campos que cambian; `null` borra un opcional y en
+  un obligatorio responde `422`; cuerpo vacío o solo `version` → `422`.
+- Concurrencia optimista: `version` opcional en el cuerpo de `PUT` y de las acciones y `?version=`
+  opcional en el único `DELETE` (retiro de un valor de atributo). Una versión desactualizada devuelve `409`.
 - Nada se borra salvo los valores de atributo: se inactiva y reactiva con `POST …/deactivate`, que
   exige el permiso `deactivate` del recurso dueño.
 - Completitud y elegibilidad: se calculan en cada consulta (`completeness`, `eligible_for_adoption`)

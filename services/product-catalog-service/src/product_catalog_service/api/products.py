@@ -3,7 +3,7 @@
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import Body, APIRouter, Depends, Query, Request, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 from sqlalchemy.orm import Session
 
@@ -214,7 +214,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         service: ProductService = Depends(get_service),
         completeness_service: CompletenessService = Depends(get_completeness),
     ):
-        result = service.update(product_id, actor=actor, **body.model_dump())
+        result = service.update(product_id, actor=actor, **body.as_update())
         return respond(result.product, completeness_service, result.warnings)
 
     @router.post(
@@ -225,7 +225,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def deactivate_product(
         product_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: ProductService = Depends(get_service),
         completeness_service: CompletenessService = Depends(get_completeness),
@@ -240,7 +241,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def reactivate_product(
         product_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: ProductService = Depends(get_service),
         completeness_service: CompletenessService = Depends(get_completeness),

@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import Body, APIRouter, Depends, Query, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 from sqlalchemy.orm import Session
 
@@ -117,7 +117,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         actor: CurrentSubject,
         service: GroupService = Depends(get_groups),
     ):
-        return GroupResponse.model_validate(service.update(group_id, actor=actor, **body.model_dump()))
+        return GroupResponse.model_validate(service.update(group_id, actor=actor, **body.as_update()))
 
     @router.post(
         "/groups/{group_id}/deactivate",
@@ -127,7 +127,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def deactivate_group(
         group_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: GroupService = Depends(get_groups),
     ):
@@ -141,7 +142,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def reactivate_group(
         group_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: GroupService = Depends(get_groups),
     ):

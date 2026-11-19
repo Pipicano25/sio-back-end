@@ -87,7 +87,7 @@ class ProductCategoryService:
         self.session.commit()
         return association, created
 
-    def set_primary(self, product_id: UUID, association_id: UUID, version: int, actor: str) -> None:
+    def set_primary(self, product_id: UUID, association_id: UUID, version: int | None, actor: str) -> None:
         product = lock_product(self.session, product_id)
         ensure_product_active_for_dependents(product)
 
@@ -114,7 +114,7 @@ class ProductCategoryService:
         self,
         product_id: UUID,
         association_id: UUID,
-        version: int,
+        version: int | None,
         actor: str,
         new_primary_association_id: UUID | None = None,
     ) -> GlobalProductCategoryModel:

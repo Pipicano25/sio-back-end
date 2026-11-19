@@ -250,7 +250,7 @@ class PresentationImageService:
 
     # ------------------------------------------------------------------ gestión
 
-    def rename(self, product_id: UUID, presentation_id: UUID, asset_id: UUID, *, version: int, file_name: str,
+    def rename(self, product_id: UUID, presentation_id: UUID, asset_id: UUID, *, version: int | None, file_name: str,
                actor: str) -> ProductAssetModel:
         """Solo cambia `file_name` (FR-024-21c, DD-024-8)."""
         self._context(product_id, presentation_id, require_active=True, lock=True)
@@ -263,7 +263,7 @@ class PresentationImageService:
         self.session.commit()
         return asset
 
-    def set_primary(self, product_id: UUID, presentation_id: UUID, asset_id: UUID, *, version: int,
+    def set_primary(self, product_id: UUID, presentation_id: UUID, asset_id: UUID, *, version: int | None,
                     actor: str) -> ProductAssetModel:
         """Marca como principal una imagen `ACTIVE` de esta presentación (FR-024-23); no toca el almacenamiento."""
         self._context(product_id, presentation_id, require_active=True, lock=True)
@@ -278,7 +278,7 @@ class PresentationImageService:
         self.session.commit()
         return asset
 
-    def deactivate(self, product_id: UUID, presentation_id: UUID, asset_id: UUID, *, version: int,
+    def deactivate(self, product_id: UUID, presentation_id: UUID, asset_id: UUID, *, version: int | None,
                    actor: str) -> ProductAssetModel:
         """Inactiva la imagen y, si era la principal, asigna sucesor determinista (FR-024-24). Nunca borra el objeto."""
         self._context(product_id, presentation_id, lock=True)
@@ -310,7 +310,7 @@ class PresentationImageService:
         self.session.commit()
         return asset
 
-    def reactivate(self, product_id: UUID, presentation_id: UUID, asset_id: UUID, *, version: int,
+    def reactivate(self, product_id: UUID, presentation_id: UUID, asset_id: UUID, *, version: int | None,
                    actor: str) -> ProductAssetModel:
         """Reactiva la imagen **sin** marcarla como principal (D-024-7, FR-024-25)."""
         self._context(product_id, presentation_id, require_active=True, lock=True)

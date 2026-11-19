@@ -111,8 +111,6 @@ class AttributeValueService:
             lifecycle.stamp_create(existing, actor)
             self.session.add(existing)
         else:
-            if version is None:
-                raise ValidationError("Para reemplazar un valor debe enviar la versión esperada.", field="version")
             lifecycle.check_version(existing, version)
             lifecycle.stamp_update(existing, actor)
 
@@ -127,7 +125,7 @@ class AttributeValueService:
         self.session.refresh(existing)
         return ValueView(existing, False), created
 
-    def remove_value(self, product_id: UUID, definition_id: UUID, *, version: int) -> None:
+    def remove_value(self, product_id: UUID, definition_id: UUID, *, version: int | None) -> None:
         """Retira el valor con eliminación física (DS-08; confirmado en /speckit-analyze)."""
         lock_product(self.session, product_id)
         existing = self._value(product_id, definition_id)

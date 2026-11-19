@@ -35,12 +35,14 @@ def test_register_and_replace_decimal(api, session_factory) -> None:
     stale = api.put(_url(product.id, fat.id), json={"decimal_value": 2, "version": 5})
     assert stale.json()["code"] == "PRODUCT_CATALOG.VERSION_CONFLICT"
 
-    missing_version = api.put(_url(product.id, fat.id), json={"decimal_value": 2})
-    assert missing_version.status_code == 422
-
     replaced = api.put(_url(product.id, fat.id), json={"decimal_value": 2, "version": 1})
     assert replaced.status_code == 200
     assert replaced.json()["version"] == 2
+
+    # Constitución 4.0.0 (D9): sin versión también se reemplaza (gana la última escritura).
+    without_version = api.put(_url(product.id, fat.id), json={"decimal_value": 4})
+    assert without_version.status_code == 200
+    assert without_version.json()["version"] == 3
 
 
 def test_type_mismatch(api, session_factory) -> None:

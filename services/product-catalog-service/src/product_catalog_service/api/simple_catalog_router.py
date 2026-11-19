@@ -9,7 +9,7 @@ from collections.abc import Callable
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import Body, APIRouter, Depends, Query, Response, status
 from pydantic import BaseModel
 from sio_auth import CurrentSubject, SIOAuth
 from sqlalchemy.orm import Session
@@ -105,7 +105,7 @@ def build_simple_catalog_router(
         actor: CurrentSubject,
         service: SimpleCatalogService = Depends(get_service),
     ):
-        entity = service.update(item_id, actor=actor, **body.model_dump())
+        entity = service.update(item_id, actor=actor, **body.as_update())
         return response_schema.model_validate(entity)
 
     @router.post(
@@ -116,7 +116,8 @@ def build_simple_catalog_router(
     )
     def deactivate_item(
         item_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: SimpleCatalogService = Depends(get_service),
     ):
@@ -132,7 +133,8 @@ def build_simple_catalog_router(
     )
     def reactivate_item(
         item_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: SimpleCatalogService = Depends(get_service),
     ):

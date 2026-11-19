@@ -114,7 +114,7 @@ class IdentifierService:
             raise
         return identifier
 
-    def set_primary(self, product_id: UUID, identifier_id: UUID, *, version: int, actor: str):
+    def set_primary(self, product_id: UUID, identifier_id: UUID, *, version: int | None, actor: str):
         product = lock_product(self.session, product_id)
         ensure_product_active_for_dependents(product)
         identifier = self._identifier(product_id, identifier_id)
@@ -126,7 +126,7 @@ class IdentifierService:
         self.session.commit()
         return identifier
 
-    def deactivate(self, product_id: UUID, identifier_id: UUID, *, version: int, actor: str):
+    def deactivate(self, product_id: UUID, identifier_id: UUID, *, version: int | None, actor: str):
         lock_product(self.session, product_id)
         identifier = self._identifier(product_id, identifier_id)
         lifecycle.deactivate(identifier, version, actor)
@@ -134,7 +134,7 @@ class IdentifierService:
         self.session.commit()
         return identifier
 
-    def reactivate(self, product_id: UUID, identifier_id: UUID, *, version: int, actor: str):
+    def reactivate(self, product_id: UUID, identifier_id: UUID, *, version: int | None, actor: str):
         product = lock_product(self.session, product_id)
         ensure_product_active_for_dependents(product)
         identifier = self._identifier(product_id, identifier_id)

@@ -45,5 +45,6 @@ class PresentationImageUpdate(UpdateModel):
         "storage_uri", "mime_type", "global_product_presentation_id", "global_product_id", "asset_type",
         "status", "is_primary",
     })
+    not_nullable = frozenset({"file_name"})
 
-    file_name: str = Field(min_length=1, max_length=255)
+    file_name: str | None = Field(default=None, min_length=1, max_length=255)

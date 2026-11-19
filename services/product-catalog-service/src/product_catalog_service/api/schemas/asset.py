@@ -19,7 +19,8 @@ class AssetCreate(RequestModel):
 
 class AssetUpdate(UpdateModel):
     immutable_fields = frozenset({"asset_type", "global_product_id", "status", "is_primary"})
+    not_nullable = frozenset({"file_name", "storage_uri"})
 
-    file_name: str = Field(max_length=510)
-    storage_uri: str = Field(max_length=4000)
+    file_name: str | None = Field(default=None, max_length=510)
+    storage_uri: str | None = Field(default=None, max_length=4000)
     mime_type: str | None = Field(default=None, max_length=240)

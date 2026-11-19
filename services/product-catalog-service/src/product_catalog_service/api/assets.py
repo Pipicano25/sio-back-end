@@ -4,7 +4,7 @@ from uuid import UUID
 
 import re
 
-from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
+from fastapi import Body, APIRouter, Depends, Header, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 from sio_auth import CurrentSubject, SIOAuth
 from sqlalchemy.orm import Session
@@ -163,7 +163,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         actor: CurrentSubject,
         service: AssetService = Depends(get_service),
     ):
-        return AssetResponse.model_validate(service.update(product_id, asset_id, actor=actor, **body.model_dump()))
+        return AssetResponse.model_validate(service.update(product_id, asset_id, actor=actor, **body.as_update()))
 
     @router.post(
         "/{asset_id}/set-primary",
@@ -174,7 +174,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def set_primary(
         product_id: UUID,
         asset_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: AssetService = Depends(get_service),
     ):
@@ -191,7 +192,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def deactivate_asset(
         product_id: UUID,
         asset_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: AssetService = Depends(get_service),
     ):
@@ -208,7 +210,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def reactivate_asset(
         product_id: UUID,
         asset_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: AssetService = Depends(get_service),
     ):

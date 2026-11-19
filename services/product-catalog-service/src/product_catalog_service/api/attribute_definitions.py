@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import Body, APIRouter, Depends, Query, Response, status
 from sio_auth import CurrentSubject, SIOAuth
 from sqlalchemy.orm import Session
 
@@ -87,7 +87,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         service: AttributeDefinitionService = Depends(get_service),
     ):
         return OptionResponse.model_validate(
-            service.update_option(definition_id, option_id, actor=actor, **body.model_dump())
+            service.update_option(definition_id, option_id, actor=actor, **body.as_update())
         )
 
     @router.post(
@@ -99,7 +99,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def deactivate_option(
         definition_id: UUID,
         option_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: AttributeDefinitionService = Depends(get_service),
     ):
@@ -116,7 +117,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def reactivate_option(
         definition_id: UUID,
         option_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         service: AttributeDefinitionService = Depends(get_service),
     ):

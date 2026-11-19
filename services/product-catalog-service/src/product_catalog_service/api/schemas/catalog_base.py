@@ -25,9 +25,10 @@ class UnitOfMeasureCreate(RequestModel):
 
 class UnitOfMeasureUpdate(UpdateModel):
     immutable_fields = frozenset({"code", "measurement_type", "allows_decimals", "status"})
+    not_nullable = frozenset({"name", "symbol"})
 
-    name: str = Field(max_length=160)
-    symbol: str = Field(max_length=32)
+    name: str | None = Field(default=None, max_length=160)
+    symbol: str | None = Field(default=None, max_length=32)
 
 
 class UnitOfMeasureResponse(StatusResourceResponse):
@@ -46,8 +47,9 @@ class PackagingTypeCreate(RequestModel):
 
 class PackagingTypeUpdate(UpdateModel):
     immutable_fields = frozenset({"code", "status"})
+    not_nullable = frozenset({"name"})
 
-    name: str = Field(max_length=240)
+    name: str | None = Field(default=None, max_length=240)
     description: str | None = None
 
 

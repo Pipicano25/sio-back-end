@@ -5,7 +5,7 @@ T088 creó el archivo con `batch-lookup`; T119 agrega el resto de las rutas.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import Body, APIRouter, Depends, Query, Request, Response, status
 from fastapi.responses import JSONResponse
 from sio_auth import CurrentSubject, SIOAuth
 from sqlalchemy.orm import Session
@@ -122,7 +122,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
         actor: CurrentSubject,
         session: Session = Depends(get_db_session),
     ):
-        presentation = PresentationService(session).update(presentation_id, actor=actor, **body.model_dump())
+        presentation = PresentationService(session).update(presentation_id, actor=actor, **body.as_update())
         return views(session, [presentation])[0]
 
     @router.post(
@@ -133,7 +133,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def deactivate_presentation(
         presentation_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         session: Session = Depends(get_db_session),
     ):
@@ -148,7 +149,8 @@ def build_router(auth: SIOAuth) -> APIRouter:
     )
     def reactivate_presentation(
         presentation_id: UUID,
-        body: VersionRequest,
+        *,
+        body: VersionRequest = Body(default_factory=VersionRequest),
         actor: CurrentSubject,
         session: Session = Depends(get_db_session),
     ):

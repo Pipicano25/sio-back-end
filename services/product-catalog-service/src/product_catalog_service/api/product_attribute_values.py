@@ -75,7 +75,7 @@ def build_router(auth: SIOAuth) -> APIRouter:
     def delete_value(
         product_id: UUID,
         definition_id: UUID,
-        version: int = Query(ge=1),
+        version: int | None = Query(default=None, ge=1),
         service: AttributeValueService = Depends(get_service),
     ):
         service.remove_value(product_id, definition_id, version=version)

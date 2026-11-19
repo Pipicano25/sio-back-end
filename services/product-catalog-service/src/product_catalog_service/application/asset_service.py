@@ -21,6 +21,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application.lifecycle import UNSET
 from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
@@ -150,10 +151,10 @@ class AssetService:
         product_id: UUID,
         asset_id: UUID,
         *,
-        version: int,
-        file_name: str,
-        storage_uri: str,
-        mime_type: str | None,
+        version: int | None,
+        file_name: str = UNSET,
+        storage_uri: str = UNSET,
+        mime_type: str | None = UNSET,
         actor: str,
     ) -> ProductAssetModel:
         product = lock_product(self.session, product_id)
@@ -161,6 +162,10 @@ class AssetService:
         asset = self._asset(product_id, asset_id)
         self._guard_image_change(asset)
         lifecycle.check_version(asset, version)
+        # D28: un campo no enviado conserva su valor.
+        file_name = lifecycle.keep(asset, "file_name", file_name)
+        storage_uri = lifecycle.keep(asset, "storage_uri", storage_uri)
+        mime_type = lifecycle.keep(asset, "mime_type", mime_type)
         asset.file_name = validate_file_name(file_name)
         asset.storage_uri = validate_storage_uri(storage_uri)
         asset.mime_type = validate_mime_type(mime_type)
@@ -169,7 +174,7 @@ class AssetService:
         self.session.commit()
         return asset
 
-    def set_primary(self, product_id: UUID, asset_id: UUID, *, version: int, actor: str) -> ProductAssetModel:
+    def set_primary(self, product_id: UUID, asset_id: UUID, *, version: int | None, actor: str) -> ProductAssetModel:
         product = lock_product(self.session, product_id)
         ensure_product_active_for_dependents(product)
         asset = self._asset(product_id, asset_id)
@@ -182,7 +187,7 @@ class AssetService:
         self.session.commit()
         return asset
 
-    def deactivate(self, product_id: UUID, asset_id: UUID, *, version: int, actor: str) -> ProductAssetModel:
+    def deactivate(self, product_id: UUID, asset_id: UUID, *, version: int | None, actor: str) -> ProductAssetModel:
         lock_product(self.session, product_id)
         asset = self._asset(product_id, asset_id)
         self._guard_image_change(asset)
@@ -191,7 +196,7 @@ class AssetService:
         self.session.commit()
         return asset
 
-    def reactivate(self, product_id: UUID, asset_id: UUID, *, version: int, actor: str) -> ProductAssetModel:
+    def reactivate(self, product_id: UUID, asset_id: UUID, *, version: int | None, actor: str) -> ProductAssetModel:
         product = lock_product(self.session, product_id)
         ensure_product_active_for_dependents(product)
         asset = self._asset(product_id, asset_id)

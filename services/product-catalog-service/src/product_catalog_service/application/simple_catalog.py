@@ -98,9 +98,11 @@ class SimpleCatalogService(Generic[M]):
         self._commit_unique(normalized_code)
         return entity
 
-    def update(self, entity_id: UUID, *, version: int, name: str, actor: str, **fields: Any) -> M:
+    def update(self, entity_id: UUID, *, version: int | None, name: str = lifecycle.UNSET, actor: str, **fields: Any) -> M:
+        """`PUT` parcial (D28): `fields` trae solo los campos enviados."""
         entity = lock_row(self.session, self.model, entity_id, label=self.label)
         lifecycle.check_version(entity, version)
+        name = lifecycle.keep(entity, "name", name)
 
         entity.name = normalize_name(name, max_length=self.name_max_length)
         for key, value in self.prepare_fields(fields).items():
@@ -112,7 +114,7 @@ class SimpleCatalogService(Generic[M]):
         self.session.commit()
         return entity
 
-    def deactivate(self, entity_id: UUID, *, version: int, actor: str) -> M:
+    def deactivate(self, entity_id: UUID, *, version: int | None, actor: str) -> M:
         entity = lock_row(self.session, self.model, entity_id, label=self.label)
         self.before_deactivate(entity)
         lifecycle.deactivate(entity, version, actor)
@@ -120,7 +122,7 @@ class SimpleCatalogService(Generic[M]):
         self.session.commit()
         return entity
 
-    def reactivate(self, entity_id: UUID, *, version: int, actor: str) -> M:
+    def reactivate(self, entity_id: UUID, *, version: int | None, actor: str) -> M:
         entity = lock_row(self.session, self.model, entity_id, label=self.label)
         self.before_reactivate(entity)
         lifecycle.reactivate(entity, version, actor)

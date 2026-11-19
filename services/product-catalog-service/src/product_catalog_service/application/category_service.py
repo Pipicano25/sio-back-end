@@ -15,7 +15,7 @@ from product_catalog_service.application.exceptions import (
     ReferenceInactiveError,
     ReferenceNotFoundError,
 )
-from product_catalog_service.application.lifecycle import ACTIVE, INACTIVE
+from product_catalog_service.application.lifecycle import ACTIVE, INACTIVE, UNSET
 from product_catalog_service.application.pagination import PageResult, paginate
 from product_catalog_service.application.simple_catalog import SimpleCatalogService
 from product_catalog_service.domain.hierarchy import would_create_cycle
@@ -61,10 +61,10 @@ class CategoryService(SimpleCatalogService[GlobalCategoryModel]):
         self._require_active_parent(fields.get("parent_category_id"))
         return super().create(code=code, name=name, actor=actor, **fields)
 
-    def update(self, entity_id: UUID, *, version: int, name: str, actor: str, **fields: Any):
+    def update(self, entity_id: UUID, *, version: int | None, name: str = UNSET, actor: str, **fields: Any):
         new_parent_id = fields.get("parent_category_id")
         current = self.get(entity_id)
-        if new_parent_id != current.parent_category_id:
+        if "parent_category_id" in fields and new_parent_id != current.parent_category_id:
             self._require_active_parent(new_parent_id)
         return super().update(entity_id, version=version, name=name, actor=actor, **fields)
 

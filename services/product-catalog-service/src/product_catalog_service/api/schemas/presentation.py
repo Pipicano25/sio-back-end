@@ -25,14 +25,15 @@ class PresentationCreate(RequestModel):
 
 class PresentationUpdate(UpdateModel):
     immutable_fields = frozenset({"code", "global_product_id", "status"}) | FIRST_USE_FIELDS
+    not_nullable = frozenset({"name", "display_order", "base_quantity", "is_base"})
 
-    name: str = Field(max_length=320)
-    display_order: int = Field(ge=0, le=32767)
+    name: str | None = Field(default=None, max_length=320)
+    display_order: int | None = Field(default=None, ge=0, le=32767)
     packaging_type_id: UUID | None = None
-    base_quantity: Decimal
+    base_quantity: Decimal | None = None
     content_quantity: Decimal | None = None
     content_unit_id: UUID | None = None
-    is_base: bool = False
+    is_base: bool | None = None
 
 
 class IdentifierCreate(RequestModel):

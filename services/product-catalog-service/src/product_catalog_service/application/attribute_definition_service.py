@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from product_catalog_service.application.lifecycle import UNSET
 from product_catalog_service.application import audit_events as audit
 from product_catalog_service.application import lifecycle
 from product_catalog_service.application.exceptions import (
@@ -130,14 +131,18 @@ class AttributeDefinitionService(SimpleCatalogService[ProductAttributeDefinition
         definition_id: UUID,
         option_id: UUID,
         *,
-        version: int,
-        name: str,
-        description: str | None,
-        display_order: int,
+        version: int | None,
+        name: str = UNSET,
+        description: str | None = UNSET,
+        display_order: int = UNSET,
         actor: str,
     ) -> ProductAttributeOptionModel:
         option = self._option(definition_id, option_id, lock=True)
         lifecycle.check_version(option, version)
+        # D28: un campo no enviado conserva su valor.
+        name = lifecycle.keep(option, "name", name)
+        description = lifecycle.keep(option, "description", description)
+        display_order = lifecycle.keep(option, "display_order", display_order)
         option.name = normalize_name(name, max_length=120)
         option.description = normalize_optional_text(description)
         option.display_order = display_order
@@ -146,14 +151,14 @@ class AttributeDefinitionService(SimpleCatalogService[ProductAttributeDefinition
         self.session.commit()
         return option
 
-    def deactivate_option(self, definition_id: UUID, option_id: UUID, *, version: int, actor: str):
+    def deactivate_option(self, definition_id: UUID, option_id: UUID, *, version: int | None, actor: str):
         option = self._option(definition_id, option_id, lock=True)
         lifecycle.deactivate(option, version, actor)
         audit.track_update(self.session, option, action=audit.DEACTIVATE_ATTRIBUTE_OPTION, entity_type="AttributeOption")
         self.session.commit()
         return option
 
-    def reactivate_option(self, definition_id: UUID, option_id: UUID, *, version: int, actor: str):
+    def reactivate_option(self, definition_id: UUID, option_id: UUID, *, version: int | None, actor: str):
         option = self._option(definition_id, option_id, lock=True)
         definition = self.get(definition_id)
         if definition.status != ACTIVE:

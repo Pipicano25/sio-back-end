@@ -82,7 +82,7 @@ class GroupAssignmentService:
         self.session.commit()
         return assignment, created
 
-    def deactivate(self, product_id: UUID, assignment_id: UUID, *, version: int, actor: str):
+    def deactivate(self, product_id: UUID, assignment_id: UUID, *, version: int | None, actor: str):
         lock_product(self.session, product_id)
         assignment = self._assignment(product_id, assignment_id)
         lifecycle.deactivate(assignment, version, actor)
@@ -90,7 +90,7 @@ class GroupAssignmentService:
         self.session.commit()
         return assignment
 
-    def reactivate(self, product_id: UUID, assignment_id: UUID, *, version: int, actor: str):
+    def reactivate(self, product_id: UUID, assignment_id: UUID, *, version: int | None, actor: str):
         product = lock_product(self.session, product_id)
         ensure_product_active_for_dependents(product)
         assignment = self._assignment(product_id, assignment_id)

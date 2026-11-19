@@ -35,8 +35,9 @@ class BrandCreate(RequestModel):
 
 class BrandUpdate(UpdateModel):
     immutable_fields = frozenset({"code", "status"})
+    not_nullable = frozenset({"name"})
 
-    name: str = Field(max_length=240)
+    name: str | None = Field(default=None, max_length=240)
     description: str | None = None
 
 
@@ -60,12 +61,13 @@ class ProductCreate(RequestModel):
 
 class ProductUpdate(UpdateModel):
     immutable_fields = frozenset({"product_type", "status"}) | FIRST_USE_FIELDS
+    not_nullable = frozenset({"canonical_name", "base_unit_id"})
 
-    canonical_name: str = Field(max_length=400)
+    canonical_name: str | None = Field(default=None, max_length=400)
     description: str | None = None
     global_brand_id: UUID | None = None
     manufacturer_organization_id: UUID | None = None
-    base_unit_id: UUID
+    base_unit_id: UUID | None = None
 
 
 class CompletenessResponse(BaseModel):

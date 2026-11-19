@@ -21,11 +21,12 @@ class GroupTypeCreate(RequestModel):
 
 class GroupTypeUpdate(UpdateModel):
     immutable_fields = frozenset({"code", "status"})
+    not_nullable = frozenset({"name", "allows_multiple", "display_order"})
 
-    name: str = Field(max_length=240)
+    name: str | None = Field(default=None, max_length=240)
     description: str | None = None
-    allows_multiple: bool
-    display_order: int = Field(ge=0, le=32767)
+    allows_multiple: bool | None = None
+    display_order: int | None = Field(default=None, ge=0, le=32767)
 
 
 class GroupTypeResponse(StatusResourceResponse):
@@ -45,8 +46,9 @@ class GroupCreate(RequestModel):
 
 class GroupUpdate(UpdateModel):
     immutable_fields = frozenset({"code", "group_type_id", "status"})
+    not_nullable = frozenset({"name"})
 
-    name: str = Field(max_length=320)
+    name: str | None = Field(default=None, max_length=320)
     description: str | None = None
     parent_group_id: UUID | None = None
 
