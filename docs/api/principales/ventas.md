@@ -45,7 +45,7 @@ Orden habitual de una venta: [API 1](#1-buscar-el-cliente-de-la-venta) (cliente)
 
 | Requisito | Quién lo configura | Error si falta |
 |---|---|---|
-| El vendedor tiene membresía `ACTIVE` en la empresa y asignación `ACTIVE` a la sucursal de la venta | [API 10](administracion-empresarial.md#10-asociar-un-usuario-a-una-empresa-crear-membresía) y [API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal) | `403 SALES.BRANCH_ACCESS_DENIED` |
+| El vendedor tiene membresía `ACTIVE` en la empresa y la sucursal de la venta y la empresa están `ACTIVE` (no hace falta asignarlo a la sucursal: la membresía da acceso a todas las sucursales activas) | [API 10 de Administración empresarial](administracion-empresarial.md#10-asociar-un-usuario-a-una-empresa-crear-membresía) | Sin membresía, `404`; con la sucursal o la empresa inactivas, `403 SALES.BRANCH_ACCESS_DENIED` |
 | El token tiene los permisos de Sales que indica cada API, además de `perm:sales:sales:read` para consultar | Keycloak (administrador de la plataforma) | `403 SALES.FORBIDDEN` |
 | La empresa tiene al menos una **secuencia de numeración de ventas** activa, de la sucursal o de la empresa | [API 19 de Administración empresarial](administracion-empresarial.md#19-crear-una-secuencia-de-numeración) | `409 SALES.SEQUENCE_NOT_CONFIGURED` al confirmar |
 | El cliente está `ACTIVE` y su identidad tiene documento de identificación | [Gestión de clientes](gestion-de-clientes.md) | `409 SALES.REFERENCES_NOT_ELIGIBLE` |
@@ -60,7 +60,7 @@ Convenciones de todo el módulo:
 - Todas las API de Sales con cuerpo JSON **rechazan campos desconocidos** con `422 SALES.VALIDATION_ERROR` y `errors[].code` `UNKNOWN_FIELD`; los campos obligatorios que faltan llegan con `REQUIRED` y los mal formados con `INVALID_FORMAT`. Cada elemento de `errors[]` trae `field` (ruta del campo, p. ej. `lines[0].quantity`), `message`, `code` y, en las líneas, `line_number`.
 - Las cantidades e importes se envían como número o como texto (`"3.5"`) y **vuelven siempre como texto**: cantidades y precios unitarios con 4 decimales (`"2.0000"`, `"800.0000"`), importes con 2 (`"1600.00"`) y el factor de la presentación guardado en la línea con 8 (`"1.00000000"`). La cantidad debe ser mayor que cero (`QUANTITY_NOT_POSITIVE`), con máximo 4 decimales (`TOO_MANY_DECIMALS`) y menor que 10<sup>14</sup> (`AMOUNT_OUT_OF_RANGE`); además, cantidad × factor de la presentación no puede superar 4 decimales (`BASE_QUANTITY_PRECISION`). `subtotal = quantity × unit_price` redondeado a 2 decimales y `total = subtotal`.
 - Errores comunes a todas las API de Sales (no se repiten en cada tabla): `401` con `{"detail": "Se requiere un token de acceso Bearer"}` u otro `detail` cuando el token falta, venció o no es válido (renovar una vez y reintentar; si falla, volver al login); `403` con `code` `SALES.FORBIDDEN` cuando el token no tiene el permiso indicado o es un token de servicio y no de usuario (mostrar que faltan permisos y el `trace_id`); `400 SALES.MALFORMED_BODY` cuando el cuerpo no es JSON válido; `503 SALES.DEPENDENCY_UNAVAILABLE` cuando la base de datos u otro servicio no responde, con la extensión `dependency` (`database`, `operational-context`, `commercial-relationship`, `product-catalog`, `party-identity`, `inventory` o `payment-reference`) para saber cuál falló (reintentar más tarde; nada se guarda, salvo lo indicado en la [API 12](#12-confirmar-la-venta)). Los demás errores llegan en Problem Details (`application/problem+json`) con `type` `https://sio/errors/sales/<código-en-minúsculas>`, `title`, `status`, `detail`, `instance` (ruta de la solicitud), `code` `SALES.…` y `trace_id`; ver la [guía de errores](../guias/errores.md). Las API 1 a 5 pertenecen a otros servicios y sus errores comunes llevan el prefijo de cada servicio (`COMMERCIAL_RELATIONSHIP.…`, `PRODUCT_INVENTORY_QUERY.…`); los de Payment Reference se indican en la [API 5](#5-consultar-los-métodos-de-pago).
-- **Alcance.** Las consultas (API 10, 11 y 13) exigen membresía `ACTIVE` en la empresa; fuera de ese alcance, o si la venta no existe o es de otra empresa, la respuesta es `404 SALES.NOT_FOUND`, igual que si no existiera. Las escrituras (API 6 a 9, 12 y 14) exigen además una **asignación `ACTIVE` a la sucursal de la venta**, con la sucursal y la empresa activas; si falta, `403 SALES.BRANCH_ACCESS_DENIED`. Todas las API de Sales exigen un token de **usuario humano**: un token de cuenta de servicio recibe `403 SALES.FORBIDDEN`.
+- **Alcance.** Las consultas (API 10, 11 y 13) exigen membresía `ACTIVE` en la empresa; fuera de ese alcance, o si la venta no existe o es de otra empresa, la respuesta es `404 SALES.NOT_FOUND`, igual que si no existiera. Las escrituras (API 6 a 9, 12 y 14) exigen además que **la sucursal de la venta y la empresa estén activas**; si no, `403 SALES.BRANCH_ACCESS_DENIED`. No se exige asignación a la sucursal: desde la enmienda 2026-11-19 la membresía `ACTIVE` da acceso a todas las sucursales activas y lo que puede hacer el usuario lo limitan sus permisos de Keycloak. Todas las API de Sales exigen un token de **usuario humano**: un token de cuenta de servicio recibe `403 SALES.FORBIDDEN`.
 - **Control de versión.** En toda escritura sobre una venta (API 7, 8, 9, 12 y 14) la `version` es **opcional**: si se envía y otra persona cambió la venta antes, la API responde `409 SALES.VERSION_CONFLICT` y el frontend debe volver a leerla con la [API 10](#10-consultar-la-venta-con-sus-líneas-y-totales) y repetir con la nueva `version`; si no se envía, el cambio se aplica sobre lo vigente. Enviarla es recomendable para detectar cambios simultáneos. Cada escritura exitosa devuelve la venta completa con la `version` incrementada.
 - **Modificación parcial.** El `PUT` de una línea (API 8) lleva solo los campos que cambian; un campo ausente no cambia, `null` borra un campo opcional y en uno obligatorio responde `422`; un cuerpo vacío `{}` o solo con `version` responde `422`. La confirmación acepta `{}` o ningún cuerpo; la anulación exige `reason`.
 - **Estados.** `DRAFT` (se puede editar, confirmar o anular), `CONFIRMED` (solo se puede anular) y `CANCELLED` (final). Una acción fuera del estado permitido responde `409 SALES.INVALID_STATUS`; en ese error el campo `status` del cuerpo **no** es el número HTTP sino el estado actual de la venta (`"status": "CONFIRMED"`), porque Sales sobrescribe ese campo: el frontend debe tomar el código HTTP de la respuesta y no de ese campo. Mientras una confirmación o anulación está en curso, cualquier escritura responde `409 SALES.OPERATION_IN_PROGRESS` con `operation_id`.
@@ -692,13 +692,13 @@ Crea la venta en estado `DRAFT` con su encabezado (sucursal, cliente, método de
 
 Efectos verificados en el código:
 
-- Valida que el usuario tenga asignación `ACTIVE` a la sucursal y luego todas las referencias en Commercial Relationship (cliente, productos, presentaciones, precio), Party Identity (identificación del cliente) y Payment Reference (método de pago). Una referencia inexistente, de otra empresa o incoherente responde `422`; una que existe pero no se puede usar responde `409 SALES.REFERENCES_NOT_ELIGIBLE`; si hay de ambas clases se informa el `422`.
+- Valida el acceso del usuario a la sucursal (sucursal y empresa activas) y luego todas las referencias en Commercial Relationship (cliente, productos, presentaciones, precio), Party Identity (identificación del cliente) y Payment Reference (método de pago). Una referencia inexistente, de otra empresa o incoherente responde `422`; una que existe pero no se puede usar responde `409 SALES.REFERENCES_NOT_ELIGIBLE`; si hay de ambas clases se informa el `422`.
 - Resuelve el precio de cada línea en Commercial Relationship con la regla de precios descrita al inicio: lista elegida (`price_list_id`) o lista por defecto; nunca acepta `unit_price`.
 - Copia en la venta el nombre y la identificación del cliente, el código y nombre del método de pago, y en cada línea los códigos y nombres del producto y la presentación, el factor y la unidad. Estos datos se vuelven a validar al confirmar.
 - Fija `currency_code` con la moneda de la empresa, `operation_date` y `due_date` con la fecha del día en la zona horaria de la sucursal, la condición de contado (`CASH`, 0 días) y `version: 1`.
 - Registra el evento de auditoría `CREATE_SALE` (entidad `Sale`). No toca Inventory ni la secuencia de numeración.
 
-Antes necesita: `company_id` y `branch_id` con asignación `ACTIVE` del usuario, el `company_customer_id` de la [API 1](#1-buscar-el-cliente-de-la-venta), el `payment_method_id` de la [API 5](#5-consultar-los-métodos-de-pago) y, para cada línea, el producto, la presentación y opcionalmente la lista de precios de las API 2 a 4.
+Antes necesita: `company_id` y un `branch_id` activo (con `allowed: true` en el contexto operativo), el `company_customer_id` de la [API 1](#1-buscar-el-cliente-de-la-venta), el `payment_method_id` de la [API 5](#5-consultar-los-métodos-de-pago) y, para cada línea, el producto, la presentación y opcionalmente la lista de precios de las API 2 a 4.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -757,7 +757,7 @@ curl -X POST \
 ```
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `branch_id` | UUID | Sí | Sucursal donde se vende; el usuario debe tener asignación `ACTIVE` a ella | `7c9e6679-7425-40de-944b-e07fc1f90ae7` | `memberships[].branches[].branch_id` (con `allowed: true`) de la [API 5 de Acceso y contexto operativo](acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario) (devuelve las empresas y sucursales del usuario; sus errores están en esa sección) · guía [branch_id](../parametros/branch-id.md) |
+| `branch_id` | UUID | Sí | Sucursal donde se vende; debe estar `ACTIVE` (no exige asignación) | `7c9e6679-7425-40de-944b-e07fc1f90ae7` | `memberships[].branches[].branch_id` (con `allowed: true`) de la [API 5 de Acceso y contexto operativo](acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario) (devuelve las empresas y sucursales del usuario; sus errores están en esa sección) · guía [branch_id](../parametros/branch-id.md) |
 | `company_customer_id` | UUID | Sí | Cliente `ACTIVE` de la empresa con identificación registrada | `c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f` | `items[].id` de la [API 1](#1-buscar-el-cliente-de-la-venta) (busca los clientes de la empresa; errores en §1) · guía [customer_id](../parametros/customer-id.md) |
 | `payment_method_id` | UUID | Sí | Método de pago `ACTIVE` | `b7c8d9e0-f1a2-4b3c-8d4e-5f6a7b8c9d05` | `items[].id` de la [API 5](#5-consultar-los-métodos-de-pago) (lista los métodos de pago; errores en §5) · guía [payment_method_id](../parametros/payment-method-id.md) |
 | `observations` | string \| null | No | Nota libre de la venta, hasta 2000 caracteres | `"Venta mostrador"` | Interfaz |
@@ -876,14 +876,14 @@ Campos que **no** se envían y la API rechaza con `422 SALES.VALIDATION_ERROR`: 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `403` | `SALES.FORBIDDEN` | Falta `perm:sales:sales:create`, o se enviaron líneas sin `perm:sales:sale_details:create`, o el token es de una cuenta de servicio | Mostrar que faltan permisos y el `trace_id` |
-| `403` | `SALES.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal de la venta, o la sucursal o la empresa están inactivas | Mostrar el mensaje y pedir la asignación al administrador ([API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal)) |
+| `403` | `SALES.BRANCH_ACCESS_DENIED` | La sucursal de la venta o la empresa están inactivas (ya no se exige asignación a la sucursal) | Mostrar el mensaje y pedir al administrador que reactive la sucursal |
 | `403` | `SALES.OPERATIONAL_ACCESS_DENIED` | Operational Context no permite al usuario consultar su acceso operativo | Pedir `perm:operational-context:application_users:read` indicando el `trace_id` |
 | `404` | `SALES.NOT_FOUND` | La empresa no existe, el usuario no es miembro `ACTIVE`, la sucursal es de otra empresa o la venta no existe en la empresa | Volver a leer el contexto operativo o la lista de ventas |
 | `422` | `SALES.VALIDATION_ERROR` | Encabezado o líneas inválidos: `REQUIRED`, `UNKNOWN_FIELD`, `INVALID_FORMAT`, `LINES_LIMIT_EXCEEDED`, `UNIT_PRICE_NOT_ALLOWED`, `OPERATION_DATE_NOT_ALLOWED`, `PAYMENT_CONDITION_NOT_ALLOWED`, `QUANTITY_NOT_POSITIVE`, `TOO_MANY_DECIMALS`, `AMOUNT_OUT_OF_RANGE`, `BASE_QUANTITY_PRECISION`, `DISCOUNT_NOT_ALLOWED`, `TAX_NOT_ALLOWED`; o referencias inexistentes o de otra empresa: `BRANCH_NOT_FOUND`, `CUSTOMER_NOT_FOUND`, `PERSON_IDENTITY_NOT_FOUND`, `ORGANIZATION_IDENTITY_NOT_FOUND`, `PAYMENT_METHOD_NOT_FOUND`, `COMPANY_PRODUCT_NOT_FOUND`, `PRESENTATION_NOT_FOUND`, `PRESENTATION_OF_OTHER_PRODUCT`, `PRICE_LIST_NOT_FOUND` | Mostrar cada `errors[].message` junto al campo (`errors[].field`, p. ej. `lines[0].quantity`) y corregir |
 | `409` | `SALES.REFERENCES_NOT_ELIGIBLE` | Una referencia existe pero no se puede usar; `errors[].code`: `COMPANY_INACTIVE`, `BRANCH_INACTIVE`, `CUSTOMER_NOT_ELIGIBLE` (cliente inactivo), `CUSTOMER_IDENTIFICATION_MISSING`, `PAYMENT_METHOD_INACTIVE`, `PRODUCT_INACTIVE`, `PRODUCT_NOT_SELLABLE`, `PRODUCT_NOT_INVENTORY_CONTROLLED`, `PRESENTATION_INACTIVE`, `PRESENTATION_NOT_SELLABLE`, `PRICE_NOT_IN_LIST` (la lista elegida no tiene precio vigente para la presentación), `PRICE_NOT_AVAILABLE` (no hay lista por defecto vigente con precio), `PRICE_LIST_NOT_APPLICABLE` (lista inactiva o no vigente), `PRICE_CURRENCY_MISMATCH`, `APPLICATION_USER_INACTIVE` | Mostrar cada `errors[].message` junto al campo o la línea (`line_number`) y pedir otra referencia o corregir la configuración |
 | `503` | `SALES.DEPENDENCY_UNAVAILABLE` | Operational Context, Commercial Relationship, Party Identity, Payment Reference o la base de datos no respondieron (extensión `dependency`) | Reintentar más tarde; no se guardó nada |
 
-Ejemplo `403` sin asignación a la sucursal:
+Ejemplo `403` por sucursal o empresa inactiva (el texto de `detail` que devuelve hoy el servicio aún menciona la asignación, pero la causa ya es solo la sucursal o la empresa inactiva):
 
 ```json
 {
@@ -957,7 +957,7 @@ Agrega una línea (producto, presentación, cantidad y, si el vendedor eligió u
 
 Efectos verificados en el código:
 
-- Comprueba, en este orden: asignación `ACTIVE` a la sucursal de la venta, que no haya una confirmación o anulación en curso (`409 OPERATION_IN_PROGRESS`), estado `DRAFT` (`409 INVALID_STATUS`), `version` si se envía (`409 VERSION_CONFLICT`), formato de la línea (`422`) y referencias y precio (`422` o `409 REFERENCES_NOT_ELIGIBLE`).
+- Comprueba, en este orden: acceso a la sucursal de la venta (sucursal y empresa activas), que no haya una confirmación o anulación en curso (`409 OPERATION_IN_PROGRESS`), estado `DRAFT` (`409 INVALID_STATUS`), `version` si se envía (`409 VERSION_CONFLICT`), formato de la línea (`422`) y referencias y precio (`422` o `409 REFERENCES_NOT_ELIGIBLE`).
 - Resuelve el precio con la regla de precios del módulo y copia los datos del producto y la presentación en la línea. La línea toma el menor `line_number` libre (las líneas no se renumeran al eliminar).
 - Incrementa la `version` de la venta y registra el evento de auditoría `ADD_SALE_DETAIL` (entidad `SaleDetail`).
 
@@ -1131,7 +1131,7 @@ No se envía `unit_price` (`422 UNIT_PRICE_NOT_ALLOWED`) ni ningún otro campo (
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `SALES.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal de la venta, o la sucursal o la empresa están inactivas | Mostrar el mensaje y pedir la asignación al administrador ([API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal)) |
+| `403` | `SALES.BRANCH_ACCESS_DENIED` | La sucursal de la venta o la empresa están inactivas (ya no se exige asignación a la sucursal) | Mostrar el mensaje y pedir al administrador que reactive la sucursal |
 | `403` | `SALES.OPERATIONAL_ACCESS_DENIED` | Operational Context no permite al usuario consultar su acceso operativo | Pedir `perm:operational-context:application_users:read` indicando el `trace_id` |
 | `404` | `SALES.NOT_FOUND` | La empresa no existe, el usuario no es miembro `ACTIVE`, la sucursal es de otra empresa o la venta no existe en la empresa | Volver a leer el contexto operativo o la lista de ventas |
 | `409` | `SALES.OPERATION_IN_PROGRESS` | La venta tiene una confirmación o anulación en curso (extensión `operation_id`) | Esperar y volver a leer la venta con la [API 10](#10-consultar-la-venta-con-sus-líneas-y-totales) |
@@ -1336,7 +1336,7 @@ Como en la API 7, no se envía `unit_price` ni ningún campo no listado.
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `SALES.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal de la venta, o la sucursal o la empresa están inactivas | Mostrar el mensaje y pedir la asignación al administrador ([API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal)) |
+| `403` | `SALES.BRANCH_ACCESS_DENIED` | La sucursal de la venta o la empresa están inactivas (ya no se exige asignación a la sucursal) | Mostrar el mensaje y pedir al administrador que reactive la sucursal |
 | `403` | `SALES.OPERATIONAL_ACCESS_DENIED` | Operational Context no permite al usuario consultar su acceso operativo | Pedir `perm:operational-context:application_users:read` indicando el `trace_id` |
 | `404` | `SALES.NOT_FOUND` | La empresa, la venta o la línea no existen en el alcance del usuario | Volver a leer la venta con la [API 10](#10-consultar-la-venta-con-sus-líneas-y-totales) |
 | `409` | `SALES.OPERATION_IN_PROGRESS` | La venta tiene una confirmación o anulación en curso (extensión `operation_id`) | Esperar y volver a leer la venta con la [API 10](#10-consultar-la-venta-con-sus-líneas-y-totales) |
@@ -1370,7 +1370,7 @@ Ejemplo `409` al intentar modificar una venta ya confirmada:
 
 Elimina una línea de una venta en `DRAFT` y devuelve la venta completa sin esa línea y con los totales recalculados. La `version` de la venta, opcional, va como **parámetro de consulta**, porque la solicitud no lleva cuerpo.
 
-Efectos verificados en el código: comprueba asignación a la sucursal, operación en curso, estado `DRAFT` y `version` (si se envía) en ese orden; las líneas restantes **no** se renumeran (una línea nueva tomará el menor número libre); incrementa la `version` y registra el evento de auditoría `DELETE_SALE_DETAIL` (entidad `SaleDetail`). Una venta puede quedar sin líneas, pero así no se puede confirmar (`422 SALES.SALE_WITHOUT_LINES`).
+Efectos verificados en el código: comprueba acceso a la sucursal (sucursal y empresa activas), operación en curso, estado `DRAFT` y `version` (si se envía) en ese orden; las líneas restantes **no** se renumeran (una línea nueva tomará el menor número libre); incrementa la `version` y registra el evento de auditoría `DELETE_SALE_DETAIL` (entidad `SaleDetail`). Una venta puede quedar sin líneas, pero así no se puede confirmar (`422 SALES.SALE_WITHOUT_LINES`).
 
 Antes necesita: `sale_id`, `detail_id` de la línea y, opcionalmente, la `version` actual, tomados de la [API 10](#10-consultar-la-venta-con-sus-líneas-y-totales) o de la última escritura.
 
@@ -1489,7 +1489,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `SALES.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal de la venta, o la sucursal o la empresa están inactivas | Mostrar el mensaje y pedir la asignación al administrador ([API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal)) |
+| `403` | `SALES.BRANCH_ACCESS_DENIED` | La sucursal de la venta o la empresa están inactivas (ya no se exige asignación a la sucursal) | Mostrar el mensaje y pedir al administrador que reactive la sucursal |
 | `403` | `SALES.OPERATIONAL_ACCESS_DENIED` | Operational Context no permite al usuario consultar su acceso operativo | Pedir `perm:operational-context:application_users:read` indicando el `trace_id` |
 | `404` | `SALES.NOT_FOUND` | La empresa, la venta o la línea no existen en el alcance del usuario | Volver a leer la venta con la [API 10](#10-consultar-la-venta-con-sus-líneas-y-totales) |
 | `409` | `SALES.OPERATION_IN_PROGRESS` | La venta tiene una confirmación o anulación en curso (extensión `operation_id`) | Esperar y volver a leer la venta con la [API 10](#10-consultar-la-venta-con-sus-líneas-y-totales) |
@@ -1878,7 +1878,7 @@ curl -X POST \
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `SALES.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal de la venta, o la sucursal o la empresa están inactivas | Mostrar el mensaje y pedir la asignación al administrador ([API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal)) |
+| `403` | `SALES.BRANCH_ACCESS_DENIED` | La sucursal de la venta o la empresa están inactivas (ya no se exige asignación a la sucursal) | Mostrar el mensaje y pedir al administrador que reactive la sucursal |
 | `403` | `SALES.OPERATIONAL_ACCESS_DENIED` | Operational Context no permite al usuario consultar su acceso operativo | Pedir `perm:operational-context:application_users:read` indicando el `trace_id` |
 | `404` | `SALES.NOT_FOUND` | La empresa no existe, el usuario no es miembro `ACTIVE`, la sucursal es de otra empresa o la venta no existe en la empresa | Volver a leer el contexto operativo o la lista de ventas |
 | `422` | `SALES.VALIDATION_ERROR` | Falta `Idempotency-Key` (`errors[].field` `Idempotency-Key`, `code` `IDEMPOTENCY_KEY_REQUIRED`) o es inválida o `X-Correlation-Id` no es UUID (`INVALID_FORMAT`); `version` no es un entero ≥ 1; o una referencia ya no existe (`COMPANY_PRODUCT_NOT_FOUND`…); o una línea tiene descuento o impuesto (`DISCOUNT_NOT_ALLOWED`, `TAX_NOT_ALLOWED`) | Corregir; para la clave, generar una y enviarla |
@@ -2136,7 +2136,7 @@ Anula una venta en `DRAFT` o `CONFIRMED` con un motivo obligatorio. Es una opera
 
 Efectos verificados en el código:
 
-- Orden de comprobaciones: asignación `ACTIVE` a la sucursal; repetición con la misma clave; operación en curso (`409 OPERATION_IN_PROGRESS`); estado (`409 INVALID_STATUS` si ya está `CANCELLED`); `version` si se envía (`409 VERSION_CONFLICT`). No vuelve a validar el cliente ni los productos.
+- Orden de comprobaciones: acceso a la sucursal (sucursal y empresa activas); repetición con la misma clave; operación en curso (`409 OPERATION_IN_PROGRESS`); estado (`409 INVALID_STATUS` si ya está `CANCELLED`); `version` si se envía (`409 VERSION_CONFLICT`). No vuelve a validar el cliente ni los productos.
 - **Borrador:** pasa a `CANCELLED` de inmediato; no toca Inventory.
 - **Confirmada:** registra la operación `CANCEL` en `PENDING` y pide a Inventory el **reverso exacto** de la salida `inventory_operation_id` (con el motivo); con el reverso aplicado la venta pasa a `CANCELLED` **conservando su `number`**. Si Inventory rechaza el reverso, responde `409 SALES.INVENTORY_REJECTED`, la operación queda `FAILED` y la venta sigue `CONFIRMED`. Si Inventory no responde, `503` con `operation_id` y la operación queda `PENDING` (mismo tratamiento que en la API 12).
 - Guarda `cancelled_by_user_id`, `cancelled_at` y `cancellation_reason` y registra el evento de auditoría `CANCEL_SALE` (entidad `Sale`).
@@ -2278,7 +2278,7 @@ curl -X POST \
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `SALES.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal de la venta, o la sucursal o la empresa están inactivas | Mostrar el mensaje y pedir la asignación al administrador ([API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal)) |
+| `403` | `SALES.BRANCH_ACCESS_DENIED` | La sucursal de la venta o la empresa están inactivas (ya no se exige asignación a la sucursal) | Mostrar el mensaje y pedir al administrador que reactive la sucursal |
 | `403` | `SALES.OPERATIONAL_ACCESS_DENIED` | Operational Context no permite al usuario consultar su acceso operativo | Pedir `perm:operational-context:application_users:read` indicando el `trace_id` |
 | `404` | `SALES.NOT_FOUND` | La empresa no existe, el usuario no es miembro `ACTIVE`, la sucursal es de otra empresa o la venta no existe en la empresa | Volver a leer el contexto operativo o la lista de ventas |
 | `422` | `SALES.VALIDATION_ERROR` | Falta `Idempotency-Key` (`IDEMPOTENCY_KEY_REQUIRED`) o es inválida; `reason` vacío o solo espacios (`REASON_REQUIRED`), `reason` > 1000 (`INVALID_FORMAT`); `version` no es un entero ≥ 1 (`INVALID_FORMAT`); campo desconocido (`UNKNOWN_FIELD`) | Corregir y repetir |
@@ -2313,8 +2313,8 @@ Ejemplo `422` sin motivo:
 
 ## Dependencias con otros módulos
 
-- **[Acceso y contexto operativo](acceso-y-contexto-operativo.md):** el Access Token y la empresa y sucursal de trabajo; el vendedor debe tener asignación `ACTIVE` a la sucursal.
-- **[Administración empresarial](administracion-empresarial.md):** membresías y asignaciones a sucursales, las secuencias de numeración de ventas (API 18 a 21; sin secuencia no se confirma) y la trazabilidad de la venta (API 16 y 17).
+- **[Acceso y contexto operativo](acceso-y-contexto-operativo.md):** el Access Token y la empresa y sucursal de trabajo; basta la membresía `ACTIVE` del vendedor y que la sucursal esté activa (no se exige asignación).
+- **[Administración empresarial](administracion-empresarial.md):** membresías (las asignaciones a sucursales son solo informativas), las secuencias de numeración de ventas (API 18 a 21; sin secuencia no se confirma) y la trazabilidad de la venta (API 16 y 17).
 - **[Gestión de clientes](gestion-de-clientes.md):** el cliente (`company_customer_id`) debe existir, estar `ACTIVE` y tener identificación; la identificación se copia en la venta.
 - **[Productos y precios](productos-y-precios.md):** productos vendibles y controlados por inventario, presentaciones vendibles, listas de precios (una por defecto) y precios vigentes por presentación. Cambiar un precio entre guardar la línea y confirmar provoca `409 SALES.PRICES_CHANGED`.
 - **[Inventario](inventario.md):** la confirmación registra una salida (origen `SALE`) que descuenta las existencias de la sucursal y fija el costo FIFO; la anulación de una venta confirmada registra su reverso. Ambos movimientos se ven en el kardex de Inventario.

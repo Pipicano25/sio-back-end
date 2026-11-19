@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from uuid import uuid4
 
 import pytest
@@ -44,8 +45,12 @@ def test_users_without_permission_are_forbidden(as_user, world, count) -> None:
             assert as_user(username).request(method, url, json=body).status_code == 403, (username, url)
 
 
-def test_user_not_assigned_to_the_branch(as_user, world, fake_oc, count) -> None:
+def test_inactive_branch_is_denied(as_user, world, fake_oc, count) -> None:
+    """Acceso por membresía (2026-11-19): la asignación inactiva no niega; la sucursal inactiva sí."""
     fake_oc.assign(user_sub("operario.dao"), world.branch, status="INACTIVE")
+    method, url, body = calls(world, count)[0]
+    assert as_user("operario.dao").request(method, url, json=body).status_code == 201
+    fake_oc.branches[world.branch] = replace(fake_oc.branches[world.branch], status="INACTIVE")
     for method, url, body in calls(world, count):
         response = as_user("operario.dao").request(method, url, json=body)
         assert (response.status_code, response.json()["code"]) == (403, "INVENTORY.BRANCH_ACCESS_DENIED"), url

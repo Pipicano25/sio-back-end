@@ -1,6 +1,6 @@
 """Compras y líneas (`contracts/rest-api.md` rutas 1–8).
 
-Todas exigen usuario humano (RC-05). Escrituras: permiso del recurso y asignación
+Todas exigen usuario humano (RC-05). Escrituras: permiso del recurso y sucursal activa (antes asignación)
 `ACTIVE` a la sucursal de la compra (DS-09). Lecturas: permiso y membresía.
 """
 

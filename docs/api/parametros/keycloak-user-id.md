@@ -16,7 +16,7 @@
 
 **El propio usuario:** es el `sub` del Access Token; la [API 4 de Acceso y contexto operativo](../principales/acceso-y-contexto-operativo.md#4-identificar-al-usuario-y-sus-permisos) explica cómo decodificar el token para leerlo sin llamar a ningún servicio. También lo devuelve el contexto operativo:
 
-**¿Qué hace?** Devuelve la identidad operativa del usuario del token: su `keycloak_user_id` y sus membresías con las sucursales asignadas y el acceso efectivo en cada una. No pagina ni filtra. Descrita en [Acceso y contexto operativo, API 5](../principales/acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario).
+**¿Qué hace?** Devuelve la identidad operativa del usuario del token: su `keycloak_user_id` y sus membresías con todas las sucursales de cada empresa y el acceso efectivo en cada una (`user_branch_status` es la asignación informativa). No pagina ni filtra. Descrita en [Acceso y contexto operativo, API 5](../principales/acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario).
 
 | | |
 |---|---|

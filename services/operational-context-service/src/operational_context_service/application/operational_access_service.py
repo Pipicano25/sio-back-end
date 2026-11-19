@@ -83,7 +83,7 @@ class AccessResult:
 @dataclass(frozen=True, slots=True)
 class BranchAccess:
     branch_id: UUID
-    user_branch_status: str
+    user_branch_status: str | None  # asignación informativa; `None` si no tiene (no limita el acceso)
     branch_status: str
     allowed: bool
     reason: str | None
@@ -198,12 +198,6 @@ class OperationalAccessService:
         if company is not None:
             membership = self.memberships.find_membership(company.id, subject)
 
-        user_branch_status = None
-        if branch is not None and membership is not None:
-            pair = self.user_branches.find_pair(membership.id, branch.id)
-            self.user_branches.end_read()
-            user_branch_status = None if pair is None else pair.status
-
         permission_granted = None
         if required is not None:
             if technical:
@@ -218,7 +212,6 @@ class OperationalAccessService:
             branch_requested=branch_id is not None,
             branch_status=None if branch is None else branch.status,
             membership_status=None if membership is None else membership.status,
-            user_branch_status=user_branch_status,
             permission_granted=permission_granted,
         )
         reason = evaluate_technical_access(facts) if technical else evaluate_own_access(facts)
@@ -259,30 +252,31 @@ class OperationalAccessService:
         companies: dict[UUID, Company] = {}
 
         for user in users:
-            assignments = self.user_branches.list_all_for_user(user.id)
+            # Enmienda 2026-11-19: la membresía da acceso a todas las sucursales de la empresa;
+            # la asignación solo se informa (`user_branch_status`).
+            assigned = {item.branch_id: item.status for item in self.user_branches.list_all_for_user(user.id)}
             self.user_branches.end_read()
             company = companies.get(user.company_id) or self.companies.get_by_id(user.company_id)
             if company is not None:
                 companies[company.id] = company
             branches = []
-            for assignment in assignments:
+            for branch in self.branches.list_all_for_company(user.company_id):
                 reason = evaluate_own_access(
                     AccessFacts(
                         company_status=user.company_status,
                         branch_requested=True,
-                        branch_status=assignment.branch_status,
+                        branch_status=branch.status,
                         membership_status=user.status,
-                        user_branch_status=assignment.status,
                     )
                 )
                 branches.append(
                     BranchAccess(
-                        branch_id=assignment.branch_id,
-                        user_branch_status=assignment.status,
-                        branch_status=assignment.branch_status,
+                        branch_id=branch.id,
+                        user_branch_status=assigned.get(branch.id),
+                        branch_status=branch.status,
                         allowed=reason is None,
                         reason=None if reason is None else reason.value,
-                        branch=self.branches.get_by_id(assignment.branch_id),
+                        branch=branch,
                     )
                 )
             contexts.append(

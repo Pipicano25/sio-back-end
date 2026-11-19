@@ -21,7 +21,7 @@ Una misma operación puede aparecer en varios módulos (por ejemplo, la búsqued
 | Módulo | Qué cubre | API principales |
 |---|---|---|
 | [6.1 Acceso y contexto operativo](acceso-y-contexto-operativo.md) | Login, renovación y cierre de sesión, identificar al usuario, membresías, empresas y sucursales con acceso efectivo, selección de contexto | 7 |
-| [6.2 Administración empresarial](administracion-empresarial.md) | Empresas, sucursales, usuarios de la empresa, asignación de sucursales, estado de membresías, auditoría y trazabilidad, numeración de documentos | 21 |
+| [6.2 Administración empresarial](administracion-empresarial.md) | Empresas, sucursales, usuarios de la empresa, asignación informativa de sucursales, estado de membresías, auditoría y trazabilidad, numeración de documentos | 21 |
 | [6.3 Gestión de clientes](gestion-de-clientes.md) | Identidades de personas y organizaciones, clientes de la empresa | 16 |
 | [6.4 Gestión de proveedores](gestion-de-proveedores.md) | Proveedores de la empresa, bloqueo, condiciones de pago, productos que suministran y lo que Compras exige de ellos | 14 |
 | [6.5 Productos y precios](productos-y-precios.md) | Catálogo global, adopción por la empresa, impuesto de compra, listas de precios, precios, políticas de ganancia | 27 |
@@ -34,7 +34,7 @@ Una misma operación puede aparecer en varios módulos (por ejemplo, la búsqued
 
 - **URL completa**: se indica la del entorno de desarrollo en Render. Geography y Payment Reference no usan el prefijo `/api/v1`; los demás servicios sí.
 - **Cabeceras**: todas las operaciones llevan `Authorization: Bearer TU_ACCESS_TOKEN` (en los ejemplos, `TU_ACCESS_TOKEN` se sustituye por el Access Token obtenido en [Acceso y contexto operativo](acceso-y-contexto-operativo.md)). Las que envían cuerpo llevan `Content-Type: application/json`. Las confirmaciones, recepciones y anulaciones de Sales y Purchase exigen además `Idempotency-Key` (UUID generado por el frontend y reutilizado en los reintentos). Ver [Autenticación](../guias/autenticacion.md).
-- **Permisos**: se escriben completos (`perm:{servicio}:{recurso}:{accion}`) y se leen de `resource_access["sio-api"].roles` del token ([Permisos](../guias/permisos.md)). Además del permiso, casi todas las operaciones de empresa exigen membresía `ACTIVE` en la empresa y, cuando hay sucursal, asignación `ACTIVE` a ella.
+- **Permisos**: se escriben completos (`perm:{servicio}:{recurso}:{accion}`) y se leen de `resource_access["sio-api"].roles` del token ([Permisos](../guias/permisos.md)). Además del permiso, casi todas las operaciones de empresa exigen membresía `ACTIVE` en la empresa y, cuando hay sucursal, que la sucursal y la empresa estén activas. La membresía `ACTIVE` da acceso a todas las sucursales activas de la empresa; la asignación a sucursal es solo informativa.
 - **Identificadores**: cada parámetro enlaza a su guía en [parametros/](../parametros/README.md), donde está la consulta exacta que lo entrega y el campo del que se copia.
 - **Versionado optimista opcional**: las operaciones de modificación pueden enviar `version` (el valor recibido en la última lectura) para detectar cambios simultáneos; si no se envía, el cambio se aplica sobre lo vigente. Un `409 VERSION_CONFLICT` significa que la `version` enviada ya no es la actual: vuelve a leer el recurso y repite.
 - **`PUT` parcial**: se envían solo los campos que cambian; un campo ausente no cambia y `null` borra un campo opcional (en uno obligatorio responde `422`). Un cuerpo vacío o solo con `version` responde `422`.

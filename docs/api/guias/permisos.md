@@ -209,14 +209,14 @@ Dos permisos de Operational Context amplían el alcance sin necesidad de membres
 
 Operational Context expone una consulta que devuelve el resultado de la evaluación **sin producir `403`** por una denegación funcional:
 
-```http
-GET https://sio-operational-context-dev.onrender.com/api/v1/operational-access?company_id=550e8400-e29b-41d4-a716-446655440000&branch_id=7c9e6679-7425-40de-944b-e07fc1f90ae7&permission=perm:sales:sales:create
-Authorization: Bearer <ACCESS_TOKEN>
+```bash
+curl -sS 'https://sio-operational-context-dev.onrender.com/api/v1/operational-access?branch_id=7c9e6679-7425-40de-944b-e07fc1f90ae7&permission=perm:sales:sales:create' \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
 | Parámetro de consulta | Tipo | Obligatorio | Significado |
 |---|---|---|---|
-| `company_id` | UUID | No | Empresa a evaluar ([cómo obtenerlo](../parametros/company-id.md)) |
+| `company_id` | UUID | No | Empresa a evaluar ([cómo obtenerlo](../parametros/company-id.md)); se envía exactamente uno de `company_id` o `branch_id` |
 | `branch_id` | UUID | No | Sucursal a evaluar ([cómo obtenerlo](../parametros/branch-id.md)) |
 | `permission` | string (máx. 255) | No | Permiso concreto `perm:{servicio}:{recurso}:{accion}` a evaluar junto con el alcance |
 | `keycloak_user_id` | string (máx. 255) | No | Solo con `perm:operational-context:platform:lookup`: evalúa a otro usuario |
@@ -227,8 +227,8 @@ Respuesta `200` (modelo `OperationalAccessResponse`; valores ilustrativos):
 
 ```json
 {
-  "allowed": false,
-  "reason": "USER_BRANCH_INACTIVE",
+  "allowed": true,
+  "reason": null,
   "keycloak_user_id": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
   "company_id": "550e8400-e29b-41d4-a716-446655440000",
   "branch_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
@@ -237,7 +237,7 @@ Respuesta `200` (modelo `OperationalAccessResponse`; valores ilustrativos):
 }
 ```
 
-`reason` es `null` cuando `allowed` es `true`. Cuando es `false`, contiene la **primera** condición que falla, en este orden fijo (catálogo cerrado `AccessDenialReason` del código de Operational Context):
+`reason` es `null` cuando `allowed` es `true`. Cuando es `false`, contiene la **primera** condición que falla, en este orden fijo (catálogo cerrado `AccessDenialReason` del código de Operational Context). Desde la enmienda 2026-11-19 («acceso por membresía») la membresía `ACTIVE` da acceso a la empresa y a todas sus sucursales activas; lo que el usuario puede hacer lo limitan solo sus permisos de Keycloak. La asignación a sucursal ya no se evalúa:
 
 | `reason` | Significado |
 |---|---|
@@ -245,8 +245,8 @@ Respuesta `200` (modelo `OperationalAccessResponse`; valores ilustrativos):
 | `USER_MEMBERSHIP_INACTIVE` | Tiene membresía, pero está `INACTIVE` |
 | `COMPANY_INACTIVE` | La empresa está `INACTIVE` |
 | `BRANCH_INACTIVE` | La sucursal consultada está `INACTIVE` |
-| `BRANCH_NOT_ASSIGNED` | El usuario no tiene asignada esa sucursal |
-| `USER_BRANCH_INACTIVE` | La asignación a la sucursal está `INACTIVE` |
+| `BRANCH_NOT_ASSIGNED` | Ya no se produce (se conserva en el catálogo por compatibilidad); antes indicaba que el usuario no tenía asignada esa sucursal |
+| `USER_BRANCH_INACTIVE` | Ya no se produce (se conserva en el catálogo por compatibilidad); antes indicaba que la asignación a la sucursal estaba `INACTIVE` |
 | `PERMISSION_DENIED` | Todo lo anterior se cumple, pero el token no cubre el `permission` indicado |
 
 El detalle de la operación está en la ficha de [Operational Context](../servicios/operational-context.md). Esta consulta es útil para decidir qué mostrar al cambiar de empresa o sucursal; la autorización definitiva la sigue haciendo cada operación.

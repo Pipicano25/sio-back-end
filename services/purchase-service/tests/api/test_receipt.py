@@ -114,13 +114,18 @@ def test_receipt_requires_a_confirmed_purchase(world, fakes, make_sequence, make
 
 
 def test_receipt_version_conflict_and_branch_access(world, fakes, make_sequence, make_draft, confirm, receive) -> None:
+    """Acceso por membresía (2026-11-19): la sucursal inactiva niega sin tocar inventario; sin asignación se recibe."""
     purchase = confirmed_purchase(make_sequence, make_draft, confirm)
     response = receive(purchase, version=purchase["version"] + 5)
     assert response.status_code == 409 and response.json()["code"] == "PURCHASE.VERSION_CONFLICT"
-    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
+    active = fakes.oc.branches[world.branch]
+    fakes.oc.branches[world.branch] = replace(active, status="INACTIVE")
     response = receive(purchase)
     assert response.status_code == 403 and response.json()["code"] == "PURCHASE.BRANCH_ACCESS_DENIED"
     assert fakes.inventory.entries() == []
+    fakes.oc.branches[world.branch] = active
+    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
+    assert receive(purchase).status_code == 200
 
 
 def test_definitive_inventory_rejection_keeps_the_purchase_pending(world, fakes, make_sequence, make_draft, confirm, receive, test_engine) -> None:

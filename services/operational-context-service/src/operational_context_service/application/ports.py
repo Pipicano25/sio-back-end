@@ -187,6 +187,8 @@ class BranchRepository(Protocol):
         exclude_branch_id: UUID | None = None,
     ) -> bool: ...
 
+    def list_all_for_company(self, company_id: UUID) -> list[Branch]: ...
+
     def list_by_company(
         self,
         company_id: UUID,

@@ -52,7 +52,7 @@ class _Client:
 def clients(test_client, make_token, fake_oc, fake_cr):
     company = UUID(COMPANY)
     fake_oc.add_branch(company, branch_id=UUID(BRANCH))
-    fake_oc.add_branch(company, branch_id=UUID(BRANCH_B))  # 013: sin usuarios asignados
+    fake_oc.add_branch(company, branch_id=UUID(BRANCH_B), status="INACTIVE")  # sucursal inactiva (paso 5.6)
     fake_oc.add_user(company, user_id=UUID(USER))
     fake_cr.add_product(company, product_id=UUID(ARROZ))
     fake_cr.add_product(company, product_id=UUID(ACEITE))
@@ -63,7 +63,7 @@ def clients(test_client, make_token, fake_oc, fake_cr):
         name = user["username"]
         fake_oc.add_member(name, company)
         # 013: usuario operativo fijo de cada usuario de prueba (documentación estable) y asignación
-        # a la sucursal principal (ajustes y conteos la exigen).
+        # a la sucursal principal (desde 2026-11-19 ya no limita el acceso; se conserva como dato).
         operator_user = UUID(f"d44c0000-0000-4000-8000-{100 + index:012d}")
         fake_oc.member_users[(name, company)] = operator_user
         fake_oc.add_user(company, user_id=operator_user)

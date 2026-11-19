@@ -32,7 +32,7 @@ def company_scope(company_id: UUID, request: Request) -> UUID:
 
 
 def branch_operator(request: Request, company_id: UUID, branch_id: UUID) -> OperatorAccess:
-    """Usuario humano con membresía y asignación `ACTIVE` a la sucursal (013 R-09, DS-14)."""
+    """Usuario humano con membresía `ACTIVE` y sucursal `ACTIVE` (013 R-09, DS-14; acceso por membresía)."""
     return require_branch_access(access_directory(request), company_id, branch_id)
 
 

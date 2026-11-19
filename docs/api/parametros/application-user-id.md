@@ -7,7 +7,7 @@
 | Qué representa | La **membresía de un usuario en una empresa** (usuario operativo). Un mismo usuario de Keycloak tiene un `application_user_id` distinto por cada empresa a la que pertenece. Es el registro sobre el que se asignan sucursales y se activa o inactiva el acceso |
 | Nombre en las rutas y cuerpos | `application_user_id` (Operational Context: `/application-users/{application_user_id}`; filtro `?application_user_id=` en Audit; campo `application_user_id` en respuestas de Sales, Purchase e Inventory) |
 | Tipo | UUID (texto) |
-| Obligatorio | Sí para asignar sucursales, consultar o cambiar el estado de una membresía |
+| Obligatorio | Sí para asignar sucursales (informativo), consultar o cambiar el estado de una membresía |
 | Ejemplo (ficticio) | `a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d` |
 | Quién lo genera | Operational Context, al registrar el usuario en la empresa (`id` de la respuesta `201`) |
 | Alcance | Empresa |
@@ -118,8 +118,8 @@ La respuesta `201` devuelve `ApplicationUserResponse`; el `application_user_id` 
 ## Cómo usarlo después
 
 - En [Administración empresarial](../principales/administracion-empresarial.md): `{application_user_id}` de la ruta de las API 11, 12, 14 y 15; filtro `application_user_id` de la API 16. Lo devuelve la [API 10 (crear membresía)](../principales/administracion-empresarial.md#10-asociar-un-usuario-a-una-empresa-crear-membresía) en el campo `id` y la API 9 en `items[].id`.
-- Asignar una sucursal (autoriza al usuario a operar en ella): `POST https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/user-branches` con `{"branch_id": "…"}`; qué hace y sus errores en [Administración empresarial, API 12](../principales/administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal).
-- Ver sus sucursales y el acceso efectivo en cada una: `GET …/application-users/{application_user_id}/user-branches`; [API 11](../principales/administracion-empresarial.md#11-consultar-las-sucursales-asignadas-a-un-usuario).
+- Asignar una sucursal (dato informativo: sede habitual; no cambia el acceso, porque la membresía `ACTIVE` ya permite operar en todas las sucursales activas): `POST https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/user-branches` con `{"branch_id": "…"}`; qué hace y sus errores en [Administración empresarial, API 12](../principales/administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal).
+- Ver sus sucursales asignadas (informativas) y el acceso efectivo en cada una: `GET …/application-users/{application_user_id}/user-branches`; [API 11](../principales/administracion-empresarial.md#11-consultar-las-sucursales-asignadas-a-un-usuario).
 - Retirar o devolver el acceso a la empresa: `POST …/application-users/{application_user_id}/deactivate` o `/reactivate` con `{"version": n}` (`version` opcional; también `{}` o sin cuerpo); [API 14](../principales/administracion-empresarial.md#14-inactivar-una-membresía) y [API 15](../principales/administracion-empresarial.md#15-reactivar-una-membresía).
 - Filtrar la trazabilidad de la empresa por actor: `?application_user_id=` en la [API 16 (auditoría)](../principales/administracion-empresarial.md#16-consultar-la-trazabilidad-de-la-empresa-auditoría).
 

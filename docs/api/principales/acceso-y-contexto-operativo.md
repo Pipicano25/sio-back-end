@@ -348,7 +348,7 @@ No hay errores de esta operación. Un token mal formado o sin `resource_access["
 
 ### ¿Qué hace esta API?
 
-Devuelve las empresas en las que el usuario autenticado tiene membresía y, para cada una, las sucursales que tiene asignadas, indicando cuáles puede usar ahora mismo (`allowed`) y, si no, por qué. Es la **primera llamada a SIO** después del login y la fuente del `company_id` y el `branch_id` que necesitan todas las demás API. El usuario se identifica por el token; no se envía ningún parámetro. Devuelve también membresías y asignaciones inactivas, para que la interfaz pueda explicarlo. Los nombres de empresa y sucursal no vienen en esta respuesta: se obtienen en [Administración empresarial](administracion-empresarial.md) con `GET …/companies/{company_id}` y `GET …/companies/{company_id}/branches`.
+Devuelve las empresas en las que el usuario autenticado tiene membresía y, para cada una, **todas** las sucursales de la empresa (activas e inactivas), indicando cuáles puede usar ahora mismo (`allowed`) y, si no, por qué. Desde la enmienda 2026-11-19 la membresía `ACTIVE` da acceso a todas las sucursales activas de la empresa; lo que el usuario puede hacer en ellas lo limitan sus permisos de Keycloak. La asignación a sucursal es solo informativa (`user_branch_status`). Es la **primera llamada a SIO** después del login y la fuente del `company_id` y el `branch_id` que necesitan todas las demás API. El usuario se identifica por el token; no se envía ningún parámetro. Devuelve también las membresías inactivas, para que la interfaz pueda explicarlo. Los nombres de empresa y sucursal no vienen en esta respuesta: se obtienen en [Administración empresarial](administracion-empresarial.md) con `GET …/companies/{company_id}` y `GET …/companies/{company_id}/branches`.
 
 Antes necesita: solo el Access Token (API 1 o 2).
 
@@ -401,8 +401,15 @@ curl -X GET \
           "branch_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
           "user_branch_status": "INACTIVE",
           "branch_status": "ACTIVE",
+          "allowed": true,
+          "reason": null
+        },
+        {
+          "branch_id": "5d6e7f80-9a1b-4c2d-8e3f-4a5b6c7d8e9f",
+          "user_branch_status": null,
+          "branch_status": "INACTIVE",
           "allowed": false,
-          "reason": "USER_BRANCH_INACTIVE"
+          "reason": "BRANCH_INACTIVE"
         }
       ]
     }
@@ -418,12 +425,12 @@ curl -X GET \
 | `memberships[].company_id` | UUID | Empresa; es el `company_id` de las rutas `/companies/{company_id}/…` |
 | `memberships[].company_status` | `ACTIVE` \| `INACTIVE` | Estado de la empresa |
 | `memberships[].status` | `ACTIVE` \| `INACTIVE` | Estado de la membresía. La empresa es operable solo si `status` y `company_status` son `ACTIVE` |
-| `branches[]` | array | Sucursales asignadas al usuario en esa empresa; `[]` si no tiene ninguna asignada |
+| `branches[]` | array | Todas las sucursales de la empresa (activas e inactivas), tenga o no asignación el usuario; `[]` solo si la empresa no tiene sucursales |
 | `branches[].branch_id` | UUID | Sucursal; es el `branch_id` que se envía en ventas, compras e inventario |
-| `branches[].user_branch_status` | `ACTIVE` \| `INACTIVE` | Estado de la asignación usuario–sucursal |
+| `branches[].user_branch_status` | `ACTIVE` \| `INACTIVE` \| null | Asignación informativa usuario–sucursal (sede habitual); `null` si no tiene asignación. No limita el acceso |
 | `branches[].branch_status` | `ACTIVE` \| `INACTIVE` | Estado de la sucursal |
-| `branches[].allowed` | boolean | `true` si el usuario puede operar en esa sucursal ahora mismo |
-| `branches[].reason` | string \| null | `null` si `allowed` es `true`; si no, la primera condición que falla, en este orden: `USER_MEMBERSHIP_INACTIVE`, `COMPANY_INACTIVE`, `BRANCH_INACTIVE`, `USER_BRANCH_INACTIVE` |
+| `branches[].allowed` | boolean | `true` si el usuario puede operar en esa sucursal ahora mismo (membresía, empresa y sucursal `ACTIVE`), con o sin asignación |
+| `branches[].reason` | string \| null | `null` si `allowed` es `true`; si no, la primera condición que falla, en este orden: `USER_MEMBERSHIP_INACTIVE`, `COMPANY_INACTIVE`, `BRANCH_INACTIVE` |
 
 ### Posibles errores
 
@@ -538,7 +545,7 @@ Acceso denegado (el usuario no es miembro de la empresa o la sucursal no existe)
 | Campo | Tipo | Significado para el frontend |
 |---|---|---|
 | `allowed` | boolean | `true`: puede operar (y tiene el `permission`, si se envió) |
-| `reason` | string \| null | `null` si `allowed` es `true`. Si no, la primera condición que falla, en este orden: `USER_NOT_MEMBER`, `USER_MEMBERSHIP_INACTIVE`, `COMPANY_INACTIVE`, `BRANCH_INACTIVE`, `BRANCH_NOT_ASSIGNED`, `USER_BRANCH_INACTIVE`, `PERMISSION_DENIED` |
+| `reason` | string \| null | `null` si `allowed` es `true`. Si no, la primera condición que falla, en este orden: `USER_NOT_MEMBER`, `USER_MEMBERSHIP_INACTIVE`, `COMPANY_INACTIVE`, `BRANCH_INACTIVE`, `PERMISSION_DENIED`. `BRANCH_NOT_ASSIGNED` y `USER_BRANCH_INACTIVE` siguen en el catálogo por compatibilidad, pero ya no se producen: la asignación a sucursal no se evalúa |
 | `keycloak_user_id` | string | Usuario evaluado (el del token) |
 | `company_id` | UUID \| null | Empresa evaluada. Con `branch_id` en la solicitud, es la empresa de esa sucursal; `null` cuando `reason` es `USER_NOT_MEMBER` y se envió `branch_id` |
 | `branch_id` | UUID \| null | Sucursal evaluada; `null` si solo se envió `company_id` |
@@ -611,9 +618,9 @@ No aplica. La selección se confirma cuando las operaciones de negocio con ese `
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` en rutas `/companies/{company_id}/…` | `{SERVICIO}.NOT_FOUND` | El `company_id` no está en el alcance del usuario (sin membresía activa) | Volver a leer la API 5: el contexto pudo cambiar desde el login |
-| `403` en Sales, Purchase e Inventory | `BRANCH_ACCESS_DENIED` u `OPERATIONAL_ACCESS_DENIED` | La sucursal no está asignada al usuario o está inactiva | Volver a leer la API 5 y elegir otra sucursal |
+| `403` en Sales, Purchase e Inventory | `BRANCH_ACCESS_DENIED` u `OPERATIONAL_ACCESS_DENIED` | La sucursal o la empresa están inactivas (la falta de asignación a la sucursal ya no deniega) | Volver a leer la API 5 y elegir otra sucursal |
 
 ## Dependencias con otros módulos
 
-- [Administración empresarial](administracion-empresarial.md) crea las empresas, sucursales, membresías y asignaciones que este módulo consulta; sin ellas, `memberships` llega vacío. Crear una empresa no crea membresías ni sucursales: la primera membresía la registra un administrador.
+- [Administración empresarial](administracion-empresarial.md) crea las empresas, sucursales y membresías que este módulo consulta (y las asignaciones a sucursal, solo informativas); sin ellas, `memberships` llega vacío. Crear una empresa no crea membresías ni sucursales: la primera membresía la registra un administrador.
 - Todos los demás módulos empiezan con el `company_id` y el `branch_id` elegidos aquí ([company_id](../parametros/company-id.md), [branch_id](../parametros/branch-id.md)).

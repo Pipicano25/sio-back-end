@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 from tests.conftest import base, fetch, user_sub
@@ -93,12 +94,18 @@ def test_never_writes_commercial_relationship(buyer, world, fakes, make_draft) -
     assert record(buyer, world, draft, "ORDERED", 1).status_code == 201
 
 
-def test_permissions_and_assignment(as_user, buyer, world, fakes, make_draft) -> None:
+def test_permissions_and_branch_access(as_user, buyer, world, fakes, make_draft) -> None:
+    """Acceso por membresía (2026-11-19): la sucursal inactiva niega; sin asignación se registra."""
     draft = make_draft()
     assert record(as_user("lector.sintetico"), world, draft, "ORDERED", 1).status_code == 403
     assert as_user("lector.sintetico").get(f"{base(world)}/purchases/{draft['id']}/lifecycle-events").status_code == 200
+    active = fakes.oc.branches[world.branch]
+    fakes.oc.branches[world.branch] = replace(active, status="INACTIVE")
+    response = record(buyer, world, draft, "ORDERED", 1)
+    assert response.status_code == 403 and response.json()["code"] == "PURCHASE.BRANCH_ACCESS_DENIED"
+    fakes.oc.branches[world.branch] = active
     fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
-    assert record(buyer, world, draft, "ORDERED", 1).status_code == 403
+    assert record(buyer, world, draft, "ORDERED", 1).status_code == 201
 
 
 def test_invalid_body(buyer, world, make_draft) -> None:

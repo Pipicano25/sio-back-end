@@ -22,7 +22,7 @@ GET /api/v1/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operar
 
 **Por qué se hace así**
 
-- `operario.dao` es miembro, tiene la sucursal asignada y su grupo `Compras` tiene `perm:purchase:purchases:create`: `allowed: true`.
+- `operario.dao` es miembro activo de la empresa y su grupo `Compras` tiene `perm:purchase:purchases:create`: `allowed: true`.
 - El permiso se evalúa con los roles de `operario.dao` leídos de Keycloak, no con los del token que consulta.
 
 **Respuesta esperada — `200 OK`** (abreviada)
@@ -65,7 +65,7 @@ GET /api/v1/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operar
 }
 ```
 
-## 3. Acceso a la sucursal secundaria (denegado)
+## 3. Acceso a la sucursal secundaria (permitido sin asignación)
 
 ```http
 GET /api/v1/operational-access?branch_id=<SUC_SECUNDARIA>&keycloak_user_id=operario.dao
@@ -79,14 +79,14 @@ GET /api/v1/operational-access?branch_id=<SUC_SECUNDARIA>&keycloak_user_id=opera
 
 **Por qué se hace así**
 
-- Sin asignación a esa sucursal: `BRANCH_NOT_ASSIGNED`.
+- La membresía da acceso a todas las sucursales activas de la empresa: `allowed: true` aunque no tenga asignación ahí (enmienda 2026-11-19). Los límites los ponen los permisos de Keycloak.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 
 ```json
 {
-  "allowed": false,
-  "reason": "BRANCH_NOT_ASSIGNED",
+  "allowed": true,
+  "reason": null,
   "keycloak_user_id": "operario.dao",
   "application_user_id": "<USR_COMPRADOR>",
   "permission": null

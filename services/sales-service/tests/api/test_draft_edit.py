@@ -78,17 +78,21 @@ def test_update_header_refreshes_the_customer(seller, world, make_draft) -> None
     assert body["operation_date"] == draft["operation_date"]  # misma sucursal: la fecha informativa no cambia
 
 
-def test_changing_branch_requires_both_assignments_and_recomputes_the_date(as_user, seller, world, make_draft, fakes, clock) -> None:
+def test_changing_branch_requires_access_to_both_branches_and_recomputes_the_date(seller, world, make_draft, fakes, clock) -> None:
+    """Acceso por membresía (2026-11-19): basta la membresía; una sucursal destino inactiva niega."""
     clock.fixed = datetime(2026, 10, 8, 2, 0, tzinfo=UTC)  # 21:00 del 7 en Bogotá; el 8 en Madrid
     draft = make_draft()
     assert draft["operation_date"] == "2026-10-07"
+    fakes.oc.branches[world.branch_b] = fakes.oc.branches[world.branch_b].__class__(
+        world.branch_b, world.company, "INACTIVE", "Europe/Madrid"
+    )
     response = seller.put(url(world, draft), json=header(world, draft, branch_id=world.branch_b))
     assert response.status_code == 403
     assert response.json()["code"] == "SALES.BRANCH_ACCESS_DENIED"
     fakes.oc.branches[world.branch_b] = fakes.oc.branches[world.branch_b].__class__(
         world.branch_b, world.company, "ACTIVE", "Europe/Madrid"
     )
-    moved = as_user("admin.sio").put(url(world, draft), json=header(world, draft, branch_id=world.branch_b))
+    moved = seller.put(url(world, draft), json=header(world, draft, branch_id=world.branch_b))
     assert moved.status_code == 200, moved.text
     assert moved.json()["operation_date"] == "2026-10-08" and moved.json()["due_date"] == "2026-10-08"
 

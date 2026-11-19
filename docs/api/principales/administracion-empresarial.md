@@ -4,7 +4,7 @@
 
 Operaciones con las que un administrador configura una empresa cliente de SIO: la empresa misma, sus sucursales, las personas que trabajan en ella (membresías), las sucursales a las que cada una puede acceder, la trazabilidad de lo que ocurre en la empresa (auditoría) y la numeración de los documentos comerciales.
 
-Servicios implicados: [Operational Context](../servicios/operational-context.md) (empresas, sucursales, membresías y asignaciones), [Party Identity](../servicios/party-identity.md) (identidad legal de la empresa y de cada persona), [Geography](../servicios/geography.md) (ubicación), [Audit](../servicios/audit.md) (trazabilidad) y las secuencias de [Sales](../servicios/sales.md) y [Purchase](../servicios/purchase.md) (numeración). Flujo completo: [Crear una empresa y una sucursal](../ejemplos/crear-empresa-y-sucursal.md).
+Servicios implicados: [Operational Context](../servicios/operational-context.md) (empresas, sucursales, membresías y asignaciones informativas a sucursal), [Party Identity](../servicios/party-identity.md) (identidad legal de la empresa y de cada persona), [Geography](../servicios/geography.md) (ubicación), [Audit](../servicios/audit.md) (trazabilidad) y las secuencias de [Sales](../servicios/sales.md) y [Purchase](../servicios/purchase.md) (numeración). Flujo completo: [Crear una empresa y una sucursal](../ejemplos/crear-empresa-y-sucursal.md).
 
 | # | API | Método y URL | Permiso | Referencia técnica |
 |---|---|---|---|---|
@@ -31,6 +31,8 @@ Servicios implicados: [Operational Context](../servicios/operational-context.md)
 | 21 | Consultar y modificar una secuencia | `GET` · `PUT …/sale-sequences/{sequence_id}` y `GET` · `PUT …/purchase-sequences/{sequence_id}` | `perm:sales:sale_sequences:read` · `…:update` · `perm:purchase:purchase_sequences:read` · `…:update` | [Sales 18](../servicios/sales.md#18-get-companiescompany_idsale-sequencessequence_id) · [Sales 19](../servicios/sales.md#19-put-companiescompany_idsale-sequencessequence_id) · [Purchase 20](../servicios/purchase.md#20-get-companiescompany_idpurchase-sequencessequence_id) · [Purchase 21](../servicios/purchase.md#21-put-companiescompany_idpurchase-sequencessequence_id) |
 
 Operaciones relacionadas que no se consideran principales (ver las fichas): inactivar o reactivar empresas y sucursales (OC 7, 8, 13, 14), retirar o reactivar una asignación de sucursal (OC 25, 26), modificar los datos de referencia de un usuario (OC 18), la gestión de asesores (OC 27–31) y los eventos de auditoría de plataforma (Audit 8–10).
+
+Regla de acceso (enmienda 2026-11-19, «acceso por membresía»): la membresía `ACTIVE` de un usuario en una empresa le da acceso a la empresa y a **todas** sus sucursales activas; lo que puede hacer lo limitan solo sus permisos de Keycloak (grupos). Las asignaciones a sucursal ([API 11](#11-consultar-las-sucursales-asignadas-a-un-usuario), [12](#12-asignar-un-usuario-a-una-sucursal) y [13](#13-consultar-los-usuarios-asignados-a-una-sucursal), OC 25 y 26) son un dato **informativo** (sede habitual, listados de empleados por sucursal): crearlas, retirarlas o reactivarlas no cambia el acceso.
 
 Convenciones de todo el módulo:
 
@@ -506,7 +508,7 @@ Modelo `CompanyUpdate` (parcial): los mismos campos de la [API 1](#1-crear-empre
 
 Registra un punto de operación de la empresa (tienda, bodega, farmacia) donde se venderá, comprará y controlará inventario. La empresa debe estar `ACTIVE`. El `code` es único dentro de la empresa y se guarda en mayúsculas. Si no se envía `timezone`, la sucursal hereda la de la empresa (la respuesta lo muestra en `effective_timezone`).
 
-Efecto verificado: crear la sucursal **no la asigna a ningún usuario**. Cada usuario que deba operar en ella se asigna con la [API 12](#12-asignar-un-usuario-a-una-sucursal). Para confirmar ventas o compras en ella hará falta además una secuencia de numeración ([API 19](#19-crear-una-secuencia-de-numeración)) propia o de la empresa.
+Efecto verificado: crear la sucursal **no la asigna a ningún usuario**, y no hace falta: todos los miembros `ACTIVE` de la empresa pueden operar en ella desde que se crea, según sus permisos. La asignación con la [API 12](#12-asignar-un-usuario-a-una-sucursal) es opcional e informativa (sede habitual). Para confirmar ventas o compras en ella hará falta además una secuencia de numeración ([API 19](#19-crear-una-secuencia-de-numeración)) propia o de la empresa.
 
 Antes necesita: el `company_id` de una empresa `ACTIVE` en la que el administrador tenga membresía (o `platform:administer`) y, si lleva dirección, los identificadores geográficos.
 
@@ -658,7 +660,7 @@ Ejemplo de `409`:
 
 ### ¿Qué hace esta API?
 
-Lista, con paginación, **todas** las sucursales de la empresa (no solo las asignadas al usuario), con búsqueda por código o nombre. Sirve para la administración de sucursales y para mostrar el nombre de cada `branch_id` del contexto operativo. Por defecto solo devuelve sucursales `ACTIVE`. Para saber en cuáles puede operar el usuario, usar `memberships[].branches[]` del contexto operativo.
+Lista, con paginación, **todas** las sucursales de la empresa (con independencia de las asignaciones informativas), con búsqueda por código o nombre. Sirve para la administración de sucursales y para mostrar el nombre de cada `branch_id` del contexto operativo. Por defecto solo devuelve sucursales `ACTIVE`. Para saber en cuáles puede operar el usuario, usar `memberships[].branches[]` del contexto operativo.
 
 Antes necesita: el `company_id` y membresía en la empresa.
 
@@ -1055,7 +1057,7 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 Da acceso a la empresa a una persona que ya tiene cuenta en Keycloak, creando su membresía. Es una operación `HIGH_RISK` (concede acceso a los datos de la empresa): pedir confirmación al usuario. La cuenta se indica por su `sub` (`keycloak_user_id`) **o** por su `username`, exactamente uno; el servicio la verifica en Keycloak y guarda solo el `sub`. La persona debe existir y estar `ACTIVE` en Party Identity. Una cuenta y una persona solo pueden tener una membresía activa por empresa.
 
-Efecto verificado: desde ese momento el usuario ve la empresa en su contexto operativo, pero **sin sucursales** hasta que se le asigne alguna con la [API 12](#12-asignar-un-usuario-a-una-sucursal). Los permisos (`perm:…`) no se asignan aquí sino en los grupos de Keycloak.
+Efecto: desde ese momento el usuario ve la empresa en su contexto operativo con **todas** sus sucursales, y puede operar en las activas según sus permisos; no hace falta asignarle ninguna con la [API 12](#12-asignar-un-usuario-a-una-sucursal) (la asignación es solo informativa). Los permisos (`perm:…`) no se asignan aquí sino en los grupos de Keycloak.
 
 Antes necesita: (1) la cuenta del usuario en Keycloak, habilitada y en el grupo que corresponda a su función; (2) la identidad de la persona en Party Identity (`POST https://sio-party-identity-dev.onrender.com/api/v1/person-identities`, ver [person_identity_id](../parametros/person-identity-id.md)); (3) que el administrador vea la empresa (membresía activa o `platform:administer`). La **primera membresía** de una empresa recién creada la registra el administrador de plataforma.
 
@@ -1133,7 +1135,7 @@ Enviar `keycloak_user_id` y `username` a la vez, o ninguno, responde `422`. No s
 
 | Campo | Tipo | Significado para el frontend |
 |---|---|---|
-| `id` | UUID | El nuevo [application_user_id](../parametros/application-user-id.md); se usa para asignar sucursales ([API 12](#12-asignar-un-usuario-a-una-sucursal)) y cambiar el estado ([API 14](#14-inactivar-una-membresía) y [15](#15-reactivar-una-membresía)) |
+| `id` | UUID | El nuevo [application_user_id](../parametros/application-user-id.md); se usa para asignar sucursales de forma informativa ([API 12](#12-asignar-un-usuario-a-una-sucursal)) y cambiar el estado ([API 14](#14-inactivar-una-membresía) y [15](#15-reactivar-una-membresía)) |
 | `keycloak_user_id` | string | `sub` resuelto en Keycloak, aunque se haya enviado `username` |
 | `status`, `version` | — | `ACTIVE` y `1` al crear |
 
@@ -1182,7 +1184,7 @@ Ejemplo de `422` por cuenta inexistente:
 
 ### ¿Qué hace esta API?
 
-Lista las asignaciones de sucursal de una membresía, con el acceso efectivo calculado para cada una (`operational_access`). Es la pantalla «sucursales de este usuario» de la administración. Por defecto solo devuelve asignaciones `ACTIVE`; con `status=INACTIVE` se ven las retiradas, que pueden reactivarse (OC 26).
+Lista las asignaciones de sucursal de una membresía (dato informativo: sede habitual), con el acceso efectivo del usuario en cada sucursal (`operational_access`, calculado por membresía, empresa y sucursal; no depende de la asignación). Es la pantalla «sucursales de este usuario» de la administración. No es la lista de sucursales donde puede operar: la membresía `ACTIVE` da acceso a todas las sucursales activas de la empresa. Por defecto solo devuelve asignaciones `ACTIVE`; con `status=INACTIVE` se ven las retiradas, que pueden reactivarse (OC 26).
 
 Antes necesita: el `application_user_id` ([API 9](#9-consultar-los-usuarios-de-una-empresa) o [10](#10-asociar-un-usuario-a-una-empresa-crear-membresía)).
 
@@ -1258,12 +1260,12 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 |---|---|---|
 | `items[].id` | UUID | El [user_branch_id](../parametros/user-branch-id.md) de la asignación, necesario para retirarla o reactivarla (OC 25, 26) |
 | `items[].branch_id` | UUID | Sucursal asignada; el nombre se consulta con la [API 7](#7-consultar-una-sucursal) |
-| `items[].status` | `ACTIVE` \| `INACTIVE` | Estado de la asignación |
+| `items[].status` | `ACTIVE` \| `INACTIVE` | Estado de la asignación informativa (no limita el acceso) |
 | `items[].assigned_at`, `assigned_by` | date-time, string | Cuándo y quién (`sub`) la asignó |
 | `items[].deactivated_at` | date-time \| null | Cuándo se retiró, si está inactiva |
-| `items[].membership_status`, `branch_status`, `company_status` | `ACTIVE` \| `INACTIVE` | Estados que condicionan el acceso |
-| `items[].operational_access.allowed` | boolean | `true` si el usuario puede operar hoy en esa sucursal |
-| `items[].operational_access.reason` | string \| null | Si `allowed` es `false`, la primera causa: `USER_MEMBERSHIP_INACTIVE`, `COMPANY_INACTIVE`, `BRANCH_INACTIVE`, `USER_BRANCH_INACTIVE` |
+| `items[].membership_status`, `branch_status`, `company_status` | `ACTIVE` \| `INACTIVE` | Estados que condicionan el acceso (la asignación no lo condiciona) |
+| `items[].operational_access.allowed` | boolean | `true` si el usuario puede operar hoy en esa sucursal (membresía, empresa y sucursal `ACTIVE`), aunque la asignación esté `INACTIVE` |
+| `items[].operational_access.reason` | string \| null | Si `allowed` es `false`, la primera causa: `COMPANY_INACTIVE`, `BRANCH_INACTIVE` o `USER_MEMBERSHIP_INACTIVE` (`USER_BRANCH_INACTIVE` ya no se produce) |
 
 ### Posibles errores
 
@@ -1280,9 +1282,9 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 ### ¿Qué hace esta API?
 
-Autoriza a un miembro de la empresa a operar en una sucursal concreta (vender, comprar, ajustar inventario). Operación `HIGH_RISK`: pedir confirmación. La sucursal debe pertenecer a la misma empresa que la membresía, y membresía, sucursal y empresa deben estar `ACTIVE`. Un usuario puede tener varias sucursales; cada una es una asignación.
+Registra la sucursal habitual de un miembro de la empresa (dato informativo para listados de empleados por sucursal). **No** concede acceso: desde la enmienda 2026-11-19 la membresía `ACTIVE` ya permite operar (vender, comprar, ajustar inventario) en todas las sucursales activas de la empresa, según los permisos de Keycloak. Operación `HIGH_RISK`: pedir confirmación. La sucursal debe pertenecer a la misma empresa que la membresía, y membresía, sucursal y empresa deben estar `ACTIVE`. Un usuario puede tener varias sucursales; cada una es una asignación.
 
-Efecto verificado: a partir de la respuesta, el usuario ve la sucursal con `allowed: true` en su contexto operativo y las API de negocio aceptan ese `branch_id` para él.
+Efecto: la sucursal aparece en las [API 11](#11-consultar-las-sucursales-asignadas-a-un-usuario) y [13](#13-consultar-los-usuarios-asignados-a-una-sucursal) y en `user_branch_status` del contexto operativo. El acceso (`allowed`) y lo que aceptan las API de negocio no cambian.
 
 Antes necesita: el `application_user_id` de una membresía `ACTIVE` ([API 9](#9-consultar-los-usuarios-de-una-empresa) o [10](#10-asociar-un-usuario-a-una-empresa-crear-membresía)) y el `branch_id` de una sucursal `ACTIVE` de la misma empresa ([API 6](#6-consultar-las-sucursales-de-una-empresa)).
 
@@ -1358,7 +1360,7 @@ No se envía `application_user_id` (va en la ruta) ni quién asigna (se toma del
 | Campo | Tipo | Significado para el frontend |
 |---|---|---|
 | `id` | UUID | El nuevo [user_branch_id](../parametros/user-branch-id.md) (para OC 25 y 26) |
-| `operational_access` | objeto | Siempre `allowed: true` y `reason: null` justo al crear, porque todas las condiciones se validaron |
+| `operational_access` | objeto | Acceso efectivo del usuario a la sucursal, calculado por membresía, empresa y sucursal; `allowed: true` y `reason: null` justo al crear, porque esas condiciones se validaron |
 | `assigned_by` | string | `sub` del administrador que hizo la asignación |
 
 ### Posibles errores
@@ -1381,7 +1383,7 @@ No se envía `application_user_id` (va en la ruta) ni quién asigna (se toma del
 
 ### ¿Qué hace esta API?
 
-Lista las asignaciones de una sucursal, es decir, qué miembros pueden operar en ella y con qué acceso efectivo. Es la vista inversa de la [API 11](#11-consultar-las-sucursales-asignadas-a-un-usuario), para la pantalla de administración de una sucursal. Por defecto solo asignaciones `ACTIVE`.
+Lista las asignaciones de una sucursal (empleados con esa sede habitual; dato informativo) y el acceso efectivo de cada uno. No es la lista completa de quién puede operar en ella: puede hacerlo cualquier miembro `ACTIVE` de la empresa con los permisos necesarios. Es la vista inversa de la [API 11](#11-consultar-las-sucursales-asignadas-a-un-usuario), para la pantalla de administración de una sucursal. Por defecto solo asignaciones `ACTIVE`.
 
 Antes necesita: el `branch_id` ([API 6](#6-consultar-las-sucursales-de-una-empresa) o contexto operativo).
 
@@ -1465,7 +1467,7 @@ curl -X GET \
 
 ### ¿Qué hace esta API?
 
-Retira el acceso de una persona a la empresa sin borrar nada: la membresía pasa a `INACTIVE`. Operación `HIGH_RISK`: pedir confirmación. Efectos verificados: en el contexto operativo del usuario todas las sucursales de esa empresa pasan a `allowed: false` con `reason: USER_MEMBERSHIP_INACTIVE`, y las API de negocio le responden `404` o `403` en esa empresa; sus asignaciones de sucursal se conservan y vuelven a ser efectivas al reactivar. Solo afecta a esta membresía, no a la cuenta de Keycloak ni a otras empresas.
+Retira el acceso de una persona a la empresa sin borrar nada: la membresía pasa a `INACTIVE`. Operación `HIGH_RISK`: pedir confirmación. Efectos verificados: en el contexto operativo del usuario todas las sucursales de esa empresa pasan a `allowed: false` con `reason: USER_MEMBERSHIP_INACTIVE`, y las API de negocio le responden `404` o `403` en esa empresa; sus asignaciones de sucursal (informativas) se conservan. Solo afecta a esta membresía, no a la cuenta de Keycloak ni a otras empresas.
 
 Antes necesita: el `application_user_id` ([API 9](#9-consultar-los-usuarios-de-una-empresa)); su `version` es opcional.
 
@@ -1553,7 +1555,7 @@ No admite `{}` ni otros campos.
 
 ### ¿Qué hace esta API?
 
-Devuelve el acceso a la empresa a una membresía `INACTIVE`. Operación `HIGH_RISK`. Antes de reactivar, el servicio vuelve a comprobar que la cuenta exista y esté habilitada en Keycloak, que la persona esté `ACTIVE` en Party Identity, que la empresa esté `ACTIVE` y que no exista otra membresía activa de la misma persona o cuenta en la empresa. Las asignaciones de sucursal que tenía vuelven a ser efectivas.
+Devuelve el acceso a la empresa a una membresía `INACTIVE`. Operación `HIGH_RISK`. Antes de reactivar, el servicio vuelve a comprobar que la cuenta exista y esté habilitada en Keycloak, que la persona esté `ACTIVE` en Party Identity, que la empresa esté `ACTIVE` y que no exista otra membresía activa de la misma persona o cuenta en la empresa. Al reactivar vuelve a tener acceso a todas las sucursales activas de la empresa; las asignaciones informativas que tenía se conservan.
 
 Antes necesita: el `application_user_id` ([API 9](#9-consultar-los-usuarios-de-una-empresa) con `status=INACTIVE`); su `version` es opcional.
 
@@ -2497,12 +2499,12 @@ Las mismas dos llamadas para compras usan `https://sio-purchase-dev.onrender.com
 
 ## Orden recomendado y efectos automáticos
 
-1. Identidad de la organización en Party Identity → 2. Empresa ([API 1](#1-crear-empresa)) → 3. Sucursales ([API 5](#5-crear-una-sucursal)) → 4. Identidad de cada persona en Party Identity → 5. Membresía ([API 10](#10-asociar-un-usuario-a-una-empresa-crear-membresía)) → 6. Asignación de sucursales ([API 12](#12-asignar-un-usuario-a-una-sucursal)) → 7. Secuencias de numeración de ventas y compras ([API 19](#19-crear-una-secuencia-de-numeración)).
+1. Identidad de la organización en Party Identity → 2. Empresa ([API 1](#1-crear-empresa)) → 3. Sucursales ([API 5](#5-crear-una-sucursal)) → 4. Identidad de cada persona en Party Identity → 5. Membresía ([API 10](#10-asociar-un-usuario-a-una-empresa-crear-membresía)) → 6. Asignación de sucursales, opcional e informativa ([API 12](#12-asignar-un-usuario-a-una-sucursal)) → 7. Secuencias de numeración de ventas y compras ([API 19](#19-crear-una-secuencia-de-numeración)).
 
-Ningún paso crea automáticamente el siguiente: crear la empresa no crea sucursales ni membresías; crear la membresía no asigna sucursales; las secuencias no se crean solas y sin ellas no se confirman documentos. El ejemplo [Crear una empresa y una sucursal](../ejemplos/crear-empresa-y-sucursal.md) recorre la cadena completa con cuerpos y respuestas.
+Ningún paso crea automáticamente el siguiente: crear la empresa no crea sucursales ni membresías; crear la membresía no asigna sucursales (no hace falta: la membresía `ACTIVE` ya da acceso a todas las sucursales activas); las secuencias no se crean solas y sin ellas no se confirman documentos. El ejemplo [Crear una empresa y una sucursal](../ejemplos/crear-empresa-y-sucursal.md) recorre la cadena completa con cuerpos y respuestas.
 
 ## Dependencias con otros módulos
 
 - [Acceso y contexto operativo](acceso-y-contexto-operativo.md) refleja al instante las membresías y asignaciones creadas aquí.
 - [Gestión de clientes](gestion-de-clientes.md) y [Gestión de proveedores](gestion-de-proveedores.md) usan las mismas identidades de Party Identity que este módulo.
-- [Ventas](ventas.md) y [Compras](compras.md) exigen la secuencia activa ([API 19](#19-crear-una-secuencia-de-numeración)) y que el usuario tenga asignada la sucursal sobre la que opera (`403 BRANCH_ACCESS_DENIED` en caso contrario); sus anulaciones y confirmaciones quedan registradas en la auditoría ([API 16](#16-consultar-la-trazabilidad-de-la-empresa-auditoría) y [17](#17-consultar-el-historial-de-una-venta-una-compra-o-un-producto)).
+- [Ventas](ventas.md) y [Compras](compras.md) exigen la secuencia activa ([API 19](#19-crear-una-secuencia-de-numeración)) y que la sucursal y la empresa sobre las que opera estén activas (`403 BRANCH_ACCESS_DENIED` en caso contrario; no exigen asignación a la sucursal); sus anulaciones y confirmaciones quedan registradas en la auditoría ([API 16](#16-consultar-la-trazabilidad-de-la-empresa-auditoría) y [17](#17-consultar-el-historial-de-una-venta-una-compra-o-un-producto)).

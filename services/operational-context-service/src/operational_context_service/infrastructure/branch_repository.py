@@ -82,6 +82,15 @@ class SQLAlchemyBranchRepository:
 
         return self.session.scalar(statement.limit(1)) is not None
 
+    def list_all_for_company(self, company_id: UUID) -> list[Branch]:
+        """Todas las sucursales de la empresa (activas e inactivas), en orden de creación."""
+        rows = self.session.execute(
+            _branch_query()
+            .where(BranchModel.company_id == company_id)
+            .order_by(BranchModel.created_at, BranchModel.id)
+        ).all()
+        return [to_branch(*row) for row in rows]
+
     def list_by_company(
         self,
         company_id: UUID,

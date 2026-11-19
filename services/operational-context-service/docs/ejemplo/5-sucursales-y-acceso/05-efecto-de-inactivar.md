@@ -31,13 +31,13 @@ POST /api/v1/user-branches/<ASIGNACION>/deactivate
   "status": "INACTIVE",
   "version": 2,
   "operational_access": {
-    "allowed": false,
-    "reason": "USER_BRANCH_INACTIVE"
+    "allowed": true,
+    "reason": null
   }
 }
 ```
 
-## 2. Acceso tras retirar la asignación (denegado)
+## 2. Acceso tras retirar la asignación (sigue permitido)
 
 ```http
 GET /api/v1/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operario.dao
@@ -51,14 +51,14 @@ GET /api/v1/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operar
 
 **Por qué se hace así**
 
-- La asignación existe pero está inactiva: `USER_BRANCH_INACTIVE`.
+- La asignación es solo informativa: retirarla no quita el acceso, que depende de la membresía.
 
 **Respuesta esperada — `200 OK`** (abreviada)
 
 ```json
 {
-  "allowed": false,
-  "reason": "USER_BRANCH_INACTIVE",
+  "allowed": true,
+  "reason": null,
   "keycloak_user_id": "operario.dao",
   "application_user_id": "<USR_COMPRADOR>",
   "permission": null

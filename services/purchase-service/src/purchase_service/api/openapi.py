@@ -20,7 +20,7 @@ OPENAPI_TAGS = [
         "name": TAG_PURCHASES,
         "description": (
             "Compras en borrador con hasta 100 líneas. Solo **usuarios humanos**: una cuenta de servicio recibe "
-            "`403`. Escribir exige el permiso, membresía `ACTIVE` y asignación `ACTIVE` a la sucursal de la compra; "
+            "`403`. Escribir exige el permiso, membresía `ACTIVE` y la sucursal activa de la compra; "
             "leer, el permiso y la membresía. Referencia inexistente o no resoluble → `422`; existente pero no apta "
             "→ `409`."
         ),

@@ -1,7 +1,7 @@
 """Ajustes manuales (`contracts/rest-api.md` rutas 11–13; 013).
 
 - Ruta 11: `perm:inventory:adjustments:create`, **usuario humano** (una cuenta de
-  servicio recibe `403` aunque tenga el permiso) y asignación `ACTIVE` a la sucursal.
+  servicio recibe `403` aunque tenga el permiso) y sucursal `ACTIVE`.
 - Rutas 12–13: `perm:inventory:adjustments:read` y alcance por empresa.
 """
 

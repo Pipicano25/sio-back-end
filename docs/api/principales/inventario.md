@@ -21,13 +21,13 @@ Las existencias **entran** por la recepción de [Compras](compras.md) y **salen*
 | 6 | Consultar el saldo de un producto en una sucursal | `GET https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/branches/{branch_id}/balances/{company_product_id}` | `perm:inventory:balances:read` | [Inv 8](../servicios/inventory.md#8-get-companiescompany_idbranchesbranch_idbalancescompany_product_id) |
 | 7 | Consultar el kardex de un producto | `GET https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/branches/{branch_id}/kardex/{company_product_id}` | `perm:inventory:movements:read` | [Inv 10](../servicios/inventory.md#10-get-companiescompany_idbranchesbranch_idkardexcompany_product_id) |
 | 8 | Consultar el valor del inventario de una sucursal | `GET https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/branches/{branch_id}/valuation` | `perm:inventory:valuation:read` | [Inv 13](../servicios/inventory.md#13-get-companiescompany_idbranchesbranch_idvaluation) |
-| 9 | Registrar un ajuste manual | `POST https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-adjustments` | `perm:inventory:adjustments:create` + asignación `ACTIVE` a la sucursal | [Inv 16](../servicios/inventory.md#16-post-companiescompany_idinventory-adjustments) |
+| 9 | Registrar un ajuste manual | `POST https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-adjustments` | `perm:inventory:adjustments:create` + sucursal y empresa `ACTIVE` | [Inv 16](../servicios/inventory.md#16-post-companiescompany_idinventory-adjustments) |
 | 10 | Consultar los ajustes | `GET https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-adjustments` | `perm:inventory:adjustments:read` | [Inv 17](../servicios/inventory.md#17-get-companiescompany_idinventory-adjustments) |
-| 11 | Crear un conteo físico | `POST https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts` | `perm:inventory:counts:create` + asignación `ACTIVE` a la sucursal | [Inv 19](../servicios/inventory.md#19-post-companiescompany_idinventory-counts) |
-| 12 | Iniciar el conteo | `POST https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/start` | `perm:inventory:counts:create` + asignación `ACTIVE` a la sucursal | [Inv 21](../servicios/inventory.md#21-post-companiescompany_idinventory-countscount_idstart) |
-| 13 | Registrar la cantidad contada de un producto | `PUT https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/details/{company_product_id}` | `perm:inventory:counts:create` + asignación `ACTIVE` a la sucursal | [Inv 22](../servicios/inventory.md#22-put-companiescompany_idinventory-countscount_iddetailscompany_product_id) |
-| 14 | Completar el conteo | `POST https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/complete` | `perm:inventory:counts:create` + asignación `ACTIVE` a la sucursal | [Inv 23](../servicios/inventory.md#23-post-companiescompany_idinventory-countscount_idcomplete) |
-| 15 | Cancelar el conteo | `POST https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/cancel` | `perm:inventory:counts:create` + asignación `ACTIVE` a la sucursal | [Inv 24](../servicios/inventory.md#24-post-companiescompany_idinventory-countscount_idcancel) |
+| 11 | Crear un conteo físico | `POST https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts` | `perm:inventory:counts:create` + sucursal y empresa `ACTIVE` | [Inv 19](../servicios/inventory.md#19-post-companiescompany_idinventory-counts) |
+| 12 | Iniciar el conteo | `POST https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/start` | `perm:inventory:counts:create` + sucursal y empresa `ACTIVE` | [Inv 21](../servicios/inventory.md#21-post-companiescompany_idinventory-countscount_idstart) |
+| 13 | Registrar la cantidad contada de un producto | `PUT https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/details/{company_product_id}` | `perm:inventory:counts:create` + sucursal y empresa `ACTIVE` | [Inv 22](../servicios/inventory.md#22-put-companiescompany_idinventory-countscount_iddetailscompany_product_id) |
+| 14 | Completar el conteo | `POST https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/complete` | `perm:inventory:counts:create` + sucursal y empresa `ACTIVE` | [Inv 23](../servicios/inventory.md#23-post-companiescompany_idinventory-countscount_idcomplete) |
+| 15 | Cancelar el conteo | `POST https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/cancel` | `perm:inventory:counts:create` + sucursal y empresa `ACTIVE` | [Inv 24](../servicios/inventory.md#24-post-companiescompany_idinventory-countscount_idcancel) |
 | 16 | Consultar los conteos | `GET https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts` | `perm:inventory:counts:read` | [Inv 20](../servicios/inventory.md#20-get-companiescompany_idinventory-counts) |
 | 17 | Consultar un conteo | `GET https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}` | `perm:inventory:counts:read` | [Inv 25](../servicios/inventory.md#25-get-companiescompany_idinventory-countscount_id) |
 | 18 | Consultar las políticas de mínimo | `GET https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-policies` | `perm:inventory:product-policies:read` | [Inv 29](../servicios/inventory.md#29-get-companiescompany_idinventory-policies) |
@@ -44,7 +44,7 @@ Convenciones de todo el módulo:
 - **Unidad base.** Inventory lleva las existencias en la unidad base del producto empresarial (`company_product_id`), nunca por presentación. Una venta de 2 cajas de 100 unidades descuenta 200 unidades base. Las cantidades y los costos unitarios se devuelven como texto con 4 decimales (`"200.0000"`, `"595.0000"`) y los valores monetarios con 2 (`"1190.00"`); al enviar cantidades se aceptan número o texto, mayores que cero, con hasta 4 decimales.
 - **Control de inventario por producto.** Solo los productos con `inventory_control_enabled: true`, configurado al adoptarlos en [Productos y precios](productos-y-precios.md), admiten ajustes, conteos y políticas; con otro producto Inventory responde `422 INVENTORY.VALIDATION_ERROR` con `errors[].code` `INVENTORY_CONTROL_DISABLED`.
 - **Costeo FIFO.** Cada entrada abre una capa de costo y las salidas consumen primero las capas más antiguas. `average_unit_cost` e `inventory_value` se calculan sobre las capas abiertas; `has_unknown_cost: true` indica que hay unidades sin costo conocido.
-- **Alcance.** Las lecturas exigen membresía `ACTIVE` en la empresa, sin asignación a la sucursal; sin membresía la respuesta es `404 …NOT_FOUND`, igual que si la empresa no existiera. Los ajustes y conteos exigen además un **usuario humano** (un token de cuenta de servicio recibe `403 INVENTORY.FORBIDDEN`) con asignación `ACTIVE` a la sucursal en una sucursal y empresa activas; si falta, `403 INVENTORY.BRANCH_ACCESS_DENIED`. Una sucursal de otra empresa responde `404 INVENTORY.NOT_FOUND`. Las políticas de mínimo exigen usuario humano y membresía.
+- **Alcance.** Las lecturas exigen membresía `ACTIVE` en la empresa, sin asignación a la sucursal; sin membresía la respuesta es `404 …NOT_FOUND`, igual que si la empresa no existiera. Los ajustes y conteos exigen además un **usuario humano** (un token de cuenta de servicio recibe `403 INVENTORY.FORBIDDEN`) y que la sucursal y la empresa estén activas; si no, `403 INVENTORY.BRANCH_ACCESS_DENIED`. No exigen asignación a la sucursal: la membresía `ACTIVE` da acceso a todas las sucursales activas de la empresa (enmienda 2026-11-19) y lo que puede hacer el usuario lo limitan sus permisos de Keycloak. Una sucursal de otra empresa responde `404 INVENTORY.NOT_FOUND`. Las políticas de mínimo exigen usuario humano y membresía.
 - **Idempotencia.** Los ajustes llevan `adjustment_key` y la finalización de conteos `completion_key`: UUID que genera el frontend, uno por operación. Repetir la llamada con la misma clave y el mismo cuerpo devuelve el resultado original sin duplicar movimientos; la misma clave con otro cuerpo responde `409 INVENTORY.OPERATION_KEY_CONFLICT`.
 - **Control de versión.** Al iniciar, completar y cancelar un conteo (y en las escrituras de políticas) `version` es **opcional**: si se envía y otra persona cambió el registro antes, la API responde `409 INVENTORY.VERSION_CONFLICT` y el frontend debe volver a leer el conteo y repetir; si no se envía, se aplica sobre lo vigente. Enviarla se recomienda para detectar cambios simultáneos. Iniciar un conteo acepta `{}` o ningún cuerpo.
 - **`PUT` parcial.** Los `PUT` de políticas llevan solo los campos que cambian: un campo ausente no cambia, `null` borra un campo opcional y en uno obligatorio responde `422`; un cuerpo vacío `{}` o solo con `version` responde `422`. Si nada cambia, no se escribe ni sube la versión.
@@ -1031,15 +1031,15 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 **Método:** `POST`
 **URL:** `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-adjustments`
-**Permiso requerido:** `perm:inventory:adjustments:create` + asignación `ACTIVE` a la sucursal
+**Permiso requerido:** `perm:inventory:adjustments:create` + sucursal y empresa `ACTIVE`
 
 ### ¿Qué hace esta API?
 
-Corrige el saldo de un producto en una sucursal por merma, rotura, vencimiento, hallazgo o error, dejando el motivo. Un ajuste `POSITIVE` suma unidades y abre una capa de costo; un ajuste `NEGATIVE` resta unidades y toma su costo de las capas FIFO más antiguas. Es una operación sensible (`HIGH_RISK`): solo la ejecuta un usuario humano asignado a la sucursal.
+Corrige el saldo de un producto en una sucursal por merma, rotura, vencimiento, hallazgo o error, dejando el motivo. Un ajuste `POSITIVE` suma unidades y abre una capa de costo; un ajuste `NEGATIVE` resta unidades y toma su costo de las capas FIFO más antiguas. Es una operación sensible (`HIGH_RISK`): solo la ejecuta un usuario humano miembro de la empresa, en una sucursal activa.
 
 Efectos verificados en el código, en este orden: (1) formato del cuerpo: campos desconocidos rechazados, `quantity` mayor que cero con hasta 4 decimales, `reason` obligatorio y `unit_cost` prohibido en un ajuste negativo; (2) idempotencia: si la `adjustment_key` ya se usó con el mismo cuerpo, devuelve `200` con el ajuste original sin aplicar nada; con otro cuerpo, `409 OPERATION_KEY_CONFLICT`; (3) acceso a la sucursal; (4) el producto debe existir en la empresa, estar `ACTIVE` y tener control de inventario; (5) en un ajuste positivo, la moneda de la empresa y el costo: si no se envía `unit_cost` se usa el de la capa de costo más reciente del producto en la sucursal; si no hay capas o la más reciente no tiene costo conocido, `422 UNIT_COST_REQUIRED`; (6) aplica una operación de inventario de origen `ADJUSTMENT` con un movimiento `POSITIVE_ADJUSTMENT` o `NEGATIVE_ADJUSTMENT`. Un ajuste negativo que deje el saldo por debajo de cero responde `409 INSUFFICIENT_STOCK` y no cambia nada. Registra `CREATE_INVENTORY_ADJUSTMENT` en Audit sobre la entidad `InventoryAdjustment`, en la misma transacción.
 
-Antes necesita: un `branch_id` en el que el usuario tenga asignación `ACTIVE` y el `company_product_id` de un producto con control de inventario. Para un ajuste negativo conviene mostrar antes el saldo con la [API 6](#6-consultar-el-saldo-de-un-producto-en-una-sucursal). El frontend genera un UUID nuevo para `adjustment_key` al abrir el formulario y lo reutiliza solo si reintenta la misma solicitud.
+Antes necesita: un `branch_id` activo de la empresa (con `allowed: true` en el contexto operativo) y el `company_product_id` de un producto con control de inventario. Para un ajuste negativo conviene mostrar antes el saldo con la [API 6](#6-consultar-el-saldo-de-un-producto-en-una-sucursal). El frontend genera un UUID nuevo para `adjustment_key` al abrir el formulario y lo reutiliza solo si reintenta la misma solicitud.
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1109,7 +1109,7 @@ curl -X POST \
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
 | `adjustment_key` | UUID | Sí | Clave de idempotencia del ajuste: una nueva por ajuste | `7275dce1-3641-4e91-8854-2271a233576f` | Generada por el frontend (UUID v4) al abrir el formulario |
-| `branch_id` | UUID | Sí | Sucursal del ajuste; el usuario debe tener asignación `ACTIVE` | `7c9e6679-7425-40de-944b-e07fc1f90ae7` | `memberships[].branches[].branch_id` de la [API 5 de Acceso y contexto operativo](acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario) (devuelve las empresas y sucursales del usuario; sus errores están en esa sección) o `items[].id` de la [API 6 de Administración empresarial](administracion-empresarial.md#6-consultar-las-sucursales-de-una-empresa) (lista las sucursales de la empresa; errores en esa sección) · guía [branch_id](../parametros/branch-id.md) |
+| `branch_id` | UUID | Sí | Sucursal del ajuste; debe estar `ACTIVE` (no exige asignación) | `7c9e6679-7425-40de-944b-e07fc1f90ae7` | `memberships[].branches[].branch_id` de la [API 5 de Acceso y contexto operativo](acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario) (devuelve las empresas y sucursales del usuario; sus errores están en esa sección) o `items[].id` de la [API 6 de Administración empresarial](administracion-empresarial.md#6-consultar-las-sucursales-de-una-empresa) (lista las sucursales de la empresa; errores en esa sección) · guía [branch_id](../parametros/branch-id.md) |
 | `company_product_id` | UUID | Sí | Producto `ACTIVE` con control de inventario | `e3f4a5b6-c7d8-4e9f-8a0b-1c2d3e4f5a61` | `items[].company_product_id` de la [API 1](#1-buscar-productos-con-precio-y-existencias) (busca los productos de la empresa con sus existencias; errores en §1) o el producto adoptado en [Productos y precios](productos-y-precios.md) · guía [company_product_id](../parametros/company-product-id.md) |
 | `adjustment_type` | `POSITIVE` \| `NEGATIVE` | Sí | Suma o resta unidades | `POSITIVE` | Formulario |
 | `quantity` | number \| string | Sí | Unidades base que se suman o restan; mayor que cero, hasta 4 decimales | `"2"` | Formulario (en unidad base; convertir presentaciones con `base_quantity_factor` de la [API 1](#1-buscar-productos-con-precio-y-existencias)) |
@@ -1172,7 +1172,7 @@ curl -X POST \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `INVENTORY.NOT_FOUND` | El usuario no es miembro activo de la empresa o la sucursal es de otra empresa | Volver a leer el contexto operativo |
-| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal, o la sucursal o la empresa no están activas | Pedir la asignación con la [API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal) (asigna un usuario a una sucursal; errores en esa sección) |
+| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | La sucursal o la empresa no están activas (ya no se exige asignación a la sucursal) | Elegir una sucursal con `allowed: true` en el contexto operativo o pedir al administrador que reactive la sucursal |
 | `403` | `INVENTORY.FORBIDDEN` | El token es de una cuenta de servicio: estas operaciones solo las ejecuta un usuario humano | Usar el token del usuario |
 | `403` | `INVENTORY.OPERATIONAL_ACCESS_DENIED` | El usuario no tiene permiso en Operational Context para consultar su acceso operativo | Pedir acceso al administrador indicando el `trace_id` |
 | `409` | `INVENTORY.INSUFFICIENT_STOCK` | El ajuste negativo deja el saldo por debajo de cero; la extensión `shortages` trae el saldo disponible y lo pedido | Mostrar el disponible y corregir la cantidad; nada se aplicó |
@@ -1201,7 +1201,7 @@ Ejemplo de `409` por saldo insuficiente:
 }
 ```
 
-Ejemplo de `403` por falta de asignación a la sucursal:
+Ejemplo de `403` por sucursal o empresa inactiva (el texto de `detail` que devuelve hoy el servicio aún menciona la asignación, pero la causa ya es solo la sucursal o la empresa inactiva):
 
 ```json
 {
@@ -1332,15 +1332,15 @@ Los parámetros de consulta se agregan al final de la URL: el primero después d
 
 **Método:** `POST`
 **URL:** `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts`
-**Permiso requerido:** `perm:inventory:counts:create` + asignación `ACTIVE` a la sucursal
+**Permiso requerido:** `perm:inventory:counts:create` + sucursal y empresa `ACTIVE`
 
 ### ¿Qué hace esta API?
 
 Abre un conteo físico (inventario) de una sucursal en estado `DRAFT`. El conteo sigue el ciclo `DRAFT` → `IN_PROGRESS` ([API 12](#12-iniciar-el-conteo)) → `COMPLETED` ([API 14](#14-completar-el-conteo)) o `CANCELLED` ([API 15](#15-cancelar-el-conteo)). Crear el conteo no toca los saldos.
 
-Efectos verificados en el código: exige usuario humano con asignación `ACTIVE` a la sucursal; crea el conteo con `status` `DRAFT`, `version` `1` y `started_by_user_id` igual al usuario operativo que lo crea; `details` y `adjustments` vienen vacíos. Se pueden tener varios conteos en `DRAFT` en la misma sucursal; la restricción de uno solo aplica al iniciar. No genera evento de auditoría.
+Efectos verificados en el código: exige usuario humano, miembro de la empresa, y sucursal y empresa activas; crea el conteo con `status` `DRAFT`, `version` `1` y `started_by_user_id` igual al usuario operativo que lo crea; `details` y `adjustments` vienen vacíos. Se pueden tener varios conteos en `DRAFT` en la misma sucursal; la restricción de uno solo aplica al iniciar. No genera evento de auditoría.
 
-Antes necesita: un `branch_id` en el que el usuario tenga asignación `ACTIVE`.
+Antes necesita: un `branch_id` activo de la empresa (con `allowed: true` en el contexto operativo).
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -1380,7 +1380,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `branch_id` | UUID | Sí | Sucursal que se cuenta; el usuario debe tener asignación `ACTIVE` | `7c9e6679-7425-40de-944b-e07fc1f90ae7` | `memberships[].branches[].branch_id` de la [API 5 de Acceso y contexto operativo](acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario) (devuelve las empresas y sucursales del usuario; sus errores están en esa sección) o `items[].id` de la [API 6 de Administración empresarial](administracion-empresarial.md#6-consultar-las-sucursales-de-una-empresa) (lista las sucursales de la empresa; errores en esa sección) · guía [branch_id](../parametros/branch-id.md) |
+| `branch_id` | UUID | Sí | Sucursal que se cuenta; debe estar `ACTIVE` (no exige asignación) | `7c9e6679-7425-40de-944b-e07fc1f90ae7` | `memberships[].branches[].branch_id` de la [API 5 de Acceso y contexto operativo](acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario) (devuelve las empresas y sucursales del usuario; sus errores están en esa sección) o `items[].id` de la [API 6 de Administración empresarial](administracion-empresarial.md#6-consultar-las-sucursales-de-una-empresa) (lista las sucursales de la empresa; errores en esa sección) · guía [branch_id](../parametros/branch-id.md) |
 | `observations` | string (≤ 2000) \| null | No | Nota libre del conteo | `Conteo de cierre de octubre` | Formulario |
 
 ### Respuesta exitosa
@@ -1426,7 +1426,7 @@ curl -X POST \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `INVENTORY.NOT_FOUND` | El usuario no es miembro activo de la empresa o la sucursal es de otra empresa | Volver a leer el contexto operativo |
-| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal, o la sucursal o la empresa no están activas | Pedir la asignación con la [API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal) (asigna un usuario a una sucursal; errores en esa sección) |
+| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | La sucursal o la empresa no están activas (ya no se exige asignación a la sucursal) | Elegir una sucursal con `allowed: true` en el contexto operativo o pedir al administrador que reactive la sucursal |
 | `403` | `INVENTORY.FORBIDDEN` | El token es de una cuenta de servicio: estas operaciones solo las ejecuta un usuario humano | Usar el token del usuario |
 | `403` | `INVENTORY.OPERATIONAL_ACCESS_DENIED` | El usuario no tiene permiso en Operational Context para consultar su acceso operativo | Pedir acceso al administrador indicando el `trace_id` |
 | `422` | `INVENTORY.VALIDATION_ERROR` | `branch_id` ausente o inválido, `observations` > 2000 o campo desconocido | Corregir el formulario |
@@ -1435,7 +1435,7 @@ curl -X POST \
 
 **Método:** `POST`
 **URL:** `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/start`
-**Permiso requerido:** `perm:inventory:counts:create` + asignación `ACTIVE` a la sucursal
+**Permiso requerido:** `perm:inventory:counts:create` + sucursal y empresa `ACTIVE`
 
 ### ¿Qué hace esta API?
 
@@ -1524,7 +1524,7 @@ curl -X POST \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `INVENTORY.NOT_FOUND` | El usuario no es miembro activo de la empresa o la sucursal es de otra empresa | Volver a leer el contexto operativo |
-| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal, o la sucursal o la empresa no están activas | Pedir la asignación con la [API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal) (asigna un usuario a una sucursal; errores en esa sección) |
+| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | La sucursal o la empresa no están activas (ya no se exige asignación a la sucursal) | Elegir una sucursal con `allowed: true` en el contexto operativo o pedir al administrador que reactive la sucursal |
 | `403` | `INVENTORY.FORBIDDEN` | El token es de una cuenta de servicio: estas operaciones solo las ejecuta un usuario humano | Usar el token del usuario |
 | `403` | `INVENTORY.OPERATIONAL_ACCESS_DENIED` | El usuario no tiene permiso en Operational Context para consultar su acceso operativo | Pedir acceso al administrador indicando el `trace_id` |
 | `404` | `INVENTORY.NOT_FOUND` | El conteo no existe en la empresa | Volver a la lista de conteos |
@@ -1551,7 +1551,7 @@ Ejemplo de `409` por conteo en curso:
 
 **Método:** `PUT`
 **URL:** `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/details/{company_product_id}`
-**Permiso requerido:** `perm:inventory:counts:create` + asignación `ACTIVE` a la sucursal
+**Permiso requerido:** `perm:inventory:counts:create` + sucursal y empresa `ACTIVE`
 
 ### ¿Qué hace esta API?
 
@@ -1636,7 +1636,7 @@ curl -X PUT \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `INVENTORY.NOT_FOUND` | El usuario no es miembro activo de la empresa o la sucursal es de otra empresa | Volver a leer el contexto operativo |
-| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal, o la sucursal o la empresa no están activas | Pedir la asignación con la [API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal) (asigna un usuario a una sucursal; errores en esa sección) |
+| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | La sucursal o la empresa no están activas (ya no se exige asignación a la sucursal) | Elegir una sucursal con `allowed: true` en el contexto operativo o pedir al administrador que reactive la sucursal |
 | `403` | `INVENTORY.FORBIDDEN` | El token es de una cuenta de servicio: estas operaciones solo las ejecuta un usuario humano | Usar el token del usuario |
 | `403` | `INVENTORY.OPERATIONAL_ACCESS_DENIED` | El usuario no tiene permiso en Operational Context para consultar su acceso operativo | Pedir acceso al administrador indicando el `trace_id` |
 | `404` | `INVENTORY.NOT_FOUND` | El conteo no existe en la empresa | Volver a la lista de conteos |
@@ -1661,7 +1661,7 @@ Ejemplo de `409`:
 
 **Método:** `POST`
 **URL:** `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/complete`
-**Permiso requerido:** `perm:inventory:counts:create` + asignación `ACTIVE` a la sucursal
+**Permiso requerido:** `perm:inventory:counts:create` + sucursal y empresa `ACTIVE`
 
 ### ¿Qué hace esta API?
 
@@ -1804,7 +1804,7 @@ curl -X POST \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `INVENTORY.NOT_FOUND` | El usuario no es miembro activo de la empresa o la sucursal es de otra empresa | Volver a leer el contexto operativo |
-| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal, o la sucursal o la empresa no están activas | Pedir la asignación con la [API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal) (asigna un usuario a una sucursal; errores en esa sección) |
+| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | La sucursal o la empresa no están activas (ya no se exige asignación a la sucursal) | Elegir una sucursal con `allowed: true` en el contexto operativo o pedir al administrador que reactive la sucursal |
 | `403` | `INVENTORY.FORBIDDEN` | El token es de una cuenta de servicio: estas operaciones solo las ejecuta un usuario humano | Usar el token del usuario |
 | `403` | `INVENTORY.OPERATIONAL_ACCESS_DENIED` | El usuario no tiene permiso en Operational Context para consultar su acceso operativo | Pedir acceso al administrador indicando el `trace_id` |
 | `404` | `INVENTORY.NOT_FOUND` | El conteo no existe en la empresa | Volver a la lista de conteos |
@@ -1832,7 +1832,7 @@ Ejemplo de `409` por versión:
 
 **Método:** `POST`
 **URL:** `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/cancel`
-**Permiso requerido:** `perm:inventory:counts:create` + asignación `ACTIVE` a la sucursal
+**Permiso requerido:** `perm:inventory:counts:create` + sucursal y empresa `ACTIVE`
 
 ### ¿Qué hace esta API?
 
@@ -1925,7 +1925,7 @@ curl -X POST \
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
 | `404` | `INVENTORY.NOT_FOUND` | El usuario no es miembro activo de la empresa o la sucursal es de otra empresa | Volver a leer el contexto operativo |
-| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal, o la sucursal o la empresa no están activas | Pedir la asignación con la [API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal) (asigna un usuario a una sucursal; errores en esa sección) |
+| `403` | `INVENTORY.BRANCH_ACCESS_DENIED` | La sucursal o la empresa no están activas (ya no se exige asignación a la sucursal) | Elegir una sucursal con `allowed: true` en el contexto operativo o pedir al administrador que reactive la sucursal |
 | `403` | `INVENTORY.FORBIDDEN` | El token es de una cuenta de servicio: estas operaciones solo las ejecuta un usuario humano | Usar el token del usuario |
 | `403` | `INVENTORY.OPERATIONAL_ACCESS_DENIED` | El usuario no tiene permiso en Operational Context para consultar su acceso operativo | Pedir acceso al administrador indicando el `trace_id` |
 | `404` | `INVENTORY.NOT_FOUND` | El conteo no existe en la empresa | Volver a la lista de conteos |
@@ -2386,5 +2386,5 @@ Ejemplo de `422` por niveles:
 - [Compras](compras.md): la recepción de una compra crea las entradas (`PURCHASE_ENTRY`) y las capas de costo FIFO; la anulación crea los reversos (`ENTRY_REVERSAL`). Purchase llama a Inventory con su cuenta técnica (Inv 3, 4). La [API 3](#3-consultar-productos-bajo-el-mínimo) es la lista de trabajo para preparar compras.
 - [Ventas](ventas.md): la confirmación de una venta crea las salidas (`SALE_OUTPUT`) y la anulación los reversos (`OUTPUT_REVERSAL`), con la cuenta técnica de Sales (Inv 5, 6); la disponibilidad que valida Sales se calcula sobre los saldos de la [API 5](#5-consultar-los-saldos-de-una-sucursal).
 - [Productos y precios](productos-y-precios.md): `inventory_control_enabled` al adoptar el producto decide si admite saldos, ajustes, conteos y políticas; el precio que muestra la [API 1](#1-buscar-productos-con-precio-y-existencias) sale de las listas de precios de Commercial Relationship.
-- [Administración empresarial](administracion-empresarial.md): la asignación del usuario a la sucursal habilita los ajustes y conteos; la trazabilidad de ajustes, conteos y políticas se consulta en su [API 16](administracion-empresarial.md#16-consultar-la-trazabilidad-de-la-empresa-auditoría).
+- [Administración empresarial](administracion-empresarial.md): la membresía `ACTIVE` del usuario habilita los ajustes y conteos en todas las sucursales activas (la asignación a sucursal es solo informativa); la trazabilidad de ajustes, conteos y políticas se consulta en su [API 16](administracion-empresarial.md#16-consultar-la-trazabilidad-de-la-empresa-auditoría).
 - [Reportes](reportes.md): la evolución de existencias por período (Inv 37, 38).

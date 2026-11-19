@@ -420,16 +420,18 @@ EXERCISES = [
 # ==========================================================================================
 
 ACCION = "accion"
-"""Escritura de un usuario humano (ajustes, conteos, políticas): permiso + membresía (+ asignación a
-la sucursal en ajustes y conteos); una cuenta de servicio recibe `403` aunque tenga el permiso."""
+"""Escritura de un usuario humano (ajustes, conteos, políticas): permiso + membresía (+ sucursal y
+empresa activas en ajustes y conteos; la asignación a la sucursal ya no limita, 2026-11-19); una
+cuenta de servicio recibe `403` aunque tenga el permiso."""
 
 BRANCH_B = "d44b0000-0000-4000-8000-000000000002"
-"""Segunda sucursal ficticia (`ACTIVE`) a la que **ningún** usuario de prueba está asignado."""
+"""Segunda sucursal ficticia, `INACTIVE` (acceso por membresía, 2026-11-19: solo una sucursal o empresa
+inactiva produce `BRANCH_ACCESS_DENIED`)."""
 
 COMPANY_BASE = f"/api/v1/companies/{COMPANY}"
 
 DATA_013 = COMMON_DATA + [
-    ("Sucursal sin asignar", BRANCH_B, "Sucursal ficticia `ACTIVE` sin usuarios asignados."),
+    ("Sucursal inactiva", BRANCH_B, "Sucursal ficticia `INACTIVE` de la misma empresa."),
     ("Compra", PURCHASE_DOC, "Documento ficticio de Purchase."),
     ("Venta", SALE_DOC, "Documento ficticio de Sales."),
 ]
@@ -453,10 +455,10 @@ EXERCISES += [
         "folder": "5-ajustes",
         "title": "Ajustes de inventario",
         "purpose": (
-            "Un usuario de la bodega, asignado a la sucursal, corrige el inventario con ajustes que se "
+            "Un usuario de la bodega, miembro de la empresa, corrige el inventario con ajustes que se "
             "aplican al registrarlos: un ajuste negativo valorizado con FIFO, uno positivo con el costo de "
             "la capa más reciente, uno positivo de un producto sin capas (costo obligatorio) y un ajuste en "
-            "una sucursal a la que el usuario no está asignado."
+            "una sucursal inactiva."
         ),
         "data": DATA_013,
         "steps": [
@@ -524,17 +526,19 @@ EXERCISES += [
                 "why": ["Con `unit_cost` la capa se crea con ese costo."],
             },
             {
-                "file": "06-sucursal-no-asignada.md",
-                "title": "Ajuste en una sucursal no asignada",
+                "file": "06-sucursal-inactiva.md",
+                "title": "Ajuste en una sucursal inactiva",
                 "actor": "operario.dao",
                 "kind": ACCION,
                 "method": "POST",
                 "path": f"{COMPANY_BASE}/inventory-adjustments",
-                "body": adjustment(5, ARROZ, "POSITIVE", "1", "Prueba de asignación", unit_cost="1", branch=BRANCH_B),
+                "body": adjustment(5, ARROZ, "POSITIVE", "1", "Prueba de sucursal inactiva", unit_cost="1", branch=BRANCH_B),
                 "expect": 403,
                 "why": [
-                    "El usuario es miembro de la empresa pero no está asignado a esa sucursal: "
-                    "`BRANCH_ACCESS_DENIED`. Las consultas no exigen asignación; los ajustes y conteos sí."
+                    "El usuario es miembro `ACTIVE` de la empresa, pero la sucursal está `INACTIVE`: "
+                    "`BRANCH_ACCESS_DENIED`.",
+                    "Acceso por membresía (2026-11-19): la membresía da acceso a todas las sucursales activas "
+                    "de la empresa; la asignación a la sucursal ya no limita.",
                 ],
             },
             {

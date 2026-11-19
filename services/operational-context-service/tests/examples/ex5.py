@@ -97,7 +97,7 @@ EX5 = dict(
                 call("Acceso a la sucursal principal para crear compras", "GET",
                      f"{API}/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operario.dao"
                      "&permission=perm:purchase:purchases:create", also=LOOKUP,
-                     why=["`operario.dao` es miembro, tiene la sucursal asignada y su grupo `Compras` tiene `perm:purchase:purchases:create`: "
+                     why=["`operario.dao` es miembro activo de la empresa y su grupo `Compras` tiene `perm:purchase:purchases:create`: "
                           "`allowed: true`.",
                           "El permiso se evalúa con los roles de `operario.dao` leídos de Keycloak, no con los del token "
                           "que consulta."],
@@ -108,10 +108,11 @@ EX5 = dict(
                      why=["El operario (`Compras`, `Ventas` e `Inventario`) no tiene `perm:sales:sales:read-profitability`: `allowed: false`, `PERMISSION_DENIED`, "
                           "con `200` (no es un error del contrato)."],
                      show=ACCESS_SHOW),
-                call("Acceso a la sucursal secundaria (denegado)", "GET",
+                call("Acceso a la sucursal secundaria (permitido sin asignación)", "GET",
                      f"{API}/operational-access?branch_id=<SUC_SECUNDARIA>&keycloak_user_id=operario.dao",
                      also=LOOKUP,
-                     why=["Sin asignación a esa sucursal: `BRANCH_NOT_ASSIGNED`."],
+                     why=["La membresía da acceso a todas las sucursales activas de la empresa: `allowed: true` aunque "
+                          "no tenga asignación ahí (enmienda 2026-11-19). Los límites los ponen los permisos de Keycloak."],
                      show=ACCESS_SHOW),
             ],
         ),
@@ -123,10 +124,10 @@ EX5 = dict(
                 call("Retirar la asignación", "POST", f"{API}/user-branches/<ASIGNACION>/deactivate",
                      why=["No se elimina: queda `INACTIVE` con su fecha de retiro."],
                      show=["status", "version", "operational_access"]),
-                call("Acceso tras retirar la asignación (denegado)", "GET",
+                call("Acceso tras retirar la asignación (sigue permitido)", "GET",
                      f"{API}/operational-access?branch_id=<SUC_PRINCIPAL>&keycloak_user_id=operario.dao",
                      also=LOOKUP,
-                     why=["La asignación existe pero está inactiva: `USER_BRANCH_INACTIVE`."],
+                     why=["La asignación es solo informativa: retirarla no quita el acceso, que depende de la membresía."],
                      show=ACCESS_SHOW),
                 call("Inactivar la sucursal principal", "POST", f"{API}/branches/<SUC_PRINCIPAL>/deactivate",
                      why=["Inactivar la sucursal no modifica las asignaciones (DS-11)."],

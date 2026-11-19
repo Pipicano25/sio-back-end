@@ -45,7 +45,7 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>` 
 | Regla | Detalle |
 |---|---|
 | Empresa | Membresía `ACTIVE` en `company_id` evaluada en Operational Context con el token del usuario; sin ella, `404 SALES.NOT_FOUND`. Las lecturas y las secuencias solo exigen membresía (una empresa inactiva se puede consultar) |
-| Sucursal (escrituras sobre ventas) | Además, el usuario debe tener acceso a la sucursal de la venta: `BRANCH_NOT_ASSIGNED`, `USER_BRANCH_INACTIVE`, `BRANCH_INACTIVE` o `COMPANY_INACTIVE` producen `403 SALES.BRANCH_ACCESS_DENIED`; una sucursal de otra empresa, `404` |
+| Sucursal (escrituras sobre ventas) | Además, el usuario debe tener acceso a la sucursal de la venta: `BRANCH_INACTIVE` o `COMPANY_INACTIVE` producen `403 SALES.BRANCH_ACCESS_DENIED`; una sucursal de otra empresa, `404`. No exige asignación a la sucursal (enmienda 2026-11-19: la membresía `ACTIVE` da acceso a todas las sucursales activas; `BRANCH_NOT_ASSIGNED` y `USER_BRANCH_INACTIVE` ya no se producen) |
 | Operational Context con `403` | `403 SALES.OPERATIONAL_ACCESS_DENIED` (falta `perm:operational-context:application_users:read`) |
 
 ## Conceptos clave
@@ -1710,7 +1710,7 @@ Ejemplo de respuesta `200` (`ByBranchOut`; valores ilustrativos):
 | Respuesta | Causa | Qué hacer |
 |---|---|---|
 | `403 SALES.FORBIDDEN` | Sin permiso o token de cuenta de servicio | Revisar permisos del grupo |
-| `403 SALES.BRANCH_ACCESS_DENIED` | El usuario no tiene asignada la sucursal, o sucursal/empresa inactiva | Ofrecer solo sucursales con `allowed: true` en `/me/operational-context` |
+| `403 SALES.BRANCH_ACCESS_DENIED` | Sucursal o empresa inactivas (ya no se exige asignación a la sucursal) | Ofrecer solo sucursales con `allowed: true` en `/me/operational-context` |
 | `404 SALES.NOT_FOUND` | Sin membresía, venta de otra empresa o inexistente | Verificar `company_id` y `sale_id` |
 | `409 SALES.VERSION_CONFLICT` | `version` enviada desactualizada | Recargar la venta y repetir, o enviar sin `version` |
 | `409 SALES.INVALID_STATUS` | Escritura sobre una venta que no está en `DRAFT` (o anular una ya anulada) | Bloquear la edición en la interfaz |

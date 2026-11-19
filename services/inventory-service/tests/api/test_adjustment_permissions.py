@@ -1,4 +1,4 @@
-"""Autorización de ajustes: humanos con permiso, membresía y asignación a la sucursal (RC-11; DS-04, DS-14; T035)."""
+"""Autorización de ajustes: humanos con permiso, membresía y sucursal activa (RC-11; DS-04, DS-14; T035)."""
 
 from __future__ import annotations
 
@@ -60,15 +60,23 @@ def test_non_member_is_not_found(as_user, world, fake_oc) -> None:
     assert as_user("operario.dao").post(url(world.company), json=body(world)).status_code == 404
 
 
-@pytest.mark.parametrize("case", ["not_assigned", "assignment_inactive", "branch_inactive", "company_inactive"])
-def test_branch_access_denied(as_user, world, fake_oc, case) -> None:
-    sub = user_sub("operario.dao")
+@pytest.mark.parametrize("case", ["not_assigned", "assignment_inactive"])
+def test_assignment_does_not_limit_branch_access(as_user, world, fake_oc, case) -> None:
+    """Acceso por membresía (2026-11-19): sin asignación o con la asignación inactiva se ajusta igual."""
     branch = world.branch
     if case == "not_assigned":
         branch = world.other_branch
-    elif case == "assignment_inactive":
-        fake_oc.assign(sub, world.branch, status="INACTIVE")
-    elif case == "branch_inactive":
+    else:
+        fake_oc.assign(user_sub("operario.dao"), world.branch, status="INACTIVE")
+    response = as_user("operario.dao").post(url(world.company), json=body(world, branch=branch))
+    assert response.status_code == 201, response.text
+
+
+@pytest.mark.parametrize("case", ["branch_inactive", "company_inactive"])
+def test_branch_access_denied(as_user, world, fake_oc, case) -> None:
+    """Acceso por membresía (2026-11-19): `BRANCH_ACCESS_DENIED` solo por sucursal o empresa inactiva."""
+    sub = user_sub("operario.dao")
+    if case == "branch_inactive":
         branch = fake_oc.add_branch(world.company, status="INACTIVE")
         fake_oc.assign(sub, branch)
     else:

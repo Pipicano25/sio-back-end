@@ -4,7 +4,7 @@
 
 | Propiedad | Valor |
 |---|---|
-| Qué representa | Una **asignación de un usuario a una sucursal**: el registro que autoriza a una membresía ([application_user_id](application-user-id.md)) a operar en una sucursal ([branch_id](branch-id.md)) concreta. Un usuario tiene una asignación por cada sucursal |
+| Qué representa | Una **asignación de un usuario a una sucursal**: registro informativo (sede habitual, listados de empleados por sucursal) que vincula una membresía ([application_user_id](application-user-id.md)) con una sucursal ([branch_id](branch-id.md)). No concede ni retira acceso: desde la enmienda 2026-11-19 la membresía `ACTIVE` da acceso a todas las sucursales activas de la empresa. Un usuario tiene como máximo una asignación por sucursal |
 | Nombre en las rutas | `user_branch_id` (`/user-branches/{user_branch_id}`) |
 | Tipo | UUID (texto) |
 | Obligatorio | Sí para consultar, retirar (`deactivate`) o reactivar una asignación |
@@ -16,7 +16,7 @@
 
 **Desde el usuario** (las sucursales de una membresía):
 
-**¿Qué hace?** Lista, con paginación, las asignaciones de sucursal de una membresía, con el estado de la asignación, de la membresía, de la sucursal y de la empresa, y el acceso efectivo calculado (`operational_access`). Por defecto solo asignaciones `ACTIVE`; con `status=INACTIVE` muestra las retiradas, que pueden reactivarse. Descrita en [Administración empresarial, API 11](../principales/administracion-empresarial.md#11-consultar-las-sucursales-asignadas-a-un-usuario).
+**¿Qué hace?** Lista, con paginación, las asignaciones de sucursal de una membresía, con el estado de la asignación, de la membresía, de la sucursal y de la empresa, y el acceso efectivo calculado (`operational_access`, por membresía, empresa y sucursal; no depende de la asignación). Por defecto solo asignaciones `ACTIVE`; con `status=INACTIVE` muestra las retiradas, que pueden reactivarse. Descrita en [Administración empresarial, API 11](../principales/administracion-empresarial.md#11-consultar-las-sucursales-asignadas-a-un-usuario).
 
 | | |
 |---|---|
@@ -34,7 +34,7 @@ curl -X GET \
   -H 'Accept: application/json'
 ```
 
-**Desde la sucursal** (los usuarios asignados a ella): `GET https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}/user-branches` lista las asignaciones de una sucursal, es decir, qué miembros pueden operar en ella; mismos parámetros de consulta, mismo permiso, misma respuesta y mismos errores que la anterior ([Administración empresarial, API 13](../principales/administracion-empresarial.md#13-consultar-los-usuarios-asignados-a-una-sucursal)).
+**Desde la sucursal** (los usuarios asignados a ella): `GET https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}/user-branches` lista las asignaciones de una sucursal (empleados con esa sede habitual; no es la lista de quién puede operar en ella); mismos parámetros de consulta, mismo permiso, misma respuesta y mismos errores que la anterior ([Administración empresarial, API 13](../principales/administracion-empresarial.md#13-consultar-los-usuarios-asignados-a-una-sucursal)).
 
 Respuesta `200` (modelo `PaginatedResponse[UserBranchResponse]`; valores ilustrativos):
 
@@ -85,7 +85,7 @@ Respuesta `200` (modelo `PaginatedResponse[UserBranchResponse]`; valores ilustra
 
 ## Si la asignación no existe todavía (operación `HIGH_RISK`)
 
-**¿Qué hace la API de creación?** `POST https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/user-branches` con `{"branch_id": "…"}` (permiso `perm:operational-context:user_branches:create`) autoriza a una membresía `ACTIVE` a operar en una sucursal `ACTIVE` de la misma empresa. Devuelve `201` con la asignación; el `user_branch_id` es su campo `id`. Desde ese momento el usuario ve la sucursal con `allowed: true` en su contexto operativo. Cuerpo y respuesta completos en [Administración empresarial, API 12](../principales/administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal).
+**¿Qué hace la API de creación?** `POST https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/user-branches` con `{"branch_id": "…"}` (permiso `perm:operational-context:user_branches:create`) registra una membresía `ACTIVE` en una sucursal `ACTIVE` de la misma empresa como dato informativo. Devuelve `201` con la asignación; el `user_branch_id` es su campo `id`. No cambia el acceso: el usuario ya veía la sucursal con `allowed: true` en su contexto operativo gracias a su membresía; ahora además su `user_branch_status` pasa a `ACTIVE`. Cuerpo y respuesta completos en [Administración empresarial, API 12](../principales/administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal).
 
 **Posibles errores al crear:**
 
@@ -103,8 +103,8 @@ Respuesta `200` (modelo `PaginatedResponse[UserBranchResponse]`; valores ilustra
 ## Cómo usarlo después
 
 - Consultar una asignación: `GET https://sio-operational-context-dev.onrender.com/api/v1/user-branches/{user_branch_id}` devuelve el mismo objeto `UserBranchResponse` de la lista, con el acceso efectivo actualizado ([Operational Context 24](../servicios/operational-context.md#24-get-user-branchesuser_branch_id), permiso `perm:operational-context:user_branches:read`). Errores: `401`; `403 OPERATIONAL_CONTEXT.FORBIDDEN`; `404 OPERATIONAL_CONTEXT.NOT_FOUND` si no existe o está fuera del alcance; `422 OPERATIONAL_CONTEXT.VALIDATION_ERROR` si el UUID está mal formado.
-- Retirar el acceso a la sucursal: `POST …/user-branches/{user_branch_id}/deactivate` con `{"version": n}` (`version` opcional; también `{}` o sin cuerpo) pasa la asignación a `INACTIVE` sin borrarla; el usuario deja de poder operar en esa sucursal (`allowed: false`, `reason: USER_BRANCH_INACTIVE`) y las API de negocio le responden `403 BRANCH_ACCESS_DENIED` ([operación 25](../servicios/operational-context.md#25-post-user-branchesuser_branch_iddeactivate), permiso `perm:operational-context:user_branches:delete`, `HIGH_RISK`). Errores: `401`; `403 FORBIDDEN`; `404 NOT_FOUND`; `409 VERSION_CONFLICT` (`version` desactualizada); `409 INVALID_STATUS_TRANSITION` («La asignación ya se encuentra en estado INACTIVE.»); `422 VALIDATION_ERROR` si hay campos desconocidos.
-- Devolver el acceso: `POST …/user-branches/{user_branch_id}/reactivate` con `{"version": n}` (`version` opcional) vuelve a dejar la asignación `ACTIVE`; el acceso efectivo dependerá además de que membresía, sucursal y empresa sigan activas ([operación 26](../servicios/operational-context.md#26-post-user-branchesuser_branch_idreactivate), permiso `perm:operational-context:user_branches:update`). Errores: los mismos que al retirar, con `409 INVALID_STATUS_TRANSITION` («La asignación ya se encuentra en estado ACTIVE.») si ya estaba activa.
+- Retirar la asignación: `POST …/user-branches/{user_branch_id}/deactivate` con `{"version": n}` (`version` opcional; también `{}` o sin cuerpo) pasa la asignación a `INACTIVE` sin borrarla. **No** retira el acceso: mientras la membresía, la sucursal y la empresa sigan `ACTIVE`, el usuario sigue operando en esa sucursal (`allowed: true`) y las API de negocio lo aceptan; para quitarle el acceso a la empresa se inactiva la membresía ([Administración empresarial, API 14](../principales/administracion-empresarial.md#14-inactivar-una-membresía)) ([operación 25](../servicios/operational-context.md#25-post-user-branchesuser_branch_iddeactivate), permiso `perm:operational-context:user_branches:delete`, `HIGH_RISK`). Errores: `401`; `403 FORBIDDEN`; `404 NOT_FOUND`; `409 VERSION_CONFLICT` (`version` desactualizada); `409 INVALID_STATUS_TRANSITION` («La asignación ya se encuentra en estado INACTIVE.»); `422 VALIDATION_ERROR` si hay campos desconocidos.
+- Reactivar la asignación: `POST …/user-branches/{user_branch_id}/reactivate` con `{"version": n}` (`version` opcional) vuelve a dejar la asignación `ACTIVE`; no cambia el acceso, que depende solo de que membresía, sucursal y empresa estén activas ([operación 26](../servicios/operational-context.md#26-post-user-branchesuser_branch_idreactivate), permiso `perm:operational-context:user_branches:update`). Errores: los mismos que al retirar, con `409 INVALID_STATUS_TRANSITION` («La asignación ya se encuentra en estado ACTIVE.») si ya estaba activa.
 - Las API de negocio nunca lo piden: Sales, Purchase e Inventory comprueban el acceso con `branch_id` y el token del usuario.
 
 ## Errores frecuentes
@@ -114,4 +114,4 @@ Respuesta `200` (modelo `PaginatedResponse[UserBranchResponse]`; valores ilustra
 | `404 OPERATIONAL_CONTEXT.NOT_FOUND` | La asignación no existe o su empresa está fuera del alcance del usuario |
 | `409 OPERATIONAL_CONTEXT.VERSION_CONFLICT` | La `version` enviada no es la actual |
 | `409 OPERATIONAL_CONTEXT.INVALID_STATUS_TRANSITION` | Ya estaba en el estado solicitado |
-| `operational_access.allowed: false` | La asignación, la membresía, la sucursal o la empresa están inactivas; `reason` indica cuál |
+| `operational_access.allowed: false` | La membresía, la sucursal o la empresa están inactivas; `reason` indica cuál (el estado de la asignación no influye) |

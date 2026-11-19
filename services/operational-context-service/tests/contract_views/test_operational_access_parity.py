@@ -142,9 +142,9 @@ def test_matrix_matches_operational_access(world, api_as, test_engine):
         "USER_MEMBERSHIP_INACTIVE",
         "COMPANY_INACTIVE",
         "BRANCH_INACTIVE",
-        "BRANCH_NOT_ASSIGNED",
-        "USER_BRANCH_INACTIVE",
     }
+    # Enmienda 2026-11-19: la asignación a sucursal ya no limita el acceso.
+    assert not observed_reasons & {"BRANCH_NOT_ASSIGNED", "USER_BRANCH_INACTIVE"}
 
 
 def test_membership_choice(world, test_engine):

@@ -4,12 +4,12 @@
 
 ## Introducción
 
-Operational Context define **quién puede operar dónde**: las empresas cliente de SIO, sus sucursales, los usuarios operativos (membresía de una persona en una empresa), las sucursales asignadas a cada usuario y los asesores de cada empresa. Es la **única fuente de membresías**: todos los servicios de negocio le consultan, con el token del usuario, si una persona tiene acceso a una empresa o sucursal. Para el frontend es el primer servicio que se llama después del login.
+Operational Context define **quién puede operar dónde**: las empresas cliente de SIO, sus sucursales, los usuarios operativos (membresía de una persona en una empresa), las asignaciones informativas de usuarios a sucursales (sede habitual) y los asesores de cada empresa. Es la **única fuente de membresías**: todos los servicios de negocio le consultan, con el token del usuario, si una persona tiene acceso a una empresa o sucursal. Desde la enmienda 2026-11-19 la membresía `ACTIVE` da acceso a la empresa y a **todas** sus sucursales activas; lo que la persona puede hacer lo limitan solo sus permisos de Keycloak (grupos). Para el frontend es el primer servicio que se llama después del login.
 
 ## Responsabilidad
 
 - Empresas (vinculadas a una identidad de organización de Party Identity) y sucursales, con ubicación validada en Geography.
-- Usuarios operativos: membresía de una persona (cuenta de Keycloak + identidad de Party Identity) en una empresa; asignaciones usuario–sucursal.
+- Usuarios operativos: membresía de una persona (cuenta de Keycloak + identidad de Party Identity) en una empresa; asignaciones usuario–sucursal (dato informativo: sede habitual y listados de empleados por sucursal; no conceden ni retiran acceso).
 - Asesores de empresa (varios vigentes, uno principal).
 - Contratos de acceso operativo: contexto propio (`/me/operational-context`) y comprobación de acceso (`/operational-access`).
 
@@ -72,12 +72,12 @@ El alcance se calcula en **cada solicitud** a partir de las membresías `ACTIVE`
 | 18 | `PUT` | `/application-users/{application_user_id}` | Modificar datos de referencia | `application_users:update` | `WRITE` | [Ver](#18-put-application-usersapplication_user_id) |
 | 19 | `POST` | `/application-users/{application_user_id}/deactivate` | Inactivar membresía | `application_users:delete` | `HIGH_RISK` | [Ver](#19-post-application-usersapplication_user_iddeactivate) |
 | 20 | `POST` | `/application-users/{application_user_id}/reactivate` | Reactivar membresía | `application_users:update` | `HIGH_RISK` | [Ver](#20-post-application-usersapplication_user_idreactivate) |
-| 21 | `GET` | `/application-users/{application_user_id}/user-branches` | Sucursales asignadas a un usuario | `user_branches:read` | `READ` | [Ver](#21-get-application-usersapplication_user_iduser-branches) |
-| 22 | `POST` | `/application-users/{application_user_id}/user-branches` | Asignar sucursal | `user_branches:create` | `HIGH_RISK` | [Ver](#22-post-application-usersapplication_user_iduser-branches) |
-| 23 | `GET` | `/branches/{branch_id}/user-branches` | Usuarios asignados a una sucursal | `user_branches:read` | `READ` | [Ver](#23-get-branchesbranch_iduser-branches) |
+| 21 | `GET` | `/application-users/{application_user_id}/user-branches` | Sucursales asignadas a un usuario (informativo) | `user_branches:read` | `READ` | [Ver](#21-get-application-usersapplication_user_iduser-branches) |
+| 22 | `POST` | `/application-users/{application_user_id}/user-branches` | Asignar sucursal (informativo) | `user_branches:create` | `HIGH_RISK` | [Ver](#22-post-application-usersapplication_user_iduser-branches) |
+| 23 | `GET` | `/branches/{branch_id}/user-branches` | Usuarios asignados a una sucursal (informativo) | `user_branches:read` | `READ` | [Ver](#23-get-branchesbranch_iduser-branches) |
 | 24 | `GET` | `/user-branches/{user_branch_id}` | Consultar asignación | `user_branches:read` | `READ` | [Ver](#24-get-user-branchesuser_branch_id) |
-| 25 | `POST` | `/user-branches/{user_branch_id}/deactivate` | Retirar asignación | `user_branches:delete` | `HIGH_RISK` | [Ver](#25-post-user-branchesuser_branch_iddeactivate) |
-| 26 | `POST` | `/user-branches/{user_branch_id}/reactivate` | Reactivar asignación | `user_branches:update` | `HIGH_RISK` | [Ver](#26-post-user-branchesuser_branch_idreactivate) |
+| 25 | `POST` | `/user-branches/{user_branch_id}/deactivate` | Retirar asignación (informativo) | `user_branches:delete` | `HIGH_RISK` | [Ver](#25-post-user-branchesuser_branch_iddeactivate) |
+| 26 | `POST` | `/user-branches/{user_branch_id}/reactivate` | Reactivar asignación (informativo) | `user_branches:update` | `HIGH_RISK` | [Ver](#26-post-user-branchesuser_branch_idreactivate) |
 | 27 | `GET` | `/companies/{company_id}/advisor-assignments` | Historial de asesores | `company_advisor_assignments:read` | `READ` | [Ver](#27-get-companiescompany_idadvisor-assignments) |
 | 28 | `POST` | `/companies/{company_id}/advisor-assignments` | Registrar asesor | `company_advisor_assignments:create` | `WRITE` | [Ver](#28-post-companiescompany_idadvisor-assignments) |
 | 29 | `GET` | `/advisor-assignments/{assignment_id}` | Consultar asignación de asesor | `company_advisor_assignments:read` | `READ` | [Ver](#29-get-advisor-assignmentsassignment_id) |
@@ -667,7 +667,7 @@ Ejemplo de respuesta `200` (`BranchResponse`; valores ilustrativos):
 
 ### 13. `POST /branches/{branch_id}/deactivate`
 
-`HIGH_RISK`: los usuarios asignados pierden el acceso (`allowed: false`, `BRANCH_INACTIVE`) y las ventas y compras de la sucursal fallan con `403 BRANCH_ACCESS_DENIED`; las existencias se conservan. URL `https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}/deactivate`; permiso `branches:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo).
+`HIGH_RISK`: todos los miembros de la empresa pierden el acceso a esa sucursal (`allowed: false`, `BRANCH_INACTIVE`) y las ventas y compras de la sucursal fallan con `403 BRANCH_ACCESS_DENIED`; las existencias se conservan. URL `https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}/deactivate`; permiso `branches:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo).
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1009,7 +1009,7 @@ Ejemplo de respuesta `200` (`ApplicationUserResponse`; valores ilustrativos):
 
 ### 21. `GET /application-users/{application_user_id}/user-branches`
 
-`READ`. URL `https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/user-branches`; permiso `user_branches:read`. Parámetros: `status` (`ACTIVE` por defecto), `page`, `page_size`. 
+`READ`. URL `https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/user-branches`; permiso `user_branches:read`. Parámetros: `status` (`ACTIVE` por defecto), `page`, `page_size`. Las asignaciones son informativas (sede habitual): el acceso operativo lo da la membresía `ACTIVE`, que cubre todas las sucursales activas de la empresa.
 
 Ejemplo de solicitud (sin cuerpo):
 
@@ -1019,7 +1019,7 @@ curl -sS 'https://sio-operational-context-dev.onrender.com/api/v1/application-us
 ```
 Respuesta `200`: `PaginatedResponse[UserBranchResponse]`.
 
-`UserBranchResponse`: `id` (`user_branch_id`), `application_user_id`, `branch_id`, `company_id`, `status`, `assigned_at`, `assigned_by` (`sub`), `deactivated_at`, `membership_status`, `branch_status`, `company_status`, `operational_access` (`{"allowed": boolean, "reason": string | null}`, acceso efectivo sin evaluar permisos), `version`, trazabilidad.
+`UserBranchResponse`: `id` (`user_branch_id`), `application_user_id`, `branch_id`, `company_id`, `status`, `assigned_at`, `assigned_by` (`sub`), `deactivated_at`, `membership_status`, `branch_status`, `company_status`, `operational_access` (`{"allowed": boolean, "reason": string | null}`, acceso efectivo del usuario a la sucursal sin evaluar permisos; se calcula por membresía, empresa y sucursal, no por el estado de la asignación), `version`, trazabilidad.
 
 ```json
 {
@@ -1053,7 +1053,7 @@ Respuesta `200`: `PaginatedResponse[UserBranchResponse]`.
 
 ### 22. `POST /application-users/{application_user_id}/user-branches`
 
-`HIGH_RISK` (concede acceso operativo a una sucursal). URL `https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/user-branches`; permiso `user_branches:create`. Cuerpo (`UserBranchCreate`): `{"branch_id": "…"}` ([branch_id](../parametros/branch-id.md)). Reglas: la sucursal debe ser de la misma empresa que la membresía (`422 BRANCH_COMPANY_MISMATCH`); membresía, sucursal y empresa `ACTIVE` (`422 MEMBERSHIP_INACTIVE`, `BRANCH_INACTIVE`, `COMPANY_INACTIVE`); no duplicar (`409 DUPLICATE_USER_BRANCH`). `assigned_by` es el `sub` del token. 
+`HIGH_RISK`. Registra la sucursal habitual del usuario (dato informativo): **no** concede acceso, porque la membresía `ACTIVE` ya da acceso a todas las sucursales activas de la empresa. URL `https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/user-branches`; permiso `user_branches:create`. Cuerpo (`UserBranchCreate`): `{"branch_id": "…"}` ([branch_id](../parametros/branch-id.md)). Reglas: la sucursal debe ser de la misma empresa que la membresía (`422 BRANCH_COMPANY_MISMATCH`); membresía, sucursal y empresa `ACTIVE` (`422 MEMBERSHIP_INACTIVE`, `BRANCH_INACTIVE`, `COMPANY_INACTIVE`); no duplicar (`409 DUPLICATE_USER_BRANCH`). `assigned_by` es el `sub` del token. 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1084,7 +1084,7 @@ Ejemplo de respuesta `201` (`UserBranchResponse`; valores ilustrativos):
   "company_status": "ACTIVE",
   "operational_access": {
     "allowed": true,
-    "reason": "Solicitud del cliente"
+    "reason": null
   },
   "version": 1,
   "created_by": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
@@ -1096,7 +1096,7 @@ Ejemplo de respuesta `201` (`UserBranchResponse`; valores ilustrativos):
 
 ### 23. `GET /branches/{branch_id}/user-branches`
 
-`READ`. URL `https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}/user-branches`; permiso `user_branches:read`. Parámetros: `status`, `page`, `page_size`. 
+`READ`. URL `https://sio-operational-context-dev.onrender.com/api/v1/branches/{branch_id}/user-branches`; permiso `user_branches:read`. Parámetros: `status`, `page`, `page_size`. Lista los empleados asignados a la sucursal (dato informativo); no es la lista de quién puede operar en ella: puede hacerlo cualquier miembro `ACTIVE` de la empresa con los permisos necesarios.
 
 Ejemplo de solicitud (sin cuerpo):
 
@@ -1125,7 +1125,7 @@ Ejemplo de respuesta `200` (`PaginatedResponse_UserBranchResponse_`; valores ilu
       "company_status": "ACTIVE",
       "operational_access": {
         "allowed": true,
-        "reason": "Solicitud del cliente"
+        "reason": null
       },
       "version": 1,
       "created_by": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
@@ -1169,7 +1169,7 @@ Ejemplo de respuesta `200` (`UserBranchResponse`; valores ilustrativos):
   "company_status": "ACTIVE",
   "operational_access": {
     "allowed": true,
-    "reason": "Solicitud del cliente"
+    "reason": null
   },
   "version": 1,
   "created_by": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
@@ -1181,7 +1181,7 @@ Ejemplo de respuesta `200` (`UserBranchResponse`; valores ilustrativos):
 
 ### 25. `POST /user-branches/{user_branch_id}/deactivate`
 
-`HIGH_RISK` (retira el acceso a la sucursal: `USER_BRANCH_INACTIVE`). URL `https://sio-operational-context-dev.onrender.com/api/v1/user-branches/{user_branch_id}/deactivate`; permiso `user_branches:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). 
+`HIGH_RISK`. Retira la asignación informativa; **no** retira el acceso: mientras la membresía siga `ACTIVE`, el usuario conserva el acceso a la sucursal (`operational_access.allowed` sigue en `true` si la sucursal y la empresa están activas). URL `https://sio-operational-context-dev.onrender.com/api/v1/user-branches/{user_branch_id}/deactivate`; permiso `user_branches:delete`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1203,16 +1203,16 @@ Ejemplo de respuesta `200` (`UserBranchResponse`; valores ilustrativos):
   "application_user_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
   "branch_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
   "company_id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "ACTIVE",
+  "status": "INACTIVE",
   "assigned_at": "2026-10-19T15:04:05Z",
   "assigned_by": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
-  "deactivated_at": null,
+  "deactivated_at": "2026-10-19T15:04:05Z",
   "membership_status": "ACTIVE",
   "branch_status": "ACTIVE",
   "company_status": "ACTIVE",
   "operational_access": {
     "allowed": true,
-    "reason": "Solicitud del cliente"
+    "reason": null
   },
   "version": 1,
   "created_by": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
@@ -1224,7 +1224,7 @@ Ejemplo de respuesta `200` (`UserBranchResponse`; valores ilustrativos):
 
 ### 26. `POST /user-branches/{user_branch_id}/reactivate`
 
-`HIGH_RISK`. URL `https://sio-operational-context-dev.onrender.com/api/v1/user-branches/{user_branch_id}/reactivate`; permiso `user_branches:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Exige membresía, sucursal y empresa `ACTIVE`.
+`HIGH_RISK`. URL `https://sio-operational-context-dev.onrender.com/api/v1/user-branches/{user_branch_id}/reactivate`; permiso `user_branches:update`; cuerpo `{"version": n}` (`version` opcional; se acepta `{}` o ningún cuerpo). Exige membresía, sucursal y empresa `ACTIVE`. Solo vuelve a registrar la asignación informativa; no cambia el acceso.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1254,7 +1254,7 @@ Ejemplo de respuesta `200` (`UserBranchResponse`; valores ilustrativos):
   "company_status": "ACTIVE",
   "operational_access": {
     "allowed": true,
-    "reason": "Solicitud del cliente"
+    "reason": null
   },
   "version": 1,
   "created_by": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
@@ -1445,7 +1445,7 @@ curl -sS 'https://sio-operational-context-dev.onrender.com/api/v1/me/operational
   -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
-Respuesta `200` (`MeOperationalContextResponse`): `keycloak_user_id` y `memberships[]` con `application_user_id`, `company_id`, `company_status`, `status` y `branches[]` (`branch_id`, `user_branch_status`, `branch_status`, `allowed`, `reason`). Ejemplo completo y uso en [company_id](../parametros/company-id.md) y [branch_id](../parametros/branch-id.md). Devuelve también membresías y asignaciones inactivas (con `allowed: false` y su `reason`), para que la interfaz pueda explicarlo. Un usuario sin membresías recibe `memberships: []`.
+Respuesta `200` (`MeOperationalContextResponse`): `keycloak_user_id` y `memberships[]` con `application_user_id`, `company_id`, `company_status`, `status` y `branches[]` (`branch_id`, `user_branch_status`, `branch_status`, `allowed`, `reason`). Ejemplo completo y uso en [company_id](../parametros/company-id.md) y [branch_id](../parametros/branch-id.md). En cada membresía, `branches[]` lista **todas** las sucursales de la empresa (activas e inactivas): la membresía `ACTIVE` da acceso a todas las activas. `user_branch_status` es la asignación informativa (`ACTIVE`, `INACTIVE` o `null` si el usuario no tiene asignación en esa sucursal) y no limita el acceso. `allowed`/`reason` se calculan en el orden membresía existente → membresía `ACTIVE` → empresa `ACTIVE` → sucursal `ACTIVE`; una sucursal inactiva aparece con `allowed: false` y `BRANCH_INACTIVE`, y una membresía inactiva con `USER_MEMBERSHIP_INACTIVE`. Devuelve también las membresías inactivas, para que la interfaz pueda explicarlo. Un usuario sin membresías recibe `memberships: []`.
 
 Ejemplo de respuesta `200` (`MeOperationalContextResponse`; valores ilustrativos):
 
@@ -1504,7 +1504,7 @@ Ejemplo de respuesta `200` (`OperationalAccessResponse`; valores ilustrativos):
 }
 ```
 
-Reglas: una denegación funcional responde `200` con `allowed: false`, nunca `403`. Por la vía propia (token del usuario), una empresa o sucursal ajena **o inexistente** responde `USER_NOT_MEMBER` sin revelar más. Por la vía técnica (`platform:lookup` + `keycloak_user_id`), un objetivo inexistente responde `404` y el permiso se evalúa con los roles efectivos del usuario objetivo leídos de Keycloak. Es la operación que invocan Sales, Purchase, Inventory, Commercial Relationship, Audit, Business Reporting y Product Inventory Query para decidir el alcance.
+Reglas: el acceso se evalúa por membresía (enmienda 2026-11-19): membresía existente → membresía `ACTIVE` → empresa `ACTIVE` → sucursal `ACTIVE` → permiso (por la vía técnica, empresa y sucursal se evalúan antes que la membresía). La asignación a sucursal no se evalúa: `BRANCH_NOT_ASSIGNED` y `USER_BRANCH_INACTIVE` siguen en el catálogo por compatibilidad, pero ya no se producen. Una denegación funcional responde `200` con `allowed: false`, nunca `403`. Por la vía propia (token del usuario), una empresa o sucursal ajena **o inexistente** responde `USER_NOT_MEMBER` sin revelar más. Por la vía técnica (`platform:lookup` + `keycloak_user_id`), un objetivo inexistente responde `404` y el permiso se evalúa con los roles efectivos del usuario objetivo leídos de Keycloak. Es la operación que invocan Sales, Purchase, Inventory, Commercial Relationship, Audit, Business Reporting y Product Inventory Query para decidir el alcance.
 
 ### 34. `GET /companies/{company_id}/branch-employees`
 
@@ -1516,7 +1516,7 @@ Reglas: una denegación funcional responde `200` con `allowed: false`, nunca `40
 | Alcance | Membresía en la empresa (o `platform:administer`); fuera del alcance → `404` como un UUID inexistente |
 | Disponibilidad | Nueva (FR-025a); disponible tras el próximo despliegue de Operational Context |
 
-Devuelve una página de **sucursales** (código y nombre) y, dentro de cada una, sus empleados asignados con el nombre y la identificación de la persona. El nombre y la identificación se consultan a Party Identity en el momento con el token del usuario (una vez por persona) y no se guardan; si Party Identity no responde o el token no puede leer personas, esos campos vienen en `null` y la respuesta sigue siendo `200`.
+Devuelve una página de **sucursales** (código y nombre) y, dentro de cada una, sus empleados asignados (asignación informativa; no determina quién puede operar en la sucursal) con el nombre y la identificación de la persona. El nombre y la identificación se consultan a Party Identity en el momento con el token del usuario (una vez por persona) y no se guardan; si Party Identity no responde o el token no puede leer personas, esos campos vienen en `null` y la respuesta sigue siendo `200`.
 
 | Parámetro | Dónde | Tipo | Obligatorio | Validación / por defecto | Cómo obtenerlo |
 |---|---|---|---|---|---|

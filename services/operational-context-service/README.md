@@ -2,7 +2,7 @@
 
 Microservicio FastAPI de SIO, fuente de verdad del **contexto operativo**: qué empresas usan la
 plataforma, en qué sucursales (sedes, tiendas, bodegas o puntos) operan, **qué personas operan en
-ellas** (usuarios operativos y sus sucursales) y quién las asesora. No es dueño de la identidad
+ellas** (usuarios operativos y, como dato informativo, su sucursal habitual) y quién las asesora. No es dueño de la identidad
 legal ni de las personas (Party Identity), de la geografía (Geography) ni de las cuentas y permisos
 (Keycloak): solo guarda sus `UUID` o el `sub`.
 
@@ -21,7 +21,7 @@ legal ni de las personas (Party Identity), de la geografía (Geography) ni de la
 | Empresa | `companies` | `ACTIVE`/`INACTIVE`; nunca se elimina |
 | Sucursal | `branches` | `ACTIVE`/`INACTIVE`; nunca se elimina |
 | Usuario operativo (membresía) | `application_users` | `ACTIVE`/`INACTIVE`; nunca se elimina |
-| Asignación usuario–sucursal | `user_branches` | `ACTIVE`/`INACTIVE`; nunca se elimina |
+| Asignación usuario–sucursal (informativa; no limita el acceso) | `user_branches` | `ACTIVE`/`INACTIVE`; nunca se elimina |
 | Asesor de la empresa | `company_advisor_assignments` | `ACTIVE` (vigente) → `INACTIVE` (cerrada, sin retorno) |
 
 Qué **no** se guarda:
@@ -58,7 +58,14 @@ Qué **no** se guarda:
 - Como máximo **una membresía `ACTIVE`** por empresa y persona y por empresa y cuenta; las históricas
   se conservan. La misma persona puede estar en varias empresas (DS-01).
 - Inactivar una membresía solo afecta esa empresa; reactivarla vuelve a validar cuenta y persona.
-- Asignaciones usuario–sucursal solo dentro de la misma empresa (garantizado también por FK
+- **Acceso por membresía** (enmienda 2026-11-19): la membresía `ACTIVE` da acceso a la empresa y a
+  **todas** sus sucursales activas; lo que el usuario puede hacer lo limitan solo los permisos de
+  Keycloak (sus grupos). El acceso operativo se evalúa en el orden membresía existente → membresía
+  `ACTIVE` → empresa `ACTIVE` → sucursal `ACTIVE` → permiso, y ya no produce `BRANCH_NOT_ASSIGNED` ni
+  `USER_BRANCH_INACTIVE` (se conservan en el catálogo por compatibilidad).
+- Asignaciones usuario–sucursal: dato **informativo** (sede habitual, listados de empleados por
+  sucursal); crearlas, retirarlas o reactivarlas no cambia el acceso, y su `operational_access`
+  refleja el acceso por membresía. Solo dentro de la misma empresa (garantizado también por FK
   compuestas); autor `assigned_by` obligatorio (el `sub`; `system:<proceso>` en procesos técnicos).
 - Asesores con vigencia: un solo principal vigente, varios no principales; el cambio de principal
   (`change-primary`) cierra la vigente y crea la nueva en una transacción; una asignación cerrada es
@@ -293,8 +300,10 @@ Reglas de `v1_operational_access`:
 
 - La membresía se elige como en `find_membership`: la `ACTIVE` primero y, si no hay, la más reciente (`updated_at`,
   luego `id`).
-- `denial_reason` es la primera causa que falla, en el orden de `domain/access.py`: `USER_MEMBERSHIP_INACTIVE`,
-  `COMPANY_INACTIVE`, `BRANCH_INACTIVE`, `BRANCH_NOT_ASSIGNED`, `USER_BRANCH_INACTIVE`. Nulo si se permite.
+- Hay una fila por cada sucursal de la empresa de la membresía (con o sin asignación): desde la migración `0005`
+  (acceso por membresía, enmienda 2026-11-19) la asignación a sucursal no se evalúa.
+- `denial_reason` es la primera causa que falla: `USER_MEMBERSHIP_INACTIVE`, `COMPANY_INACTIVE`, `BRANCH_INACTIVE`.
+  Nulo si se permite. `BRANCH_NOT_ASSIGNED` y `USER_BRANCH_INACTIVE` ya no se producen.
 - Sin fila para el usuario y el destino, el consumidor responde `USER_NOT_MEMBER`, igual que hoy con una empresa o
   sucursal inexistente o ajena.
 - El permiso no está en la vista: el consumidor lo evalúa con su token, como hace hoy esta API.
@@ -315,8 +324,11 @@ La paridad con la API la prueban `tests/contract_views/`.
   - Contexto y acceso operativo ([`operational-access-provider.md`](../../specs/005-operational-context-users/contracts/operational-access-provider.md)):
     `GET /api/v1/me/operational-context` y `GET /api/v1/operational-access`, que responde siempre
     `200` con `allowed` y una causa estable (`USER_NOT_MEMBER`, `USER_MEMBERSHIP_INACTIVE`,
-    `COMPANY_INACTIVE`, `BRANCH_INACTIVE`, `BRANCH_NOT_ASSIGNED`, `USER_BRANCH_INACTIVE`,
-    `PERMISSION_DENIED`). La vía técnica (`keycloak_user_id` + `platform:lookup`) evalúa el permiso con
+    `COMPANY_INACTIVE`, `BRANCH_INACTIVE`, `PERMISSION_DENIED`; `BRANCH_NOT_ASSIGNED` y
+    `USER_BRANCH_INACTIVE` siguen en el catálogo por compatibilidad, pero desde la enmienda 2026-11-19
+    ya no se producen). En `/me/operational-context`, `branches` de cada membresía lista todas las
+    sucursales de la empresa (activas e inactivas) y `user_branch_status` es la asignación
+    informativa (`null` si no tiene). La vía técnica (`keycloak_user_id` + `platform:lookup`) evalúa el permiso con
     los roles del usuario objetivo leídos de Keycloak (`sio_auth.evaluate_permission`), nunca con los
     del token técnico.
   - Usuario operativo por UUID: `GET /api/v1/application-users/{id}`; los consumidores guardan solo

@@ -136,15 +136,15 @@ class DependencyUnavailableError(InventoryError):
 
 
 class BranchAccessDeniedError(InventoryError):
-    """Miembro sin asignación `ACTIVE` a la sucursal, o sucursal/empresa inactiva (`403`; R-09, DS-14)."""
+    """Sucursal o empresa inactiva (`403`; R-09, DS-14). Desde 2026-11-19 la asignación ya no limita."""
 
     code = "BRANCH_ACCESS_DENIED"
     title = "Acceso a la sucursal denegado"
 
     def __init__(self) -> None:
         super().__init__(
-            "No tiene una asignación activa a la sucursal, o la sucursal o la empresa no están activas. "
-            "Solicite la asignación al administrador de la empresa."
+            "La sucursal o la empresa no están activas. Elija una sucursal activa o solicite su "
+            "reactivación al administrador de la empresa."
         )
 
 

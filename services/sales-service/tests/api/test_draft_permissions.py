@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from tests.conftest import base, line, sale_body, user_sub
 
 
-def test_assigned_seller_creates_in_assigned_branch_only(seller, world) -> None:
+def test_member_seller_creates_in_any_active_branch(seller, world, fakes) -> None:
+    """Acceso por membresía (2026-11-19): crea en una sucursal no asignada; una sucursal inactiva niega."""
     assert seller.post(f"{base(world)}/sales", json=sale_body(world)).status_code == 201
-    response = seller.post(f"{base(world)}/sales", json={**sale_body(world), "branch_id": str(world.branch_b)})
+    other_branch = {**sale_body(world), "branch_id": str(world.branch_b)}
+    assert seller.post(f"{base(world)}/sales", json=other_branch).status_code == 201
+    fakes.oc.branches[world.branch_b] = replace(fakes.oc.branches[world.branch_b], status="INACTIVE")
+    response = seller.post(f"{base(world)}/sales", json=other_branch)
     assert response.status_code == 403
     assert response.json()["code"] == "SALES.BRANCH_ACCESS_DENIED"
 
@@ -23,8 +29,11 @@ def test_creating_with_lines_requires_detail_permission(make_token, as_token, wo
     assert "perm:" not in response.text
 
 
-def test_wildcard_does_not_replace_branch_assignment(as_user, world, fakes) -> None:
+def test_wildcard_does_not_bypass_an_inactive_branch(as_user, world, fakes) -> None:
+    """Acceso por membresía (2026-11-19): sin asignación crea; el comodín no salta una sucursal inactiva."""
     fakes.oc.assignments.discard((user_sub("admin.dao"), world.branch))
+    assert as_user("admin.dao").post(f"{base(world)}/sales", json=sale_body(world)).status_code == 201
+    fakes.oc.branches[world.branch] = replace(fakes.oc.branches[world.branch], status="INACTIVE")
     response = as_user("admin.dao").post(f"{base(world)}/sales", json=sale_body(world))
     assert response.status_code == 403
     assert response.json()["code"] == "SALES.BRANCH_ACCESS_DENIED"

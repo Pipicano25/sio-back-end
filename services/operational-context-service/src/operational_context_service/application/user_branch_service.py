@@ -41,14 +41,16 @@ BRANCH_NOT_FOUND_MESSAGE = "La sucursal solicitada no existe."
 
 
 def assignment_access(user_branch: UserBranch) -> tuple[bool, str | None]:
-    """Acceso operativo efectivo de una asignación, sin permiso concreto (DS-07)."""
+    """Acceso operativo efectivo en la sucursal de la asignación, sin permiso concreto (DS-07).
+
+    Desde la enmienda 2026-11-19 el estado de la asignación no cuenta: decide la membresía.
+    """
     reason = evaluate_technical_access(
         AccessFacts(
             company_status=user_branch.company_status,
             branch_requested=True,
             branch_status=user_branch.branch_status,
             membership_status=user_branch.membership_status,
-            user_branch_status=user_branch.status,
         )
     )
 

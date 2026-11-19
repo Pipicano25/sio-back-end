@@ -84,15 +84,17 @@ def test_own_company_level(own, world):
     assert body["allowed"] is True and body["branch_id"] is None
 
 
-def test_own_branch_not_assigned(own, world):
-    assert own.get(URL, params={"branch_id": world["other_branch"]["id"]}).json()["reason"] == "BRANCH_NOT_ASSIGNED"
+def test_own_branch_not_assigned_is_allowed(own, world):
+    """Enmienda 2026-11-19: la membresía da acceso a todas las sucursales activas de la empresa."""
+    body = own.get(URL, params={"branch_id": world["other_branch"]["id"]}).json()
+    assert (body["allowed"], body["reason"]) == (True, None)
 
 
 def test_own_reasons_follow_the_order(api, own, world):
     branch_id = world["branch"]["id"]
 
     api.post(f"/api/v1/user-branches/{world['assignment']['id']}/deactivate", json={"version": 1})
-    assert own.get(URL, params={"branch_id": branch_id}).json()["reason"] == "USER_BRANCH_INACTIVE"
+    assert own.get(URL, params={"branch_id": branch_id}).json()["allowed"] is True  # la asignación no limita
 
     api.post(f"/api/v1/branches/{branch_id}/deactivate", json={"version": 1})
     assert own.get(URL, params={"branch_id": branch_id}).json()["reason"] == "BRANCH_INACTIVE"

@@ -178,12 +178,17 @@ def test_inactive_operator_is_409(as_user, world, fakes, make_sequence, make_dra
     assert response.json()["errors"][0]["code"] == "APPLICATION_USER_INACTIVE"
 
 
-def test_confirmation_requires_branch_assignment(as_user, world, fakes, make_sequence, make_draft, confirm) -> None:
+def test_confirmation_requires_active_branch(as_user, world, fakes, make_sequence, make_draft, confirm) -> None:
+    """Acceso por membresía (2026-11-19): la sucursal inactiva niega; sin asignación se confirma."""
     make_sequence()
     draft = make_draft()
-    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
+    active = fakes.oc.branches[world.branch]
+    fakes.oc.branches[world.branch] = replace(active, status="INACTIVE")
     response = confirm(draft)
     assert response.status_code == 403 and response.json()["code"] == "SALES.BRANCH_ACCESS_DENIED"
+    fakes.oc.branches[world.branch] = active
+    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
+    assert confirm(draft).status_code == 200
 
 
 def test_confirmation_is_audited_without_costs(world, make_sequence, make_draft, confirm, test_engine) -> None:

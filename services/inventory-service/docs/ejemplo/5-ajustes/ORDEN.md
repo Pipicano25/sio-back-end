@@ -1,6 +1,6 @@
 # Ejercicio 5: Ajustes de inventario
 
-Un usuario de la bodega, asignado a la sucursal, corrige el inventario con ajustes que se aplican al registrarlos: un ajuste negativo valorizado con FIFO, uno positivo con el costo de la capa más reciente, uno positivo de un producto sin capas (costo obligatorio) y un ajuste en una sucursal a la que el usuario no está asignado.
+Un usuario de la bodega, miembro de la empresa, corrige el inventario con ajustes que se aplican al registrarlos: un ajuste negativo valorizado con FIFO, uno positivo con el costo de la capa más reciente, uno positivo de un producto sin capas (costo obligatorio) y un ajuste en una sucursal inactiva.
 
 Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente: se ejecuta en una base nueva.
 
@@ -13,7 +13,7 @@ Datos **ficticios** (ver `00-datos-ficticios.md`). El ejercicio es independiente
 | 3 | [03-ajuste-positivo.md](03-ajuste-positivo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `operario.dao` | `201` |
 | 4 | [04-ajuste-positivo-sin-capas.md](04-ajuste-positivo-sin-capas.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `operario.dao` | `422` |
 | 5 | [05-ajuste-positivo-con-costo.md](05-ajuste-positivo-con-costo.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `operario.dao` | `201` |
-| 6 | [06-sucursal-no-asignada.md](06-sucursal-no-asignada.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `operario.dao` | `403` |
+| 6 | [06-sucursal-inactiva.md](06-sucursal-inactiva.md) | `POST /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments` | `operario.dao` | `403` |
 | 7 | [07-consultar-el-ajuste.md](07-consultar-el-ajuste.md) | `GET /api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments/<AJUSTE>` | `operario.dao` | `200` |
 
 ## Por qué este orden

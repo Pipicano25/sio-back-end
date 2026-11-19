@@ -37,9 +37,9 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>`.
 | `balances:read` | Stock, saldo, lookup de saldos, conjuntos de productos, resumen | Usuarios con membresía | `superadmin`, `admin`, `Inventario` |
 | `movements:read` | Kardex y operaciones | Usuarios con membresía | `superadmin`, `admin`, `Inventario` |
 | `valuation:read` | Valoración, capas, consumos; `include_valuation` del resumen | Usuarios con membresía | `superadmin`, `admin`, `Inventario` |
-| `adjustments:create` | Registrar ajuste | **Usuario humano asignado a la sucursal** | `superadmin`, `admin`, `Inventario` |
+| `adjustments:create` | Registrar ajuste | **Usuario humano** miembro de la empresa, en sucursal activa | `superadmin`, `admin`, `Inventario` |
 | `adjustments:read` | Listar y consultar ajustes | Membresía | `superadmin`, `admin`, `Inventario` |
-| `counts:create` | Crear, iniciar, registrar, completar y cancelar conteos | **Usuario humano asignado a la sucursal** | `superadmin`, `admin`, `Inventario` |
+| `counts:create` | Crear, iniciar, registrar, completar y cancelar conteos | **Usuario humano** miembro de la empresa, en sucursal activa | `superadmin`, `admin`, `Inventario` |
 | `counts:read` | Listar y consultar conteos | Membresía | `superadmin`, `admin`, `Inventario` |
 | `company-policies:read` / `update` | Política de la empresa (leer / registrar y actualizar) | Membresía; escritura por usuario humano | Lectura: `superadmin`, `admin`, `Inventario`. Escritura: `superadmin`, `admin` |
 | `product-policies:read` / `update` | Políticas de producto (leer, lookup / crear, actualizar, inactivar) | Ídem | Ídem |
@@ -53,7 +53,7 @@ Ningún grupo de área puede modificar políticas; ningún grupo de usuario salv
 | Operaciones | Regla |
 |---|---|
 | Lecturas (`/companies/{company_id}/…`) | Membresía `ACTIVE` en la empresa (evaluada en Operational Context con el token del usuario) o cuenta técnica con `platform:lookup`. Sin asignación a la sucursal. Fuera de alcance → `404 INVENTORY.NOT_FOUND` |
-| Ajustes y conteos | Además, asignación `ACTIVE` del usuario a la sucursal: `BRANCH_NOT_ASSIGNED`, `USER_BRANCH_INACTIVE`, `BRANCH_INACTIVE`, `COMPANY_INACTIVE` → `403 INVENTORY.BRANCH_ACCESS_DENIED`; sucursal de otra empresa → `404` |
+| Ajustes y conteos | Además, sucursal y empresa activas: `BRANCH_INACTIVE`, `COMPANY_INACTIVE` → `403 INVENTORY.BRANCH_ACCESS_DENIED`; sucursal de otra empresa → `404`. No exige asignación a la sucursal (enmienda 2026-11-19: la membresía `ACTIVE` da acceso a todas las sucursales activas; `BRANCH_NOT_ASSIGNED` y `USER_BRANCH_INACTIVE` ya no se producen) |
 | Políticas (escritura) | Usuario humano con membresía en la empresa |
 | Entradas y salidas | Cuenta de servicio; la empresa y sucursal van en el cuerpo |
 | Operational Context responde `403` | `403 INVENTORY.OPERATIONAL_ACCESS_DENIED` |
@@ -100,15 +100,15 @@ curl -sS -X PUT 'https://sio-inventory-dev.onrender.com/api/v1/companies/550e840
 | 13 | `GET` | `/companies/{company_id}/branches/{branch_id}/valuation` | Valor del inventario de la sucursal | `valuation:read` | `READ` | [Ver](#13-get-companiescompany_idbranchesbranch_idvaluation) |
 | 14 | `GET` | `/companies/{company_id}/branches/{branch_id}/valuation/{company_product_id}/layers` | Capas FIFO de un producto | `valuation:read` | `READ` | [Ver](#14-get-companiescompany_idbranchesbranch_idvaluationcompany_product_idlayers) |
 | 15 | `GET` | `/companies/{company_id}/inventory-movements/{movement_id}/cost-consumptions` | Consumos de capas de un movimiento | `valuation:read` | `READ` | [Ver](#15-get-companiescompany_idinventory-movementsmovement_idcost-consumptions) |
-| 16 | `POST` | `/companies/{company_id}/inventory-adjustments` | Registrar y aplicar ajuste | `adjustments:create` + asignación | `HIGH_RISK` | [Ver](#16-post-companiescompany_idinventory-adjustments) |
+| 16 | `POST` | `/companies/{company_id}/inventory-adjustments` | Registrar y aplicar ajuste | `adjustments:create` + sucursal activa | `HIGH_RISK` | [Ver](#16-post-companiescompany_idinventory-adjustments) |
 | 17 | `GET` | `/companies/{company_id}/inventory-adjustments` | Listar ajustes | `adjustments:read` | `READ` | [Ver](#17-get-companiescompany_idinventory-adjustments) |
 | 18 | `GET` | `/companies/{company_id}/inventory-adjustments/{adjustment_id}` | Ajuste por id | `adjustments:read` | `READ` | [Ver](#18-get-companiescompany_idinventory-adjustmentsadjustment_id) |
-| 19 | `POST` | `/companies/{company_id}/inventory-counts` | Crear conteo (`DRAFT`) | `counts:create` + asignación | `WRITE` | [Ver](#19-post-companiescompany_idinventory-counts) |
+| 19 | `POST` | `/companies/{company_id}/inventory-counts` | Crear conteo (`DRAFT`) | `counts:create` + sucursal activa | `WRITE` | [Ver](#19-post-companiescompany_idinventory-counts) |
 | 20 | `GET` | `/companies/{company_id}/inventory-counts` | Listar conteos | `counts:read` | `READ` | [Ver](#20-get-companiescompany_idinventory-counts) |
-| 21 | `POST` | `/companies/{company_id}/inventory-counts/{count_id}/start` | Iniciar conteo | `counts:create` + asignación | `WRITE` | [Ver](#21-post-companiescompany_idinventory-countscount_idstart) |
-| 22 | `PUT` | `/companies/{company_id}/inventory-counts/{count_id}/details/{company_product_id}` | Registrar cantidad contada | `counts:create` + asignación | `WRITE` | [Ver](#22-put-companiescompany_idinventory-countscount_iddetailscompany_product_id) |
-| 23 | `POST` | `/companies/{company_id}/inventory-counts/{count_id}/complete` | Completar conteo (aplica ajustes) | `counts:create` + asignación | `HIGH_RISK` | [Ver](#23-post-companiescompany_idinventory-countscount_idcomplete) |
-| 24 | `POST` | `/companies/{company_id}/inventory-counts/{count_id}/cancel` | Cancelar conteo | `counts:create` + asignación | `WRITE` | [Ver](#24-post-companiescompany_idinventory-countscount_idcancel) |
+| 21 | `POST` | `/companies/{company_id}/inventory-counts/{count_id}/start` | Iniciar conteo | `counts:create` + sucursal activa | `WRITE` | [Ver](#21-post-companiescompany_idinventory-countscount_idstart) |
+| 22 | `PUT` | `/companies/{company_id}/inventory-counts/{count_id}/details/{company_product_id}` | Registrar cantidad contada | `counts:create` + sucursal activa | `WRITE` | [Ver](#22-put-companiescompany_idinventory-countscount_iddetailscompany_product_id) |
+| 23 | `POST` | `/companies/{company_id}/inventory-counts/{count_id}/complete` | Completar conteo (aplica ajustes) | `counts:create` + sucursal activa | `HIGH_RISK` | [Ver](#23-post-companiescompany_idinventory-countscount_idcomplete) |
+| 24 | `POST` | `/companies/{company_id}/inventory-counts/{count_id}/cancel` | Cancelar conteo | `counts:create` + sucursal activa | `WRITE` | [Ver](#24-post-companiescompany_idinventory-countscount_idcancel) |
 | 25 | `GET` | `/companies/{company_id}/inventory-counts/{count_id}` | Conteo con detalles y ajustes | `counts:read` | `READ` | [Ver](#25-get-companiescompany_idinventory-countscount_id) |
 | 26 | `GET` | `/companies/{company_id}/inventory-policy` | Política de la empresa | `company-policies:read` | `READ` | [Ver](#26-get-companiescompany_idinventory-policy) |
 | 27 | `POST` | `/companies/{company_id}/inventory-policy` | Registrar política de la empresa | `company-policies:update` | `WRITE` | [Ver](#27-post-companiescompany_idinventory-policy) |
@@ -782,7 +782,7 @@ Ejemplo de respuesta `200` (`CostConsumptionsResponse`; valores ilustrativos):
 |---|---|
 | Clasificación | `HIGH_RISK` · modifica existencias de inmediato (no hay borrador ni aprobación) |
 | URL | `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-adjustments` |
-| Permiso | `perm:inventory:adjustments:create` · usuario humano con asignación `ACTIVE` a la sucursal |
+| Permiso | `perm:inventory:adjustments:create` · usuario humano miembro de la empresa, en sucursal y empresa activas |
 | Cabeceras | `Authorization`, `Content-Type: application/json` |
 
 Cuerpo (`AdjustmentIn`; rechaza campos adicionales):
@@ -790,7 +790,7 @@ Cuerpo (`AdjustmentIn`; rechaza campos adicionales):
 | Campo | Tipo | Obligatorio | Validación | Cómo obtenerlo |
 |---|---|---|---|---|
 | `adjustment_key` | UUID | Sí | Clave de idempotencia generada por el cliente (`crypto.randomUUID()`) | — |
-| `branch_id` | UUID | Sí | Sucursal asignada al usuario | [branch_id](../parametros/branch-id.md) |
+| `branch_id` | UUID | Sí | Sucursal activa de la empresa (no exige asignación) | [branch_id](../parametros/branch-id.md) |
 | `company_product_id` | UUID | Sí | Producto apto para movimientos (control de inventario, validado en Commercial Relationship) | [company_product_id](../parametros/company-product-id.md) |
 | `adjustment_type` | `POSITIVE` \| `NEGATIVE` | Sí | — | — |
 | `quantity` | number \| string | Sí | > 0, hasta 4 decimales, unidad base | — |
@@ -980,7 +980,7 @@ Ejemplo de respuesta `200` (`InventoryAdjustmentResponse`; valores ilustrativos)
 |---|---|
 | Clasificación | `WRITE` · crea el conteo en `DRAFT` (sin efectos en existencias) |
 | URL | `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts` |
-| Permiso | `perm:inventory:counts:create` · usuario humano asignado a la sucursal |
+| Permiso | `perm:inventory:counts:create` · usuario humano miembro de la empresa, en sucursal y empresa activas |
 
 Cuerpo (`CountCreateIn`): `branch_id` (UUID, obligatorio), `observations` (≤ 2000, opcional).
 
@@ -1159,7 +1159,7 @@ Ejemplo de respuesta `200` (`CountPage`; valores ilustrativos):
 
 ### 21. `POST /companies/{company_id}/inventory-counts/{count_id}/start`
 
-`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/start`; permiso `counts:create` + asignación. Cuerpo (`CountTransitionIn`): `{"version": 1}`, con `version` opcional; se acepta `{}` o ningún cuerpo. Pasa a `IN_PROGRESS` y fija `started_at`. Errores: `409 COUNT_ALREADY_IN_PROGRESS` (otro conteo en curso en la sucursal), `409 INVALID_COUNT_TRANSITION`, `409 VERSION_CONFLICT`.
+`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/start`; permiso `counts:create` + sucursal activa. Cuerpo (`CountTransitionIn`): `{"version": 1}`, con `version` opcional; se acepta `{}` o ningún cuerpo. Pasa a `IN_PROGRESS` y fija `started_at`. Errores: `409 COUNT_ALREADY_IN_PROGRESS` (otro conteo en curso en la sucursal), `409 INVALID_COUNT_TRANSITION`, `409 VERSION_CONFLICT`.
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1236,7 +1236,7 @@ Ejemplo de respuesta `200` (`InventoryCountResponse`; valores ilustrativos):
 
 ### 22. `PUT /companies/{company_id}/inventory-counts/{count_id}/details/{company_product_id}`
 
-`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/details/{company_product_id}`; permiso `counts:create` + asignación. Solo con el conteo `IN_PROGRESS` (`409 COUNT_NOT_IN_PROGRESS`). Cuerpo (`CountDetailIn`): `counted_quantity` (≥ 0, puede ser 0, hasta 4 decimales; obligatorio), `unit_cost` (opcional; costo por unidad base para la capa que abriría una diferencia positiva). Registrar de nuevo el mismo producto **reemplaza** la cantidad. 
+`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/details/{company_product_id}`; permiso `counts:create` + sucursal activa. Solo con el conteo `IN_PROGRESS` (`409 COUNT_NOT_IN_PROGRESS`). Cuerpo (`CountDetailIn`): `counted_quantity` (≥ 0, puede ser 0, hasta 4 decimales; obligatorio), `unit_cost` (opcional; costo por unidad base para la capa que abriría una diferencia positiva). Registrar de nuevo el mismo producto **reemplaza** la cantidad. 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1270,7 +1270,7 @@ Ejemplo de respuesta `200` (`InventoryCountDetailResponse`; valores ilustrativos
 
 ### 23. `POST /companies/{company_id}/inventory-counts/{count_id}/complete`
 
-`HIGH_RISK` · aplica **todas** las diferencias como ajustes, todo o nada. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/complete`; permiso `counts:create` + asignación. Cuerpo (`CountCompleteIn`): `completion_key` (UUID de idempotencia, obligatorio) y `version` (opcional). Reglas (verificadas): una sola operación `ADJUSTMENT` con origen `COUNT` y una línea por diferencia distinta de cero calculada **sobre el saldo vigente** en ese momento; crea un ajuste por línea y cierra el conteo en una transacción. Un conteo sin diferencias se completa sin operación. Repetir con la misma clave y versión devuelve el conteo. 
+`HIGH_RISK` · aplica **todas** las diferencias como ajustes, todo o nada. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/complete`; permiso `counts:create` + sucursal activa. Cuerpo (`CountCompleteIn`): `completion_key` (UUID de idempotencia, obligatorio) y `version` (opcional). Reglas (verificadas): una sola operación `ADJUSTMENT` con origen `COUNT` y una línea por diferencia distinta de cero calculada **sobre el saldo vigente** en ese momento; crea un ajuste por línea y cierra el conteo en una transacción. Un conteo sin diferencias se completa sin operación. Repetir con la misma clave y versión devuelve el conteo. 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -1362,7 +1362,7 @@ Ejemplo de respuesta `200` (`InventoryCountResponse`; valores ilustrativos):
 
 ### 24. `POST /companies/{company_id}/inventory-counts/{count_id}/cancel`
 
-`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/cancel`; permiso `counts:create` + asignación. Cuerpo (`CountCancelIn`): `reason` (1–2000, obligatorio) y `version` (opcional). Desde `DRAFT` o `IN_PROGRESS`; no afecta existencias. 
+`WRITE`. URL `https://sio-inventory-dev.onrender.com/api/v1/companies/{company_id}/inventory-counts/{count_id}/cancel`; permiso `counts:create` + sucursal activa. Cuerpo (`CountCancelIn`): `reason` (1–2000, obligatorio) y `version` (opcional). Desde `DRAFT` o `IN_PROGRESS`; no afecta existencias. 
 
 Ejemplo de solicitud (valores ilustrativos):
 
@@ -2067,8 +2067,8 @@ Ejemplo de respuesta `200` (`ConsolidatedStockEvolutionPage`; valores ilustrativ
 | Respuesta | Causa | Qué hacer |
 |---|---|---|
 | `403 INVENTORY.FORBIDDEN` en entradas o salidas | Token de usuario en rutas de cuentas de servicio | No usarlas desde el frontend |
-| `403 INVENTORY.FORBIDDEN` en ajustes o conteos | Token de cuenta de servicio, o sin permiso | Usar un usuario humano de los grupos `admin` o `Inventario` (o `superadmin`) asignado a la sucursal |
-| `403 INVENTORY.BRANCH_ACCESS_DENIED` | El usuario no tiene asignada la sucursal | Asignarla en Operational Context |
+| `403 INVENTORY.FORBIDDEN` en ajustes o conteos | Token de cuenta de servicio, o sin permiso | Usar un usuario humano de los grupos `admin` o `Inventario` (o `superadmin`) miembro de la empresa |
+| `403 INVENTORY.BRANCH_ACCESS_DENIED` | La sucursal o la empresa están inactivas (ya no se exige asignación a la sucursal) | Elegir una sucursal activa o reactivarla en Operational Context |
 | `404 INVENTORY.NOT_FOUND` | Sin membresía, recurso de otra empresa o inexistente | Revisar `company_id` |
 | `409 INVENTORY.INSUFFICIENT_STOCK` (`shortages`) | Saldo insuficiente | Mostrar faltantes por producto |
 | `409 INVENTORY.OPERATION_KEY_CONFLICT` | Misma clave con otro contenido | Generar clave nueva por operación |
@@ -2081,7 +2081,7 @@ Ejemplo de respuesta `200` (`ConsolidatedStockEvolutionPage`; valores ilustrativ
 
 | Servicio | Uso |
 |---|---|
-| Operational Context | Membresía y asignación a la sucursal (con el token del usuario); datos de empresa y sucursal con la cuenta técnica |
+| Operational Context | Membresía y estado de empresa y sucursal (con el token del usuario; la asignación a sucursal no se evalúa); datos de empresa y sucursal con la cuenta técnica |
 | Commercial Relationship | Verificar que el producto es de la empresa y tiene control de inventario; moneda de la empresa |
 | Purchase, Sales | Emisores de entradas, salidas y reversos (cuentas de servicio) |
 | Audit | Eventos de auditoría |

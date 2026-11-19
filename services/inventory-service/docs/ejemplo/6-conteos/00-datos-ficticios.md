@@ -10,6 +10,6 @@ No existe una fuente del sistema anterior para movimientos de inventario: todos 
 | Arroz 500 g | `d44d0000-0000-4000-8000-000000000001` | Producto empresarial con control de inventario; unidad base: unidad. |
 | Aceite 1 L | `d44d0000-0000-4000-8000-000000000002` | Producto empresarial con control de inventario; unidad base: unidad. |
 | Servicio de domicilio | `d44d0000-0000-4000-8000-000000000003` | Producto empresarial **sin** control de inventario. |
-| Sucursal sin asignar | `d44b0000-0000-4000-8000-000000000002` | Sucursal ficticia `ACTIVE` sin usuarios asignados. |
+| Sucursal inactiva | `d44b0000-0000-4000-8000-000000000002` | Sucursal ficticia `INACTIVE` de la misma empresa. |
 | Compra | `d44e0000-0000-4000-8000-000000000001` | Documento ficticio de Purchase. |
 | Venta | `d44e0000-0000-4000-8000-000000000002` | Documento ficticio de Sales. |

@@ -46,7 +46,7 @@ Todas las rutas salvo `/health/*` exigen `Authorization: Bearer <ACCESS_TOKEN>` 
 | Regla | Detalle |
 |---|---|
 | Empresa | Membresía `ACTIVE` en `company_id` evaluada en Operational Context con el token del usuario; sin ella, `404 PURCHASE.NOT_FOUND`. Las lecturas y las secuencias solo exigen membresía |
-| Sucursal (escrituras sobre compras e hitos) | Además, acceso del usuario a la sucursal de la compra: `BRANCH_NOT_ASSIGNED`, `USER_BRANCH_INACTIVE`, `BRANCH_INACTIVE` o `COMPANY_INACTIVE` → `403 PURCHASE.BRANCH_ACCESS_DENIED`; sucursal de otra empresa → `404` |
+| Sucursal (escrituras sobre compras e hitos) | Además, acceso del usuario a la sucursal de la compra: `BRANCH_INACTIVE` o `COMPANY_INACTIVE` → `403 PURCHASE.BRANCH_ACCESS_DENIED`; sucursal de otra empresa → `404`. No exige asignación a la sucursal (enmienda 2026-11-19: la membresía `ACTIVE` da acceso a todas las sucursales activas; `BRANCH_NOT_ASSIGNED` y `USER_BRANCH_INACTIVE` ya no se producen) |
 | Operational Context con `403` | `403 PURCHASE.OPERATIONAL_ACCESS_DENIED` |
 
 ## Conceptos clave
@@ -1810,7 +1810,7 @@ Reglas: compras no `DRAFT` por `operation_date`; `category` deriva del estado: `
 | Respuesta | Causa | Qué hacer |
 |---|---|---|
 | `403 PURCHASE.FORBIDDEN` al enviar `tax_percentage` | Falta `perm:purchase:purchase_line_taxes:override` | Ocultar el ajuste de tasa a quien no lo tenga (los grupos de área no lo tienen) |
-| `403 PURCHASE.BRANCH_ACCESS_DENIED` | Sin acceso a la sucursal | Ofrecer solo sucursales con `allowed: true` |
+| `403 PURCHASE.BRANCH_ACCESS_DENIED` | Sucursal o empresa inactivas | Ofrecer solo sucursales con `allowed: true` |
 | `409 PURCHASE.PURCHASE_TAX_NOT_CONFIGURED` | Producto sin tasa de impuesto de compra | Configurar `purchase_tax_percentage` en el producto empresarial (Commercial Relationship) o ajustar la línea |
 | `409 PURCHASE.PURCHASE_TAX_CHANGED` | La tasa del producto cambió tras guardar la línea | Volver a guardar la línea |
 | `409 PURCHASE.PRICING_POLICY_NOT_CONFIGURED` | Presentación sin política de ganancia aplicable | Configurar la política en Commercial Relationship |

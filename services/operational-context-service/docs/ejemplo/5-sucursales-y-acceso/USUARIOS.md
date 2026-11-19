@@ -29,9 +29,9 @@ Qué usuario de prueba del realm (`infrastructure/keycloak/realm-template/sio-re
 | [03](03-asignar-sucursal.md) | 3. Listar las sucursales asignadas al usuario | `GET /api/v1/application-users/{id}/user-branches` 🔒 | `perm:operational-context:user_branches:read` | ✅ | ✅ | ✅ |
 | [04](04-comprobar-acceso.md) | 1. Acceso a la sucursal principal para crear compras | `GET /api/v1/operational-access` | `perm:operational-context:application_users:read` + `perm:operational-context:platform:lookup` | ✅ | ❌ | ❌ |
 | [04](04-comprobar-acceso.md) | 2. Acceso para ver la rentabilidad de ventas (denegado) | `GET /api/v1/operational-access` | `perm:operational-context:application_users:read` + `perm:operational-context:platform:lookup` | ✅ | ❌ | ❌ |
-| [04](04-comprobar-acceso.md) | 3. Acceso a la sucursal secundaria (denegado) | `GET /api/v1/operational-access` | `perm:operational-context:application_users:read` + `perm:operational-context:platform:lookup` | ✅ | ❌ | ❌ |
+| [04](04-comprobar-acceso.md) | 3. Acceso a la sucursal secundaria (permitido sin asignación) | `GET /api/v1/operational-access` | `perm:operational-context:application_users:read` + `perm:operational-context:platform:lookup` | ✅ | ❌ | ❌ |
 | [05](05-efecto-de-inactivar.md) | 1. Retirar la asignación | `POST /api/v1/user-branches/{id}/deactivate` 🔒 | `perm:operational-context:user_branches:delete` | ✅ | ✅ | ❌ |
-| [05](05-efecto-de-inactivar.md) | 2. Acceso tras retirar la asignación (denegado) | `GET /api/v1/operational-access` | `perm:operational-context:application_users:read` + `perm:operational-context:platform:lookup` | ✅ | ❌ | ❌ |
+| [05](05-efecto-de-inactivar.md) | 2. Acceso tras retirar la asignación (sigue permitido) | `GET /api/v1/operational-access` | `perm:operational-context:application_users:read` + `perm:operational-context:platform:lookup` | ✅ | ❌ | ❌ |
 | [05](05-efecto-de-inactivar.md) | 3. Inactivar la sucursal principal | `POST /api/v1/branches/{id}/deactivate` 🔒 | `perm:operational-context:branches:delete` | ✅ | ✅ | ❌ |
 | [05](05-efecto-de-inactivar.md) | 4. Acceso a la sucursal inactiva (denegado) | `GET /api/v1/operational-access` | `perm:operational-context:application_users:read` + `perm:operational-context:platform:lookup` | ✅ | ❌ | ❌ |
 

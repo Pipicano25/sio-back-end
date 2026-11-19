@@ -126,9 +126,10 @@ def render_step(exercise: dict, index: int, record: dict) -> str:
         lines += [
             "",
             "Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque tenga el permiso "
-            "por comodín), miembro `ACTIVE` de la empresa y, en ajustes y conteos, con asignación `ACTIVE` a "
-            "la sucursal (lo resuelve Operational Context con el token del usuario). Los usuarios con el "
-            "permiso no repiten la llamada en este ejercicio porque cambiaría su estado.",
+            "por comodín), miembro `ACTIVE` de la empresa y, en ajustes y conteos, que la sucursal y la "
+            "empresa estén activas (lo resuelve Operational Context con el token del usuario; la asignación "
+            "a la sucursal no limita). Los usuarios con el permiso no repiten la llamada en este ejercicio "
+            "porque cambiaría su estado.",
         ]
     else:
         lines += [
@@ -255,7 +256,7 @@ def render_users(exercise: dict, records: list[dict]) -> str:
         "",
         "- Puede: `admin.sio` (SuperAdmin), `admin.dao` (Admin) y el usuario de las tres áreas "
         "(`operario.dao`) consultan inventario de las empresas donde son "
-        "miembros y registran ajustes y conteos en las sucursales asignadas; solo `admin.sio` y "
+        "miembros y registran ajustes y conteos en sus sucursales activas; solo `admin.sio` y "
         "`admin.dao` configuran políticas.",
         "- No puede: ningún usuario humano aplica ni revierte operaciones (ni siquiera `admin.sio`, que "
         "tiene el permiso por comodín); ninguna cuenta de servicio registra ajustes, conteos ni políticas; "
@@ -295,8 +296,9 @@ def render_general(all_records: dict[int, list[dict]]) -> str:
         "- **Lectura técnica** (`perm:inventory:platform:lookup`): una cuenta de servicio con lectura y "
         "esta capacidad consulta sin membresía (Sales antes de confirmar una venta).",
         "- **Ajustes y conteos** (`perm:inventory:adjustments:create`, `perm:inventory:counts:create`, 013) "
-        "exigen un **usuario humano** miembro `ACTIVE` y con asignación `ACTIVE` a la sucursal; una "
-        "cuenta de servicio recibe `403` aunque tenga el permiso. Las **políticas** "
+        "exigen un **usuario humano** miembro `ACTIVE`, en una sucursal activa de una empresa activa (la "
+        "asignación a la sucursal no limita); una cuenta de servicio recibe `403` aunque tenga el permiso. "
+        "Las **políticas** "
         "(`perm:inventory:company-policies:update`, `perm:inventory:product-policies:update`) exigen un "
         "usuario humano miembro de la empresa.",
         "- **Lecturas de 013** (`adjustments:read`, `counts:read`, `company-policies:read`, "

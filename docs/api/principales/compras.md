@@ -30,7 +30,7 @@ Orden habitual de una compra: [API 1](#1-buscar-el-proveedor) (proveedor `ACTIVE
 
 | Requisito | Dónde se configura | Qué pasa si falta |
 |---|---|---|
-| Sucursal asignada al comprador (asignación `ACTIVE`) | [API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal) | `403 PURCHASE.BRANCH_ACCESS_DENIED` en toda escritura |
+| Membresía `ACTIVE` del comprador en la empresa, con sucursal y empresa `ACTIVE` (no hace falta asignarlo a la sucursal: la membresía da acceso a todas las sucursales activas) | [API 10 de Administración empresarial](administracion-empresarial.md#10-asociar-un-usuario-a-una-empresa-crear-membresía) | Sin membresía, `404`; con la sucursal o la empresa inactivas, `403 PURCHASE.BRANCH_ACCESS_DENIED` en toda escritura |
 | Secuencia de numeración de compras activa (sucursal o empresa) | [API 19 de Administración empresarial](administracion-empresarial.md#19-crear-una-secuencia-de-numeración) | `409 PURCHASE.SEQUENCE_NOT_CONFIGURED` al confirmar |
 | Proveedor `ACTIVE` (no `INACTIVE` ni `BLOCKED`) | [Gestión de proveedores](gestion-de-proveedores.md) | `409 PURCHASE.REFERENCES_NOT_ELIGIBLE` con `errors[].code` `SUPPLIER_NOT_ELIGIBLE` |
 | Producto `ACTIVE`, comprable y con control de inventario; presentación `ACTIVE` y comprable | [Productos y precios](productos-y-precios.md) | `409 PURCHASE.REFERENCES_NOT_ELIGIBLE` (`PRODUCT_NOT_PURCHASABLE`, `PRODUCT_NOT_INVENTORY_CONTROLLED`, `PRESENTATION_NOT_PURCHASABLE`…) |
@@ -44,7 +44,7 @@ Convenciones de todo el módulo:
 - Todas las API de escritura con cuerpo JSON de Purchase y de Commercial Relationship **rechazan campos desconocidos** con `422 …VALIDATION_ERROR` (en Purchase con `errors[].code` `UNKNOWN_FIELD`). Purchase no acepta `tax_amount` ni totales en el cuerpo: los calcula el servidor.
 - Errores comunes a todas las API de este módulo (no se repiten en cada tabla): `401` con `{"detail": "Se requiere un token de acceso Bearer"}` u otro `detail` cuando el token falta, venció o no es válido (renovar una vez y reintentar; si falla, volver al login); `403` con `code` `PURCHASE.FORBIDDEN` o `COMMERCIAL_RELATIONSHIP.FORBIDDEN` cuando el token no tiene el permiso indicado o, en Purchase, cuando es de una cuenta de servicio (mostrar que faltan permisos y el `trace_id`); `503` con `code` `…DEPENDENCY_UNAVAILABLE` y la extensión `dependency` cuando la base de datos u otro servicio no responde (reintentar más tarde). Los demás errores llegan en Problem Details (`application/problem+json`) con `code` `PURCHASE.…` o `COMMERCIAL_RELATIONSHIP.…` y `trace_id`; ver la [guía de errores](../guias/errores.md).
 - **Errores de validación de Purchase.** `422 PURCHASE.VALIDATION_ERROR` trae `errors[]` con `field` (por ejemplo `lines[0].unit_cost`), `message`, `code` (`REQUIRED`, `INVALID_FORMAT`, `UNKNOWN_FIELD`, `QUANTITY_NOT_POSITIVE`, `TOO_MANY_DECIMALS`, `AMOUNT_OUT_OF_RANGE`, `UNIT_COST_NOT_POSITIVE`, `BASE_UNIT_COST_NOT_POSITIVE`, `DISCOUNT_EXCEEDS_SUBTOTAL`, `NET_COST_NOT_POSITIVE`, `TAX_PERCENTAGE_OUT_OF_RANGE`, `LINES_LIMIT_EXCEEDED`, referencias inexistentes como `SUPPLIER_NOT_FOUND`…) y, si aplica, `line_number`. Una referencia que existe pero no es apta responde `409 PURCHASE.REFERENCES_NOT_ELIGIBLE` con la misma forma de `errors[]`. Si hay errores de ambas clases, se informa primero el `422`.
-- **Alcance.** Las lecturas de Purchase exigen membresía `ACTIVE` en la empresa; las escrituras exigen además asignación `ACTIVE` a la sucursal de la compra (si no, `403 PURCHASE.BRANCH_ACCESS_DENIED`). Fuera de la empresa la respuesta es `404 PURCHASE.NOT_FOUND`, igual que si no existiera. Commercial Relationship responde `404 COMMERCIAL_RELATIONSHIP.NOT_FOUND` sin membresía `ACTIVE`.
+- **Alcance.** Las lecturas de Purchase exigen membresía `ACTIVE` en la empresa; las escrituras exigen además que la sucursal de la compra y la empresa estén activas (si no, `403 PURCHASE.BRANCH_ACCESS_DENIED`). No se exige asignación a la sucursal: desde la enmienda 2026-11-19 la membresía `ACTIVE` da acceso a todas las sucursales activas y lo que puede hacer el usuario lo limitan sus permisos de Keycloak. Fuera de la empresa la respuesta es `404 PURCHASE.NOT_FOUND`, igual que si no existiera. Commercial Relationship responde `404 COMMERCIAL_RELATIONSHIP.NOT_FOUND` sin membresía `ACTIVE`.
 - **Control de versión.** `version` es **opcional** en toda escritura sobre una compra (en el cuerpo o, al eliminar una línea, en la consulta `?version=`); cada cambio la incrementa en 1. Si se envía y otra persona cambió la compra antes, la respuesta es `409 PURCHASE.VERSION_CONFLICT`: volver a leer la compra ([API 8](#8-consultar-la-compra-con-impuestos-y-totales)) y repetir con la nueva `version`. Si no se envía, el cambio se aplica sobre lo vigente. Enviarla es recomendable para detectar cambios simultáneos.
 - **Modificación parcial.** El `PUT` de una línea lleva solo los campos que cambian; un campo ausente no cambia, `null` borra un campo opcional y en uno obligatorio responde `422`; un cuerpo vacío `{}` o solo con `version` responde `422`. La confirmación acepta `{}` o ningún cuerpo; la recepción exige `full_receipt_confirmed` y la anulación `reason`.
 - **Idempotencia.** Confirmar, recibir y anular exigen la cabecera `Idempotency-Key`: de 1 a 150 caracteres ASCII imprimibles sin espacios (por ejemplo un UUID nuevo por cada acción del usuario). Repetir la **misma** clave devuelve el resultado de la primera solicitud (o la reanuda si quedó pendiente) sin duplicar efectos; usarla para otra compra, otra acción u otro usuario responde `409 PURCHASE.IDEMPOTENCY_KEY_CONFLICT`. Sin cabecera: `422 PURCHASE.VALIDATION_ERROR` con `errors[].code` `IDEMPOTENCY_KEY_REQUIRED`; con formato inválido, `INVALID_FORMAT`. La cabecera opcional `X-Correlation-Id` (UUID) se guarda en la operación.
@@ -356,7 +356,7 @@ Crea una compra en estado `DRAFT` para una sucursal y un proveedor, con su méto
 
 Efectos verificados en el código: valida en este orden el acceso a la sucursal (`403 BRANCH_ACCESS_DENIED`), los importes de cada línea (`422`), que ninguna presentación se repita (`409 DUPLICATE_PRESENTATION_IN_PURCHASE`) y todas las referencias contra sus servicios (empresa, sucursal, proveedor y su identificación en Party Identity, condición de pago, método de pago, productos, presentaciones y productos de proveedor; primero los `422` y luego los `409`). La moneda de la compra es la moneda funcional de la empresa y queda fija. Crea la compra con `status` `DRAFT`, `version` `1`, `number` `null` y `receipt_status` `null`, y registra `CREATE_PURCHASE` (y `OVERRIDE_PURCHASE_LINE_TAX` por cada línea con tasa ajustada) en Audit. La respuesta `201` no incluye cabecera `Location`. Las líneas sin tasa de impuesto se aceptan en borrador con impuesto `0` y la advertencia `PURCHASE_TAX_NOT_CONFIGURED` en `lines[].warnings`; las presentaciones sin política de ganancia, con `PRICING_POLICY_NOT_CONFIGURED`. Ambas bloquearán la confirmación.
 
-Antes necesita: la sucursal asignada al usuario, el proveedor `ACTIVE` ([API 1](#1-buscar-el-proveedor)), el método de pago y, si se envían líneas, los productos y presentaciones comprables ([API 2](#2-buscar-las-presentaciones-comprables)).
+Antes necesita: una sucursal activa de la empresa (con `allowed: true` en el contexto operativo), el proveedor `ACTIVE` ([API 1](#1-buscar-el-proveedor)), el método de pago y, si se envían líneas, los productos y presentaciones comprables ([API 2](#2-buscar-las-presentaciones-comprables)).
 
 ### ¿Cómo se realiza la solicitud?
 
@@ -428,7 +428,7 @@ curl -X POST \
 
 | Nombre | Tipo | Obligatorio | Descripción | Ejemplo | Origen |
 |---|---|---|---|---|---|
-| `branch_id` | UUID | Sí | Sucursal que recibirá la mercancía; `ACTIVE` y asignada al usuario | `7c9e6679-7425-40de-944b-e07fc1f90ae7` | `memberships[].branches[].branch_id` de la [API 5 de Acceso y contexto operativo](acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario) (devuelve las empresas y sucursales del usuario; sus errores están en esa sección) o `items[].id` de la [API 6 de Administración empresarial](administracion-empresarial.md#6-consultar-las-sucursales-de-una-empresa) (lista las sucursales de la empresa; errores en esa sección) · guía [branch_id](../parametros/branch-id.md) |
+| `branch_id` | UUID | Sí | Sucursal que recibirá la mercancía; `ACTIVE` (no exige asignación) | `7c9e6679-7425-40de-944b-e07fc1f90ae7` | `memberships[].branches[].branch_id` de la [API 5 de Acceso y contexto operativo](acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario) (devuelve las empresas y sucursales del usuario; sus errores están en esa sección) o `items[].id` de la [API 6 de Administración empresarial](administracion-empresarial.md#6-consultar-las-sucursales-de-una-empresa) (lista las sucursales de la empresa; errores en esa sección) · guía [branch_id](../parametros/branch-id.md) |
 | `company_supplier_id` | UUID | Sí | Proveedor `ACTIVE` de la empresa con identificación tributaria en Party Identity | `d2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f60` | `items[].id` de la [API 1](#1-buscar-el-proveedor) (lista los proveedores; errores en §1) · guía [company_supplier_id](../parametros/supplier-id.md) |
 | `operation_date` | date (`AAAA-MM-DD`) | Sí | Fecha de la compra; no puede ser futura en la zona horaria de la sucursal | `2026-10-19` | Formulario (por defecto la fecha de hoy) |
 | `supplier_payment_condition_id` | UUID \| null | No; acepta `null` | Condición de pago del **mismo** proveedor, `ACTIVE`, vigente en la fecha, en la moneda de la empresa y de tipo `CASH`; con `null` la compra es de contado sin plazo | `null` | `items[].id` de `GET https://sio-commercial-relationship-dev.onrender.com/api/v1/companies/{company_id}/supplier-payment-conditions?company_supplier_id={company_supplier_id}` (lista las condiciones de pago del proveedor; permiso `perm:commercial-relationship:supplier_payment_conditions:read`; errores `404 NOT_FOUND` sin membresía y `422 VALIDATION_ERROR` por filtros inválidos; ficha [CR 40](../servicios/commercial-relationship.md#40-get-companiescompany_idsupplier-payment-conditions)) |
@@ -549,7 +549,7 @@ curl -X POST \
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal, o la sucursal o la empresa no están activas | Pedir la asignación al administrador ([API 12 de Administración empresarial](administracion-empresarial.md#12-asignar-un-usuario-a-una-sucursal)) |
+| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | La sucursal o la empresa no están activas (ya no se exige asignación a la sucursal) | Elegir una sucursal con `allowed: true` en el contexto operativo o pedir al administrador que reactive la sucursal |
 | `403` | `PURCHASE.FORBIDDEN` | Faltan `purchase_details:create` (cuerpo con líneas) o `purchase_line_taxes:override` (línea con `tax_percentage`) | Quitar las líneas o la tasa, o pedir el permiso |
 | `403` | `PURCHASE.OPERATIONAL_ACCESS_DENIED` | El usuario no tiene permiso para consultar su acceso operativo | Pedir acceso al administrador con el `trace_id` |
 | `404` | `PURCHASE.NOT_FOUND` | La empresa no existe, el usuario no es miembro o la sucursal es de otra empresa | Volver a leer el contexto operativo |
@@ -613,7 +613,7 @@ Ejemplo de `422` por costo inválido en una línea:
 
 Agrega una línea a una compra en `DRAFT` y devuelve la compra **completa** con todas sus líneas y los totales recalculados.
 
-Efectos verificados en el código: exige asignación a la sucursal de la compra, que no haya una operación en curso (`409 OPERATION_IN_PROGRESS`), que la compra esté en `DRAFT` (`409 INVALID_STATUS`) y, si se envía, que `version` coincida (`409 VERSION_CONFLICT`). Calcula los importes de la línea, valida producto, presentación y producto de proveedor (como en la [API 4](#4-crear-la-compra-en-borrador)), rechaza la presentación ya usada en otra línea (`409 DUPLICATE_PRESENTATION_IN_PURCHASE`) y el exceso de 100 líneas (`422`, `LINES_LIMIT_EXCEEDED`). Asigna el siguiente `line_number`, incrementa `version` y registra `ADD_PURCHASE_DETAIL` (y `OVERRIDE_PURCHASE_LINE_TAX` si hay tasa ajustada) en Audit.
+Efectos verificados en el código: exige acceso a la sucursal de la compra (sucursal y empresa activas), que no haya una operación en curso (`409 OPERATION_IN_PROGRESS`), que la compra esté en `DRAFT` (`409 INVALID_STATUS`) y, si se envía, que `version` coincida (`409 VERSION_CONFLICT`). Calcula los importes de la línea, valida producto, presentación y producto de proveedor (como en la [API 4](#4-crear-la-compra-en-borrador)), rechaza la presentación ya usada en otra línea (`409 DUPLICATE_PRESENTATION_IN_PURCHASE`) y el exceso de 100 líneas (`422`, `LINES_LIMIT_EXCEEDED`). Asigna el siguiente `line_number`, incrementa `version` y registra `ADD_PURCHASE_DETAIL` (y `OVERRIDE_PURCHASE_LINE_TAX` si hay tasa ajustada) en Audit.
 
 Antes necesita: el `purchase_id` (opcionalmente la `version` vigente de la [API 4](#4-crear-la-compra-en-borrador) u [API 8](#8-consultar-la-compra-con-impuestos-y-totales), para detectar cambios simultáneos) y la presentación comprable ([API 2](#2-buscar-las-presentaciones-comprables)).
 
@@ -797,7 +797,7 @@ curl -X POST \
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | Sin asignación `ACTIVE` a la sucursal de la compra | Pedir la asignación al administrador |
+| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | La sucursal de la compra o la empresa están inactivas | Pedir al administrador que reactive la sucursal |
 | `403` | `PURCHASE.FORBIDDEN` | Se envió `tax_percentage` sin `purchase_line_taxes:override` | Quitar la tasa o pedir el permiso |
 | `404` | `PURCHASE.NOT_FOUND` | La compra no existe en la empresa o el usuario no es miembro | Volver a la lista ([API 12](#12-listar-compras)) |
 | `409` | `PURCHASE.INVALID_STATUS` | La compra ya no está en `DRAFT` (extensión `status`) | Recargar la compra; ya no admite cambios |
@@ -1025,7 +1025,7 @@ curl -X PUT \
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | Sin asignación `ACTIVE` a la sucursal de la compra | Pedir la asignación |
+| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | La sucursal de la compra o la empresa están inactivas | Pedir al administrador que reactive la sucursal |
 | `403` | `PURCHASE.FORBIDDEN` | Se envió `tax_percentage` sin `purchase_line_taxes:override` | Quitar la tasa o pedir el permiso |
 | `404` | `PURCHASE.NOT_FOUND` | La compra o la línea no existen | Recargar la compra |
 | `409` | `PURCHASE.INVALID_STATUS` | La compra no está en `DRAFT` | Recargar; ya no admite cambios |
@@ -1061,7 +1061,7 @@ Ejemplo de `409` por versión desactualizada:
 
 Elimina una línea de una compra en `DRAFT` y devuelve la compra completa (no un `204`) con los totales recalculados.
 
-Efectos verificados en el código: exige asignación a la sucursal, ninguna operación en curso, estado `DRAFT` y, si se envía, `version` coincidente. Borra la línea físicamente (los `line_number` de las demás no se renumeran), incrementa `version` y registra `DELETE_PURCHASE_DETAIL` en Audit con los valores de la línea borrada. Se puede eliminar la última línea: la compra queda sin líneas y no se podrá confirmar (`422 PURCHASE_WITHOUT_LINES`) hasta agregar otra.
+Efectos verificados en el código: exige acceso a la sucursal (sucursal y empresa activas), ninguna operación en curso, estado `DRAFT` y, si se envía, `version` coincidente. Borra la línea físicamente (los `line_number` de las demás no se renumeran), incrementa `version` y registra `DELETE_PURCHASE_DETAIL` en Audit con los valores de la línea borrada. Se puede eliminar la última línea: la compra queda sin líneas y no se podrá confirmar (`422 PURCHASE_WITHOUT_LINES`) hasta agregar otra.
 
 Antes necesita: el `detail_id` y, opcionalmente, la `version` vigente ([API 8](#8-consultar-la-compra-con-impuestos-y-totales)) para detectar cambios simultáneos.
 
@@ -1190,7 +1190,7 @@ No lleva cuerpo. La versión, opcional, se envía en la consulta (`?version=`); 
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | Sin asignación `ACTIVE` a la sucursal de la compra | Pedir la asignación |
+| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | La sucursal de la compra o la empresa están inactivas | Pedir al administrador que reactive la sucursal |
 | `404` | `PURCHASE.NOT_FOUND` | La compra o la línea no existen (por ejemplo, ya se eliminó) | Recargar la compra |
 | `409` | `PURCHASE.INVALID_STATUS` | La compra no está en `DRAFT` | Recargar; para deshacer una compra confirmada, anularla ([API 13](#13-anular-una-compra)) |
 | `409` | `PURCHASE.VERSION_CONFLICT` | `version` enviada desactualizada | Volver a consultar y reintentar |
@@ -1526,7 +1526,7 @@ curl -X POST \
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | Sin asignación `ACTIVE` a la sucursal, o sucursal o empresa inactivas | Pedir la asignación al administrador |
+| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | Sucursal o empresa inactivas (ya no se exige asignación a la sucursal) | Pedir al administrador que reactive la sucursal |
 | `404` | `PURCHASE.NOT_FOUND` | La compra no existe o el usuario no es miembro | Volver a la lista |
 | `409` | `PURCHASE.INVALID_STATUS` | La compra no está en `DRAFT` | Recargar la compra |
 | `409` | `PURCHASE.VERSION_CONFLICT` | `version` enviada desactualizada | Consultar la [API 8](#8-consultar-la-compra-con-impuestos-y-totales) y reintentar con una clave nueva |
@@ -1603,7 +1603,7 @@ Ejemplo de `409` por secuencia sin configurar:
 }
 ```
 
-Ejemplo de `403` por falta de asignación a la sucursal:
+Ejemplo de `403` por sucursal o empresa inactiva (el texto de `detail` que devuelve hoy el servicio aún menciona la asignación, pero la causa ya es solo la sucursal o la empresa inactiva):
 
 ```json
 {
@@ -1774,7 +1774,7 @@ curl -X POST \
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | Sin asignación `ACTIVE` a la sucursal | Pedir la asignación |
+| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | La sucursal o la empresa están inactivas | Pedir al administrador que reactive la sucursal |
 | `404` | `PURCHASE.NOT_FOUND` | La compra no existe o el usuario no es miembro | Volver a la lista |
 | `409` | `PURCHASE.INVALID_STATUS` | La compra no está `CONFIRMED` (borrador o anulada) | Confirmarla primero ([API 9](#9-confirmar-la-compra)) o recargar |
 | `409` | `PURCHASE.PURCHASE_ALREADY_RECEIVED` | La compra ya fue recibida | Recargar; no se repite |
@@ -2243,7 +2243,7 @@ curl -X POST \
 
 | HTTP | Código | Motivo | Qué debe hacer el frontend |
 |---|---|---|---|
-| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | Sin asignación `ACTIVE` a la sucursal | Pedir la asignación |
+| `403` | `PURCHASE.BRANCH_ACCESS_DENIED` | La sucursal o la empresa están inactivas | Pedir al administrador que reactive la sucursal |
 | `404` | `PURCHASE.NOT_FOUND` | La compra no existe o el usuario no es miembro | Volver a la lista |
 | `409` | `PURCHASE.INVALID_STATUS` | La compra ya está `CANCELLED` | Recargar |
 | `409` | `PURCHASE.VERSION_CONFLICT` | `version` enviada desactualizada | Consultar y reintentar con una clave nueva |
@@ -2295,7 +2295,7 @@ Ejemplo de `422` por motivo vacío:
 ## Dependencias con otros módulos
 
 - [Acceso y contexto operativo](acceso-y-contexto-operativo.md): Access Token, empresas y sucursales del usuario (`company_id`, `branch_id`).
-- [Administración empresarial](administracion-empresarial.md): asignación del comprador a la sucursal, secuencias de numeración de compras e historial de auditoría.
+- [Administración empresarial](administracion-empresarial.md): membresía del comprador en la empresa, secuencias de numeración de compras e historial de auditoría.
 - [Gestión de proveedores](gestion-de-proveedores.md): proveedor `ACTIVE`, condiciones de pago y productos de proveedor.
 - [Productos y precios](productos-y-precios.md): presentaciones comprables, tasa de impuesto de compra y políticas de ganancia; la recepción alimenta los precios automáticos.
 - [Inventario](inventario.md): la recepción crea la entrada (`origin_type` `PURCHASE` en el kardex) y las capas de costo; la anulación de una compra recibida las revierte si no se consumieron.

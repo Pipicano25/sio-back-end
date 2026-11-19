@@ -40,7 +40,7 @@ class FakeOperationalContext:
     """Sucursales, usuarios operativos, membresías, asignaciones y monedas configurables.
 
     `check_branch` reproduce el orden de evaluación de Operational Context
-    (`domain/access.py` de la 005): membresía → empresa → sucursal → asignación.
+    (`domain/access.py` de la 005): membresía → empresa → sucursal (la asignación ya no limita, 2026-11-19).
     """
 
     branches: dict[UUID, BranchInfo] = field(default_factory=dict)
@@ -159,11 +159,7 @@ class FakeCompanyAccess:
         if branch is not None:
             if branch.status != "ACTIVE":
                 return result(False, "BRANCH_INACTIVE")
-            assignment = state.assignments.get((self._sub, branch_id))
-            if assignment is None:
-                return result(False, "BRANCH_NOT_ASSIGNED")
-            if assignment != "ACTIVE":
-                return result(False, "USER_BRANCH_INACTIVE")
+            # Acceso por membresía (2026-11-19): la asignación a sucursal ya no limita.
         return result(True, None)
 
     def check_branch(self, branch_id: UUID) -> BranchAccessResult:

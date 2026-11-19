@@ -4,7 +4,7 @@
 
 Alta completa de una empresa cliente de SIO hasta que su primer usuario puede operar en una sucursal. Perfil: administrador de la plataforma (`perm:operational-context:platform:administer`, grupo `superadmin` en el realm de desarrollo). Identificadores ficticios; cuerpos y respuestas según los modelos reales.
 
-**Orden y efectos verificados en el código de Operational Context:** cada paso es explícito. Crear la empresa **no** crea sucursales ni membresías; crear la membresía **no** asigna sucursales; crear la sucursal **no** asigna usuarios. Las secuencias de numeración de ventas y compras tampoco se crean solas.
+**Orden y efectos verificados en el código de Operational Context:** cada paso es explícito. Crear la empresa **no** crea sucursales ni membresías; crear la membresía **no** asigna sucursales; crear la sucursal **no** asigna usuarios. Desde la enmienda 2026-11-19 («acceso por membresía») la asignación no hace falta para operar: la membresía `ACTIVE` da acceso a todas las sucursales activas de la empresa, y lo que el usuario puede hacer lo limitan sus permisos de Keycloak. Las secuencias de numeración de ventas y compras tampoco se crean solas.
 
 ## 1. Ubicación (Geography)
 
@@ -218,9 +218,11 @@ Se envía **exactamente uno** de `keycloak_user_id` (el `sub` de Keycloak) o `us
 }
 ```
 
-Efecto: desde ahora el usuario ve la empresa en `GET …/me/operational-context`, con `branches: []`. Errores: `422 KEYCLOAK_USER_NOT_FOUND` / `KEYCLOAK_USER_DISABLED` / `TECHNICAL_ACCOUNT_NOT_ALLOWED`, `422 PERSON_IDENTITY_NOT_FOUND` / `_INACTIVE`, `409 DUPLICATE_MEMBERSHIP`, `503 DEPENDENCY_UNAVAILABLE`.
+Efecto: desde ahora el usuario ve la empresa en `GET …/me/operational-context`, con todas sus sucursales en `branches` (la del paso 4 con `allowed: true` y `user_branch_status: null`, porque aún no tiene asignación); ya puede operar en ella según sus permisos. Errores: `422 KEYCLOAK_USER_NOT_FOUND` / `KEYCLOAK_USER_DISABLED` / `TECHNICAL_ACCOUNT_NOT_ALLOWED`, `422 PERSON_IDENTITY_NOT_FOUND` / `_INACTIVE`, `409 DUPLICATE_MEMBERSHIP`, `503 DEPENDENCY_UNAVAILABLE`.
 
 ## 7. Asignar la sucursal al usuario
+
+Paso **opcional e informativo**: registra la sucursal habitual del usuario (listados de empleados por sucursal). No cambia el acceso, que ya concedió la membresía del paso 6.
 
 `POST https://sio-operational-context-dev.onrender.com/api/v1/application-users/{application_user_id}/user-branches` ([operación 22](../servicios/operational-context.md#22-post-application-usersapplication_user_iduser-branches)); permiso `perm:operational-context:user_branches:create`; `HIGH_RISK`.
 
@@ -247,7 +249,7 @@ Respuesta `201` (`UserBranchResponse`):
   "company_status": "ACTIVE",
   "operational_access": {
     "allowed": true,
-    "reason": "Solicitud del cliente"
+    "reason": null
   },
   "version": 1,
   "created_by": "3f2a9c1e-7b4d-4e8a-9c6f-1d2e3f4a5b6c",
@@ -257,11 +259,11 @@ Respuesta `201` (`UserBranchResponse`):
 }
 ```
 
-`operational_access.allowed: true` confirma que el usuario ya puede operar en la sucursal. Errores: `422 BRANCH_COMPANY_MISMATCH` (sucursal de otra empresa), `422 BRANCH_INACTIVE`, `422 MEMBERSHIP_INACTIVE`, `409 DUPLICATE_USER_BRANCH`.
+`operational_access.allowed: true` refleja el acceso por membresía (ya lo tenía desde el paso 6; la asignación no lo cambia). Errores: `422 BRANCH_COMPANY_MISMATCH` (sucursal de otra empresa), `422 BRANCH_INACTIVE`, `422 MEMBERSHIP_INACTIVE`, `409 DUPLICATE_USER_BRANCH`.
 
 ## 8. Verificar desde el usuario
 
-Con el token del usuario recién asociado: `GET https://sio-operational-context-dev.onrender.com/api/v1/me/operational-context` debe mostrar la membresía con `status: "ACTIVE"` y la sucursal con `allowed: true`. Para una acción concreta: `GET …/operational-access?company_id=…&branch_id=…&permission=perm:sales:sales:create` → `allowed: true` ([Acceso y contexto operativo](../principales/acceso-y-contexto-operativo.md)).
+Con el token del usuario recién asociado: `GET https://sio-operational-context-dev.onrender.com/api/v1/me/operational-context` debe mostrar la membresía con `status: "ACTIVE"` y la sucursal con `allowed: true` (y `user_branch_status: "ACTIVE"` si se hizo el paso 7). Para una acción concreta: `GET …/operational-access?branch_id=…&permission=perm:sales:sales:create` (se envía `company_id` o `branch_id`, no los dos) → `allowed: true` ([Acceso y contexto operativo](../principales/acceso-y-contexto-operativo.md)).
 
 ## 9. Configuración mínima para operar
 

@@ -171,7 +171,7 @@ Respuesta `201` (`SaleResponse`; valores ilustrativos): `id` es el [sale_id](../
 }
 ```
 
-Errores: `409 SALES.REFERENCES_NOT_ELIGIBLE` con `errors[]` (`PRICE_LIST_NOT_APPLICABLE`: la lista no está vigente o es de otra moneda; `NO_PRICE_IN_LIST`: la lista no tiene precio para la presentación; cliente o presentación no elegibles), `422 UNIT_PRICE_NOT_ALLOWED` si se envió `unit_price`, `403 BRANCH_ACCESS_DENIED` si el vendedor no tiene asignada la sucursal.
+Errores: `409 SALES.REFERENCES_NOT_ELIGIBLE` con `errors[]` (`PRICE_LIST_NOT_APPLICABLE`: la lista no está vigente o es de otra moneda; `NO_PRICE_IN_LIST`: la lista no tiene precio para la presentación; cliente o presentación no elegibles), `422 UNIT_PRICE_NOT_ALLOWED` si se envió `unit_price`, `403 BRANCH_ACCESS_DENIED` si la sucursal o la empresa están inactivas (no se exige asignación a la sucursal).
 
 ## 7. Ajustar líneas
 

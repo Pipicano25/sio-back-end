@@ -10,7 +10,7 @@
 | Obligatorio | Sí en todas las operaciones de una venta existente |
 | Ejemplo (ficticio) | `9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a` |
 | Quién lo genera | Sales, al crear el borrador (`id` de la respuesta `201`) |
-| Alcance | Empresa: se consulta con membresía `ACTIVE`; para escribir se necesita además asignación `ACTIVE` a la sucursal de la venta |
+| Alcance | Empresa: se consulta con membresía `ACTIVE`; para escribir se necesita además que la sucursal de la venta y la empresa estén activas (no se exige asignación a la sucursal) |
 
 ## Cómo obtenerlo
 
@@ -128,7 +128,7 @@ Respuesta `201` (`SaleResponse` con `lines`; valores ilustrativos):
 |---|---|---|---|
 | `401` | `{"detail": "Se requiere un token de acceso Bearer"}` | Token ausente, vencido o inválido | Renovar la sesión y reintentar; si falla, volver al login |
 | `403` | `SALES.FORBIDDEN` | Falta `perm:sales:sales:create`, o se enviaron líneas sin `perm:sales:sale_details:create`, o el token es de una cuenta de servicio | Mostrar que faltan permisos y el `trace_id` |
-| `403` | `SALES.BRANCH_ACCESS_DENIED` | El usuario no tiene asignación `ACTIVE` a la sucursal, o la sucursal o la empresa están inactivas | Pedir la asignación al administrador de la empresa |
+| `403` | `SALES.BRANCH_ACCESS_DENIED` | La sucursal o la empresa están inactivas (ya no se exige asignación a la sucursal) | Elegir una sucursal con `allowed: true` o pedir al administrador que la reactive |
 | `403` | `SALES.OPERATIONAL_ACCESS_DENIED` | Operational Context no permite al usuario consultar su acceso operativo | Pedir `perm:operational-context:application_users:read` |
 | `404` | `SALES.NOT_FOUND` | Sin membresía `ACTIVE` en la empresa, empresa inexistente o sucursal de otra empresa | Volver a leer el contexto operativo |
 | `409` | `SALES.REFERENCES_NOT_ELIGIBLE` | Cliente, método de pago, producto, presentación o lista de precios existen pero no se pueden usar (`errors[].code` lo indica, p. ej. `CUSTOMER_NOT_ELIGIBLE`, `PRICE_NOT_IN_LIST`) | Mostrar cada `errors[].message` y corregir la referencia |
@@ -237,4 +237,4 @@ Los pasos completos están en [Crear una venta](../ejemplos/crear-venta.md) y en
 | `409 SALES.VERSION_CONFLICT` | La `version` enviada no es la actual; volver a consultar la venta |
 | `409 SALES.INVALID_STATUS` | Se intentó editar o confirmar una venta que ya no está en `DRAFT`, o anular una ya `CANCELLED`; el campo `status` del cuerpo trae el estado de la venta |
 | `409 SALES.OPERATION_IN_PROGRESS` | La venta tiene una confirmación o anulación en curso (`pending_operation_id`) |
-| `403 SALES.BRANCH_ACCESS_DENIED` al escribir | El usuario puede ver la venta pero no tiene asignación `ACTIVE` a su sucursal |
+| `403 SALES.BRANCH_ACCESS_DENIED` al escribir | El usuario puede ver la venta pero su sucursal o la empresa están inactivas |

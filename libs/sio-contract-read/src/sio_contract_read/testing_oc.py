@@ -122,8 +122,9 @@ def seed_access_world(engine: Engine) -> list[AccessCase]:
         AccessCase("empresa_inactiva", ok, d, None, denied("COMPANY_INACTIVE", d, m_ok_d)),
         AccessCase("empresa_inactiva_sucursal", ok, None, d1, denied("COMPANY_INACTIVE", d, m_ok_d)),
         AccessCase("sucursal_inactiva", ok, None, s4, denied("BRANCH_INACTIVE", c, m_ok)),
-        AccessCase("sucursal_no_asignada", ok, None, s2, denied("BRANCH_NOT_ASSIGNED", c, m_ok)),
-        AccessCase("asignacion_inactiva", ok, None, s3, denied("USER_BRANCH_INACTIVE", c, m_ok)),
+        # Enmienda 2026-11-19 (acceso por membresía): la asignación a sucursal ya no limita.
+        AccessCase("sucursal_no_asignada", ok, None, s2, allowed(c, m_ok)),
+        AccessCase("asignacion_inactiva", ok, None, s3, allowed(c, m_ok)),
     ]
 
 

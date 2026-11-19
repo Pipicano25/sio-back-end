@@ -34,4 +34,4 @@ Indicadores para un tablero: `GET …/companies/{company_id}/inventory-summary` 
 
 ## 6. Si hay que corregir existencias
 
-Un ajuste manual es `HIGH_RISK` y exige asignación a la sucursal: `POST …/companies/{company_id}/inventory-adjustments` con `adjustment_key` (UUID de idempotencia), `adjustment_type`, `quantity` y `reason` ([Inventory, operación 16](../servicios/inventory.md#16-post-companiescompany_idinventory-adjustments)). Para un inventario físico completo use los conteos (operaciones 19–25): crear, iniciar, registrar cantidades contadas y completar.
+Un ajuste manual es `HIGH_RISK` y exige un usuario humano miembro de la empresa, con la sucursal activa (no exige asignación a la sucursal): `POST …/companies/{company_id}/inventory-adjustments` con `adjustment_key` (UUID de idempotencia), `adjustment_type`, `quantity` y `reason` ([Inventory, operación 16](../servicios/inventory.md#16-post-companiescompany_idinventory-adjustments)). Para un inventario físico completo use los conteos (operaciones 19–25): crear, iniciar, registrar cantidades contadas y completar.

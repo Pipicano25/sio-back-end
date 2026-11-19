@@ -1,5 +1,9 @@
 """Reglas puras del acceso operativo efectivo (DS-07, DS-08, C-14, R-10).
 
+Enmienda 2026-11-19: la membresía `ACTIVE` da acceso a todas las sucursales activas de
+la empresa; los límites los ponen los permisos de Keycloak. La asignación a sucursal ya
+no se evalúa (queda solo como dato informativo).
+
 El acceso se calcula en cada consulta y nunca se persiste. La causa de una
 denegación es la **primera** condición que falla en un orden fijo; las
 siguientes no se evalúan (en particular el permiso, que en la vía técnica exige
@@ -22,6 +26,7 @@ class AccessDenialReason(StrEnum):
     USER_MEMBERSHIP_INACTIVE = "USER_MEMBERSHIP_INACTIVE"
     COMPANY_INACTIVE = "COMPANY_INACTIVE"
     BRANCH_INACTIVE = "BRANCH_INACTIVE"
+    # Ya no se producen (enmienda 2026-11-19); se conservan en el catálogo por compatibilidad.
     BRANCH_NOT_ASSIGNED = "BRANCH_NOT_ASSIGNED"
     USER_BRANCH_INACTIVE = "USER_BRANCH_INACTIVE"
     PERMISSION_DENIED = "PERMISSION_DENIED"
@@ -37,7 +42,6 @@ class AccessFacts:
         branch_status: Estado de la sucursal, o `None` si no existe o no aplica.
         membership_status: Estado de la membresía del usuario en la empresa
             (la `ACTIVE`, o la inactiva más reciente), o `None` si no tiene.
-        user_branch_status: Estado de la asignación a la sucursal, o `None`.
         permission_granted: Evaluación diferida del permiso; `None` si el
             consumidor no indicó permiso. Solo se invoca si todo lo anterior se
             cumple.
@@ -47,7 +51,6 @@ class AccessFacts:
     branch_requested: bool
     branch_status: str | None
     membership_status: str | None
-    user_branch_status: str | None
     permission_granted: Callable[[], bool] | None = None
 
 
@@ -75,14 +78,7 @@ def _branch(facts: AccessFacts) -> AccessDenialReason | None:
     return None
 
 
-def _assignment_and_permission(facts: AccessFacts) -> AccessDenialReason | None:
-    if facts.branch_requested:
-        if facts.user_branch_status is None:
-            return AccessDenialReason.BRANCH_NOT_ASSIGNED
-
-        if facts.user_branch_status != ACTIVE:
-            return AccessDenialReason.USER_BRANCH_INACTIVE
-
+def _permission(facts: AccessFacts) -> AccessDenialReason | None:
     if facts.permission_granted is not None and not facts.permission_granted():
         return AccessDenialReason.PERMISSION_DENIED
 
@@ -92,8 +88,7 @@ def _assignment_and_permission(facts: AccessFacts) -> AccessDenialReason | None:
 def evaluate_own_access(facts: AccessFacts) -> AccessDenialReason | None:
     """Vía propia (token del usuario evaluado), C-14.
 
-    Orden: membresía existente → membresía `ACTIVE` → empresa → sucursal →
-    asignación → asignación `ACTIVE` → permiso. Una empresa o sucursal
+    Orden: membresía existente → membresía `ACTIVE` → empresa → sucursal → permiso. Una empresa o sucursal
     inexistente llega sin membresía y produce `USER_NOT_MEMBER`, igual que una
     ajena: esta vía no distingue ambos casos ni revela su estado.
 
@@ -103,7 +98,7 @@ def evaluate_own_access(facts: AccessFacts) -> AccessDenialReason | None:
     if facts.company_status is None or (facts.branch_requested and facts.branch_status is None):
         return AccessDenialReason.USER_NOT_MEMBER
 
-    for rule in (_membership, _company, _branch, _assignment_and_permission):
+    for rule in (_membership, _company, _branch, _permission):
         reason = rule(facts)
 
         if reason is not None:
@@ -115,14 +110,13 @@ def evaluate_own_access(facts: AccessFacts) -> AccessDenialReason | None:
 def evaluate_technical_access(facts: AccessFacts) -> AccessDenialReason | None:
     """Vía técnica (`platform:lookup` + `sub`).
 
-    Orden: empresa → sucursal → membresía existente → membresía `ACTIVE` →
-    asignación → asignación `ACTIVE` → permiso. La inexistencia de la empresa o
+    Orden: empresa → sucursal → membresía existente → membresía `ACTIVE` → permiso. La inexistencia de la empresa o
     sucursal se resuelve antes como `404` (no llega aquí).
 
     Returns:
         `None` si el acceso está permitido; si no, la primera causa que falla.
     """
-    for rule in (_company, _branch, _membership, _assignment_and_permission):
+    for rule in (_company, _branch, _membership, _permission):
         reason = rule(facts)
 
         if reason is not None:

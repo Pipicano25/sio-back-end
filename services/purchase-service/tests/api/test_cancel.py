@@ -105,14 +105,20 @@ def test_cancellation_does_not_revalidate_references(world, fakes, make_sequence
     assert cancel(confirmed).status_code == 200
 
 
-def test_cancellation_requires_assignment_and_delete_permission(as_user, world, fakes, make_draft, cancel, make_token, as_token) -> None:
+def test_cancellation_requires_active_branch_and_delete_permission(as_user, world, fakes, make_draft, cancel, make_token, as_token) -> None:
+    """Acceso por membresía (2026-11-19): sin asignación se anula; la sucursal inactiva y la falta de `delete` lo impiden."""
     draft = make_draft()
-    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
-    assert cancel(draft).status_code == 403
     sub = "sub-sin-delete"
-    fakes.oc.add_member(sub, world.company, branches=(world.branch,))
+    fakes.oc.add_member(sub, world.company)
     client = as_token(make_token("perm:purchase:purchases:update", "perm:purchase:purchases:read", sub=sub, preferred_username="x"))
     assert cancel(draft, client=client).status_code == 403
+    active = fakes.oc.branches[world.branch]
+    fakes.oc.branches[world.branch] = replace(active, status="INACTIVE")
+    response = cancel(draft)
+    assert response.status_code == 403 and response.json()["code"] == "PURCHASE.BRANCH_ACCESS_DENIED"
+    fakes.oc.branches[world.branch] = active
+    fakes.oc.assignments.discard((user_sub("operario.dao"), world.branch))
+    assert cancel(draft).status_code == 200
 
 
 def test_cancellation_is_audited(world, make_sequence, make_draft, confirm, cancel, test_engine) -> None:

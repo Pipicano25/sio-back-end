@@ -1,4 +1,4 @@
-# Paso 6. Ajuste en una sucursal no asignada
+# Paso 6. Ajuste en una sucursal inactiva
 
 Ejercicio 5: Ajustes de inventario.
 
@@ -18,19 +18,20 @@ Ejecuta: `operario.dao`.
   "adjustment_type": "POSITIVE",
   "quantity": "1",
   "unit_cost": "1",
-  "reason": "Prueba de asignación"
+  "reason": "Prueba de sucursal inactiva"
 }
 ```
 
 ### Por qué
 
-- El usuario es miembro de la empresa pero no está asignado a esa sucursal: `BRANCH_ACCESS_DENIED`. Las consultas no exigen asignación; los ajustes y conteos sí.
+- El usuario es miembro `ACTIVE` de la empresa, pero la sucursal está `INACTIVE`: `BRANCH_ACCESS_DENIED`.
+- Acceso por membresía (2026-11-19): la membresía da acceso a todas las sucursales activas de la empresa; la asignación a la sucursal ya no limita.
 
 ## Permiso
 
 La URL exige `perm:inventory:adjustments:create`.
 
-Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque tenga el permiso por comodín), miembro `ACTIVE` de la empresa y, en ajustes y conteos, con asignación `ACTIVE` a la sucursal (lo resuelve Operational Context con el token del usuario). Los usuarios con el permiso no repiten la llamada en este ejercicio porque cambiaría su estado.
+Además exige un **usuario humano** (una cuenta de servicio recibe `403` aunque tenga el permiso por comodín), miembro `ACTIVE` de la empresa y, en ajustes y conteos, que la sucursal y la empresa estén activas (lo resuelve Operational Context con el token del usuario; la asignación a la sucursal no limita). Los usuarios con el permiso no repiten la llamada en este ejercicio porque cambiaría su estado.
 
 | Usuario | ¿Puede? | Respuesta | Motivo |
 | --- | --- | --- | --- |
@@ -61,7 +62,7 @@ Estado `403`.
   "type": "https://sio/errors/inventory/branch-access-denied",
   "title": "Acceso a la sucursal denegado",
   "status": 403,
-  "detail": "No tiene una asignación activa a la sucursal, o la sucursal o la empresa no están activas. Solicite la asignación al administrador de la empresa.",
+  "detail": "La sucursal o la empresa no están activas. Elija una sucursal activa o solicite su reactivación al administrador de la empresa.",
   "instance": "/api/v1/companies/d44a0000-0000-4000-8000-000000000001/inventory-adjustments",
   "code": "INVENTORY.BRANCH_ACCESS_DENIED",
   "trace_id": "<asignado por Inventory>"

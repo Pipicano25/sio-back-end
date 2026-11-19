@@ -19,7 +19,7 @@ OPENAPI_TAGS = [
         "name": TAG_SALES,
         "description": (
             "Ventas en borrador con hasta 100 líneas. Solo **usuarios humanos**: una cuenta de servicio recibe "
-            "`403`. Escribir exige el permiso, membresía `ACTIVE` y asignación `ACTIVE` a la sucursal de la venta; "
+            "`403`. Escribir exige el permiso, membresía `ACTIVE` y la sucursal activa de la venta; "
             "leer, el permiso y la membresía. Referencia inexistente o no resoluble → `422`; existente pero no apta "
             "→ `409`. Costo y margen solo con `perm:sales:sales:read-profitability`; sin él se omiten. Spec 020: "
             "solo contado; `payment_method_id` obligatorio (un único medio de pago activo de Payment Reference, "

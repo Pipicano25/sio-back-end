@@ -14,7 +14,7 @@
 
 ## Opción recomendada: contexto operativo del usuario
 
-**¿Qué hace?** Devuelve, dentro de cada membresía del usuario, las sucursales que tiene asignadas y si puede operar en cada una ahora mismo (`allowed`, con `reason` cuando no). Es la fuente de `branch_id` para la sesión de trabajo: solo deben ofrecerse las que tengan `allowed: true`. Descrita en [Acceso y contexto operativo, API 5](../principales/acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario).
+**¿Qué hace?** Devuelve, dentro de cada membresía del usuario, **todas** las sucursales de la empresa (activas e inactivas) y si puede operar en cada una ahora mismo (`allowed`, con `reason` cuando no). Desde la enmienda 2026-11-19 la membresía `ACTIVE` da acceso a todas las sucursales activas; `user_branch_status` es solo la asignación informativa (`null` si no tiene). Es la fuente de `branch_id` para la sesión de trabajo: solo deben ofrecerse las que tengan `allowed: true`. Descrita en [Acceso y contexto operativo, API 5](../principales/acceso-y-contexto-operativo.md#5-consultar-las-empresas-y-sucursales-del-usuario).
 
 | | |
 |---|---|
@@ -50,8 +50,8 @@ Respuesta `200` (fragmento; el documento completo está en [company_id](company-
           "branch_id": "9b2f5c1d-3e4a-4f6b-8c7d-2a1b3c4d5e6f",
           "user_branch_status": "INACTIVE",
           "branch_status": "ACTIVE",
-          "allowed": false,
-          "reason": "USER_BRANCH_INACTIVE"
+          "allowed": true,
+          "reason": null
         }
       ]
     }
@@ -143,7 +143,7 @@ Respuesta `200` (modelo `PaginatedResponse[BranchResponse]`; valores ilustrativo
 
 ## Si la sucursal no existe todavía
 
-**¿Qué hace la API de creación?** `POST https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}/branches` (`WRITE`, permiso `perm:operational-context:branches:create`) registra un punto de operación de una empresa `ACTIVE`, con código único por empresa y zona horaria propia o heredada. Devuelve `201` con el `id` de la nueva sucursal. No la asigna a ningún usuario: para que alguien opere en ella hay que crear la asignación ([user_branch_id](user-branch-id.md)). Cuerpo, respuesta y errores completos en [Administración empresarial, API 5](../principales/administracion-empresarial.md#5-crear-una-sucursal).
+**¿Qué hace la API de creación?** `POST https://sio-operational-context-dev.onrender.com/api/v1/companies/{company_id}/branches` (`WRITE`, permiso `perm:operational-context:branches:create`) registra un punto de operación de una empresa `ACTIVE`, con código único por empresa y zona horaria propia o heredada. Devuelve `201` con el `id` de la nueva sucursal. No hace falta asignarla a nadie: todos los miembros `ACTIVE` de la empresa pueden operar en ella según sus permisos; la asignación ([user_branch_id](user-branch-id.md)) es opcional e informativa. Cuerpo, respuesta y errores completos en [Administración empresarial, API 5](../principales/administracion-empresarial.md#5-crear-una-sucursal).
 
 **Posibles errores al crear:**
 
@@ -170,6 +170,6 @@ Respuesta `200` (modelo `PaginatedResponse[BranchResponse]`; valores ilustrativo
 
 | Respuesta | Causa probable |
 |---|---|
-| `403 SALES.BRANCH_ACCESS_DENIED` / `PURCHASE.BRANCH_ACCESS_DENIED` | El usuario no tiene asignada la sucursal o la asignación está `INACTIVE` |
+| `403 SALES.BRANCH_ACCESS_DENIED` / `PURCHASE.BRANCH_ACCESS_DENIED` | La sucursal o la empresa están inactivas (ya no se exige asignación a la sucursal) |
 | `404` en una ruta de sucursal | La sucursal no pertenece a esa empresa, no existe o el usuario no tiene membresía en la empresa |
 | `allowed: false` con `BRANCH_INACTIVE` | La sucursal fue desactivada; no puede operarse |

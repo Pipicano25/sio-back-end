@@ -24,10 +24,16 @@ class OperationalAccessResponse(BaseModel):
 
 
 class BranchAccessResponse(BaseModel):
-    """Sucursal asignada: acceso efectivo y sus datos (FR-070a)."""
+    """Sucursal de la empresa: acceso efectivo y sus datos (FR-070a).
+
+    Desde la enmienda 2026-11-19 se listan todas las sucursales de la empresa: la membresía
+    da acceso a todas las activas. `user_branch_status` es la asignación informativa.
+    """
 
     branch_id: UUID
-    user_branch_status: EntityStatus
+    user_branch_status: EntityStatus | None = Field(
+        default=None, description="Asignación informativa a la sucursal; `null` si no tiene. No limita el acceso."
+    )
     branch_status: EntityStatus
     allowed: bool
     reason: str | None

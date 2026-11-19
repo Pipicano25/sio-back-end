@@ -209,8 +209,7 @@ class FakeAccess:
         user = self.oc.members.get((self.sub, company)) if company else None
         if branch is None or user is None:
             return AccessResult(False, "USER_NOT_MEMBER", company, None)
-        if (self.sub, branch_id) not in self.oc.assignments:
-            return AccessResult(False, "BRANCH_NOT_ASSIGNED", company, user)
+        # Acceso por membresía (2026-11-19): la asignación a sucursal ya no limita.
         if branch.status != "ACTIVE":
             return AccessResult(False, "BRANCH_INACTIVE", company, user)
         return AccessResult(True, None, company, user)

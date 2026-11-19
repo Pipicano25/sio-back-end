@@ -112,8 +112,8 @@ class BranchAccessDeniedError(PurchaseError):
 
     def __init__(self) -> None:
         super().__init__(
-            "No tiene una asignación activa a la sucursal de la compra, o la sucursal o la empresa no están "
-            "activas. Solicite la asignación al administrador de la empresa."
+            "La sucursal de la compra o la empresa no están activas. Elija una sucursal activa o "
+            "solicite su reactivación al administrador de la empresa."
         )
 
 

@@ -136,7 +136,8 @@ def test_inactive_assignments_and_branches_are_filtered_by_status(api, company_w
     retired_employee = retired["NORTE"]["employees"][0]
     assert retired_employee["display_name"] == "Luis Ventas"
     assert retired_employee["user_branch_status"] == "INACTIVE"
-    assert retired_employee["allowed"] is False and retired_employee["reason"]
+    # Enmienda 2026-11-19: la asignación retirada no limita; la membresía sigue activa.
+    assert retired_employee["allowed"] is True and retired_employee["reason"] is None
     assert set(inactive_branches) == {"SUR"}
 
 

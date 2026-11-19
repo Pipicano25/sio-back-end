@@ -45,7 +45,7 @@ def _unexpected(reason: str | None) -> DependencyUnavailableError:
 
 
 def require_branch_access(directory: AccessDirectory, company_id: UUID, branch_id: UUID) -> OperatorAccess:
-    """Membresía `ACTIVE` y asignación `ACTIVE` a la sucursal, en la empresa de la ruta (DS-09)."""
+    """Membresía `ACTIVE` y sucursal `ACTIVE` de la empresa de la ruta (DS-09; acceso por membresía 2026-11-19)."""
     result: AccessResult = directory.check_branch(branch_id)
 
     if result.allowed:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, timedelta
 
 from tests.conftest import base, count_rows, fetch, line, purchase_body
@@ -72,13 +73,16 @@ def test_update_header_refreshes_snapshots(buyer, world, make_draft) -> None:
     assert body["observations"] == "Nota"
 
 
-def test_changing_branch_requires_both_assignments(buyer, as_user, world, make_draft) -> None:
+def test_changing_branch_requires_access_to_both_branches(buyer, world, fakes, make_draft) -> None:
+    """Acceso por membresía (2026-11-19): basta la membresía; una sucursal destino inactiva niega."""
     draft = make_draft()
+    active = fakes.oc.branches[world.branch_b]
+    fakes.oc.branches[world.branch_b] = replace(active, status="INACTIVE")
     response = buyer.put(url(world, draft), json=header(world, draft, branch_id=world.branch_b))
     assert response.status_code == 403
     assert response.json()["code"] == "PURCHASE.BRANCH_ACCESS_DENIED"
-    admin = as_user("admin.sio")
-    assert admin.put(url(world, draft), json=header(world, draft, branch_id=world.branch_b)).status_code == 200
+    fakes.oc.branches[world.branch_b] = active
+    assert buyer.put(url(world, draft), json=header(world, draft, branch_id=world.branch_b)).status_code == 200
 
 
 def test_editing_outside_draft_is_409(buyer, world, make_draft, make_sequence, confirm) -> None:
